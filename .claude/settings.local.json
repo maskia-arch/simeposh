@@ -6,7 +6,16 @@
       "Bash(npm run *)",
       "PowerShell(Get-Command node, npm, npx -ErrorAction SilentlyContinue)",
       "PowerShell($env:PATH -split ';' | Where-Object { $_ -ne '' })",
-      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:ProgramFiles\\\\nodejs\" -ErrorAction SilentlyContinue | Select-Object -First 5 Name)"
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:ProgramFiles\\\\nodejs\" -ErrorAction SilentlyContinue | Select-Object -First 5 Name)",
+      "WebSearch",
+      "WebFetch(domain:docs.esimaccess.com)",
+      "WebFetch(domain:esimaccess.com)",
+      "WebFetch(domain:rapidapi.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(node -e ' *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const t = require\\('@supabase/supabase-js'\\); console.log\\('ok'\\)\")",
+      "Bash(npx next *)"
     ]
   }
 }

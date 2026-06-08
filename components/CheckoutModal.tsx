@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatEur, formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
+import { useTranslation } from '@/lib/i18n';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -19,9 +20,11 @@ export function CheckoutModal({
   topUpIccid,
   onClose,
 }: CheckoutModalProps) {
-  const [email,   setEmail]   = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const { t }                   = useTranslation();
+  const [email,   setEmail]     = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error,   setError]     = useState('');
+  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -32,24 +35,18 @@ export function CheckoutModal({
       const res = await fetch('/api/checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          tariffId:    tariff.id,
-          email,
-          orderType,
-          topUpIccid,
-        }),
+        body:    JSON.stringify({ tariffId: tariff.id, email, orderType, topUpIccid }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.checkoutUrl) {
-        throw new Error(data.error ?? 'Fehler beim Erstellen der Bestellung');
+        throw new Error(data.error ?? 'Error creating order');
       }
 
-      // Redirect to Sellauth checkout
       window.location.href = data.checkoutUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
+      setError(err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);
     }
   }
@@ -63,14 +60,11 @@ export function CheckoutModal({
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-800">
-              {orderType === 'top_up' ? 'eSIM aufladen' : 'eSIM kaufen'}
+              {orderType === 'top_up' ? t('checkout_title_topup') : t('checkout_title_new')}
             </h2>
             <p className="text-sm text-slate-500">{tariff.country_name}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
             ✕
           </button>
         </div>
@@ -78,25 +72,27 @@ export function CheckoutModal({
         {/* Summary */}
         <div className="mb-5 rounded-xl bg-brand-50 p-4">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-600">Tarif</span>
+            <span className="text-slate-600">{t('checkout_plan')}</span>
             <span className="font-medium">{tariff.name}</span>
           </div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-600">Daten</span>
-            <span className="font-medium">{formatGb(tariff.data_gb)}</span>
+            <span className="text-slate-600">{t('checkout_data')}</span>
+            <span className="font-medium">
+              {isUnlimited ? t('card_unlimited') : formatGb(tariff.data_gb)}
+            </span>
           </div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-600">Gültigkeit</span>
-            <span className="font-medium">{tariff.validity_days} Tage</span>
+            <span className="text-slate-600">{t('checkout_validity')}</span>
+            <span className="font-medium">{tariff.validity_days} {t('checkout_days')}</span>
           </div>
           {orderType === 'top_up' && topUpIccid && (
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-slate-600">ICCID</span>
+              <span className="text-slate-600">{t('checkout_iccid')}</span>
               <span className="font-mono text-xs">{topUpIccid}</span>
             </div>
           )}
           <div className="mt-2 flex justify-between border-t border-brand-200 pt-2">
-            <span className="font-semibold text-slate-800">Gesamt</span>
+            <span className="font-semibold text-slate-800">{t('checkout_total')}</span>
             <span className="text-xl font-bold text-brand-700">
               {formatEur(tariff.sale_price_eur)}
             </span>
@@ -107,20 +103,18 @@ export function CheckoutModal({
         <form onSubmit={handleCheckout} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-              E-Mail-Adresse
+              {t('checkout_email_label')}
             </label>
             <input
               id="email"
               type="email"
               required
-              placeholder="deine@email.de"
+              placeholder={t('checkout_email_ph')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
-            <p className="mt-1 text-xs text-slate-400">
-              Deine eSIM-Aktivierungsdetails werden an diese Adresse gesendet.
-            </p>
+            <p className="mt-1 text-xs text-slate-400">{t('checkout_email_hint')}</p>
           </div>
 
           {error && (
@@ -132,10 +126,10 @@ export function CheckoutModal({
             disabled={loading}
             className="w-full rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60 transition-colors"
           >
-            {loading ? 'Weiterleitung…' : `Jetzt für ${formatEur(tariff.sale_price_eur)} kaufen`}
+            {loading ? t('checkout_loading') : `${t('checkout_submit')} ${formatEur(tariff.sale_price_eur)}`}
           </button>
           <p className="text-center text-xs text-slate-400">
-            🔒 Sichere Zahlung via Sellauth
+            {t('checkout_secure')}
           </p>
         </form>
       </div>

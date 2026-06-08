@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { TariffCard }      from './TariffCard';
-import { CheckoutModal }   from './CheckoutModal';
-import type { Database }   from '@/lib/supabase/types';
+import { TariffCard }        from './TariffCard';
+import { CheckoutModal }     from './CheckoutModal';
+import { TariffDetailModal } from './TariffDetailModal';
+import type { Database }     from '@/lib/supabase/types';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
 export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
-  const [selected, setSelected] = useState<Tariff | null>(null);
+  const [checkout, setCheckout] = useState<Tariff | null>(null);
+  const [detail,   setDetail]   = useState<Tariff | null>(null);
 
   if (tariffs.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-slate-400">
         <p className="text-4xl mb-3">📡</p>
         <p className="font-medium">Keine Tarife gefunden.</p>
-        <p className="text-sm mt-1">Starte den täglichen Sync unter /api/cron/sync-tariffs.</p>
+        <p className="text-sm mt-1">Starte den Sync unter Admin → Produkt-Sync.</p>
       </div>
     );
   }
@@ -27,16 +29,24 @@ export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
           <TariffCard
             key={t.id}
             tariff={t}
-            onBuy={(tariff) => setSelected(tariff)}
+            onBuy={(tariff) => setCheckout(tariff)}
+            onDetail={(tariff) => setDetail(tariff)}
           />
         ))}
       </div>
 
-      {selected && (
+      {checkout && (
         <CheckoutModal
-          tariff={selected}
+          tariff={checkout}
           orderType="new_esim"
-          onClose={() => setSelected(null)}
+          onClose={() => setCheckout(null)}
+        />
+      )}
+
+      {detail && (
+        <TariffDetailModal
+          tariff={detail}
+          onClose={() => setDetail(null)}
         />
       )}
     </>

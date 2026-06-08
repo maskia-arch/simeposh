@@ -49,12 +49,12 @@ export async function GET(request: Request) {
         id:             pkg.packageCode,   // use as temp ID; real ID from tariffs table if exists
         package_code:   pkg.packageCode,
         name:           pkg.name,
-        data_gb:        Math.round((pkg.dataAmount / 1024) * 1000) / 1000,
+        data_gb:        Math.round(((pkg.dataAmount ?? 0) / 1024) * 1000) / 1000,
         validity_days:  pkg.duration,
         sale_price_eur: salePriceEur,
         ek_price_usd:   pkg.price,
         country_name:   pkg.locationCode,
-        flag_emoji:     null,
+        flag_emoji:     null as string | null,
         description:    pkg.description,
       };
     });
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
           const dbT = tariffMap.get(pkg.package_code);
           if (dbT) {
             pkg.id           = dbT.id;
-            pkg.flag_emoji   = dbT.flag_emoji;
+            pkg.flag_emoji   = dbT.flag_emoji ?? null;
             pkg.country_name = dbT.country_name;
           }
         }

@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslation } from '@/lib/i18n';
 
-export default function LoginPage() {
+function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const supabase     = createClient();
+  const { t }        = useTranslation();
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Explicit redirect param (e.g. from middleware) takes priority
     const redirectTo = searchParams.get('redirect');
     if (redirectTo) {
       router.push(redirectTo);
@@ -36,7 +37,6 @@ export default function LoginPage() {
       return;
     }
 
-    // If the logged-in e-mail is the admin account, go straight to admin
     const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
     if (adminEmail && data.user?.email === adminEmail) {
       router.push('/admin');
@@ -53,13 +53,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <p className="text-4xl mb-2">📡</p>
-          <h1 className="text-2xl font-bold text-slate-900">Willkommen zurück</h1>
-          <p className="text-slate-500 text-sm mt-1">Melde dich an, um deine eSIMs zu verwalten.</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('login_welcome')}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t('login_sub')}</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">E-Mail</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('login_email')}</label>
             <input
               type="email"
               required
@@ -70,7 +70,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Passwort</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('login_password')}</label>
             <input
               type="password"
               required
@@ -90,17 +90,25 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-xl bg-brand-600 py-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-60 transition-colors"
           >
-            {loading ? 'Anmelden…' : 'Anmelden'}
+            {loading ? t('login_loading') : t('login_submit')}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          Noch kein Konto?{' '}
+          {t('login_no_account')}{' '}
           <Link href="/register" className="font-medium text-brand-600 hover:text-brand-800">
-            Jetzt registrieren
+            {t('login_register')}
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[70vh] items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

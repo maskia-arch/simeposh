@@ -1,0 +1,215 @@
+const en = {
+  // Navbar
+  nav_tariffs:    'Plans',
+  nav_topup:      'Top-Up',
+  nav_dashboard:  'My eSIMs',
+  nav_login:      'Login',
+  nav_register:   'Sign Up',
+  nav_logout:     'Logout',
+  nav_tagline:    'Global eSIM',
+
+  // Hero
+  hero_badge:     '📡 Available in 150+ countries',
+  hero_title:     'Buy eSIM – Connected Worldwide',
+  hero_title_highlight: 'instantly connected worldwide',
+  hero_subtitle:  'No roaming shock, no physical SIM. Just buy, scan the QR code, and go.',
+  hero_cta_plans: 'Browse All Plans',
+  hero_cta_topup: 'Top-Up eSIM',
+
+  // Features
+  feat_instant:   'Instant Delivery',
+  feat_instant_d: 'QR code right after purchase',
+  feat_countries: '150+ Countries',
+  feat_countries_d: 'Connected worldwide',
+  feat_price:     'Fair Prices',
+  feat_price_d:   'No hidden fees',
+  feat_secure:    'Secure',
+  feat_secure_d:  'Encrypted payment',
+
+  // Tariff section
+  section_popular: 'Popular Plans',
+  section_popular_sub: 'Best value – updated daily',
+  section_view_all: 'View all →',
+
+  // Tariff card
+  card_data:       'Data',
+  card_validity:   'Validity',
+  card_days:       'd',
+  card_buy:        'Buy',
+  card_loading:    '…',
+  card_unlimited:  'Unlimited',
+  badge_travel:    'Travel',
+  badge_eco:       'Eco',
+  badge_pro:       'Pro',
+
+  // Tariff types tooltip
+  type_travel_desc: 'Fixed data volume',
+  type_eco_desc:    'Unlimited • FUP 512 kbps',
+  type_pro_desc:    'Unlimited • FUP 1 Mbps',
+
+  // How it works
+  how_title:  "Here's how it works",
+  how_1_t:    'Choose a plan',
+  how_1_d:    'Browse plans for your destination.',
+  how_2_t:    'Pay securely',
+  how_2_d:    'Quick, encrypted payment.',
+  how_3_t:    'Scan QR code',
+  how_3_d:    'Scan the code in your phone settings.',
+  how_4_t:    'Connected!',
+  how_4_d:    'Instantly on the local network.',
+
+  // Top-up teaser
+  topup_title:  'Already have an eSIM?',
+  topup_sub:    'Add more data in seconds with a top-up.',
+  topup_cta:    'Top-Up Now',
+
+  // Tariffs page
+  tariffs_title: 'All Plans',
+  tariffs_sub:   'Choose the best plan for your destination',
+  tariffs_search:'Search country or region…',
+  tariffs_filter_all:      'All',
+  tariffs_filter_travel:   'Travel',
+  tariffs_filter_eco:      'Unlimited Eco',
+  tariffs_filter_pro:      'Unlimited Pro',
+  tariffs_empty:  'No plans found.',
+  tariffs_empty_sub: 'Try a different search.',
+
+  // Checkout modal
+  checkout_title_new:   'Buy eSIM',
+  checkout_title_topup: 'Top-Up eSIM',
+  checkout_plan:        'Plan',
+  checkout_data:        'Data',
+  checkout_validity:    'Validity',
+  checkout_days:        'days',
+  checkout_iccid:       'ICCID',
+  checkout_total:       'Total',
+  checkout_email_label: 'E-mail address',
+  checkout_email_ph:    'your@email.com',
+  checkout_email_hint:  'Your eSIM details will be sent to this address.',
+  checkout_submit:      'Buy now for',
+  checkout_loading:     'Redirecting…',
+  checkout_secure:      '🔒 Secure payment via Sellauth',
+
+  // Top-up page
+  topup_page_title: 'Top-Up Your eSIM',
+  topup_page_sub:   'Enter your ICCID and pick a top-up package.',
+  topup_iccid_label: 'Your eSIM ICCID',
+  topup_iccid_ph:    'e.g. 8949xxxxxxxxxxxxxx',
+  topup_iccid_hint:  "Find your ICCID in your phone's eSIM settings or your order confirmation.",
+  topup_search:      'Search',
+  topup_searching:   '…',
+  topup_results_for: 'Available packages for ICCID',
+  topup_no_results:  'No top-up packages found for this ICCID.',
+  topup_no_results_sub: 'Check the ICCID and try again.',
+  topup_btn:         'Top-Up',
+
+  // Login
+  login_welcome:  'Welcome back',
+  login_sub:      'Sign in to manage your eSIMs.',
+  login_email:    'E-mail',
+  login_password: 'Password',
+  login_submit:   'Sign in',
+  login_loading:  'Signing in…',
+  login_no_account: "Don't have an account?",
+  login_register: 'Sign up',
+
+  // Register
+  register_title:  'Create Account',
+  register_sub:    'Manage all your eSIMs in one place.',
+  register_email:  'E-mail address',
+  register_email_ph: 'your@email.com',
+  register_pw:     'Password',
+  register_pw_ph:  'Choose a secure password',
+  register_submit: 'Create account',
+  register_loading: 'Creating account…',
+  register_has_account: 'Already registered?',
+  register_login:  'Sign in',
+  register_success_title: 'Confirm your e-mail',
+  register_success_sub:   'We sent a confirmation link to {email}. Click it to activate your account.',
+  register_success_back:  'Back to login',
+  pw_rule_length:  'At least 8 characters',
+  pw_rule_upper:   'At least 1 uppercase letter',
+  pw_rule_lower:   'At least 1 lowercase letter',
+  pw_rule_number:  'At least 1 number',
+  pw_rule_special: 'At least 1 special character',
+  pw_weak:         'Very weak',
+  pw_fair:         'Weak',
+  pw_medium:       'Medium',
+  pw_strong:       'Strong',
+  pw_very_strong:  'Very strong',
+
+  // Dashboard
+  dash_title:     'My eSIMs',
+  dash_new_esim:  '+ New eSIM',
+  dash_orders:    'Orders',
+  dash_active:    'Active',
+  dash_spent:     'Total spent',
+  dash_pending:   '⏳ In progress',
+  dash_my_esims:  '📱 My eSIMs',
+  dash_empty:     'No orders yet',
+  dash_empty_cta: 'Buy your first eSIM →',
+  dash_topup:     '📶 Top-Up',
+  dash_details:   'Details →',
+
+  // Order detail
+  order_back:      '← My eSIMs',
+  order_title:     'Order Details',
+  order_country:   'Country',
+  order_plan:      'Plan',
+  order_data:      'Data',
+  order_validity:  'Validity',
+  order_paid:      'Paid',
+  order_status:    'Status',
+  order_activation: '📱 Activation Details',
+  order_scan:       'Scan QR code',
+  order_iccid:     'ICCID',
+  order_smdp:      'SM-DP+ Address',
+  order_code:      'Activation code',
+  order_apn:       'APN',
+  order_topup_btn: '📶 Top-Up eSIM',
+  order_new_btn:   'Buy another eSIM',
+
+  // Success page
+  success_ready:   'eSIM ready!',
+  success_pending: 'Payment confirmed – preparing eSIM…',
+  success_ready_d: 'Your eSIM has been activated. Details also sent by e-mail.',
+  success_pending_d: 'Your eSIM is being set up. You will receive an e-mail once ready.',
+  success_order_details: 'Order details',
+  success_esim_data: '📱 eSIM Activation Data',
+  success_scan_hint: 'Scan this code in your settings',
+  success_guide_title: '📖 Quick guide',
+  success_iphone:  '<strong>iPhone:</strong> Settings → Mobile Data → Add eSIM → Use QR code',
+  success_android: '<strong>Android:</strong> Settings → Network → SIM cards → Add eSIM',
+  success_step3:   'Select the eSIM for mobile data and enable "Data Roaming"',
+  success_step4:   'Validity starts with first data use',
+  success_orders_btn: 'My Orders',
+  success_more_btn:   'Buy more eSIMs',
+  success_not_found:  'Order not found',
+  success_not_found_d: 'Your order is processing. Check your e-mail for details.',
+  success_home_btn: 'Back to home',
+
+  // Status labels
+  status_completed:    'Active',
+  status_paid:         'Paid',
+  status_provisioning: 'Activating',
+  status_pending:      'Pending',
+  status_failed:       'Failed',
+  status_refunded:     'Refunded',
+
+  // Footer
+  footer_nav_title:   'Navigation',
+  footer_legal_title: 'Legal',
+  footer_browse:      'Browse Plans',
+  footer_topup:       'Top-Up eSIM',
+  footer_dashboard:   'My eSIMs',
+  footer_imprint:     'Imprint',
+  footer_privacy:     'Privacy Policy',
+  footer_terms:       'Terms',
+  footer_copy:        '© {year} eSIM Shop. All rights reserved.',
+
+  // Language switcher
+  lang_select: 'Language',
+} as const;
+
+export default en;
+export type TranslationKeys = keyof typeof en;

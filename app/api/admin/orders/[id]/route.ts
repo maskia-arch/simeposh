@@ -16,12 +16,13 @@ export async function PATCH(
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  const body = await request.json() as Record<string, unknown>;
+  const body = await request.json();
 
   const db = createServiceClient();
   const { data, error } = await db
     .from('orders')
-    .update(body)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update(body as any)
     .eq('id', id)
     .select()
     .single();
