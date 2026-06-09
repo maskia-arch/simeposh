@@ -22,12 +22,6 @@ services:
         sync: false
       - key: ESIMACCESS_ACCESS_CODE
         sync: false
-      - key: SELLAUTH_API_KEY
-        sync: false
-      - key: SELLAUTH_SHOP_ID
-        sync: false
-      - key: SELLAUTH_WEBHOOK_SECRET
-        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName } from '@/lib/tariff-display';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -35,6 +35,7 @@ interface Props {
 export function TariffDetailModal({ tariff, onClose }: Props) {
   const [showCheckout, setShowCheckout] = useState(false);
   const [added, setAdded] = useState(false);
+  const [showCountryList, setShowCountryList] = useState(false);
   const { locale, t } = useTranslation();
   const { addItem } = useCart();
 
@@ -68,7 +69,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full bg-slate-100 p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         </button>
@@ -80,7 +81,56 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
             <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={56} />
             <div>
               <h2 className="text-2xl font-extrabold text-slate-900">{countryLabel}</h2>
-              {coverage && <p className="text-sm text-slate-400">🌍 {coverage}</p>}
+              {coverage && (
+                <div className="relative inline-flex items-center gap-1.5 text-sm text-slate-400">
+                  <span>🌍 {coverage}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCountryList(!showCountryList);
+                    }}
+                    className="inline-flex items-center justify-center rounded-full p-0.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none"
+                    title={t('det_show_countries')}
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  {showCountryList && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-full mt-2 z-30 w-64 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xl scrollbar-thin cursor-default animate-in fade-in slide-in-from-top-1 duration-100"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                        <span className="text-xs font-extrabold text-slate-800">{t('det_coverage_list')}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowCountryList(false);
+                          }}
+                          className="text-slate-400 hover:text-slate-600 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-1">
+                        {tariff.location_codes?.map((code) => {
+                          const name = isoName(code, locale);
+                          return (
+                            <div key={code} className="flex items-center gap-2 text-xs text-slate-600 hover:bg-slate-50 py-1 px-1.5 rounded-lg transition-colors">
+                              <CountryFlag countryCode={code} countryName={name} size={16} className="shrink-0 rounded-sm" />
+                              <span className="shrink-0 font-mono text-[10px] font-semibold text-slate-400 uppercase w-5">{code}</span>
+                              <span className="truncate">{name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {typeInfo && (
                 <span className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${typeInfo.color}`}>
                   {typeInfo.icon} {t(typeInfo.labelKey)}

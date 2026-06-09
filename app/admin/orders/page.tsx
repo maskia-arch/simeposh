@@ -16,6 +16,7 @@ export default async function AdminOrdersPage() {
       id, status, order_type, customer_email, customer_name,
       amount_eur, iccid, top_up_iccid, error_message,
       sellauth_order_id, payment_confirmed_at, created_at, updated_at,
+      checkout_ref,
       tariffs(name, country_name, flag_emoji, data_gb, validity_days)
     `)
     .order('created_at', { ascending: false })

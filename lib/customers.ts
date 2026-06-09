@@ -49,12 +49,21 @@ export async function claimGuestOrders(
   email:   string,
 ): Promise<void> {
   if (!email) return;
+  const cleanEmail = email.trim().toLowerCase();
   try {
+    // 1. Claim guest orders
     await service
       .from('orders')
       .update({ user_id: userId })
       .is('user_id', null)
-      .eq('customer_email', email);
+      .eq('customer_email', cleanEmail);
+
+    // 2. Claim guest eSIM Cash accounts
+    await (service
+      .from('esim_cash_accounts')
+      .update({ user_id: userId } as any) as any)
+      .is('user_id', null)
+      .eq('email', cleanEmail);
   } catch (err) {
     console.error('[customers] claimGuestOrders failed:', err);
   }

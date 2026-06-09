@@ -1,8 +1,8 @@
 const hu = {
-  nav_tariffs:'Csomagok', nav_topup:'Feltöltés', nav_dashboard:'eSIM-jeim', nav_login:'Bejelentkezés', nav_register:'Regisztráció', nav_logout:'Kijelentkezés', nav_tagline:'Globális eSIM',
+  nav_tariffs:'Csomagok', nav_topup:'Feltöltés', nav_dashboard:'Dashboard', nav_login:'Bejelentkezés', nav_register:'Regisztráció', nav_logout:'Kijelentkezés', nav_tagline:'Globális eSIM',
   hero_badge:'📡 Elérhető 150+ országban', hero_title:'eSIM vásárlás – Csatlakozva a világhoz', hero_title_highlight:'azonnal csatlakozva a világhoz', hero_subtitle:'Nincs roaming meglepetés, nincs fizikai SIM. Vásárolj, scannelj QR-kódot és indulj.', hero_cta_plans:'Összes csomag megtekintése', hero_cta_topup:'eSIM feltöltése',
   feat_instant:'Azonnali kézbesítés', feat_instant_d:'QR-kód rögtön a vásárlás után', feat_countries:'150+ ország', feat_countries_d:'Csatlakozva világszerte', feat_price:'Méltányos árak', feat_price_d:'Nincsenek rejtett díjak', feat_secure:'Biztonságos', feat_secure_d:'Titkosított fizetés',
-  section_popular:'Népszerű csomagok', section_popular_sub:'Legjobb ajánlatok – naponta frissítve', section_view_all:'Az összes megtekintése →',
+  section_popular:'Népszerű úti célok', section_popular_sub:'Népszerű úti célok a legjobb kezdő árakon', section_view_all:'Az összes megtekintése →', dest_from_price_prefix:'már',
   card_data:'Adat', card_validity:'Érvényesség', card_days:'nap', card_buy:'Vásárlás', card_loading:'…', card_unlimited:'Korlátlan', badge_travel:'Travel', badge_eco:'Eco', badge_pro:'Pro',
   type_travel_desc:'Fix adatmennyiség', type_eco_desc:'Korlátlan • FUP 512 kbps', type_pro_desc:'Korlátlan • FUP 1 Mbps',
   how_title:'Hogyan működik', how_1_t:'Válassz csomagot', how_1_d:'Böngészd az úticélodhoz való csomagokat.', how_2_t:'Fizess biztonságosan', how_2_d:'Gyors, titkosított fizetés.', how_3_t:'Scannelj QR-kódot', how_3_d:'Scanneld a kódot a telefon beállításaiban.', how_4_t:'Csatlakozva!', how_4_d:'Azonnal a helyi hálózaton.',
@@ -18,6 +18,11 @@ const hu = {
   success_ready:'eSIM kész!', success_pending:'Fizetés megerősítve – eSIM előkészítése…', success_ready_d:'eSIM-ed aktiválva lett. A részleteket e-mailben is elküldtük.', success_pending_d:'eSIM-ed előkészítés alatt áll. E-mailt kapsz, ha kész.', success_order_details:'Rendelés részletei', success_esim_data:'📱 eSIM aktiválási adatok', success_scan_hint:'Scanneld ezt a kódot a beállításaidban', success_guide_title:'📖 Gyors útmutató', success_iphone:'<strong>iPhone:</strong> Beállítások → Mobiladatok → eSIM hozzáadása → QR-kód használata', success_android:'<strong>Android:</strong> Beállítások → Hálózat → SIM-kártyák → eSIM hozzáadása', success_step3:'Válaszd ki az eSIM-et mobiladatokhoz és engedélyezd az «Adatroamingot»', success_step4:'Az érvényesség az első adathasználattal kezdődik', success_orders_btn:'Rendeléseim', success_more_btn:'Több eSIM vásárlása', success_not_found:'Rendelés nem található', success_not_found_d:'Rendelésed feldolgozás alatt áll. Ellenőrizd az e-mail-edet.', success_home_btn:'Vissza a főoldalra',
   status_completed:'Aktív', status_paid:'Fizetve', status_provisioning:'Aktiválás', status_pending:'Függőben', status_failed:'Sikertelen', status_refunded:'Visszatérítve',
   footer_nav_title:'Navigáció', footer_legal_title:'Jogi', footer_browse:'Csomagok böngészése', footer_topup:'eSIM feltöltése', footer_dashboard:'eSIM-jeim', footer_imprint:'Impresszum', footer_privacy:'Adatvédelmi irányelvek', footer_terms:'Feltételek', footer_copy:'© {year} eSIM Shop. Minden jog fenntartva.',
+  footer_refund:'Visszatérítési irányelvek',
+  checkout_agree_prefix:'Elolvastam és elfogadom a',
+  checkout_agree_link:'Felhasználási feltételeket',
+  checkout_agree_suffix:'.',
+  checkout_agree_error:'A folytatáshoz fogadja el a felhasználási feltételeket.',
   lang_select:'Nyelv',
 } as const;
 export default hu;

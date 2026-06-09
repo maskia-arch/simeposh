@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
-import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName } from '@/lib/tariff-display';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -32,6 +33,7 @@ interface TariffCardProps {
 export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps) {
   const { t, locale } = useTranslation();
   const { addItem }   = useCart();
+  const [showCountryList, setShowCountryList] = useState(false);
   const badge   = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
   const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 3);
   const network = bestNetworkType(ops);
@@ -59,7 +61,24 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={40} />
             <div>
               <p className="font-bold text-slate-800 leading-tight">{countryLabel}</p>
-              {coverage && <p className="text-xs text-slate-400 mt-0.5">🌍 {coverage}</p>}
+              {coverage && (
+                <div className="relative inline-flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+                  <span>🌍 {coverage}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCountryList(true);
+                    }}
+                    className="inline-flex items-center justify-center rounded-full p-0.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none"
+                    title={t('det_show_countries')}
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -166,6 +185,38 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </button>
         </div>
       </div>
+      {showCountryList && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute inset-0 bg-white/95 backdrop-blur-sm z-30 p-5 flex flex-col animate-in fade-in zoom-in-95 duration-100 cursor-default"
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+            <span className="text-sm font-extrabold text-slate-800">{t('det_coverage_list')}</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCountryList(false);
+              }}
+              className="text-slate-400 hover:text-slate-600 text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 overflow-y-auto flex-1 scrollbar-thin">
+            {tariff.location_codes?.map((code) => {
+              const name = isoName(code, locale);
+              return (
+                <div key={code} className="flex items-center gap-2 text-xs text-slate-600 hover:bg-slate-50 py-1 px-1.5 rounded-lg transition-colors">
+                  <CountryFlag countryCode={code} countryName={name} size={16} className="shrink-0 rounded-sm" />
+                  <span className="shrink-0 font-mono text-[9px] font-semibold text-slate-400 uppercase w-4">{code}</span>
+                  <span className="truncate">{name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

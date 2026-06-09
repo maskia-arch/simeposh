@@ -1,13 +1,14 @@
 /**
  * Order fulfilment — provider-agnostic.
  *
- * Called once a payment is confirmed (Sellauth webhook OR the crypto watcher).
+ * Called once a payment is confirmed (typically by the crypto watcher).
  * Loads a single order, provisions the eSIM / top-up via esimaccess, stores the
  * delivery details and sends the confirmation e-mail. Idempotent.
  */
 import { createServiceClient } from '@/lib/supabase/server';
 import { allocateEsim, applyTopUp } from '@/lib/esimaccess/client';
 import { sendEsimEmail, sendTopUpEmail } from '@/lib/email/mailer';
+import { applyOrderCompletionCashback } from './cashback';
 
 export interface FulfillResult { orderId: string; ok: boolean; error?: string }
 
@@ -44,6 +45,7 @@ export async function fulfillOrder(
         dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
         priceEur: o.amount_eur ?? o.tariffs.sale_price_eur, orderId,
       });
+      await applyOrderCompletionCashback(supabase, orderId);
       return { orderId, ok: true };
     }
 
@@ -79,7 +81,7 @@ export async function fulfillOrder(
       iccid: esim.iccid, qrCodeUrl: esim.qrCodeUrl, activationCode: esim.matchingId,
       smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
     });
-
+    await applyOrderCompletionCashback(supabase, orderId);
     return { orderId, ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

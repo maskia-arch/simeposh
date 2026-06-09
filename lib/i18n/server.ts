@@ -4,7 +4,7 @@
  */
 import { cookies } from 'next/headers';
 import type { TranslationKeys } from './translations/en';
-import { isValidLocale, type LocaleCode } from './index';
+import { isValidLocale, type LocaleCode } from './config';
 
 import en from './translations/en';
 import de from './translations/de';

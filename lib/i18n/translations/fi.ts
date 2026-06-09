@@ -1,8 +1,8 @@
 const fi = {
-  nav_tariffs:'Paketit', nav_topup:'Lisää dataa', nav_dashboard:'eSIM-kortit', nav_login:'Kirjaudu', nav_register:'Rekisteröidy', nav_logout:'Kirjaudu ulos', nav_tagline:'Globaali eSIM',
+  nav_tariffs:'Paketit', nav_topup:'Lisää dataa', nav_dashboard:'Dashboard', nav_login:'Kirjaudu', nav_register:'Rekisteröidy', nav_logout:'Kirjaudu ulos', nav_tagline:'Globaali eSIM',
   hero_badge:'📡 Saatavilla yli 150 maassa', hero_title:'Osta eSIM – Yhdistetty maailmaan', hero_title_highlight:'välittömästi yhdistetty maailmaan', hero_subtitle:'Ei roaming-yllätyksiä, ei fyysistä SIM-korttia. Osta, skannaa QR-koodi ja mene.', hero_cta_plans:'Selaa kaikkia paketteja', hero_cta_topup:'Lisää dataa eSIM:iin',
   feat_instant:'Välitön toimitus', feat_instant_d:'QR-koodi heti oston jälkeen', feat_countries:'150+ maata', feat_countries_d:'Yhdistetty maailmanlaajuisesti', feat_price:'Rehelliset hinnat', feat_price_d:'Ei piilomaksuja', feat_secure:'Turvallinen', feat_secure_d:'Salattu maksu',
-  section_popular:'Suositut paketit', section_popular_sub:'Parhaat tarjoukset – päivitetään päivittäin', section_view_all:'Näytä kaikki →',
+  section_popular:'Suositut kohteet', section_popular_sub:'Parhaat matkakohteet parhailla aloitushinnoilla', section_view_all:'Näytä kaikki →', dest_from_price_prefix:'alkaen',
   card_data:'Data', card_validity:'Voimassaolo', card_days:'pv', card_buy:'Osta', card_loading:'…', card_unlimited:'Rajaton', badge_travel:'Travel', badge_eco:'Eco', badge_pro:'Pro',
   type_travel_desc:'Kiinteä datavolyymi', type_eco_desc:'Rajaton • FUP 512 kbps', type_pro_desc:'Rajaton • FUP 1 Mbps',
   how_title:'Näin se toimii', how_1_t:'Valitse paketti', how_1_d:'Selaa paketteja matkakohteesi mukaan.', how_2_t:'Maksa turvallisesti', how_2_d:'Nopea, salattu maksu.', how_3_t:'Skannaa QR-koodi', how_3_d:'Skannaa koodi puhelimen asetuksissa.', how_4_t:'Yhdistetty!', how_4_d:'Välittömästi paikallisessa verkossa.',
@@ -17,7 +17,12 @@ const fi = {
   order_back:'← eSIM-korttini', order_title:'Tilauksen tiedot', order_country:'Maa', order_plan:'Paketti', order_data:'Data', order_validity:'Voimassaolo', order_paid:'Maksettu', order_status:'Tila', order_activation:'📱 Aktivointitiedot', order_scan:'Skannaa QR-koodi', order_iccid:'ICCID', order_smdp:'SM-DP+-osoite', order_code:'Aktivointikoodi', order_apn:'APN', order_topup_btn:'📶 Lisää dataa', order_new_btn:'Osta toinen eSIM',
   success_ready:'eSIM valmis!', success_pending:'Maksu vahvistettu – valmistellaan eSIM:iä…', success_ready_d:'eSIM:si on aktivoitu. Tiedot lähetetty myös sähköpostilla.', success_pending_d:'eSIM:siä valmistellaan. Saat sähköpostin kun se on valmis.', success_order_details:'Tilauksen tiedot', success_esim_data:'📱 eSIM-aktivointitiedot', success_scan_hint:'Skannaa tämä koodi asetuksistasi', success_guide_title:'📖 Pikaopas', success_iphone:'<strong>iPhone:</strong> Asetukset → Mobiilidatan → Lisää eSIM → Käytä QR-koodia', success_android:'<strong>Android:</strong> Asetukset → Verkko → SIM-kortit → Lisää eSIM', success_step3:'Valitse eSIM mobiilidataksi ja ota «Datavierailu» käyttöön', success_step4:'Voimassaolo alkaa ensimmäisestä datankäytöstä', success_orders_btn:'Tilaukseni', success_more_btn:'Osta lisää eSIM-kortteja', success_not_found:'Tilausta ei löydy', success_not_found_d:'Tilaustasi käsitellään. Tarkista sähköpostisi.', success_home_btn:'Takaisin etusivulle',
   status_completed:'Aktiivinen', status_paid:'Maksettu', status_provisioning:'Aktivoidaan', status_pending:'Odottaa', status_failed:'Epäonnistui', status_refunded:'Palautettu',
-  footer_nav_title:'Navigointi', footer_legal_title:'Juridiikka', footer_browse:'Selaa paketteja', footer_topup:'Lisää dataa', footer_dashboard:'eSIM-korttini', footer_imprint:'Impressum', footer_privacy:'Tietosuojakäytäntö', footer_terms:'Käyttöehdot', footer_copy:'© {year} eSIM Shop. Kaikki oikeudet pidätetään.',
+  footer_nav_title:'Navigointi', footer_legal_title:'Juridiikka', footer_browse:'Selaa paketteja', footer_topup:'Lisää dataa', footer_dashboard:'eSIM-korttini', footer_imprint:'Impressum', footer_privacy:'Tietosuojakaytanto', footer_terms:'Käyttöehdot', footer_copy:'© {year} eSIM Shop. Kaikki oikeudet pidätetään.',
+  footer_refund:'Hyvityskäytäntö',
+  checkout_agree_prefix:'Olen lukenut ja hyväksyn',
+  checkout_agree_link:'Käyttöehdot',
+  checkout_agree_suffix:'.',
+  checkout_agree_error:'Hyväksy käyttöehdot jatkaaksesi.',
   lang_select:'Kieli',
 } as const;
 export default fi;

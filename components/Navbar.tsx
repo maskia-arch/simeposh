@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CurrencySwitcher } from '@/components/CurrencySwitcher';
 import { useCart } from '@/components/CartProvider';
+import { usePathname } from 'next/navigation';
+import { HeaderSearch } from '@/components/HeaderSearch';
+import type { Destination } from '@/components/HeroSearch';
 
 /** Globe (language) | divider | banknote (currency) – Airalo-style controls. */
 function LocaleCurrencyControls() {
@@ -40,11 +43,96 @@ function CartButton() {
   );
 }
 
+function DashboardDropdown({ t }: { t: any }) {
+  const [open, setOpen] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <button
+        className={`flex items-center gap-1 text-slate-600 hover:text-brand-700 transition-colors py-1.5 focus:outline-none font-medium`}
+      >
+        <span>{t('nav_dashboard')}</span>
+        <svg
+          className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-64 origin-top-right rounded-2xl border border-slate-200 bg-white p-2.5 shadow-xl ring-1 ring-black/5 transition-all duration-200 animate-in fade-in slide-in-from-top-1">
+          <Link
+            href="/dashboard"
+            onClick={() => setOpen(false)}
+            className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 transition-colors group"
+          >
+            <span className="text-2xl mt-0.5 group-hover:scale-110 transition-transform">📱</span>
+            <div>
+              <p className="font-semibold text-slate-800 group-hover:text-brand-700 transition-colors text-sm">
+                {t('nav_my_esims')}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                {t('nav_my_esims_desc')}
+              </p>
+            </div>
+          </Link>
+          <Link
+            href="/dashboard?tab=cash"
+            onClick={() => setOpen(false)}
+            className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 transition-colors group border-t border-slate-100"
+          >
+            <span className="text-2xl mt-0.5 group-hover:scale-110 transition-transform">💰</span>
+            <div>
+              <p className="font-semibold text-slate-800 group-hover:text-brand-700 transition-colors text-sm">
+                {t('nav_esim_cash' as any) || 'eSIM Cash'}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                {t('nav_esim_cash_desc' as any) || 'Umsatz-Cashback & Ränge'}
+              </p>
+            </div>
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Navbar() {
   const [user, setUser]     = useState<User | null>(null);
   const [menuOpen, setMenu] = useState(false);
   const supabase            = createClient();
   const { t }               = useTranslation();
+  const pathname            = usePathname();
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [cashbackRate, setCashbackRate] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -54,18 +142,112 @@ export function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user && user.email) {
+      (supabase
+        .from('esim_cash_accounts')
+        .select('total_spend_eur, extra_cashback_queue')
+        .maybeSingle() as any)
+        .then(({ data }: any) => {
+          if (data) {
+            const spend = Number(data.total_spend_eur) || 0;
+            let rate = 5;
+            if (spend >= 1000) rate = 10;
+            else if (spend >= 500) rate = 8;
+            else if (spend >= 100) rate = 6;
+            
+            if (Number(data.extra_cashback_queue) > 0) {
+              rate += 5;
+            }
+            setCashbackRate(rate);
+          } else {
+            setCashbackRate(5);
+          }
+        });
+    } else {
+      setCashbackRate(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetch('/api/destinations')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.destinations) setDestinations(data.destinations);
+      })
+      .catch((err) => console.error('Error loading destinations:', err));
+  }, []);
+
+  useEffect(() => {
+    // Hide search entirely on checkout, success, callback, and admin routes
+    const isExemptRoute =
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/checkout') ||
+      pathname.startsWith('/success') ||
+      pathname.startsWith('/auth/callback');
+
+    if (isExemptRoute) {
+      setShowSearch(false);
+      return;
+    }
+
+    if (pathname !== '/') {
+      // Always show search bar on other client pages (Plans, Topup, Dashboard)
+      setShowSearch(true);
+      return;
+    }
+
+    // On homepage, only show search if scrolled down past 360px
+    const handleScroll = () => {
+      if (window.scrollY > 360) {
+        setShowSearch(true);
+      } else {
+        setShowSearch(false);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [pathname]);
+
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = '/';
   }
 
+  const isAdmin = user && process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const showAdminBack = isAdmin && !pathname.startsWith('/admin');
+  const showCustomerBack = isAdmin && pathname.startsWith('/admin');
+
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+    <div className="sticky top-0 z-50 w-full shadow-sm">
+      {/* Top Announcement Bar */}
+      <div className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+        {user ? (
+          <span>
+            {t('announcement_user' as any, { rate: cashbackRate ?? 5 })}
+          </span>
+        ) : (
+          <span>
+            {t('announcement_guest' as any)}
+          </span>
+        )}
+      </div>
+
+      <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-brand-700 text-lg">
+        <Link href="/" className="flex items-center gap-2 font-bold text-brand-700 text-lg shrink-0">
           📡 {t('nav_tagline')}
         </Link>
+
+        {/* Desktop search bar */}
+        {showSearch && destinations.length > 0 && (
+          <div className="mx-8 hidden max-w-xs flex-1 md:block animate-in fade-in zoom-in-95 duration-200">
+            <HeaderSearch destinations={destinations} />
+          </div>
+        )}
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
@@ -77,9 +259,17 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-              <Link href="/dashboard" className="text-slate-600 hover:text-brand-700 transition-colors">
-                {t('nav_dashboard')}
-              </Link>
+              {showAdminBack && (
+                <Link href="/admin" className="rounded-lg bg-amber-50 px-3 py-1.5 text-amber-800 hover:bg-amber-100 transition-colors font-semibold">
+                  zurück zum Admin Dashboard
+                </Link>
+              )}
+              {showCustomerBack && (
+                <Link href="/dashboard" className="rounded-lg bg-brand-50 px-3 py-1.5 text-brand-700 hover:bg-brand-100 transition-colors font-semibold">
+                  zurück zum Dashboard
+                </Link>
+              )}
+              <DashboardDropdown t={t} />
               <button
                 onClick={handleLogout}
                 className="rounded-lg bg-slate-100 px-4 py-2 text-slate-700 hover:bg-slate-200 transition-colors"
@@ -89,14 +279,11 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/login" className="text-slate-600 hover:text-brand-700 transition-colors">
-                {t('nav_login')}
-              </Link>
               <Link
-                href="/register"
-                className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition-colors"
+                href="/login"
+                className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition-colors font-semibold text-sm"
               >
-                {t('nav_register')}
+                {t('nav_login')}
               </Link>
             </>
           )}
@@ -106,6 +293,19 @@ export function Navbar() {
 
         {/* Mobile: cart + lang/currency + hamburger */}
         <div className="flex items-center gap-1 md:hidden">
+          {showSearch && destinations.length > 0 && (
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className={`rounded-lg p-2 transition-colors ${
+                mobileSearchOpen ? 'bg-slate-100 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-brand-700'
+              }`}
+              aria-label="Search"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          )}
           <CartButton />
           <LocaleCurrencyControls />
           <button
@@ -128,18 +328,47 @@ export function Navbar() {
             <Link href="/topup"   onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
             {user ? (
               <>
-                <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-700">{t('nav_dashboard')}</Link>
+                {showAdminBack && (
+                  <Link href="/admin" onClick={() => setMenu(false)} className="text-amber-800 font-semibold">
+                    zurück zum Admin Dashboard
+                  </Link>
+                )}
+                {showCustomerBack && (
+                  <Link href="/dashboard" onClick={() => setMenu(false)} className="text-brand-700 font-semibold">
+                    zurück zum Dashboard
+                  </Link>
+                )}
+                <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
+                  <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('nav_dashboard')}</span>
+                  <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
+                    📱 {t('nav_my_esims')}
+                  </Link>
+                  <Link href="/dashboard?tab=cash" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
+                    💰 {t('nav_esim_cash' as any) || 'eSIM Cash'}
+                  </Link>
+                </div>
                 <button onClick={handleLogout} className="text-left text-red-600">{t('nav_logout')}</button>
               </>
             ) : (
               <>
-                <Link href="/login"    onClick={() => setMenu(false)} className="text-slate-700">{t('nav_login')}</Link>
-                <Link href="/register" onClick={() => setMenu(false)} className="text-brand-700 font-semibold">{t('nav_register')}</Link>
+                <Link href="/login"    onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
               </>
             )}
           </div>
         </div>
       )}
+
+      {/* Mobile search bar overlay */}
+      {mobileSearchOpen && showSearch && destinations.length > 0 && (
+        <div className="border-t border-slate-100 bg-white px-4 py-2.5 shadow-md md:hidden animate-in slide-in-from-top duration-150">
+          <HeaderSearch 
+            destinations={destinations}
+            placeholder={t('tariffs_search')}
+            onSearchClose={() => setMobileSearchOpen(false)}
+          />
+        </div>
+      )}
     </nav>
+    </div>
   );
 }

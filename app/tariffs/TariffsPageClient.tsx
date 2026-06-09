@@ -5,7 +5,7 @@ import type { Database } from '@/lib/supabase/types';
 import { TariffsGrid }          from '@/components/TariffsGrid';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { useTranslation }        from '@/lib/i18n';
-import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
+import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 type Tab = 'travel' | 'unlimited';
@@ -28,37 +28,42 @@ type Tab = 'travel' | 'unlimited';
 function scoreTariff(
   t: Tariff,
   qLow: string,
-  resolvedCountry: string | null,
-  resolvedRegion: string | null,
+  matchedCountryCodes: Set<string>,
+  matchedRegionCodes: Set<string>,
 ): number {
-  const code   = (t.country_code ?? '').toLowerCase();
+  const code   = (t.country_code ?? '').toUpperCase();
   const name   = (t.country_name ?? '').toLowerCase();
   const region = (t.region       ?? '').toLowerCase();
   const title  = (t.name         ?? '').toLowerCase();
   const pkg    = (t.package_code ?? '').toLowerCase();
-  const locs   = (t.location_codes ?? []).map((c) => c.toLowerCase());
+  const locs   = (t.location_codes ?? []).map((c) => c.toUpperCase());
 
-  const rc = resolvedCountry?.toLowerCase() ?? null;
-  const rr = resolvedRegion?.toLowerCase() ?? null;
+  // ── Strongest: exact country match / alias match ──────────────
+  if (matchedCountryCodes.has(code)) {
+    const exactMatch = Object.entries(COUNTRY_ALIASES).some(([alias, c]) => alias === qLow && c.toUpperCase() === code);
+    return exactMatch ? 100 : 85;
+  }
+  if (code === qLow.toUpperCase()) return 100;
 
-  // ── Strongest: exact country match ────────────────────────────
-  if (rc && code === rc)   return 100; // "Deutschland" → DE tariff
-  if (code === qLow)       return 100; // user typed "DE" / "de" directly
+  // Region match
+  if (matchedRegionCodes.has(code)) {
+    const exactMatch = Object.entries(REGION_ALIASES).some(([alias, c]) => alias === qLow && c.toUpperCase() === code);
+    return exactMatch ? 90 : 80;
+  }
 
   // Country name exact / prefix / substring
   if (name === qLow)       return 95;
-  if (rr && code === rr)   return 90;  // "Europa" → EU region tariff itself
   if (name.startsWith(qLow)) return 80;
   if (name.includes(qLow))   return 70;
 
-  // ── Region / multi-country tariff that COVERS the searched country ──
-  // e.g. searching "Deutschland" also surfaces "Europe eSIM" (location ⊇ DE),
-  // but ranked below the pure Germany tariffs above.
-  if (rc && locs.includes(rc)) return 50;
+  // Region / multi-country tariff that COVERS the searched country
+  for (const c of Array.from(matchedCountryCodes)) {
+    if (locs.includes(c)) return 50;
+  }
 
-  // Region name substring (searching "euro" → "Europe")
+  // Region name substring
   if (region.includes(qLow))   return 40;
-  // Title / package-code substrings (lowest)
+  // Title / package-code substrings
   if (title.includes(qLow))    return 30;
   if (pkg.includes(qLow))      return 10;
 
@@ -73,28 +78,28 @@ function filterTariffs(tariffs: Tariff[], rawQuery: string): Tariff[] {
   const q = rawQuery.trim();
   if (!q) return tariffs;
 
-  const qLow            = q.toLowerCase();
-  let   resolvedCountry = aliasToCode(qLow);   // "deutschland" → "DE"
-  const resolvedRegion  = aliasToRegion(qLow);  // "europa"      → "EU"
+  const qLow = q.toLowerCase();
+
+  // Find all matched country/region codes from aliases
+  const matchedCountryCodes = new Set(aliasesToCodes(qLow).map((c) => c.toUpperCase()));
+  const matchedRegionCodes = new Set(aliasesToRegions(qLow).map((c) => c.toUpperCase()));
 
   // Data-driven fallback: if no alias matched (e.g. English "germany"),
   // derive the ISO code from a single-country tariff whose stored name
-  // matches the query. This makes coverage search work in ANY language —
-  // e.g. "germany" then also surfaces EU tariffs that include DE.
-  if (!resolvedCountry) {
+  // matches or starts with the query.
+  if (matchedCountryCodes.size === 0) {
     for (const t of tariffs) {
       const codes = t.location_codes ?? [];
       const single = codes.length <= 1 && /^[A-Za-z]{2}$/.test(t.country_code ?? '');
-      if (single && (t.country_name ?? '').toLowerCase() === qLow) {
-        resolvedCountry = (t.country_code ?? '').toUpperCase();
-        break;
+      if (single && (t.country_name ?? '').toLowerCase().startsWith(qLow)) {
+        matchedCountryCodes.add((t.country_code ?? '').toUpperCase());
       }
     }
   }
 
   const scored: Array<{ t: Tariff; score: number }> = [];
   for (const t of tariffs) {
-    const score = scoreTariff(t, qLow, resolvedCountry, resolvedRegion);
+    const score = scoreTariff(t, qLow, matchedCountryCodes, matchedRegionCodes);
     if (score > 0) scored.push({ t, score });
   }
 

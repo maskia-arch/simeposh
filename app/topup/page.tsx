@@ -133,7 +133,7 @@ export default function TopUpPage() {
                   <div>
                     <p className="font-semibold text-slate-800 text-sm">{pkg.name}</p>
                     <p className="text-xs text-slate-500">
-                      {formatGb(pkg.data_gb)} · {pkg.validity_days} {t('cfg_days')}
+                      {pkg.data_gb === 0 ? t('card_unlimited') : formatGb(pkg.data_gb)} · {pkg.validity_days} {t('cfg_days')}
                     </p>
                   </div>
                 </div>

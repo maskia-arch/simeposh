@@ -144,6 +144,9 @@ export interface Database {
           esim_status:          string | null;
           esim_status_at:       string | null;
           error_message:        string | null;
+          referred_by_code:     string | null;
+          cashback_earned_eur:  number | null;
+          cashback_applied_eur: number | null;
           created_at:           string;
           updated_at:           string;
         };
@@ -174,6 +177,9 @@ export interface Database {
           esim_status?:         string | null;
           esim_status_at?:      string | null;
           error_message?:       string | null;
+          referred_by_code?:     string | null;
+          cashback_earned_eur?:  number | null;
+          cashback_applied_eur?: number | null;
         };
         Update: {
           user_id?:             string | null;
@@ -202,6 +208,9 @@ export interface Database {
           esim_status?:         string | null;
           esim_status_at?:      string | null;
           error_message?:       string | null;
+          referred_by_code?:     string | null;
+          cashback_earned_eur?:  number | null;
+          cashback_applied_eur?: number | null;
         };
         Relationships: [
           {
@@ -376,6 +385,79 @@ export interface Database {
         Update: {
           status?: string; tx_hash?: string | null;
           confirmations?: number; paid_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      // ── esim_cash_accounts ──────────────────────────────────────────
+      esim_cash_accounts: {
+        Row: {
+          id: string;
+          email: string;
+          user_id: string | null;
+          balance_eur: number;
+          total_spend_eur: number;
+          affiliate_code: string;
+          referred_by_code: string | null;
+          extra_cashback_queue: number;
+          sent_email_3: boolean;
+          sent_email_5: boolean;
+          sent_email_10: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          user_id?: string | null;
+          balance_eur?: number;
+          total_spend_eur?: number;
+          affiliate_code: string;
+          referred_by_code?: string | null;
+          extra_cashback_queue?: number;
+          sent_email_3?: boolean;
+          sent_email_5?: boolean;
+          sent_email_10?: boolean;
+        };
+        Update: {
+          user_id?: string | null;
+          balance_eur?: number;
+          total_spend_eur?: number;
+          affiliate_code?: string;
+          referred_by_code?: string | null;
+          extra_cashback_queue?: number;
+          sent_email_3?: boolean;
+          sent_email_5?: boolean;
+          sent_email_10?: boolean;
+        };
+        Relationships: [];
+      };
+
+      // ── esim_cash_transactions ──────────────────────────────────────
+      esim_cash_transactions: {
+        Row: {
+          id: string;
+          email: string;
+          user_id: string | null;
+          amount: number;
+          type: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          user_id?: string | null;
+          amount: number;
+          type: string;
+          description?: string | null;
+        };
+        Update: {
+          email?: string;
+          user_id?: string | null;
+          amount?: number;
+          type?: string;
+          description?: string | null;
         };
         Relationships: [];
       };

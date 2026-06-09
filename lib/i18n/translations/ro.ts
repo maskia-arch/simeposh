@@ -1,8 +1,8 @@
 const ro = {
-  nav_tariffs:'Planuri', nav_topup:'Reîncărcare', nav_dashboard:'eSIM-urile mele', nav_login:'Autentificare', nav_register:'Înregistrare', nav_logout:'Deconectare', nav_tagline:'eSIM Global',
+  nav_tariffs:'Planuri', nav_topup:'Reîncărcare', nav_dashboard:'Dashboard', nav_login:'Autentificare', nav_register:'Înregistrare', nav_logout:'Deconectare', nav_tagline:'eSIM Global',
   hero_badge:'📡 Disponibil în 150+ țări', hero_title:'Cumpără eSIM – Conectat în toată lumea', hero_title_highlight:'conectat instant în toată lumea', hero_subtitle:'Fără surprize de roaming, fără SIM fizic. Cumpără, scanează codul QR și pleacă.', hero_cta_plans:'Vezi toate planurile', hero_cta_topup:'Reîncarcă eSIM',
   feat_instant:'Livrare instantanee', feat_instant_d:'Cod QR imediat după cumpărare', feat_countries:'150+ țări', feat_countries_d:'Conectat în toată lumea', feat_price:'Prețuri corecte', feat_price_d:'Fără costuri ascunse', feat_secure:'Sigur', feat_secure_d:'Plată criptată',
-  section_popular:'Planuri populare', section_popular_sub:'Cele mai bune oferte – actualizate zilnic', section_view_all:'Vezi tot →',
+  section_popular:'Destinații populare', section_popular_sub:'Top destinații la cele mai bune prețuri de pornire', section_view_all:'Vezi tot →', dest_from_price_prefix:'de la',
   card_data:'Date', card_validity:'Valabilitate', card_days:'z', card_buy:'Cumpără', card_loading:'…', card_unlimited:'Nelimitat', badge_travel:'Travel', badge_eco:'Eco', badge_pro:'Pro',
   type_travel_desc:'Volum fix de date', type_eco_desc:'Nelimitat • FUP 512 kbps', type_pro_desc:'Nelimitat • FUP 1 Mbps',
   how_title:'Cum funcționează', how_1_t:'Alege un plan', how_1_d:'Răsfoiește planuri pentru destinația ta.', how_2_t:'Plătește în siguranță', how_2_d:'Plată rapidă și criptată.', how_3_t:'Scanează codul QR', how_3_d:'Scanează codul în setările telefonului.', how_4_t:'Conectat!', how_4_d:'Instantaneu în rețeaua locală.',
@@ -17,7 +17,12 @@ const ro = {
   order_back:'← eSIM-urile mele', order_title:'Detalii comandă', order_country:'Țară', order_plan:'Plan', order_data:'Date', order_validity:'Valabilitate', order_paid:'Plătit', order_status:'Status', order_activation:'📱 Date de activare', order_scan:'Scanează codul QR', order_iccid:'ICCID', order_smdp:'Adresă SM-DP+', order_code:'Cod de activare', order_apn:'APN', order_topup_btn:'📶 Reîncarcă eSIM', order_new_btn:'Cumpără alt eSIM',
   success_ready:'eSIM gata!', success_pending:'Plată confirmată – se pregătește eSIM-ul…', success_ready_d:'eSIM-ul tău a fost activat. Detaliile au fost trimise prin e-mail.', success_pending_d:'eSIM-ul tău este pregătit. Vei primi un e-mail când va fi gata.', success_order_details:'Detalii comandă', success_esim_data:'📱 Date de activare eSIM', success_scan_hint:'Scanează acest cod în setări', success_guide_title:'📖 Ghid rapid', success_iphone:'<strong>iPhone:</strong> Setări → Date mobile → Adaugă eSIM → Folosește cod QR', success_android:'<strong>Android:</strong> Setări → Rețea → Cartele SIM → Adaugă eSIM', success_step3:'Selectează eSIM pentru date mobile și activează «Roaming date»', success_step4:'Valabilitatea începe la prima utilizare a datelor', success_orders_btn:'Comenzile mele', success_more_btn:'Cumpără mai multe eSIM', success_not_found:'Comanda nu a fost găsită', success_not_found_d:'Comanda ta este în procesare. Verifică e-mailul.', success_home_btn:'Înapoi la pagina principală',
   status_completed:'Activ', status_paid:'Plătit', status_provisioning:'Activare', status_pending:'În așteptare', status_failed:'Eșuat', status_refunded:'Rambursat',
-  footer_nav_title:'Navigare', footer_legal_title:'Legal', footer_browse:'Răsfoiește planuri', footer_topup:'Reîncarcă eSIM', footer_dashboard:'eSIM-urile mele', footer_imprint:'Imprint', footer_privacy:'Politică de confidențialitate', footer_terms:'Termeni', footer_copy:'© {year} eSIM Shop. Toate drepturile rezervate.',
+  footer_nav_title:'Navigare', footer_legal_title:'Legal', footer_browse:'Răsfoieşte planuri', footer_topup:'Reîncarcă eSIM', footer_dashboard:'eSIM-urile mele', footer_imprint:'Imprint', footer_privacy:'Politică de confidențialitate', footer_terms:'Termeni', footer_copy:'© {year} eSIM Shop. Toate drepturile rezervate.',
+  footer_refund:'Politică de rambursare',
+  checkout_agree_prefix:'Am citit şi accept',
+  checkout_agree_link:'Termenii şi Condițiile',
+  checkout_agree_suffix:'.',
+  checkout_agree_error:'Acceptați Termenii şi Condițiile pentru a continua.',
   lang_select:'Limbă',
 } as const;
 export default ro;

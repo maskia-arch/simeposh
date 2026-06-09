@@ -33,3 +33,26 @@ export async function PATCH(
 
   return NextResponse.json({ order: data });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  const auth = await verifyAdminApi();
+  if (!auth.ok) return auth.response;
+
+  const { id } = await params;
+  const db = createServiceClient();
+
+  const { error } = await db
+    .from('orders')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+

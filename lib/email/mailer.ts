@@ -13,6 +13,14 @@ import {
   buildTopUpText,
   type TopUpConfirmedData,
 } from './templates/topup-confirmed';
+import {
+  buildCashbackEarnedHtml,
+  buildCashbackEarnedText,
+  buildGuestMilestoneHtml,
+  buildGuestMilestoneText,
+  type CashbackEarnedData,
+  type GuestMilestoneData,
+} from './templates/cashback-notifications';
 
 function createTransporter() {
   const host   = process.env.SMTP_HOST;
@@ -72,4 +80,36 @@ export async function sendTopUpEmail(data: TopUpConfirmedData & { to: string }):
   });
 
   console.log(`[mailer] Top-up confirmation sent to ${data.to}`);
+}
+
+// ─── Send eSIM Cash Earned notification ───────────────────────
+
+export async function sendCashbackEarnedEmail(data: CashbackEarnedData): Promise<void> {
+  const transporter = createTransporter();
+
+  await transporter.sendMail({
+    from:    fromAddress(),
+    to:      data.to,
+    subject: `💰 eSIM Cash erhalten! +${data.earnedEur.toFixed(2)} € gutgeschrieben`,
+    html:    buildCashbackEarnedHtml(data),
+    text:    buildCashbackEarnedText(data),
+  });
+
+  console.log(`[mailer] Cashback earned email sent to ${data.to}`);
+}
+
+// ─── Send Guest Milestone notification ────────────────────────
+
+export async function sendGuestMilestoneEmail(data: GuestMilestoneData): Promise<void> {
+  const transporter = createTransporter();
+
+  await transporter.sendMail({
+    from:    fromAddress(),
+    to:      data.to,
+    subject: `🎁 Schon ${data.balanceEur.toFixed(2)} € eSIM Cash warten auf dich!`,
+    html:    buildGuestMilestoneHtml(data),
+    text:    buildGuestMilestoneText(data),
+  });
+
+  console.log(`[mailer] Guest milestone reminder sent to ${data.to}`);
 }

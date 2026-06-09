@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CountryFlag } from '@/components/CountryFlag';
 import { useTranslation } from '@/lib/i18n';
 import { displayCountryName, isRegionCode } from '@/lib/tariff-display';
-import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
+import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
 
 export interface Destination {
   code:     string;
@@ -90,8 +90,9 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
   const results = useMemo(() => {
     const qLow = q.trim().toLowerCase();
     if (!qLow) return [];
-    const rc = aliasToCode(qLow);
-    const rr = aliasToRegion(qLow);
+
+    const matchedCountryCodes = new Set(aliasesToCodes(qLow).map((c) => c.toLowerCase()));
+    const matchedRegionCodes = new Set(aliasesToRegions(qLow).map((c) => c.toLowerCase()));
 
     const scored: Array<{ d: Destination; score: number }> = [];
     for (const d of destinations) {
@@ -99,13 +100,27 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
       const name = d.name.toLowerCase();
       const code = d.code.toLowerCase();
       let s = 0;
-      if (rc && code === rc.toLowerCase())      s = 100;
-      else if (rr && code === rr.toLowerCase()) s = 95;
-      else if (code === qLow)                   s = 90;
-      else if (lbl === qLow || name === qLow)   s = 88;
-      else if (lbl.startsWith(qLow) || name.startsWith(qLow)) s = 70;
-      else if (lbl.includes(qLow) || name.includes(qLow))     s = 50;
-      if (s > 0) { if (d.isRegion) s += 2; scored.push({ d, score: s }); }
+
+      if (matchedCountryCodes.has(code)) {
+        const exactMatch = Object.entries(COUNTRY_ALIASES).some(([alias, c]) => alias === qLow && c.toLowerCase() === code);
+        s = exactMatch ? 100 : 85;
+      } else if (matchedRegionCodes.has(code)) {
+        const exactMatch = Object.entries(REGION_ALIASES).some(([alias, c]) => alias === qLow && c.toLowerCase() === code);
+        s = exactMatch ? 95 : 80;
+      } else if (code === qLow) {
+        s = 90;
+      } else if (lbl === qLow || name === qLow) {
+        s = 88;
+      } else if (lbl.startsWith(qLow) || name.startsWith(qLow)) {
+        s = 70;
+      } else if (lbl.includes(qLow) || name.includes(qLow)) {
+        s = 50;
+      }
+
+      if (s > 0) {
+        if (d.isRegion) s += 2;
+        scored.push({ d, score: s });
+      }
     }
     scored.sort((a, b) => (b.score - a.score) || b.d.count - a.d.count);
     return scored.slice(0, 8).map((x) => x.d);

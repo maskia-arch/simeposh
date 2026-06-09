@@ -1,8 +1,8 @@
 const da = {
-  nav_tariffs:'Planer', nav_topup:'Optank', nav_dashboard:'Mine eSIM', nav_login:'Log ind', nav_register:'Tilmeld', nav_logout:'Log ud', nav_tagline:'Globalt eSIM',
+  nav_tariffs:'Planer', nav_topup:'Optank', nav_dashboard:'Dashboard', nav_login:'Log ind', nav_register:'Tilmeld', nav_logout:'Log ud', nav_tagline:'Globalt eSIM',
   hero_badge:'📡 Tilgængeligt i 150+ lande', hero_title:'Køb eSIM – Forbundet verden over', hero_title_highlight:'øjeblikkeligt forbundet verden over', hero_subtitle:'Ingen roaming-chok, intet fysisk SIM. Køb, scan QR-koden og kør.', hero_cta_plans:'Se alle planer', hero_cta_topup:'Optank eSIM',
   feat_instant:'Øjeblikkelig levering', feat_instant_d:'QR-kode straks efter køb', feat_countries:'150+ lande', feat_countries_d:'Forbundet verden over', feat_price:'Fair priser', feat_price_d:'Ingen skjulte gebyrer', feat_secure:'Sikkert', feat_secure_d:'Krypteret betaling',
-  section_popular:'Populære planer', section_popular_sub:'Bedste tilbud – opdateres dagligt', section_view_all:'Se alle →',
+  section_popular:'Populære destinationer', section_popular_sub:'Topdestinationer til de bedste startpriser', section_view_all:'Se alle →', dest_from_price_prefix:'fra',
   card_data:'Data', card_validity:'Gyldighed', card_days:'d', card_buy:'Køb', card_loading:'…', card_unlimited:'Ubegrænset', badge_travel:'Travel', badge_eco:'Eco', badge_pro:'Pro',
   type_travel_desc:'Fast datavolumen', type_eco_desc:'Ubegrænset • FUP 512 kbps', type_pro_desc:'Ubegrænset • FUP 1 Mbps',
   how_title:'Sådan virker det', how_1_t:'Vælg en plan', how_1_d:'Gennemse planer for din destination.', how_2_t:'Betal sikkert', how_2_d:'Hurtig, krypteret betaling.', how_3_t:'Scan QR-koden', how_3_d:'Scan koden i telefonens indstillinger.', how_4_t:'Forbundet!', how_4_d:'Øjeblikkeligt på det lokale netværk.',
@@ -18,6 +18,11 @@ const da = {
   success_ready:'eSIM klar!', success_pending:'Betaling bekræftet – forbereder eSIM…', success_ready_d:'Dit eSIM er aktiveret. Detaljer sendt per e-mail.', success_pending_d:'Dit eSIM forberedes. Du modtager en e-mail, når det er klar.', success_order_details:'Ordredetaljer', success_esim_data:'📱 eSIM Aktiveringsdata', success_scan_hint:'Scan denne kode i dine indstillinger', success_guide_title:'📖 Hurtig guide', success_iphone:'<strong>iPhone:</strong> Indstillinger → Mobildata → Tilføj eSIM → Brug QR-kode', success_android:'<strong>Android:</strong> Indstillinger → Netværk → SIM-kort → Tilføj eSIM', success_step3:'Vælg eSIM til mobildata og aktiver «Dataroaming»', success_step4:'Gyldighed starter med første dataforbrug', success_orders_btn:'Mine ordrer', success_more_btn:'Køb flere eSIM', success_not_found:'Ordre ikke fundet', success_not_found_d:'Din ordre behandles. Tjek din e-mail.', success_home_btn:'Tilbage til startsiden',
   status_completed:'Aktiv', status_paid:'Betalt', status_provisioning:'Aktiverer', status_pending:'Afventer', status_failed:'Mislykkedes', status_refunded:'Refunderet',
   footer_nav_title:'Navigation', footer_legal_title:'Juridisk', footer_browse:'Gennemse planer', footer_topup:'Optank eSIM', footer_dashboard:'Mine eSIM', footer_imprint:'Impressum', footer_privacy:'Privatlivspolitik', footer_terms:'Betingelser', footer_copy:'© {year} eSIM Shop. Alle rettigheder forbeholdes.',
+  footer_refund:'Refusionspolitik',
+  checkout_agree_prefix:'Jeg har læst og accepterer',
+  checkout_agree_link:'Vilkår og betingelser',
+  checkout_agree_suffix:'.',
+  checkout_agree_error:'Accepter vilkårene og betingelserne for at fortsætte.',
   lang_select:'Sprog',
 } as const;
 export default da;

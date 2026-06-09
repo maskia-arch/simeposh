@@ -1,8 +1,8 @@
 const cs = {
-  nav_tariffs:'Plány', nav_topup:'Dobít', nav_dashboard:'Moje eSIM', nav_login:'Přihlásit', nav_register:'Registrovat', nav_logout:'Odhlásit', nav_tagline:'Globální eSIM',
+  nav_tariffs:'Plány', nav_topup:'Dobít', nav_dashboard:'Dashboard', nav_login:'Přihlásit', nav_register:'Registrovat', nav_logout:'Odhlásit', nav_tagline:'Globální eSIM',
   hero_badge:'📡 Dostupné ve 150+ zemích', hero_title:'Koupit eSIM – Připojeni po celém světě', hero_title_highlight:'okamžitě připojeni po celém světě', hero_subtitle:'Žádné roamingové překvapení, žádná fyzická SIM. Koupte, naskenujte QR kód a jeďte.', hero_cta_plans:'Zobrazit všechny plány', hero_cta_topup:'Dobít eSIM',
   feat_instant:'Okamžité doručení', feat_instant_d:'QR kód ihned po nákupu', feat_countries:'150+ zemí', feat_countries_d:'Připojeni celém světě', feat_price:'Férové ceny', feat_price_d:'Žádné skryté poplatky', feat_secure:'Bezpečné', feat_secure_d:'Šifrovaná platba',
-  section_popular:'Oblíbené plány', section_popular_sub:'Nejlepší nabídky – aktualizovány denně', section_view_all:'Zobrazit vše →',
+  section_popular:'Oblíbené destinace', section_popular_sub:'Nejlepší destinace za nejvýhodnější ceny', section_view_all:'Zobrazit vše →', dest_from_price_prefix:'od',
   card_data:'Data', card_validity:'Platnost', card_days:'d', card_buy:'Koupit', card_loading:'…', card_unlimited:'Neomezený', badge_travel:'Travel', badge_eco:'Eco', badge_pro:'Pro',
   type_travel_desc:'Pevný objem dat', type_eco_desc:'Neomezený • FUP 512 kbps', type_pro_desc:'Neomezený • FUP 1 Mbps',
   how_title:'Jak to funguje', how_1_t:'Vyberte plán', how_1_d:'Prohlédněte si plány pro svůj cíl.', how_2_t:'Bezpečně zaplaťte', how_2_d:'Rychlá, šifrovaná platba.', how_3_t:'Naskenujte QR kód', how_3_d:'Naskenujte kód v nastavení telefonu.', how_4_t:'Připojeni!', how_4_d:'Okamžitě na lokální síti.',
@@ -18,6 +18,11 @@ const cs = {
   success_ready:'eSIM připravena!', success_pending:'Platba potvrzena – připravuje se eSIM…', success_ready_d:'Vaše eSIM byla aktivována. Podrobnosti odeslány e-mailem.', success_pending_d:'Vaše eSIM se připravuje. E-mail obdržíte, až bude připravena.', success_order_details:'Podrobnosti objednávky', success_esim_data:'📱 Aktivační údaje eSIM', success_scan_hint:'Naskenujte tento kód v nastavení', success_guide_title:'📖 Rychlý průvodce', success_iphone:'<strong>iPhone:</strong> Nastavení → Mobilní data → Přidat eSIM → Použít QR kód', success_android:'<strong>Android:</strong> Nastavení → Síť → SIM karty → Přidat eSIM', success_step3:'Vyberte eSIM pro mobilní data a povolte «Datový roaming»', success_step4:'Platnost začíná prvním použitím dat', success_orders_btn:'Moje objednávky', success_more_btn:'Koupit další eSIM', success_not_found:'Objednávka nenalezena', success_not_found_d:'Vaše objednávka se zpracovává. Zkontrolujte e-mail.', success_home_btn:'Zpět na úvod',
   status_completed:'Aktivní', status_paid:'Zaplaceno', status_provisioning:'Aktivace', status_pending:'Čeká', status_failed:'Selhalo', status_refunded:'Vráceno',
   footer_nav_title:'Navigace', footer_legal_title:'Právní', footer_browse:'Procházet plány', footer_topup:'Dobít eSIM', footer_dashboard:'Moje eSIM', footer_imprint:'Impressum', footer_privacy:'Zásady ochrany soukromí', footer_terms:'Podmínky', footer_copy:'© {year} eSIM Shop. Všechna práva vyhrazena.',
+  footer_refund:'Zásady vrácení',
+  checkout_agree_prefix:'Přečtml/a jsem a souhlasím s',
+  checkout_agree_link:'Obchodními podmínkami',
+  checkout_agree_suffix:'.',
+  checkout_agree_error:'Pro pokračování přijměte obchodní podmínky.',
   lang_select:'Jazyk',
 } as const;
 export default cs;

@@ -5,17 +5,112 @@ import type { Destination } from '@/components/HeroSearch';
 
 export const revalidate = 600;
 
-async function getFeaturedTariffs() {
+async function getFeaturedDestinations() {
   const supabase = await createClient();
-  // Homepage shows only Travel tariffs (fixed data) as teasers
-  const { data } = await supabase
-    .from('tariffs')
-    .select('*')
-    .eq('is_active', true)
-    .eq('tariff_type', 'travel')
-    .order('sale_price_eur', { ascending: true })
-    .limit(8);
-  return data ?? [];
+
+  // 1. Fetch completed/paid/provisioning orders from the last 90 days to determine popularity
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('tariff_id')
+    .in('status', ['completed', 'paid', 'provisioning'])
+    .gte('created_at', ninetyDaysAgo) as any;
+
+  // 2. Fetch all active travel tariffs (using range paging to be safe against PostgREST limits)
+  const PAGE = 1000;
+  const allTariffs: any[] = [];
+  for (let from = 0; from < 100_000; from += PAGE) {
+    const { data } = await supabase
+      .from('tariffs')
+      .select('id, country_code, country_name, flag_emoji, sale_price_eur, location_codes, region')
+      .eq('is_active', true)
+      .eq('tariff_type', 'travel')
+      .range(from, from + PAGE - 1) as any;
+    if (!data || data.length === 0) break;
+    allTariffs.push(...data);
+    if (data.length < PAGE) break;
+  }
+
+  // 3. Group by country code to calculate min_price_eur and map tariff_id -> country_code
+  const countryMap = new Map<string, { country_code: string; country_name: string; flag_emoji: string | null; min_price_eur: number; location_codes: string[] | null; region: string | null }>();
+  const tariffToCountry = new Map<string, string>();
+
+  for (const t of allTariffs) {
+    if (!t.country_code) continue;
+    tariffToCountry.set(t.id, t.country_code);
+
+    const price = t.sale_price_eur ?? 999;
+    const existing = countryMap.get(t.country_code);
+    if (existing) {
+      if (price < existing.min_price_eur) {
+        existing.min_price_eur = price;
+      }
+    } else {
+      countryMap.set(t.country_code, {
+        country_code: t.country_code,
+        country_name: t.country_name,
+        flag_emoji: t.flag_emoji,
+        min_price_eur: price,
+        location_codes: t.location_codes,
+        region: t.region,
+      });
+    }
+  }
+
+  // 4. Count occurrences of each country from sales
+  const countrySales: Record<string, number> = {};
+  if (orders) {
+    for (const o of orders) {
+      if (o.tariff_id) {
+        const code = tariffToCountry.get(o.tariff_id);
+        if (code) {
+          countrySales[code] = (countrySales[code] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  // 5. Sort countries by sales count descending
+  const sortedCountryCodes = Object.keys(countrySales).sort((a, b) => countrySales[b] - countrySales[a]);
+  const popularCountryCodes = sortedCountryCodes.filter((code) => countryMap.has(code));
+
+  // 6. Build the popular list and fill with DACH-first fallbacks
+  const featuredDestinations: any[] = [];
+  const addedCodes = new Set<string>();
+
+  for (const code of popularCountryCodes) {
+    const dest = countryMap.get(code);
+    if (dest) {
+      featuredDestinations.push(dest);
+      addedCodes.add(code);
+    }
+  }
+
+  if (featuredDestinations.length < 8) {
+    const fallbackCodes = ['DE', 'AT', 'CH', 'TR', 'IT', 'ES', 'FR', 'GB', 'US', 'TH', 'EG', 'GR'];
+    for (const code of fallbackCodes) {
+      if (!addedCodes.has(code)) {
+        const dest = countryMap.get(code);
+        if (dest) {
+          featuredDestinations.push(dest);
+          addedCodes.add(code);
+          if (featuredDestinations.length >= 8) break;
+        }
+      }
+    }
+  }
+
+  if (featuredDestinations.length < 8) {
+    for (const dest of Array.from(countryMap.values())) {
+      if (!addedCodes.has(dest.country_code)) {
+        featuredDestinations.push(dest);
+        addedCodes.add(dest.country_code);
+        if (featuredDestinations.length >= 8) break;
+      }
+    }
+  }
+
+  return featuredDestinations.slice(0, 8);
 }
 
 /**
@@ -55,9 +150,9 @@ async function getDestinations(): Promise<Destination[]> {
 }
 
 export default async function HomePage() {
-  const [tariffs, destinations] = await Promise.all([
-    getFeaturedTariffs(),
+  const [popularDestinations, destinations] = await Promise.all([
+    getFeaturedDestinations(),
     getDestinations(),
   ]);
-  return <HomePageClient tariffs={tariffs} destinations={destinations} />;
+  return <HomePageClient popularDestinations={popularDestinations} destinations={destinations} />;
 }

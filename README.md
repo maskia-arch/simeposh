@@ -30,11 +30,11 @@ npm run dev
 ```
 app/
 ├── api/
-│   ├── checkout/          POST – Sellauth Checkout-Session erstellen
 │   ├── cron/sync-tariffs/ GET  – Täglicher Tarif-Sync von esimaccess
+│   ├── crypto/            POST – Krypto-Checkout & Sessions
 │   ├── health/            GET  – Health-Check für Render
 │   ├── topup/packages/    GET  – Top-Up Pakete für eine ICCID
-│   └── webhooks/sellauth/ POST – Sellauth Zahlungsbestätigung (HMAC gesichert)
+│   └── order/             GET  – Bestellstatus-API
 ├── auth/callback/         Supabase E-Mail-Bestätigung
 ├── dashboard/             Kunden-Dashboard (geschützt)
 ├── login/ register/       Auth-Seiten
@@ -44,7 +44,7 @@ app/
 
 lib/
 ├── esimaccess/            esimaccess API-Client + Typen
-├── sellauth/              Sellauth API-Client + Webhook-Verifikation
+├── crypto/                Blockchain-Watcher (BTC, LTC, ETH, SOL)
 ├── email/                 Nodemailer + HTML-E-Mail-Templates
 ├── supabase/              Client/Server/Service-Role Supabase-Clients
 └── pricing.ts             Preisformel: EK_USD × 2 × Rate → x.x9 runden
@@ -84,9 +84,6 @@ Alle erforderlichen Variablen sind in `.env.example` dokumentiert. In der Produk
 | `SUPABASE_SERVICE_ROLE_KEY` | Service-Role-Key (nur Server!) |
 | `ESIMACCESS_API_URL` | esimaccess API Basis-URL |
 | `ESIMACCESS_ACCESS_CODE` | esimaccess Access Code |
-| `SELLAUTH_API_KEY` | Sellauth API-Key |
-| `SELLAUTH_SHOP_ID` | Sellauth Shop-ID |
-| `SELLAUTH_WEBHOOK_SECRET` | Webhook-Secret für HMAC-Verifikation |
 | `SMTP_*` | SMTP-Konfiguration für E-Mails |
 | `CRON_SECRET` | Schützt den Cron-Endpoint vor unbefugtem Zugriff |
 
@@ -94,8 +91,8 @@ Alle erforderlichen Variablen sind in `.env.example` dokumentiert. In der Produk
 
 ## Sicherheitsmerkmale
 
-- **Webhook-Signatur**: Alle eingehenden Sellauth-Webhooks werden mit HMAC-SHA256 + `timingSafeEqual` verifiziert
+- **Crypto Watcher**: Eingehende Blockchain-Zahlungen werden via On-Chain-Watcher sicher und automatisiert mit den ausstehenden Bestellungen abgeglichen.
 - **RLS**: Supabase Row-Level Security – Kunden sehen nur ihre eigenen Bestellungen
 - **Keine Hardcoded Secrets**: Alle Credentials laufen über `process.env`
-- **Service Role**: Wird nur in serverseitigen Contexts (Webhook, Cron) verwendet
+- **Service Role**: Wird nur in serverseitigen Contexts (Watcher, Cron) verwendet
 - **Security Headers**: X-Frame-Options, CSP, Referrer-Policy in `next.config.ts`

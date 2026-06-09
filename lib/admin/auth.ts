@@ -21,7 +21,7 @@ export async function requireAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login?redirect=/admin');
+    redirect('/');
   }
 
   if (user.email !== adminEmail) {
@@ -53,7 +53,7 @@ export async function verifyAdminApi() {
   if (!user || user.email !== adminEmail) {
     return {
       ok: false as const,
-      response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+      response: NextResponse.json({ error: 'Not Found' }, { status: 404 }),
     };
   }
 

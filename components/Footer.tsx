@@ -28,9 +28,9 @@ export function Footer() {
           <div>
             <p className="font-semibold text-slate-800 mb-3">{t('footer_legal_title')}</p>
             <ul className="space-y-2 text-sm text-slate-500">
-              <li><Link href="/impressum"   className="hover:text-brand-700 transition-colors">{t('footer_imprint')}</Link></li>
-              <li><Link href="/datenschutz" className="hover:text-brand-700 transition-colors">{t('footer_privacy')}</Link></li>
               <li><Link href="/agb"         className="hover:text-brand-700 transition-colors">{t('footer_terms')}</Link></li>
+              <li><Link href="/datenschutz" className="hover:text-brand-700 transition-colors">{t('footer_privacy')}</Link></li>
+              <li><Link href="/refund-policy" className="hover:text-brand-700 transition-colors">{t('footer_refund')}</Link></li>
             </ul>
           </div>
         </div>

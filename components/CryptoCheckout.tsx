@@ -32,7 +32,13 @@ const STR: Record<string, Record<string, string>> = {
   exact_warn:   { en: 'The amount must match to the last digit — it is your payment ID.', de: 'Der Betrag muss bis zur letzten Stelle stimmen — er ist deine Zahlungs-ID.' },
   open_wallet:  { en: 'Open in wallet', de: 'In Wallet öffnen' },
   new_checkout: { en: 'New checkout', de: 'Neuer Checkout' },
+  cancel_btn:   { en: 'Cancel Payment', de: 'Zahlung abbrechen' },
+  confirm_cancel: { en: 'Are you sure you want to cancel this checkout? Your cart will be preserved.', de: 'Möchtest du diesen Checkout wirklich abbrechen? Dein Warenkorb bleibt erhalten.' },
+  i_paid_btn:   { en: 'I have paid', de: 'Ich habe bezahlt' },
+  checking_payment: { en: 'Checking payment…', de: 'Zahlung wird geprüft…' },
+  no_payment_yet: { en: 'No transaction detected yet. Please ensure you sent the exact amount.', de: 'Noch keine Transaktion erkannt. Bitte stelle sicher, dass du den genauen Betrag gesendet hast.' },
 };
+
 
 function fmtTime(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -68,6 +74,11 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
   const [remaining, setRemaining] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [cancelling, setCancelling] = useState(false);
+  const [verifying, setVerifying]   = useState(false);
+  const [verifyMsg, setVerifyMsg]   = useState('');
+  const [verifyMsgType, setVerifyMsgType] = useState<'success' | 'error' | ''>('');
+
   const poll = useCallback(async () => {
     try {
       const res = await fetch(`/api/crypto/session/${sessionId}`, { cache: 'no-store' });
@@ -84,6 +95,54 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
       }
     } catch { /* keep polling */ }
   }, [sessionId]);
+
+  const handleCancel = async () => {
+    if (!confirm(s('confirm_cancel'))) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
+      if (res.ok) {
+        window.location.href = '/cart';
+      } else {
+        alert('Fehler beim Abbrechen.');
+        setCancelling(false);
+      }
+    } catch {
+      alert('Fehler beim Abbrechen.');
+      setCancelling(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setVerifyMsg('');
+    setVerifyMsgType('');
+    try {
+      const res = await fetch(`/api/crypto/session/${sessionId}`, { method: 'POST' });
+      const data = await res.json() as SessionState;
+      if (res.ok && data) {
+        setSess(data);
+        if (data.status === 'paid' || data.status === 'detected') {
+          setVerifyMsgType('success');
+          if (data.status === 'paid') {
+            if (pollRef.current) clearInterval(pollRef.current);
+            window.location.href = data.ref ? `/order?ref=${data.ref}` : '/dashboard';
+          }
+        } else {
+          setVerifyMsgType('error');
+          setVerifyMsg(s('no_payment_yet'));
+        }
+      } else {
+        setVerifyMsgType('error');
+        setVerifyMsg(s('no_payment_yet'));
+      }
+    } catch {
+      setVerifyMsgType('error');
+      setVerifyMsg(s('no_payment_yet'));
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   useEffect(() => {
     poll();
@@ -188,6 +247,42 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
             </p>
           )}
         </div>
+
+        {/* Action Buttons */}
+        <div className="mt-6 space-y-2">
+          <button
+            onClick={handleVerify}
+            disabled={verifying || cancelling}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 text-sm font-bold text-white hover:bg-brand-700 active:scale-[0.99] disabled:opacity-60 transition-all shadow-md"
+          >
+            {verifying ? (
+              <>
+                <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+                </svg>
+                {s('checking_payment')}
+              </>
+            ) : (
+              s('i_paid_btn')
+            )}
+          </button>
+
+          <button
+            onClick={handleCancel}
+            disabled={verifying || cancelling}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 transition-colors"
+          >
+            {cancelling ? '...' : s('cancel_btn')}
+          </button>
+        </div>
+
+        {/* Verification Messages */}
+        {verifyMsg && (
+          <div className={`mt-4 rounded-xl px-4 py-3 text-xs font-medium ${verifyMsgType === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
+            {verifyMsg}
+          </div>
+        )}
       </div>
     </div>
   );

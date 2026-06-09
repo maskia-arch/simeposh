@@ -1,18 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import type { Database } from '@/lib/supabase/types';
-import { TariffsGrid } from '@/components/TariffsGrid';
 import { TopUpTeaser } from '@/components/TopUpTeaser';
 import { HeroSearch, type Destination } from '@/components/HeroSearch';
 import { useTranslation } from '@/lib/i18n';
+import { CountryFlag } from '@/components/CountryFlag';
+import { Price } from '@/components/Price';
+import { displayCountryName } from '@/lib/tariff-display';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+interface PopularDestination {
+  country_code: string;
+  country_name: string;
+  flag_emoji: string | null;
+  min_price_eur: number;
+  location_codes: string[] | null;
+  region: string | null;
+}
 
 const STEP_ICONS = ['🔍', '💳', '📷', '🌐'];
 
-export function HomePageClient({ tariffs, destinations }: { tariffs: Tariff[]; destinations: Destination[] }) {
-  const { t } = useTranslation();
+export function HomePageClient({ popularDestinations, destinations }: { popularDestinations: PopularDestination[]; destinations: Destination[] }) {
+  const { t, locale } = useTranslation();
 
   const features = [
     { icon: '⚡', label: t('feat_instant'),   desc: t('feat_instant_d')  },
@@ -81,7 +89,7 @@ export function HomePageClient({ tariffs, destinations }: { tariffs: Tariff[]; d
         </div>
       </section>
 
-      {/* Featured tariffs */}
+      {/* Popular Destinations */}
       <section className="mx-auto max-w-6xl px-4 py-14">
         <div className="mb-8 flex items-end justify-between">
           <div>
@@ -95,7 +103,45 @@ export function HomePageClient({ tariffs, destinations }: { tariffs: Tariff[]; d
             {t('section_view_all')}
           </Link>
         </div>
-        <TariffsGrid tariffs={tariffs} />
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+          {popularDestinations.map((dest) => {
+            const countryLabel = displayCountryName(dest, locale);
+            return (
+              <Link
+                key={dest.country_code}
+                href={`/tariffs?q=${encodeURIComponent(countryLabel)}`}
+                className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-1"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-brand-50 transition-colors duration-300 overflow-hidden border border-slate-100">
+                  <CountryFlag
+                    countryCode={dest.country_code}
+                    countryName={countryLabel}
+                    size={36}
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-800 group-hover:text-brand-700 transition-colors truncate text-sm sm:text-base">
+                    {countryLabel}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
+                    {t('dest_from_price_prefix')}{' '}
+                    <Price
+                      eur={dest.min_price_eur}
+                      className="font-bold text-brand-600"
+                    />
+                  </p>
+                </div>
+                <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 group-hover:bg-brand-600 text-slate-400 group-hover:text-white transition-all duration-300">
+                  <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       {/* Top-Up teaser */}

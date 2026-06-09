@@ -8,6 +8,9 @@ import { claimGuestOrders }    from '@/lib/customers';
 import { queryEsimLifecycle, type EsimLifecycle } from '@/lib/esimaccess/client';
 import { getServerT, getServerLocale, type ServerT } from '@/lib/i18n/server';
 import type { TranslationKeys } from '@/lib/i18n/translations/en';
+import { resolveEsimCashAccount } from '@/lib/cashback';
+import EsimCashDashboard from '@/components/EsimCashDashboard';
+import { PendingOrderActions } from '@/components/PendingOrderActions';
 
 export const metadata: Metadata = { title: 'Mein Bereich' };
 export const dynamic = 'force-dynamic';
@@ -21,7 +24,11 @@ const LIFECYCLE_META: Record<EsimLifecycle, { key: TranslationKeys | null; cls: 
   unknown: { key: null,          cls: 'bg-slate-100 text-slate-400' },
 };
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams?: { tab?: string };
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -29,8 +36,29 @@ export default async function DashboardPage() {
   const t = getServerT(await getServerLocale());
   const service = createServiceClient();
 
-  // Claim any guest orders made with this email before registering.
-  if (user.email) await claimGuestOrders(service, user.id, user.email);
+  // Claim any guest orders & cash accounts made with this email before registering.
+  if (user.email) {
+    await claimGuestOrders(service, user.id, user.email);
+  }
+
+  // Resolve or create user's eSIM Cash account automatically.
+  let cashAccount = null;
+  let cashTransactions: any[] = [];
+  if (user.email) {
+    try {
+      cashAccount = await resolveEsimCashAccount(service, user.email, user.id);
+      
+      const { data: txs } = await service
+        .from('esim_cash_transactions')
+        .select('*')
+        .eq('email', user.email.trim().toLowerCase())
+        .order('created_at', { ascending: false })
+        .limit(50);
+      cashTransactions = txs ?? [];
+    } catch (err) {
+      console.error('[dashboard] Failed to resolve eSIM Cash account:', err);
+    }
+  }
 
   // Fetch the user's orders.
   const { data: orders } = await service
@@ -41,6 +69,14 @@ export default async function DashboardPage() {
     .limit(100);
 
   const orderList = orders ?? [];
+
+  // Fetch pending crypto sessions for the user
+  const { data: sessions } = await service
+    .from('crypto_sessions')
+    .select('id, order_ids, status')
+    .eq('customer_email', user.email || '')
+    .eq('status', 'pending');
+  const activeSessions = sessions ?? [];
 
   // ── Refresh eSIM lifecycle status from esimaccess (rate-limited) ──
   const now = Date.now();
@@ -62,6 +98,8 @@ export default async function DashboardPage() {
 
   const completed = orderList.filter((o) => o.status === 'completed');
   const pending   = orderList.filter((o) => ['pending', 'paid', 'provisioning'].includes(o.status));
+
+  const activeTab = searchParams?.tab === 'cash' ? 'cash' : 'esims';
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
@@ -88,39 +126,84 @@ export default async function DashboardPage() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
           <p className="text-2xl font-bold text-slate-700">
-            {formatEur(orderList.reduce((s, o) => s + (o.amount_eur ?? 0), 0))}
+            {formatEur(completed.reduce((s, o) => s + (o.amount_eur ?? 0), 0))}
           </p>
           <p className="text-xs text-slate-500 mt-1">{t('dash_total')}</p>
         </div>
       </div>
 
-      {/* Pending */}
-      {pending.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-semibold text-slate-800 mb-3">{t('dash_pending')}</h2>
-          <div className="space-y-3">
-            {pending.map((order) => <OrderRow key={order.id} order={order as OrderType} t={t} />)}
-          </div>
+      {/* Tab Switcher */}
+      <div className="mb-8 border-b border-slate-200">
+        <div className="flex gap-6 -mb-px">
+          <Link
+            href="/dashboard"
+            className={`pb-4 text-sm font-semibold border-b-2 transition-all ${
+              activeTab === 'esims'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            {t('dash_my_esims')}
+          </Link>
+          <Link
+            href="/dashboard?tab=cash"
+            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'cash'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <span>💰</span>
+            <span>{t('dash_tab_cash' as any) || 'eSIM Cash'}</span>
+          </Link>
         </div>
-      )}
-
-      {/* eSIMs */}
-      <div>
-        <h2 className="font-semibold text-slate-800 mb-3">{t('dash_my_esims')}</h2>
-        {orderList.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-slate-400">
-            <p className="text-4xl mb-3">📡</p>
-            <p className="font-medium">{t('dash_empty')}</p>
-            <Link href="/tariffs" className="mt-3 inline-block text-sm font-medium text-brand-600 hover:text-brand-800">
-              {t('dash_empty_cta')}
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {completed.map((order) => <OrderRow key={order.id} order={order as OrderType} t={t} showEsim />)}
-          </div>
-        )}
       </div>
+
+      {activeTab === 'esims' ? (
+        <>
+          {/* Pending */}
+          {pending.length > 0 && (
+            <div className="mb-6">
+              <h2 className="font-semibold text-slate-800 mb-3">{t('dash_pending')}</h2>
+              <div className="space-y-3">
+                {pending.map((order) => {
+                  const session = activeSessions.find((s) => s.order_ids?.includes(order.id));
+                  return (
+                    <OrderRow
+                      key={order.id}
+                      order={order as OrderType}
+                      t={t}
+                      sessionId={session?.id}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* eSIMs */}
+          <div>
+            <h2 className="font-semibold text-slate-800 mb-3">{t('dash_my_esims')}</h2>
+            {orderList.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-slate-400">
+                <p className="text-4xl mb-3">📡</p>
+                <p className="font-medium">{t('dash_empty')}</p>
+                <Link href="/tariffs" className="mt-3 inline-block text-sm font-medium text-brand-600 hover:text-brand-800">
+                  {t('dash_empty_cta')}
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {completed.map((order) => <OrderRow key={order.id} order={order as OrderType} t={t} showEsim />)}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        cashAccount && (
+          <EsimCashDashboard account={cashAccount} transactions={cashTransactions} />
+        )
+      )}
     </div>
   );
 }
@@ -160,7 +243,7 @@ function statusBadge(status: string, t: ServerT) {
   );
 }
 
-function OrderRow({ order, t, showEsim }: { order: OrderType; t: ServerT; showEsim?: boolean }) {
+function OrderRow({ order, t, showEsim, sessionId }: { order: OrderType; t: ServerT; showEsim?: boolean; sessionId?: string }) {
   const tariff = order.tariffs;
   const isTravel = (tariff?.tariff_type ?? 'travel') === 'travel';
   const lifecycle = (order.esim_status as EsimLifecycle | null) ?? 'unknown';
@@ -213,6 +296,12 @@ function OrderRow({ order, t, showEsim }: { order: OrderType; t: ServerT; showEs
               </Link>
             )}
           </div>
+        </div>
+      )}
+
+      {sessionId && (
+        <div className="border-t border-slate-100 px-4 pb-4">
+          <PendingOrderActions sessionId={sessionId} />
         </div>
       )}
     </div>

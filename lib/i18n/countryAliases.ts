@@ -214,11 +214,46 @@ export const REGION_ALIASES: Record<string, string> = {
 };
 
 /**
+ * Given a search query, return all ISO country codes whose aliases match (prefix or substring).
+ */
+export function aliasesToCodes(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const codes = new Set<string>();
+  for (const [alias, code] of Object.entries(COUNTRY_ALIASES)) {
+    if (alias.startsWith(q) || alias.includes(q)) {
+      codes.add(code.toUpperCase());
+    }
+  }
+  return Array.from(codes);
+}
+
+/**
+ * Given a search query, return all virtual region codes whose aliases match (prefix or substring).
+ */
+export function aliasesToRegions(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const regions = new Set<string>();
+  for (const [alias, code] of Object.entries(REGION_ALIASES)) {
+    if (alias.startsWith(q) || alias.includes(q)) {
+      regions.add(code.toUpperCase());
+    }
+  }
+  return Array.from(regions);
+}
+
+/**
  * Given a search query, return the ISO country code it maps to (or null).
  * Handles case-insensitive matching.
  */
 export function aliasToCode(query: string): string | null {
-  return COUNTRY_ALIASES[query.trim().toLowerCase()] ?? null;
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  // Prefer exact match first
+  if (COUNTRY_ALIASES[q]) return COUNTRY_ALIASES[q];
+  const list = aliasesToCodes(query);
+  return list.length > 0 ? list[0] : null;
 }
 
 /**
@@ -226,5 +261,10 @@ export function aliasToCode(query: string): string | null {
  * E.g. "Europa" → "EU", "Asien" → "AS".
  */
 export function aliasToRegion(query: string): string | null {
-  return REGION_ALIASES[query.trim().toLowerCase()] ?? null;
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  // Prefer exact match first
+  if (REGION_ALIASES[q]) return REGION_ALIASES[q];
+  const list = aliasesToRegions(query);
+  return list.length > 0 ? list[0] : null;
 }
