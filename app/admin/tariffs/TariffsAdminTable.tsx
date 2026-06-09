@@ -13,7 +13,8 @@ interface Tariff {
   sale_price_eur:     number;
   ek_price_usd:       number;
   is_active:          boolean;
-  is_top_up_eligible: boolean;
+  is_top_up_eligible?: boolean;
+  tariff_type?:       string | null;
   last_synced_at:     string;
   package_code:       string;
 }
@@ -49,24 +50,6 @@ export function TariffsAdminTable({ tariffs: initial }: { tariffs: Tariff[] }) {
       if (res.ok) {
         setTariffs((prev) =>
           prev.map((t) => t.id === id ? { ...t, is_active: !current } : t)
-        );
-      }
-    } finally {
-      setToggling(null);
-    }
-  }
-
-  async function toggleTopUp(id: string, current: boolean) {
-    setToggling(id + '-topup');
-    try {
-      const res = await fetch(`/api/admin/tariffs/${id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ is_top_up_eligible: !current }),
-      });
-      if (res.ok) {
-        setTariffs((prev) =>
-          prev.map((t) => t.id === id ? { ...t, is_top_up_eligible: !current } : t)
         );
       }
     } finally {
@@ -115,7 +98,7 @@ export function TariffsAdminTable({ tariffs: initial }: { tariffs: Tariff[] }) {
               <th className="px-4 py-3 text-right">EK (USD)</th>
               <th className="px-4 py-3 text-right">VK (EUR)</th>
               <th className="px-4 py-3 text-center">Aktiv</th>
-              <th className="px-4 py-3 text-center">Top-Up</th>
+              <th className="px-4 py-3 text-center">Aufladbar</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -150,20 +133,15 @@ export function TariffsAdminTable({ tariffs: initial }: { tariffs: Tariff[] }) {
                   </button>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <button
-                    onClick={() => toggleTopUp(t.id, t.is_top_up_eligible)}
-                    disabled={toggling === t.id + '-topup'}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${
-                      t.is_top_up_eligible ? 'bg-green-500' : 'bg-slate-300'
-                    }`}
-                    title={t.is_top_up_eligible ? 'Top-Up deaktivieren' : 'Top-Up aktivieren'}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                        t.is_top_up_eligible ? 'translate-x-4' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
+                  {(t.tariff_type ?? 'travel') === 'travel' ? (
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      ✓ Ja
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                      –
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

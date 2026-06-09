@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard', '/admin'];
@@ -32,6 +33,25 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // ── Auto-detect & persist the visitor's language on first visit ──
+  // Respects a manual choice (LanguageSwitcher writes the same cookie).
+  if (!request.cookies.get('locale')) {
+    const geo = (request as { geo?: { country?: string } }).geo?.country
+      ?? countryFromHeaders((n) => request.headers.get(n));
+    const locale = detectLocale({
+      country:        geo,
+      acceptLanguage: request.headers.get('accept-language'),
+    });
+    // Make it visible to THIS request's SSR render (no first-paint flash)…
+    request.cookies.set('locale', locale);
+    // …and persist it in the browser for subsequent visits.
+    supabaseResponse.cookies.set('locale', locale, {
+      path:     '/',
+      maxAge:   60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
+  }
 
   const pathname = request.nextUrl.pathname;
 

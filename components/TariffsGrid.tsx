@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { TariffCard }        from './TariffCard';
 import { CheckoutModal }     from './CheckoutModal';
 import { TariffDetailModal } from './TariffDetailModal';
+import { useTranslation }    from '@/lib/i18n';
 import type { Database }     from '@/lib/supabase/types';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
 export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
+  const { t } = useTranslation();
   const [checkout, setCheckout] = useState<Tariff | null>(null);
   const [detail,   setDetail]   = useState<Tariff | null>(null);
 
@@ -16,8 +18,8 @@ export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-slate-400">
         <p className="text-4xl mb-3">📡</p>
-        <p className="font-medium">Keine Tarife gefunden.</p>
-        <p className="text-sm mt-1">Starte den Sync unter Admin → Produkt-Sync.</p>
+        <p className="font-medium">{t('tariffs_empty')}</p>
+        <p className="text-sm mt-1">{t('tariffs_empty_sub')}</p>
       </div>
     );
   }

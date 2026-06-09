@@ -49,6 +49,11 @@ export interface EsimAccessPackage {
   operatorList?:  OperatorInfo[];
   /** Alternative field name used by some API versions */
   networkList?:   OperatorInfo[];
+  /** Newer API: per-location coverage with nested operator lists */
+  locationNetworkList?: Array<{
+    locationName?: string;
+    operatorList?: OperatorInfo[];
+  }>;
   /** Supporting network types summary e.g. "4G/LTE" */
   supportedNetworkTypes?: string;
 }
@@ -73,13 +78,15 @@ export interface EsimAccessListResponse {
 
 export interface EsimDetail {
   iccid:       string;
-  /** Full LPA string: LPA:1:<smdpAddress>$<matchingId> */
+  /** Full LPA string: LPA:1$<smdpAddress>$<matchingId> */
   lpaCode:     string;
   smdpAddress: string;
   matchingId:  string;
   qrCodeUrl:   string;
   apn:         string;
   msisdn:      string;
+  /** esimaccess universal one-click install link (shareable). */
+  shortUrl?:   string;
 }
 
 export interface EsimAccessAllocateResponse {

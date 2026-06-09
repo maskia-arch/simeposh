@@ -137,6 +137,12 @@ export interface Database {
           smdp_address:         string | null;
           apn:                  string | null;
           top_up_iccid:         string | null;
+          period_num:           number | null;
+          sellauth_product_ref: string | null;
+          short_url:            string | null;
+          checkout_ref:         string | null;
+          esim_status:          string | null;
+          esim_status_at:       string | null;
           error_message:        string | null;
           created_at:           string;
           updated_at:           string;
@@ -161,6 +167,12 @@ export interface Database {
           smdp_address?:        string | null;
           apn?:                 string | null;
           top_up_iccid?:        string | null;
+          period_num?:          number | null;
+          sellauth_product_ref?: string | null;
+          short_url?:           string | null;
+          checkout_ref?:        string | null;
+          esim_status?:         string | null;
+          esim_status_at?:      string | null;
           error_message?:       string | null;
         };
         Update: {
@@ -183,6 +195,12 @@ export interface Database {
           smdp_address?:        string | null;
           apn?:                 string | null;
           top_up_iccid?:        string | null;
+          period_num?:          number | null;
+          sellauth_product_ref?: string | null;
+          short_url?:           string | null;
+          checkout_ref?:        string | null;
+          esim_status?:         string | null;
+          esim_status_at?:      string | null;
           error_message?:       string | null;
         };
         Relationships: [
@@ -305,6 +323,61 @@ export interface Database {
             referencedColumns: ['id'];
           },
         ];
+      };
+
+      // ── crypto_coins ────────────────────────────────────────────────
+      crypto_coins: {
+        Row: {
+          code: string; name: string; enabled: boolean;
+          surcharge_pct: number; surcharge_fixed_eur: number;
+          confirmations: number; decimals: number;
+          coingecko_id: string; uri_scheme: string; chain: string;
+          sort_order: number; updated_at: string;
+        };
+        Insert: {
+          code: string; name: string; enabled?: boolean;
+          surcharge_pct?: number; surcharge_fixed_eur?: number;
+          confirmations?: number; decimals?: number;
+          coingecko_id: string; uri_scheme: string; chain: string;
+          sort_order?: number;
+        };
+        Update: {
+          name?: string; enabled?: boolean;
+          surcharge_pct?: number; surcharge_fixed_eur?: number;
+          confirmations?: number; decimals?: number;
+          coingecko_id?: string; uri_scheme?: string; chain?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+
+      // ── crypto_sessions ─────────────────────────────────────────────
+      crypto_sessions: {
+        Row: {
+          id: string; order_ids: string[]; customer_email: string;
+          coin: string; wallet_address: string;
+          base_eur: number; amount_eur: number;
+          surcharge_pct: number; surcharge_fixed_eur: number;
+          rate_eur: number; slot_id: number; crypto_amount: number;
+          confirmations_required: number; confirmations: number;
+          status: string; tx_hash: string | null;
+          created_at: string; expires_at: string; paid_at: string | null;
+        };
+        Insert: {
+          order_ids: string[]; customer_email: string;
+          coin: string; wallet_address: string;
+          base_eur: number; amount_eur: number;
+          surcharge_pct?: number; surcharge_fixed_eur?: number;
+          rate_eur: number; slot_id: number; crypto_amount: number;
+          confirmations_required?: number; confirmations?: number;
+          status?: string; tx_hash?: string | null;
+          expires_at: string; paid_at?: string | null;
+        };
+        Update: {
+          status?: string; tx_hash?: string | null;
+          confirmations?: number; paid_at?: string | null;
+        };
+        Relationships: [];
       };
 
     };

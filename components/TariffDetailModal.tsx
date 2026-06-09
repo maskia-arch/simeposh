@@ -1,23 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { formatEur, formatGb } from '@/lib/utils';
+import { formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
 import { CountryFlag } from '@/components/CountryFlag';
+import { Price } from '@/components/Price';
 import { CheckoutModal } from '@/components/CheckoutModal';
+import { useCart } from '@/components/CartProvider';
+import { useTranslation } from '@/lib/i18n';
+import type { TranslationKeys } from '@/lib/i18n';
+import { displayCountryName, coverageLabel, getTariffOperators } from '@/lib/tariff-display';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
-
-interface OperatorEntry {
-  operatorName?: string;
-  networkType?:  string;
-}
-
-function getOperators(tariff: Tariff): OperatorEntry[] {
-  const raw = tariff.raw_data as Record<string, unknown> | null;
-  const ops = raw?.operatorList;
-  return Array.isArray(ops) ? (ops as OperatorEntry[]) : [];
-}
 
 const NETWORK_COLORS: Record<string, string> = {
   '5G':  'bg-violet-100 text-violet-700 border-violet-200',
@@ -27,10 +21,10 @@ const NETWORK_COLORS: Record<string, string> = {
   '2G':  'bg-slate-100 text-slate-500 border-slate-200',
 };
 
-const TYPE_INFO: Record<string, { icon: string; label: string; color: string; desc: string }> = {
-  travel:        { icon: '✈️',  label: 'Travel',         color: 'bg-sky-50 text-sky-700 border-sky-200',           desc: 'Festes Datenvolumen, das du flexibel über die Laufzeit verbrauchen kannst.' },
-  unlimited_eco: { icon: '♾️',  label: 'Unlimited Eco',  color: 'bg-emerald-50 text-emerald-700 border-emerald-200', desc: 'Tägliches Highspeed-Volumen. Nach dem Limit: unbegrenzt mit 512 kbps.' },
-  unlimited_pro: { icon: '⚡',  label: 'Unlimited Pro',  color: 'bg-violet-50 text-violet-700 border-violet-200',   desc: 'Tägliches Highspeed-Volumen. Nach dem Limit: unbegrenzt mit ≥ 1 Mbps.' },
+const TYPE_INFO: Record<string, { icon: string; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
+  travel:        { icon: '✈️', color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  unlimited_eco: { icon: '♾️', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
+  unlimited_pro: { icon: '⚡', color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
 
 interface Props {
@@ -40,11 +34,16 @@ interface Props {
 
 export function TariffDetailModal({ tariff, onClose }: Props) {
   const [showCheckout, setShowCheckout] = useState(false);
+  const [added, setAdded] = useState(false);
+  const { locale, t } = useTranslation();
+  const { addItem } = useCart();
 
-  const ops     = getOperators(tariff);
+  const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 8);
   const typeInfo = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
+  const isTravel = (tariff.tariff_type ?? 'travel') === 'travel';
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
-  const raw = tariff.raw_data as Record<string, unknown> | null;
+  const countryLabel = displayCountryName(tariff, locale);
+  const coverage     = coverageLabel(tariff, locale);
 
   if (showCheckout) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={onClose} />;
@@ -78,13 +77,13 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
 
           {/* ── Country header ── */}
           <div className="mb-5 flex items-center gap-4">
-            <CountryFlag countryCode={tariff.country_code} countryName={tariff.country_name} size={56} />
+            <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={56} />
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900">{tariff.country_name}</h2>
-              {tariff.region && <p className="text-sm text-slate-400">{tariff.region}</p>}
+              <h2 className="text-2xl font-extrabold text-slate-900">{countryLabel}</h2>
+              {coverage && <p className="text-sm text-slate-400">🌍 {coverage}</p>}
               {typeInfo && (
                 <span className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${typeInfo.color}`}>
-                  {typeInfo.icon} {typeInfo.label}
+                  {typeInfo.icon} {t(typeInfo.labelKey)}
                 </span>
               )}
             </div>
@@ -108,42 +107,37 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <p className="text-xl font-bold text-brand-700">
                 {isUnlimited ? '∞' : formatGb(tariff.data_gb)}
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">Daten</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t('card_data')}</p>
               {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
-                <p className="text-[10px] text-brand-500 mt-0.5">{tariff.data_gb} GB/Tag HS</p>
+                <p className="text-[10px] text-brand-500 mt-0.5">{tariff.data_gb} {t('cfg_gb_per_day')}</p>
               )}
             </div>
             <div className="rounded-2xl bg-slate-50 p-3.5 text-center border border-slate-200">
-              <p className="text-xl font-bold text-slate-700">{tariff.validity_days}d</p>
-              <p className="text-xs text-slate-500 mt-0.5">Gültigkeit</p>
+              <p className="text-xl font-bold text-slate-700">{tariff.validity_days}{t('card_days')}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t('card_validity')}</p>
             </div>
             <div className="rounded-2xl bg-green-50 p-3.5 text-center border border-green-100">
-              <p className="text-xl font-bold text-green-700">{formatEur(tariff.sale_price_eur)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Preis</p>
+              <Price eur={tariff.sale_price_eur} className="text-xl font-bold text-green-700" />
+              <p className="text-xs text-slate-500 mt-0.5">{t('det_price')}</p>
             </div>
           </div>
 
           {/* ── Unlimited note ── */}
           {typeInfo && tariff.tariff_type !== 'travel' && (
             <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${typeInfo.color}`}>
-              <p className="font-medium">{typeInfo.icon} {typeInfo.desc}</p>
-              {tariff.tariff_type === 'unlimited_eco' && (
-                <p className="mt-1 text-xs opacity-80">🔄 Das Highspeed-Volumen erneuert sich täglich um Mitternacht (UTC).</p>
-              )}
-              {tariff.tariff_type === 'unlimited_pro' && (
-                <p className="mt-1 text-xs opacity-80">🔄 Das Highspeed-Volumen erneuert sich täglich um Mitternacht (UTC).</p>
-              )}
+              <p className="font-medium">{typeInfo.icon} {t(typeInfo.descKey)}</p>
+              <p className="mt-1 text-xs opacity-80">{t('det_renew_note')}</p>
             </div>
           )}
 
           {/* ── Operators / network ── */}
           {ops.length > 0 && (
             <div className="mb-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Netzbetreiber</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t('det_operators')}</p>
               <div className="flex flex-wrap gap-2">
                 {ops.map((op, i) => (
                   <div key={i} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                    <span className="text-sm font-medium text-slate-700">{op.operatorName}</span>
+                    <span className="text-sm font-medium text-slate-700">{op.name}</span>
                     {op.networkType && (
                       <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${
                         NETWORK_COLORS[op.networkType.toUpperCase()] ?? NETWORK_COLORS['3G']
@@ -157,39 +151,48 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
             </div>
           )}
 
-          {/* ── SMS support ── */}
-          {raw?.smsStatus !== undefined && (
-            <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
-              <span>{(raw.smsStatus as number) === 1 ? '✅' : '❌'}</span>
-              <span>SMS {(raw.smsStatus as number) === 1 ? 'unterstützt' : 'nicht unterstützt'}</span>
-            </div>
-          )}
+          {/* ── Data-only note (no phone number) ── */}
+          <div className="mb-3 flex items-center gap-2 text-sm text-slate-600">
+            <span>📵</span>
+            <span>{t('det_no_number')}</span>
+          </div>
 
-          {/* ── Top-up eligible ── */}
+          {/* ── Reloadability (travel = reloadable, day-pass = not) ── */}
           <div className="mb-5 flex items-center gap-2 text-sm text-slate-600">
-            <span>{tariff.is_top_up_eligible ? '✅' : 'ℹ️'}</span>
-            <span>{tariff.is_top_up_eligible ? 'Aufladbar (Top-Up möglich)' : 'Keine Aufladung – neues Paket kaufen'}</span>
+            <span>{isTravel ? '✅' : 'ℹ️'}</span>
+            <span>{isTravel ? t('det_reloadable') : t('det_not_reloadable')}</span>
           </div>
 
           {/* ── Activation guide ── */}
           <div className="mb-6 rounded-xl bg-slate-50 border border-slate-200 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">📱 Aktivierung</p>
-            <ol className="space-y-1 text-xs text-slate-600">
-              <li>1. Kauf abschließen – QR-Code wird per E-Mail zugestellt</li>
-              <li>2. <strong>iPhone:</strong> Einstellungen → Mobilfunk → eSIM hinzufügen → QR-Code scannen</li>
-              <li>3. <strong>Android:</strong> Einstellungen → Netzwerk → SIM-Karten → eSIM hinzufügen</li>
-              <li>4. Datenroaming aktivieren und eSIM als Datenkarte wählen</li>
-              <li>5. Gültigkeit startet mit dem ersten Daten-Login</li>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t('det_activation')}</p>
+            <ol className="space-y-1 text-xs text-slate-600 list-decimal list-inside">
+              <li>{t('det_act_1')}</li>
+              <li dangerouslySetInnerHTML={{ __html: t('det_act_2') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('det_act_3') }} />
+              <li>{t('det_act_4')}</li>
+              <li>{t('det_act_5')}</li>
             </ol>
           </div>
 
-          {/* ── CTA ── */}
-          <button
-            onClick={() => setShowCheckout(true)}
-            className="w-full rounded-2xl bg-brand-600 py-4 text-base font-bold text-white hover:bg-brand-700 active:scale-[0.98] transition-all shadow-lg"
-          >
-            Jetzt kaufen · {formatEur(tariff.sale_price_eur)}
-          </button>
+          {/* ── CTAs ── */}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              onClick={() => { addItem(tariff); setAdded(true); setTimeout(() => setAdded(false), 1500); }}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-brand-200 bg-brand-50 py-3.5 text-base font-bold text-brand-700 hover:bg-brand-100 active:scale-[0.98] transition-all"
+            >
+              {added ? t('det_added') : t('det_add_cart')}
+            </button>
+            <button
+              onClick={() => setShowCheckout(true)}
+              className="flex-1 rounded-2xl bg-brand-600 py-3.5 text-base font-bold text-white hover:bg-brand-700 active:scale-[0.98] transition-all shadow-lg"
+            >
+              {t('det_buy_now')}
+            </button>
+          </div>
+          <p className="mt-3 text-center text-sm text-slate-400">
+            {t('det_price')}: <Price eur={tariff.sale_price_eur} className="font-semibold text-slate-700" />
+          </p>
         </div>
       </div>
     </div>

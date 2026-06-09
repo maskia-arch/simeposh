@@ -4,13 +4,14 @@ import Link from 'next/link';
 import type { Database } from '@/lib/supabase/types';
 import { TariffsGrid } from '@/components/TariffsGrid';
 import { TopUpTeaser } from '@/components/TopUpTeaser';
+import { HeroSearch, type Destination } from '@/components/HeroSearch';
 import { useTranslation } from '@/lib/i18n';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
 const STEP_ICONS = ['🔍', '💳', '📷', '🌐'];
 
-export function HomePageClient({ tariffs }: { tariffs: Tariff[] }) {
+export function HomePageClient({ tariffs, destinations }: { tariffs: Tariff[]; destinations: Destination[] }) {
   const { t } = useTranslation();
 
   const features = [
@@ -42,7 +43,11 @@ export function HomePageClient({ tariffs }: { tariffs: Tariff[] }) {
           <p className="mx-auto mb-8 max-w-xl text-lg text-brand-100">
             {t('hero_subtitle')}
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
+
+          {/* Airalo-style destination search */}
+          <HeroSearch destinations={destinations} />
+
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/tariffs"
               className="rounded-xl bg-white px-6 py-3 font-semibold text-brand-700 shadow-lg hover:bg-brand-50 transition-colors"

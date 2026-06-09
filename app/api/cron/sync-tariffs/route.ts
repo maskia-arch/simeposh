@@ -2,7 +2,8 @@
  * GET /api/cron/sync-tariffs
  *
  * Protected by Authorization: Bearer <CRON_SECRET>
- * Triggers the full tariff sync from esimaccess.
+ * Triggers the full tariff sync from an external scheduler.
+ * Runs synchronously (the cron caller waits for result).
  */
 import { NextResponse } from 'next/server';
 import { runSync }      from '@/lib/sync/run-sync';

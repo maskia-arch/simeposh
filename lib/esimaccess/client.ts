@@ -131,26 +131,144 @@ export function parseLocationCodes(pkg: EsimAccessPackage): string[] {
   return [];
 }
 
-/** Derive a display country name from a package */
+// ── Region definitions ────────────────────────────────────────
+
+export interface RegionInfo {
+  /** Virtual country code stored in DB (always 2 uppercase letters for flags, or GLOB/MULTI) */
+  code: string;
+  /** English display name */
+  name: string;
+  /** Member country codes (subset match is enough) */
+  members: string[];
+  /** Minimum member matches to qualify */
+  minMatch: number;
+}
+
+export const REGIONS: RegionInfo[] = [
+  {
+    code: 'EU', name: 'Europe',
+    members: ['AT','BE','BG','CH','CY','CZ','DE','DK','EE','ES','FI','FR','GB','GR',
+               'HR','HU','IE','IS','IT','LI','LT','LU','LV','MT','NL','NO','PL','PT',
+               'RO','SE','SI','SK','AL','BA','ME','MK','RS','TR','UA','MD','GE','AM','AZ'],
+    minMatch: 5,
+  },
+  {
+    code: 'AS', name: 'Asia',
+    members: ['CN','JP','KR','TH','VN','SG','MY','ID','PH','IN','BD','LK','MM','KH',
+               'LA','MN','KZ','UZ','TJ','KG','TM','NP','BT','MV','PK','AF'],
+    minMatch: 4,
+  },
+  {
+    code: 'ME', name: 'Middle East',
+    members: ['AE','SA','QA','KW','BH','OM','JO','LB','IL','IQ','IR','YE','SY'],
+    minMatch: 3,
+  },
+  {
+    code: 'NA', name: 'North America',
+    members: ['US','CA','MX'],
+    minMatch: 2,
+  },
+  {
+    code: 'LA', name: 'Latin America',
+    members: ['BR','AR','CL','CO','PE','VE','EC','BO','PY','UY','CR','PA','GT','HN',
+               'SV','NI','DO','CU','JM','TT','BB','GY','SR'],
+    minMatch: 4,
+  },
+  {
+    code: 'OC', name: 'Oceania',
+    members: ['AU','NZ','FJ','PG','SB','VU','WS','TO','KI','FM','PW','MH','NR','TV'],
+    minMatch: 2,
+  },
+  {
+    code: 'AF', name: 'Africa',
+    members: ['ZA','NG','KE','GH','TZ','ET','EG','MA','TN','DZ','SN','CI','CM',
+               'UG','ZW','MZ','ZM','BW','RW','MG','AO','SD','LY'],
+    minMatch: 4,
+  },
+  {
+    code: 'SEA', name: 'Southeast Asia',
+    members: ['SG','MY','TH','ID','PH','VN','MM','KH','LA','BN','TL'],
+    minMatch: 4,
+  },
+];
+
+/**
+ * Detect which region a set of country codes belongs to.
+ * Returns the best matching region, or null for single-country or no match.
+ */
+export function detectRegion(codes: string[]): RegionInfo | null {
+  if (codes.length <= 1) return null;
+  let best: RegionInfo | null = null;
+  let bestScore = 0;
+  for (const region of REGIONS) {
+    const matches = codes.filter(c => region.members.includes(c)).length;
+    const score = matches / Math.max(codes.length, region.members.length);
+    if (matches >= region.minMatch && score > bestScore) {
+      best = region;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/** Full English country name from an ISO alpha-2 code (falls back to the code). */
+export function isoCountryName(code: string): string {
+  if (!code || code.length !== 2) return code;
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code.toUpperCase()) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+/**
+ * Derive a clean, customer-friendly display name from a package.
+ *
+ * Single country      → "Germany"
+ * Recognised region   → "Europe", "Asia", "Middle East", …
+ * Large multi-country  → "Global"            (>= 40 countries)
+ * Small multi-country  → "Germany & Austria" / "Germany, Austria +3"
+ *
+ * Never returns ugly placeholders like "2 Countries" / "30 Länder".
+ */
 export function getCountryName(pkg: EsimAccessPackage): string {
-  if (pkg.locationName) return pkg.locationName;
   const codes = parseLocationCodes(pkg);
+
+  // ── Single country ──────────────────────────────────────────
   if (codes.length === 1) {
-    try {
-      return new Intl.DisplayNames(['en'], { type: 'region' }).of(codes[0]) ?? codes[0];
-    } catch { return codes[0]; }
+    return pkg.locationName?.trim() || isoCountryName(codes[0]);
   }
+
+  // ── Multi-country ───────────────────────────────────────────
   if (codes.length > 1) {
-    // Detect well-known regions
-    const eu = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HR','HU',
-                 'IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
-    const hasEu = codes.filter((c) => eu.includes(c)).length >= 5;
-    if (hasEu) return 'Europe';
-    if (codes.some(c => ['US','CA','MX'].includes(c)) && codes.length <= 4) return 'North America';
-    if (codes.some(c => ['AU','NZ'].includes(c)) && codes.length <= 4) return 'Oceania';
-    return `${codes.length} Countries`;
+    // 1) Prefer a recognised region (Europe / Asia / …)
+    const region = detectRegion(codes);
+    if (region) return region.name;
+
+    // 2) A clean human name from the API (not a comma-separated code dump)
+    const apiName = pkg.locationName?.trim();
+    if (apiName && !apiName.includes(',') && !/^\d/.test(apiName) && apiName.length < 40) {
+      return apiName;
+    }
+
+    // 3) Very large bundle → Global
+    if (codes.length >= 40) return 'Global';
+
+    // 4) Otherwise build a readable short list of real country names
+    const names = codes.slice(0, 2).map(isoCountryName);
+    if (codes.length === 2) return names.join(' & ');
+    return `${names.join(', ')} +${codes.length - 2}`;
   }
+
   return pkg.name ?? 'Unknown';
+}
+
+/** Virtual region code for multi-country packages */
+export function getRegionCode(codes: string[]): string {
+  if (codes.length === 0) return 'XX';
+  if (codes.length === 1) return codes[0];
+  const region = detectRegion(codes);
+  return region?.code ?? 'GLOB';
 }
 
 /** Country flag emoji from ISO code */
@@ -163,14 +281,18 @@ export function getFlagEmoji(code: string): string {
   } catch { return '🌐'; }
 }
 
-// ── Package List (with full pagination) ──────────────────────
+// ── Package List (with robust de-duplicating pagination) ─────
 
-const PAGE_SIZE = 200; // max per request; adjust if API cap differs
-const MAX_PAGES = 50;  // safety ceiling = 10 000 packages
+const PAGE_SIZE = 200; // requested page size
+const MAX_PAGES = 60;  // hard safety ceiling
 
 /**
  * Fetch ONE page of packages from POST /package/list.
- * esimaccess uses pageNum (1-based) + pageSize for pagination.
+ * NOTE: The esimaccess /package/list endpoint in practice IGNORES pageNum
+ * and returns the FULL catalogue on every call. The de-duplicating loop in
+ * fetchAllPages handles this correctly (it stops as soon as a page adds no
+ * new packageCodes), while still supporting real pagination if the API ever
+ * starts honouring pageNum.
  */
 async function fetchPackagePage(
   extraFilters: Record<string, unknown>,
@@ -189,29 +311,48 @@ async function fetchPackagePage(
 }
 
 /**
- * Fetch ALL packages for a given filter set, handling pagination.
- * Loops through pages until no more results are returned.
+ * Fetch ALL packages for a given filter set.
+ *
+ * De-duplicates by packageCode across pages. This is critical because the
+ * esimaccess API returns the entire catalogue on every paginated request
+ * (ignoring pageNum) — without de-dup we previously stored the same ~2 800
+ * packages 50 times (= "140 000" phantom rows that collapsed back to 2 800
+ * on upsert).
+ *
+ * Stop conditions (any one ends the loop):
+ *   1. API reports totalPageNum and we've reached it.
+ *   2. A page returns 0 packages.
+ *   3. A page adds NO new packageCodes → the API isn't paginating / we've
+ *      seen the whole catalogue.
  */
 async function fetchAllPages(
   extraFilters: Record<string, unknown> = {}
 ): Promise<EsimAccessPackage[]> {
-  const all: EsimAccessPackage[] = [];
+  const byCode = new Map<string, EsimAccessPackage>();
 
   for (let page = 1; page <= MAX_PAGES; page++) {
     const res = await fetchPackagePage(extraFilters, page);
     if (!res.success || !res.obj) break;
 
     const list = res.obj.packageList ?? res.obj.packageInfoList ?? [];
-    all.push(...list);
+    if (list.length === 0) break;
 
-    // Stop if we received fewer items than page size (last page),
-    // or if the API tells us the total page count explicitly.
+    const sizeBefore = byCode.size;
+    for (const pkg of list) {
+      if (pkg?.packageCode) byCode.set(pkg.packageCode, pkg);
+    }
+    const added = byCode.size - sizeBefore;
+
     const totalPages = res.obj.totalPageNum ?? null;
     if (totalPages !== null && page >= totalPages) break;
-    if (list.length < PAGE_SIZE) break;
+    // The decisive guard: page added nothing new → API returned a duplicate
+    // full list (or we've exhausted the catalogue). Stop immediately.
+    if (added === 0) break;
+    // Genuine pagination would return a short final page.
+    if (totalPages === null && list.length < PAGE_SIZE) break;
   }
 
-  return all;
+  return Array.from(byCode.values());
 }
 
 /**
@@ -238,17 +379,34 @@ export async function fetchAllPackages(): Promise<EsimAccessListResponse> {
   const travelList    = travelResult.status    === 'fulfilled' ? travelResult.value    : [];
   const unlimitedList = unlimitedResult.status === 'fulfilled' ? unlimitedResult.value : [];
 
-  console.log(`[esimaccess] fetched ${travelList.length} travel + ${unlimitedList.length} unlimited packages`);
+  if (travelResult.status === 'rejected') {
+    console.error('[esimaccess] travel fetch failed:', travelResult.reason);
+  }
+  if (unlimitedResult.status === 'rejected') {
+    console.error('[esimaccess] unlimited fetch failed:', unlimitedResult.reason);
+  }
 
-  // Mark unlimited so detectTariffType works reliably
-  const markedUnlimited = unlimitedList.map((p) => ({ ...p, dataType: 2 as const }));
+  // Merge + de-duplicate by packageCode (single source of truth).
+  // Travel first, then unlimited overrides only NEW codes (marked dataType:2).
+  const byCode = new Map<string, EsimAccessPackage>();
+  for (const p of travelList) {
+    if (p?.packageCode) byCode.set(p.packageCode, p);
+  }
+  let unlimitedNew = 0;
+  for (const p of unlimitedList) {
+    if (!p?.packageCode) continue;
+    if (!byCode.has(p.packageCode)) {
+      byCode.set(p.packageCode, { ...p, dataType: 2 as const });
+      unlimitedNew++;
+    }
+  }
 
-  // Deduplicate (unlimited query can overlap travel)
-  const seen   = new Set(travelList.map((p) => p.packageCode));
-  const merged = [
-    ...travelList,
-    ...markedUnlimited.filter((p) => !seen.has(p.packageCode)),
-  ];
+  const merged = Array.from(byCode.values());
+
+  console.log(
+    `[esimaccess] distinct packages: ${merged.length} ` +
+    `(travel=${travelList.length}, unlimited=${unlimitedList.length}, unlimited-new=${unlimitedNew})`
+  );
 
   return {
     success:   true,
@@ -257,17 +415,42 @@ export async function fetchAllPackages(): Promise<EsimAccessListResponse> {
   };
 }
 
-/** Helper: get operators from a package (handles both field names) */
+/** Helper: get operators from a package (handles all esimaccess shapes) */
 export function getOperatorList(pkg: EsimAccessPackage): import('./types').OperatorInfo[] {
-  return pkg.operatorList ?? pkg.networkList ?? [];
+  if (pkg.operatorList?.length) return pkg.operatorList;
+  if (pkg.networkList?.length)  return pkg.networkList;
+  // Newer API nests operators per location under locationNetworkList
+  const nested = (pkg.locationNetworkList ?? []).flatMap((l) => l.operatorList ?? []);
+  return nested;
 }
 
 // ── eSIM Provisioning ─────────────────────────────────────────
 
 export async function allocateEsim(
   packageCode: string,
-  orderRef:    string
+  orderRef:    string,
+  opts?: {
+    /** Day-pass duration in days → esimaccess `periodNum`. */
+    periodNum?: number;
+    /** Total esimaccess price in 1/10 000 USD units (per-day raw × periodNum). */
+    priceRaw?:  number;
+    /** Number of identical eSIMs (default 1). */
+    count?:     number;
+  }
 ): Promise<EsimAccessAllocateResponse> {
+  const count = opts?.count ?? 1;
+
+  // Build the package line. For day-pass plans esimaccess requires `periodNum`
+  // and a `price` of (per-day price × periodNum). Travel plans accept price 0.
+  const item: Record<string, unknown> = {
+    packageCode,
+    count,
+    price: opts?.priceRaw && opts.priceRaw > 0 ? Math.round(opts.priceRaw) : 0,
+  };
+  if (opts?.periodNum && opts.periodNum > 0) {
+    item.periodNum = opts.periodNum;
+  }
+
   // Step 1: place order
   const orderRes = await esimRequest<{
     success:   boolean;
@@ -277,11 +460,13 @@ export async function allocateEsim(
       esimList?: Array<{
         iccid: string; lpaCode: string; smdpAddress: string;
         matchingId: string; qrCodeUrl: string; apn: string; msisdn: string;
+        shortUrl?: string; ac?: string;
       }>;
     };
   }>('/order/open', {
-    packageInfoList: [{ packageCode, count: 1, price: 0 }],
+    packageInfoList: [item],
     transactionId:   orderRef,
+    amount:          item.price,   // total amount must match the sum of prices
   });
 
   if (!orderRes.success) {
@@ -338,4 +523,50 @@ export async function applyTopUp(
 
 export async function getEsimStatus(iccid: string): Promise<EsimStatusResponse> {
   return esimRequest<EsimStatusResponse>('/esim/query', { iccid });
+}
+
+/** Normalised lifecycle state shown to customers. */
+export type EsimLifecycle = 'new' | 'in_use' | 'used' | 'unknown';
+
+/** Map any esimaccess status string to our 3-state lifecycle. */
+export function normalizeEsimStatus(raw: string | null | undefined): EsimLifecycle {
+  const s = (raw ?? '').toUpperCase();
+  if (!s) return 'unknown';
+  if (/(USED_?UP|DEPLET|EXPIR|FINISH|USED_?EXPIRED|REVOKE|DELETE)/.test(s)) return 'used';
+  if (/(IN_?USE|ACTIVE|ENABLED|ONBOARD)/.test(s))                           return 'in_use';
+  if (/(NOT_?ACTIVE|NEW|READY|GOT_?RESOURCE|RELEASED|INSTALL|NOT_?ACTIVATED|ENABLE_?READY)/.test(s)) return 'new';
+  return 'unknown';
+}
+
+/**
+ * Query the current lifecycle status of a single eSIM by ICCID.
+ * Defensive against the various esimaccess response shapes; never throws.
+ */
+export async function queryEsimLifecycle(iccid: string): Promise<EsimLifecycle> {
+  try {
+    const res = await esimRequest<{
+      success?: boolean;
+      obj?: {
+        status?: string;
+        esimStatus?: string;
+        smdpStatus?: string;
+        esimList?: Array<{ esimStatus?: string; smdpStatus?: string; status?: string }>;
+      } | null;
+    }>('/esim/query', { iccid });
+
+    const obj = res.obj;
+    const raw =
+      obj?.esimList?.[0]?.esimStatus ??
+      obj?.esimList?.[0]?.status ??
+      obj?.esimStatus ??
+      obj?.status ??
+      obj?.esimList?.[0]?.smdpStatus ??
+      obj?.smdpStatus ??
+      null;
+
+    return normalizeEsimStatus(raw);
+  } catch (err) {
+    console.error('[esimaccess] status query failed for', iccid, err);
+    return 'unknown';
+  }
 }

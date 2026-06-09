@@ -152,6 +152,65 @@ export const COUNTRY_ALIASES: Record<string, string> = {
 
   // ── Z ──────────────────────────────────────────────────────────
   'simbabwe':            'ZW', 'zimbabwe':             'ZW',
+
+  // ── English names commonly missing above (no duplicates) ────────
+  'germany':     'DE', 'spain':        'ES', 'italy':       'IT',
+  'greece':      'GR', 'switzerland':  'CH', 'netherlands': 'NL', 'belgium':     'BE',
+  'ireland':     'IE', 'poland':       'PL',
+  'sweden':      'SE', 'norway':       'NO',
+  'iceland':     'IS', 'hungary':      'HU',
+  'czechia':     'CZ',
+  'turkey':      'TR', 'mexico':       'MX',
+  'brazil':      'BR', 'argentina':    'AR',
+};
+
+/**
+ * Maps localised region names → virtual region codes stored in DB.
+ * Covers all shop languages.
+ */
+export const REGION_ALIASES: Record<string, string> = {
+  // ── Europe / EU ────────────────────────────────────────────────
+  'europa':              'EU', 'europe':               'EU', 'europe travel':   'EU',
+  'eu':                  'EU', 'european':             'EU', 'europäisch':      'EU',
+  'europe esim':         'EU', 'europa esim':          'EU',
+  'europe (30+)':        'EU', 'europa (30+)':         'EU',
+  'avrupa':              'EU', 'europe multi':         'EU',
+
+  // ── Asia / AS ──────────────────────────────────────────────────
+  'asien':               'AS', 'asia':                 'AS', 'asie':            'AS',
+  'asya':                'AS', 'ásia':                 'AS', 'azja':            'AS',
+  'ázsia':               'AS', 'asien esim':           'AS', 'asia esim':       'AS',
+
+  // ── Southeast Asia / SEA ───────────────────────────────────────
+  'südostasien':         'SEA', 'southeast asia':      'SEA', 'asie du sud-est': 'SEA',
+  'sudeste asiatico':    'SEA', 'asie sud-est':        'SEA', 'güneydoğu asya':  'SEA',
+
+  // ── Middle East / ME ───────────────────────────────────────────
+  'naher osten':         'ME', 'middle east':          'ME', 'moyen-orient':    'ME',
+  'oriente medio':       'ME', 'medio oriente':        'ME', 'orta doğu':       'ME',
+  'midden-oosten':       'ME', 'bliski wschód':        'ME', 'oriente médio':   'ME',
+
+  // ── North America / NA ─────────────────────────────────────────
+  'nordamerika':         'NA', 'north america':        'NA', 'amérique du nord': 'NA',
+  'norteamérica':        'NA', 'america del nord':     'NA', 'noord-amerika':    'NA',
+  'ameryka północna':    'NA', 'kuzey amerika':        'NA',
+
+  // ── Latin America / LA ─────────────────────────────────────────
+  'lateinamerika':       'LA', 'latin america':        'LA', 'amérique latine':  'LA',
+  'latinoamérica':       'LA', 'amérique centrale':    'LA', 'america latina':   'LA',
+  'latijns-amerika':     'LA', 'ameryka łacińska':     'LA',
+
+  // ── Oceania / OC ───────────────────────────────────────────────
+  'ozeanien':            'OC', 'oceania':              'OC', 'océanie':          'OC',
+  'oceanía':             'OC', 'okyanusya':            'OC',
+
+  // ── Africa / AF ────────────────────────────────────────────────
+  'afrika':              'AF', 'africa':               'AF', 'afrique':          'AF',
+  'áfrica':              'AF', 'afrique sub':          'AF',
+
+  // ── Global / GLOB ──────────────────────────────────────────────
+  'global':              'GLOB', 'worldwide':          'GLOB', 'weltweit':        'GLOB',
+  'international':       'GLOB', 'international esim': 'GLOB',
 };
 
 /**
@@ -160,4 +219,12 @@ export const COUNTRY_ALIASES: Record<string, string> = {
  */
 export function aliasToCode(query: string): string | null {
   return COUNTRY_ALIASES[query.trim().toLowerCase()] ?? null;
+}
+
+/**
+ * Given a search query, return the virtual region code it maps to (or null).
+ * E.g. "Europa" → "EU", "Asien" → "AS".
+ */
+export function aliasToRegion(query: string): string | null {
+  return REGION_ALIASES[query.trim().toLowerCase()] ?? null;
 }

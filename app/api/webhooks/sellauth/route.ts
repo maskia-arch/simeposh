@@ -10,6 +10,7 @@
 import { NextResponse }            from 'next/server';
 import { verifySellauthSignature } from '@/lib/sellauth/webhook';
 import { allocateEsim, applyTopUp } from '@/lib/esimaccess/client';
+import { deleteProduct }            from '@/lib/sellauth/client';
 import { createServiceClient }     from '@/lib/supabase/server';
 import { sendEsimEmail, sendTopUpEmail } from '@/lib/email/mailer';
 import type { SellauthWebhookPayload } from '@/lib/sellauth/types';
@@ -54,36 +55,71 @@ export async function POST(request: Request) {
   const { order: sellauthOrder } = payload;
   const supabase = createServiceClient();
 
-  // ── 4. Find our order ────────────────────────────────────
-  const { data: order, error: findError } = await supabase
+  // ── 4. Resolve ALL orders for this payment ───────────────
+  // A single Sellauth invoice can cover a cart of multiple eSIMs, so we may
+  // have several order rows sharing the same sellauth_order_id.
+  let orders: OrderWithTariff[] = [];
+
+  // 4a. By Sellauth invoice/order id (handles single + cart)
+  const { data: byInvoice } = await supabase
     .from('orders')
     .select('*, tariffs(*)')
-    .eq('sellauth_order_id', sellauthOrder.id)
-    .single();
+    .eq('sellauth_order_id', sellauthOrder.id);
 
-  if (findError || !order) {
-    // Fallback: look up via custom_fields order_id
-    const customOrderId = sellauthOrder.custom_fields?.order_id;
-    if (!customOrderId) {
-      console.error('[webhook/sellauth] Order not found for Sellauth ID:', sellauthOrder.id);
+  if (byInvoice && byInvoice.length > 0) {
+    orders = byInvoice as OrderWithTariff[];
+  } else {
+    // 4b. Fallback via custom_fields (order_ids comma list, or single order_id)
+    const idsField = sellauthOrder.custom_fields?.order_ids
+      ?? sellauthOrder.custom_fields?.order_id
+      ?? '';
+    const ids = idsField.split(',').map((s) => s.trim()).filter(Boolean);
+
+    if (ids.length === 0) {
+      console.error('[webhook/sellauth] No orders found for Sellauth ID:', sellauthOrder.id);
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const { data: fallbackOrder } = await supabase
+    const { data: byCustom } = await supabase
       .from('orders')
       .select('*, tariffs(*)')
-      .eq('id', customOrderId)
-      .single();
+      .in('id', ids);
 
-    if (!fallbackOrder) {
-      console.error('[webhook/sellauth] Order not found by custom_fields.order_id:', customOrderId);
+    if (!byCustom || byCustom.length === 0) {
+      console.error('[webhook/sellauth] No orders found by custom_fields ids:', ids);
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-
-    return processOrder(supabase, fallbackOrder as OrderWithTariff, sellauthOrder);
+    orders = byCustom as OrderWithTariff[];
   }
 
-  return processOrder(supabase, order as OrderWithTariff, sellauthOrder);
+  // ── 5. Provision each order ──────────────────────────────
+  const results: Array<{ orderId: string; ok: boolean; error?: string }> = [];
+  for (const order of orders) {
+    results.push(await provisionOrder(supabase, order, sellauthOrder));
+  }
+
+  const failed = results.filter((r) => !r.ok);
+
+  // ── 6. Clean up the temporary Sellauth "eSIM" products ────
+  // Each checkout created its own unlisted product; once everything is
+  // provisioned we delete them so they don't accumulate. Best-effort.
+  if (failed.length === 0) {
+    const productIds = new Set<string>();
+    for (const o of orders) {
+      const ref = o.sellauth_product_ref;        // "productId:variantId"
+      const pid = ref ? ref.split(':')[0] : '';
+      if (pid) productIds.add(pid);
+    }
+    await Promise.allSettled(Array.from(productIds).map((pid) => deleteProduct(pid)));
+  }
+
+  // Always return 200 so Sellauth stops retrying; failed ones need manual review.
+  return NextResponse.json({
+    received:    true,
+    provisioned: results.length - failed.length,
+    failed:      failed.length,
+    results,
+  });
 }
 
 // ────────────────────────────────────────────────────────────
@@ -97,6 +133,9 @@ type OrderWithTariff = {
   customer_email: string;
   customer_name:  string | null;
   top_up_iccid:   string | null;
+  period_num:     number | null;
+  amount_eur:     number;
+  sellauth_product_ref: string | null;
   tariffs: {
     package_code:  string;
     name:          string;
@@ -104,18 +143,20 @@ type OrderWithTariff = {
     data_gb:       number | null;
     validity_days: number;
     sale_price_eur: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw_data:      Record<string, any> | null;
   };
 };
 
-async function processOrder(
+async function provisionOrder(
   supabase:       ReturnType<typeof createServiceClient>,
   order:          OrderWithTariff,
   sellauthOrder:  SellauthWebhookPayload['order']
-) {
+): Promise<{ orderId: string; ok: boolean; error?: string }> {
   // Idempotency: skip if already processed
   if (order.status === 'completed') {
     console.log('[webhook/sellauth] Order already completed, skipping:', order.id);
-    return NextResponse.json({ received: true, idempotent: true });
+    return { orderId: order.id, ok: true };
   }
 
   // Mark as paid
@@ -137,7 +178,18 @@ async function processOrder(
   try {
     if (order.order_type === 'new_esim') {
       // ── Provision new eSIM ─────────────────────────────
-      const esimRes = await allocateEsim(order.tariffs.package_code, order.id);
+      // For custom day-pass orders pass periodNum + total esimaccess price
+      // (per-day raw price × periodNum). Travel plans use periodNum = none.
+      const periodNum = order.period_num ?? undefined;
+      let priceRaw: number | undefined;
+      if (periodNum && order.tariffs.raw_data) {
+        const perDayRaw = Number(order.tariffs.raw_data.price);
+        if (Number.isFinite(perDayRaw) && perDayRaw > 0) {
+          priceRaw = perDayRaw * periodNum;
+        }
+      }
+
+      const esimRes = await allocateEsim(order.tariffs.package_code, order.id, { periodNum, priceRaw });
 
       if (!esimRes.success) {
         throw new Error(`esimaccess allocation failed: ${esimRes.errorCode}`);
@@ -151,21 +203,24 @@ async function processOrder(
           status:          'completed',
           iccid:           esim.iccid,
           qr_code_url:     esim.qrCodeUrl,
+          short_url:       esim.shortUrl ?? null,
           activation_code: esim.matchingId,
           smdp_address:    esim.smdpAddress,
           apn:             esim.apn,
+          esim_status:     'new',
+          esim_status_at:  new Date().toISOString(),
         })
         .eq('id', order.id);
 
-      // Send confirmation email
+      // Send confirmation email (custom day-pass: use chosen days + paid price)
       await sendEsimEmail({
         to:             order.customer_email,
         customerName:   order.customer_name ?? undefined,
         tariffName:     order.tariffs.name,
         countryName:    order.tariffs.country_name,
         dataGb:         order.tariffs.data_gb ?? 0,
-        validityDays:   order.tariffs.validity_days,
-        priceEur:       order.tariffs.sale_price_eur,
+        validityDays:   order.period_num ?? order.tariffs.validity_days,
+        priceEur:       order.amount_eur ?? order.tariffs.sale_price_eur,
         iccid:          esim.iccid,
         qrCodeUrl:      esim.qrCodeUrl,
         activationCode: esim.matchingId,
@@ -176,6 +231,7 @@ async function processOrder(
       });
 
       console.log(`[webhook/sellauth] eSIM provisioned: order=${order.id} iccid=${esim.iccid}`);
+      return { orderId: order.id, ok: true };
     } else if (order.order_type === 'top_up') {
       // ── Apply top-up ───────────────────────────────────
       if (!order.top_up_iccid) {
@@ -205,7 +261,11 @@ async function processOrder(
       });
 
       console.log(`[webhook/sellauth] Top-up applied: order=${order.id} iccid=${order.top_up_iccid}`);
+      return { orderId: order.id, ok: true };
     }
+
+    // Unknown order type
+    return { orderId: order.id, ok: false, error: `Unknown order_type: ${order.order_type}` };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[webhook/sellauth] Provisioning error:', message);
@@ -215,14 +275,7 @@ async function processOrder(
       .update({ status: 'failed', error_message: message })
       .eq('id', order.id);
 
-    // Return 200 to Sellauth so it doesn't keep retrying –
-    // failed orders need manual handling.
-    return NextResponse.json({
-      received: true,
-      error:    message,
-      orderId:  order.id,
-    });
+    // Failed orders need manual handling; caller still returns 200 to Sellauth.
+    return { orderId: order.id, ok: false, error: message };
   }
-
-  return NextResponse.json({ received: true, orderId: order.id });
 }

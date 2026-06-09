@@ -209,6 +209,128 @@ const en = {
 
   // Language switcher
   lang_select: 'Language',
+
+  // Currency switcher
+  cur_title: 'Currency',
+  cur_hint:  'Billing is in EUR. Other currencies are for display only.',
+
+  // Cart
+  cart_title:        'Cart',
+  cart_empty_title:  'Your cart is empty',
+  cart_empty_sub:    'Add eSIM plans to buy them together.',
+  cart_discover:     'Browse plans',
+  cart_clear:        'Clear cart',
+  cart_total:        'Total',
+  cart_checkout:     'Checkout',
+  cart_secure:       '🔒 Secure payment · QR codes by e-mail',
+  cart_email_ph:     'your@email.com (for QR delivery)',
+  cart_email_hint:   'Your QR codes will be sent to this address.',
+  cart_invalid_email:'Please enter a valid e-mail address.',
+  cart_loading:      'Loading…',
+  cart_summary:      'Summary',
+  cart_unit_one:     'eSIM',
+  cart_unit_many:    'eSIMs',
+  cart_failed:       'Checkout failed',
+  cart_unknown:      'Unknown error',
+
+  // Tariff card CTAs
+  card_add_cart:     'Cart',
+  card_buy_now:      'Buy now',
+  card_details:      'Details',
+  card_best_network: 'Best available networks',
+  card_coverage:     '{count} countries',
+
+  // Tariffs page info bars / search
+  tp_travel_title:   'Travel plans with fixed data',
+  tp_travel_desc:    'A one-off data allowance you use flexibly over the whole validity. Ideal for trips with known usage.',
+  tp_eco_title:      'Unlimited Eco',
+  tp_eco_desc:       'Daily high-speed allowance, then unlimited at 512 kbps.',
+  tp_pro_title:      'Unlimited Pro',
+  tp_pro_desc:       'Daily high-speed allowance, then unlimited at ≥ 1 Mbps.',
+  tp_disc_3:         '🎉 From 3 days −4%',
+  tp_disc_7:         '🎉 From 7 days −8%',
+  tp_disc_14:        '🎉 From 14 days −11%',
+  tp_disc_30:        '🎉 From 30 days −18%',
+  tp_results:        '{count} plans for "{q}"',
+  tp_results_one:    '{count} plan for "{q}"',
+  tp_no_results:     'No plans found for "{q}".',
+  tp_reset:          'Reset search',
+  tp_unlimited_empty:'No unlimited plans found.',
+  tp_unlimited_empty_sub: 'Please trigger a sync.',
+
+  // Detail modal
+  det_operators:     'Network operators',
+  det_no_number:     'No phone number included · data-only eSIM',
+  det_reloadable:    'Reloadable (top-up available)',
+  det_not_reloadable:'Not reloadable – buy a new plan',
+  det_activation:    '📱 Activation',
+  det_act_1:         'Complete purchase – QR code sent by e-mail',
+  det_act_2:         '<strong>iPhone:</strong> Settings → Mobile Data → Add eSIM → Scan QR code',
+  det_act_3:         '<strong>Android:</strong> Settings → Network → SIM cards → Add eSIM',
+  det_act_4:         'Enable data roaming and select the eSIM for data',
+  det_act_5:         'Validity starts with first data use',
+  det_add_cart:      '🛒 Add to cart',
+  det_added:         '✓ Added',
+  det_buy_now:       'Buy now',
+  det_price:         'Price',
+  det_renew_note:    '🔄 The high-speed allowance renews daily at midnight (UTC).',
+
+  // Unlimited configurator
+  cfg_step1:         'Select country',
+  cfg_search_country:'Search country…',
+  cfg_step2:         'Speed after data limit',
+  cfg_eco:           'Unlimited Eco',
+  cfg_eco_sub:       'After limit: 512 kbps',
+  cfg_pro:           'Unlimited Pro',
+  cfg_pro_sub:       'After limit: ≥ 1 Mbps',
+  cfg_unavailable:   'Not available',
+  cfg_step3:         'Daily high-speed allowance',
+  cfg_gb_hint:       '🔄 Renews daily at midnight (UTC). After that, unlimited at reduced speed.',
+  cfg_gb_per_day:    'GB / day',
+  cfg_step4:         'Duration & price',
+  cfg_duration:      'Duration',
+  cfg_day:           'day',
+  cfg_days:          'days',
+  cfg_disc_incl:     '{pct}% discount included',
+  cfg_disc_next:     '· from {days} days even {pct}%',
+  cfg_disc_hint:     'From {days} days you save {pct}%',
+  cfg_added:         '✓ Added',
+  cfg_add_cart:      '🛒 Add to cart',
+  cfg_buy_now:       'Buy now',
+  cfg_disc_label:    '−{pct}% discount',
+
+  // Order page (post-payment)
+  op_processing_title: 'Order is being processed…',
+  op_processing_sub:   'Your payment is being confirmed. This page updates automatically – you also get all eSIM details by e-mail.',
+  op_ready_one:        'Your eSIM is ready!',
+  op_ready_many:       '{count} eSIMs ready!',
+  op_provisioning_title:'eSIMs are being set up…',
+  op_ready_sub:        'Scan the QR code or open the install link. Everything was also e-mailed to you.',
+  op_provisioning_sub: 'Your payment was successful. The eSIMs are being set up – one moment please.',
+  op_paid:             'Paid',
+  op_to_orders:        'My orders',
+  op_buy_more:         'Buy more eSIMs',
+  op_provisioning_item:'Being set up…',
+  op_failed_item:      'Provisioning failed',
+  op_failed_sub:       'Our team is on it. Please contact support with this order.',
+  op_not_found_title:  'Order not found',
+  op_not_found_sub:    'You can find the order link in your confirmation e-mail or your account.',
+
+  // eSIM delivery card
+  esim_install_link: 'Install link (ShortURL)',
+  esim_manual:       'Manual installation',
+  esim_smdp:         'SM-DP+ address',
+  esim_code:         'Activation code',
+  esim_download_qr:  '⬇ QR as PNG',
+  esim_copy:         'Copy',
+
+  // eSIM lifecycle (dashboard status)
+  life_new:    'New',
+  life_in_use: 'In use',
+  life_used:   'Used up',
+
+  // Dashboard extras
+  dash_total: 'Total',
 } as const;
 
 export default en;

@@ -25,13 +25,15 @@ export function LanguageSwitcher() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={t('lang_select')}
-        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:border-brand-400 hover:text-brand-700 transition-colors"
+        title={t('lang_select')}
+        className="flex items-center gap-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-colors"
       >
-        <span className="text-base leading-none">{current.flag}</span>
-        <span className="hidden sm:inline">{current.code.toUpperCase()}</span>
-        <svg className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M6 9l6 6 6-6"/>
+        {/* Globe icon */}
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+          <circle cx="12" cy="12" r="9" />
+          <path strokeLinecap="round" d="M3 12h18M12 3c2.5 2.5 3.75 5.7 3.75 9S14.5 18.5 12 21M12 3C9.5 5.5 8.25 8.7 8.25 12S9.5 18.5 12 21" />
         </svg>
+        <span className="hidden text-xs font-semibold sm:inline">{current.code.toUpperCase()}</span>
       </button>
 
       {open && (

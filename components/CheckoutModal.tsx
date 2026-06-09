@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { formatEur, formatGb } from '@/lib/utils';
+import { formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
+import { Price } from '@/components/Price';
+import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -11,6 +13,8 @@ interface CheckoutModalProps {
   tariff:       Tariff;
   orderType?:   'new_esim' | 'top_up';
   topUpIccid?:  string;
+  /** Custom day-pass duration (unlimited configs) — sent so the server recomputes the price. */
+  days?:        number;
   onClose:      () => void;
 }
 
@@ -18,38 +22,12 @@ export function CheckoutModal({
   tariff,
   orderType = 'new_esim',
   topUpIccid,
+  days,
   onClose,
 }: CheckoutModalProps) {
-  const { t }                   = useTranslation();
-  const [email,   setEmail]     = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [error,   setError]     = useState('');
+  const { t }               = useTranslation();
+  const [email, setEmail]   = useState('');
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
-
-  async function handleCheckout(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await fetch('/api/checkout', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tariffId: tariff.id, email, orderType, topUpIccid }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.checkoutUrl) {
-        throw new Error(data.error ?? 'Error creating order');
-      }
-
-      window.location.href = data.checkoutUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setLoading(false);
-    }
-  }
 
   return (
     <div
@@ -93,45 +71,32 @@ export function CheckoutModal({
           )}
           <div className="mt-2 flex justify-between border-t border-brand-200 pt-2">
             <span className="font-semibold text-slate-800">{t('checkout_total')}</span>
-            <span className="text-xl font-bold text-brand-700">
-              {formatEur(tariff.sale_price_eur)}
-            </span>
+            <Price eur={tariff.sale_price_eur} className="text-xl font-bold text-brand-700" />
           </div>
         </div>
 
-        {/* Email form */}
-        <form onSubmit={handleCheckout} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-              {t('checkout_email_label')}
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              placeholder={t('checkout_email_ph')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-            />
-            <p className="mt-1 text-xs text-slate-400">{t('checkout_email_hint')}</p>
-          </div>
+        {/* Email */}
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+            {t('checkout_email_label')}
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            placeholder={t('checkout_email_ph')}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          />
+          <p className="mt-1 text-xs text-slate-400">{t('checkout_email_hint')}</p>
+        </div>
 
-          {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60 transition-colors"
-          >
-            {loading ? t('checkout_loading') : `${t('checkout_submit')} ${formatEur(tariff.sale_price_eur)}`}
-          </button>
-          <p className="text-center text-xs text-slate-400">
-            {t('checkout_secure')}
-          </p>
-        </form>
+        {/* Crypto payment (no third-party processor) */}
+        <CryptoPaySelector
+          email={email}
+          items={[{ tariffId: tariff.id, quantity: 1, days, topUpIccid: orderType === 'top_up' ? topUpIccid : undefined }]}
+        />
       </div>
     </div>
   );

@@ -15,7 +15,11 @@
       "Bash(node -e ' *)",
       "Bash(npx tsc *)",
       "Bash(node -e \"const t = require\\('@supabase/supabase-js'\\); console.log\\('ok'\\)\")",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Laptop\\\\Desktop\\\\esim website\\\\esim website\\\\.next\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Output \"Cache cleared\")",
+      "WebFetch(domain:docs.sellauth.com)"
     ]
   }
 }

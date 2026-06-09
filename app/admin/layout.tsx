@@ -9,6 +9,7 @@ const NAV = [
   { href: '/admin/sync',     icon: '🔄', label: 'Produkt-Sync' },
   { href: '/admin/tariffs',  icon: '📦', label: 'Tarife'     },
   { href: '/admin/orders',   icon: '🧾', label: 'Bestellungen' },
+  { href: '/admin/crypto',   icon: '🪙', label: 'Krypto'      },
   { href: '/admin/settings', icon: '⚙️', label: 'Einstellungen' },
 ];
 

@@ -1,18 +1,22 @@
-// ─── Sellauth Types ──────────────────────────────────────────
+// ─── Sellauth Types (api.sellauth.com/v1) ───────────────────
 
-export interface SellauthCheckoutPayload {
-  product_id:     string;
-  quantity:       number;
-  email:          string;
-  custom_fields?: Record<string, string>;
-  success_url?:   string;
-  cancel_url?:    string;
+/** One line item in a checkout cart. */
+export interface SellauthCartLine {
+  productId: number;
+  variantId: number;
+  quantity:  number;
 }
 
-export interface SellauthCheckoutResponse {
-  id:          string;   // invoice/order ID
-  url:         string;   // redirect URL for the buyer
-  status:      string;
+/** Normalised result of creating a checkout. */
+export interface SellauthCheckoutResult {
+  invoiceId: string;   // Sellauth invoice id (we store as sellauth_order_id)
+  url:       string;   // hosted checkout / payment URL to redirect the buyer to
+}
+
+/** Result of creating an on-demand priced product. */
+export interface SellauthPricedProduct {
+  productId: number;
+  variantId: number;
 }
 
 export type SellauthWebhookEvent =

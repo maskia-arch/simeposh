@@ -1,30 +1,14 @@
 'use client';
 
-import { formatEur, formatGb } from '@/lib/utils';
+import { formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
+import { Price } from '@/components/Price';
+import { useCart } from '@/components/CartProvider';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType } from '@/lib/tariff-display';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
-
-interface OperatorEntry {
-  operatorName?: string;
-  networkType?:  string;
-}
-
-function getOperators(tariff: Tariff): OperatorEntry[] {
-  const raw = tariff.raw_data as Record<string, unknown> | null;
-  const ops = raw?.operatorList;
-  return Array.isArray(ops) ? (ops as OperatorEntry[]).slice(0, 3) : [];
-}
-
-function bestNetwork(ops: OperatorEntry[]): string | null {
-  const types = ops.map((o) => (o.networkType ?? '').toUpperCase());
-  if (types.some((t) => t.includes('5G')))                       return '5G';
-  if (types.some((t) => t.includes('4G') || t.includes('LTE')))  return '4G';
-  if (types.some((t) => t.includes('3G')))                       return '3G';
-  return null;
-}
 
 const NET_COLOR: Record<string, string> = {
   '5G': 'bg-violet-100 text-violet-700',
@@ -46,11 +30,14 @@ interface TariffCardProps {
 }
 
 export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps) {
-  const { t }   = useTranslation();
+  const { t, locale } = useTranslation();
+  const { addItem }   = useCart();
   const badge   = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
-  const ops     = getOperators(tariff);
-  const network = bestNetwork(ops);
+  const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 3);
+  const network = bestNetworkType(ops);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  const countryLabel = displayCountryName(tariff, locale);
+  const coverage     = coverageLabel(tariff, locale);
 
   return (
     <div
@@ -69,10 +56,10 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
         {/* ── Flag + Country ── */}
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
-            <CountryFlag countryCode={tariff.country_code} countryName={tariff.country_name} size={40} />
+            <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={40} />
             <div>
-              <p className="font-bold text-slate-800 leading-tight">{tariff.country_name}</p>
-              {tariff.region && <p className="text-xs text-slate-400 mt-0.5">{tariff.region}</p>}
+              <p className="font-bold text-slate-800 leading-tight">{countryLabel}</p>
+              {coverage && <p className="text-xs text-slate-400 mt-0.5">🌍 {coverage}</p>}
             </div>
           </div>
 
@@ -127,45 +114,56 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </p>
         )}
 
-        {/* ── Operators + network badge ── */}
-        {(ops.length > 0 || network) && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5 min-h-[22px]">
-            {network && (
-              <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${NET_COLOR[network] ?? ''}`}>
-                {network}
-              </span>
-            )}
-            {ops.length > 0 && (
-              <span className="text-[11px] text-slate-400 truncate">
-                📡 {ops.map((o) => o.operatorName).filter(Boolean).join(' · ')}
-              </span>
-            )}
-          </div>
-        )}
+        {/* ── Network operators ── */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 min-h-[22px]">
+          {network && (
+            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${NET_COLOR[network] ?? ''}`}>
+              {network}
+            </span>
+          )}
+          {ops.length > 0 ? (
+            <span className="flex items-center gap-1 text-[11px] text-slate-500 truncate">
+              <span>📡</span>
+              <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
+            </span>
+          ) : (
+            <span className="text-[11px] text-slate-400">📡 {t('card_best_network')}</span>
+          )}
+        </div>
 
-        {/* ── Price + CTA ── */}
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
-          <p className="text-xl font-extrabold text-slate-900">
-            {formatEur(tariff.sale_price_eur)}
-          </p>
-          <div className="flex gap-2">
-            {onDetail && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDetail(tariff); }}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                title="Details"
-              >
-                ℹ️
-              </button>
-            )}
+        {/* ── Price ── */}
+        <div className="mt-auto flex items-baseline justify-between pt-3 border-t border-slate-100">
+          <Price eur={tariff.sale_price_eur} className="text-xl font-extrabold text-slate-900" />
+          {onDetail && (
             <button
-              onClick={(e) => { e.stopPropagation(); onBuy(tariff); }}
-              disabled={loading}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 active:scale-95 disabled:opacity-60"
+              onClick={(e) => { e.stopPropagation(); onDetail(tariff); }}
+              className="text-xs font-medium text-slate-400 hover:text-brand-600 transition-colors"
+              title={t('card_details')}
             >
-              {loading ? t('card_loading') : t('card_buy')}
+              {t('card_details')} ℹ️
             </button>
-          </div>
+          )}
+        </div>
+
+        {/* ── CTAs: Add to cart + Buy now ── */}
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); addItem(tariff); }}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 active:scale-95"
+            title={t('det_add_cart')}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .96-.343 1.087-.835l1.823-6.844a.75.75 0 00-.726-.94H6.106M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+            </svg>
+            <span className="hidden sm:inline">{t('card_add_cart')}</span>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onBuy(tariff); }}
+            disabled={loading}
+            className="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 active:scale-95 disabled:opacity-60"
+          >
+            {loading ? t('card_loading') : t('card_buy_now')}
+          </button>
         </div>
       </div>
     </div>

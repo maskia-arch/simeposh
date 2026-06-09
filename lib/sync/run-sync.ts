@@ -1,9 +1,19 @@
 /**
  * Core tariff sync logic – shared between:
  *   - /api/cron/sync-tariffs  (scheduled / external cron)
- *   - /api/admin/sync         (manual trigger from admin UI)
+ *   - /api/admin/sync         (manual trigger from admin UI, fire-and-forget)
  *
- * Returns a structured result object; never throws (catches internally).
+ * KEY FIXES vs previous version:
+ *  1. No slug-based uniqueness – slug column is no longer UNIQUE in DB.
+ *     Two packageCodes that slugify identically (e.g. "ESIM-DE" & "ESIM_DE")
+ *     no longer cause entire 200-row batches to fail.
+ *
+ *  2. Timestamp-based deactivation instead of a 140k IN-clause.
+ *     "WHERE last_synced_at < syncStart" is a simple indexed comparison
+ *     that never hits URL/query-size limits.
+ *
+ *  3. Error logging per batch – if a batch fails, we log the real error
+ *     detail so it's visible in the sync log.
  */
 import {
   fetchAllPackages,
@@ -13,6 +23,7 @@ import {
   detectTariffType,
   parseLocationCodes,
   getCountryName,
+  getRegionCode,
   getFlagEmoji,
   getOperatorList,
 } from '@/lib/esimaccess/client';
@@ -32,17 +43,36 @@ export interface SyncResult {
   error?:       string;
 }
 
+/** slug is for URL readability only – NOT globally unique (package_code is the PK). */
 function slugify(str: string): string {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
-export async function runSync(): Promise<SyncResult> {
-  const startedAt = Date.now();
-  const syncId    = new Date().toISOString();
-  const db        = createServiceClient();
+/** Write a partial progress update to sync_logs (best-effort, never throws). */
+async function writeProgress(
+  db:      ReturnType<typeof createServiceClient>,
+  syncId:  string,
+  fields:  Record<string, unknown>,
+) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (db.from('sync_logs').update(fields as any).eq('sync_id', syncId));
+  } catch { /* ignore – progress writes are best-effort */ }
+}
 
-  // Create sync log entry
-  await db.from('sync_logs').insert({ sync_id: syncId, status: 'running' });
+export async function runSync(syncId = new Date().toISOString()): Promise<SyncResult> {
+  const startedAt    = Date.now();
+  const syncStartIso = new Date(startedAt).toISOString();
+  const db           = createServiceClient();
+
+  // Create sync log entry (upsert so caller can pre-create if needed)
+  await db.from('sync_logs').upsert(
+    { sync_id: syncId, status: 'running' },
+    { onConflict: 'sync_id' }
+  );
 
   try {
     // ── 1. Exchange rate ────────────────────────────────────────
@@ -53,6 +83,15 @@ export async function runSync(): Promise<SyncResult> {
     await db.from('system_settings')
       .update({ value: String(usdEurRate) })
       .eq('key', 'usd_eur_rate');
+
+    const { data: avgRow } = await db
+      .from('system_settings').select('value').eq('key', 'last_sync_duration_ms').single();
+    const lastDurationMs = avgRow ? parseInt(avgRow.value, 10) : 0;
+
+    await writeProgress(db, syncId, {
+      usd_eur_rate:  usdEurRate,
+      error_message: `eta_ms:${lastDurationMs > 0 ? lastDurationMs : 120_000}`,
+    });
 
     // ── 2. Fetch all packages (travel + unlimited) ──────────────
     const listRes = await fetchAllPackages();
@@ -71,18 +110,27 @@ export async function runSync(): Promise<SyncResult> {
         status: 'completed', total_packages: 0, upserted: 0,
         errors: 0, usd_eur_rate: usdEurRate, price_changes: 0,
         duration_ms: duration, completed_at: new Date().toISOString(),
+        error_message: null,
       }).eq('sync_id', syncId);
       return { success: true, upserted: 0, errors: 0, total: 0, usdEurRate, priceChanges: 0, syncId, duration_ms: duration };
     }
 
+    await writeProgress(db, syncId, {
+      total_packages: packages.length,
+      error_message:  `fetched:${packages.length}|eta_ms:${lastDurationMs > 0 ? lastDurationMs : 120_000}`,
+    });
+
     // ── 3. Load existing prices for change detection ────────────
     const { data: existing } = await db
-      .from('tariffs').select('id, package_code, sale_price_eur').limit(20_000);
+      .from('tariffs').select('id, package_code, sale_price_eur').limit(200_000);
     const existingMap = new Map(
       (existing ?? []).map((t) => [t.package_code, { id: t.id, price: t.sale_price_eur }])
     );
 
     // ── 4. Build upsert rows ────────────────────────────────────
+    // Use syncStartIso so deactivation via last_synced_at < syncStartIso works correctly.
+    const syncedAt = new Date().toISOString();
+
     const rows = packages.map((pkg) => {
       const ekUsd         = priceToUsd(pkg.price);
       const salePriceEur  = calculateSalePrice(ekUsd, usdEurRate);
@@ -90,16 +138,20 @@ export async function runSync(): Promise<SyncResult> {
       const dataGb        = volumeBytes > 0 ? bytesToGb(volumeBytes) : null;
       const tariffType    = detectTariffType(pkg);
       const locationCodes = parseLocationCodes(pkg);
-      const countryCode   = locationCodes[0] ?? 'XX';
-      const countryName   = getCountryName(pkg);
-      const flagEmoji     = locationCodes.length === 1
-        ? getFlagEmoji(countryCode)
-        : locationCodes.length > 1 ? '🌍' : '🌐';
-      const baseSlug      = slugify(
-        `${countryCode}-${dataGb ?? 'unlimited'}-${pkg.duration}d-${tariffType}`
-      );
+      const isMulti       = locationCodes.length > 1;
 
-      // Parse throttle speed (kbps)
+      const countryCode = isMulti ? getRegionCode(locationCodes) : (locationCodes[0] ?? 'XX');
+      const countryName = getCountryName(pkg);
+      const region      = isMulti ? countryName : null;
+
+      const flagEmoji = !isMulti && locationCodes.length === 1
+        ? getFlagEmoji(locationCodes[0])
+        : isMulti ? '🌍' : '🌐';
+
+      // slug = slugify(packageCode) – for URL readability only.
+      // NOT globally unique (the unique constraint was dropped in migration 003).
+      const slug = slugify(pkg.packageCode);
+
       let speedKbps: number | null = null;
       if (typeof pkg.speed === 'number') {
         speedKbps = pkg.speed;
@@ -114,12 +166,12 @@ export async function runSync(): Promise<SyncResult> {
 
       return {
         package_code:       pkg.packageCode,
-        slug:               `${baseSlug}-${pkg.packageCode}`.substring(0, 100),
+        slug,
         name:               pkg.name || `${countryName} ${dataGb ?? 'Unlimited'}GB ${pkg.duration}d`,
         description:        pkg.description || null,
         country_code:       countryCode,
         country_name:       countryName,
-        region:             null as string | null,
+        region,
         flag_emoji:         flagEmoji,
         data_gb:            dataGb,
         validity_days:      pkg.duration,
@@ -133,9 +185,9 @@ export async function runSync(): Promise<SyncResult> {
         location_codes:     locationCodes.length > 0 ? locationCodes : null as string[] | null,
         raw_data:           {
           ...(pkg as unknown as Record<string, unknown>),
-          operatorList: getOperatorList(pkg),   // canonical key
+          operatorList: getOperatorList(pkg),
         },
-        last_synced_at:     new Date().toISOString(),
+        last_synced_at: syncedAt,
       };
     });
 
@@ -163,23 +215,38 @@ export async function runSync(): Promise<SyncResult> {
           change_pct:    Math.round(changePct * 100) / 100,
           status:        'pending',
         });
-        // Keep old price until admin approves
-        row.sale_price_eur = prev.price;
+        row.sale_price_eur = prev.price; // keep old price until admin approves
       }
     }
 
-    // ── 6. Upsert in batches of 100 ─────────────────────────────
-    const BATCH = 100;
+    // ── 6. Upsert in batches of 200 ─────────────────────────────
+    // onConflict: 'package_code' – slug is no longer unique, package_code is the PK.
+    const BATCH = 200;
     let upserted = 0, errors = 0;
+    const errorDetails: string[] = [];
 
     for (let i = 0; i < rows.length; i += BATCH) {
       const batch = rows.slice(i, i + BATCH);
       const { error } = await db.from('tariffs').upsert(batch, { onConflict: 'package_code' });
       if (error) {
-        console.error('[sync] upsert error:', error.message, error.details);
+        const detail = `Batch ${Math.floor(i / BATCH) + 1}: ${error.message}`;
+        console.error('[sync] upsert error:', detail, error.details ?? '');
         errors += batch.length;
+        errorDetails.push(detail);
       } else {
         upserted += batch.length;
+      }
+
+      // Write progress every 10 batches (~2000 rows)
+      if ((i / BATCH) % 10 === 0) {
+        const etaMs = lastDurationMs > 0
+          ? Math.round(lastDurationMs * (1 - i / rows.length))
+          : 120_000;
+        await writeProgress(db, syncId, {
+          upserted,
+          errors,
+          error_message: `fetched:${packages.length}|upserted:${upserted}|errors:${errors}|eta_ms:${etaMs}`,
+        });
       }
     }
 
@@ -190,25 +257,45 @@ export async function runSync(): Promise<SyncResult> {
         .in('package_code', proposals.map(p => p.package_code));
       const freshMap = new Map((freshIds ?? []).map(t => [t.package_code, t.id]));
       const toInsert = proposals
-        .map(p => ({ ...p, tariff_id: p.tariff_id || freshMap.get(p.package_code) || p.tariff_id }))
+        .map(p => ({ ...p, tariff_id: freshMap.get(p.package_code) ?? p.tariff_id }))
         .filter(p => p.tariff_id);
       if (toInsert.length > 0) {
         await db.from('tariff_price_proposals').insert(toInsert);
       }
     }
 
-    // ── 8. Deactivate removed packages ─────────────────────────
-    const activeCodes = packages.map(p => p.packageCode);
-    if (activeCodes.length > 0) {
-      await db.from('tariffs')
-        .update({ is_active: false })
-        .not('package_code', 'in', `(${activeCodes.map(c => `'${c.replace(/'/g, "''")}'`).join(',')})`);
+    // ── 8. Deactivate removed packages (timestamp-based) ────────
+    // Instead of a giant "NOT IN (140k items)" URL that exceeds PostgREST limits,
+    // we use the last_synced_at timestamp set during upsert.
+    // Any row with last_synced_at < syncStartIso was NOT touched by this sync
+    // → it was removed from the esimaccess catalogue → deactivate it.
+    const { error: deactivateError } = await db
+      .from('tariffs')
+      .update({ is_active: false })
+      .lt('last_synced_at', syncStartIso)
+      .eq('is_active', true);
+
+    if (deactivateError) {
+      console.error('[sync] deactivation error (non-fatal):', deactivateError.message);
+    } else {
+      console.log('[sync] Deactivated stale packages (last_synced_at < syncStart)');
     }
 
-    // ── 9. Finalize sync log ────────────────────────────────────
+    // ── 9. Finalize ─────────────────────────────────────────────
     const duration = Date.now() - startedAt;
+
+    await db.from('system_settings').upsert(
+      { key: 'last_sync_duration_ms', value: String(duration), description: 'Duration of last successful sync in ms' },
+      { onConflict: 'key' }
+    );
+
+    // Build final error message: include first batch error if any
+    const finalErrorMsg = errorDetails.length > 0
+      ? `${errors} rows failed. First error: ${errorDetails[0]}`
+      : null;
+
     await db.from('sync_logs').update({
-      status:         'completed',
+      status:         errors > 0 && upserted === 0 ? 'failed' : 'completed',
       total_packages: packages.length,
       upserted,
       errors,
@@ -216,11 +303,22 @@ export async function runSync(): Promise<SyncResult> {
       price_changes:  proposals.length,
       duration_ms:    duration,
       completed_at:   new Date().toISOString(),
+      error_message:  finalErrorMsg,
     }).eq('sync_id', syncId);
 
     console.log(`[sync] Done. packages=${packages.length} upserted=${upserted} errors=${errors} priceChanges=${proposals.length} duration=${duration}ms`);
 
-    return { success: true, upserted, errors, total: packages.length, usdEurRate, priceChanges: proposals.length, syncId, duration_ms: duration };
+    return {
+      success:      upserted > 0,
+      upserted,
+      errors,
+      total:        packages.length,
+      usdEurRate,
+      priceChanges: proposals.length,
+      syncId,
+      duration_ms:  duration,
+      error:        finalErrorMsg ?? undefined,
+    };
 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -231,6 +329,9 @@ export async function runSync(): Promise<SyncResult> {
       duration_ms:   Date.now() - startedAt,
       completed_at:  new Date().toISOString(),
     }).eq('sync_id', syncId);
-    return { success: false, upserted: 0, errors: 0, total: 0, usdEurRate: 0, priceChanges: 0, syncId, duration_ms: Date.now() - startedAt, error: message };
+    return {
+      success: false, upserted: 0, errors: 0, total: 0, usdEurRate: 0,
+      priceChanges: 0, syncId, duration_ms: Date.now() - startedAt, error: message,
+    };
   }
 }

@@ -6,6 +6,39 @@ import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { CurrencySwitcher } from '@/components/CurrencySwitcher';
+import { useCart } from '@/components/CartProvider';
+
+/** Globe (language) | divider | banknote (currency) – Airalo-style controls. */
+function LocaleCurrencyControls() {
+  return (
+    <div className="flex items-center">
+      <LanguageSwitcher />
+      <span className="mx-0.5 h-5 w-px bg-slate-200" />
+      <CurrencySwitcher />
+    </div>
+  );
+}
+
+function CartButton() {
+  const { count, toggle } = useCart();
+  return (
+    <button
+      onClick={toggle}
+      className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-colors"
+      aria-label="Warenkorb"
+    >
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .96-.343 1.087-.835l1.823-6.844a.75.75 0 00-.726-.94H6.106M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+      </svg>
+      {count > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </button>
+  );
+}
 
 export function Navbar() {
   const [user, setUser]     = useState<User | null>(null);
@@ -67,12 +100,14 @@ export function Navbar() {
               </Link>
             </>
           )}
-          <LanguageSwitcher />
+          <CartButton />
+          <LocaleCurrencyControls />
         </div>
 
-        {/* Mobile: lang switcher + hamburger */}
-        <div className="flex items-center gap-2 md:hidden">
-          <LanguageSwitcher />
+        {/* Mobile: cart + lang/currency + hamburger */}
+        <div className="flex items-center gap-1 md:hidden">
+          <CartButton />
+          <LocaleCurrencyControls />
           <button
             className="flex flex-col gap-1.5"
             onClick={() => setMenu(!menuOpen)}

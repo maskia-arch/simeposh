@@ -44,12 +44,19 @@ function getInitialLocale(): LocaleCode {
 export function LanguageProvider({ children, initialLocale }: { children: React.ReactNode; initialLocale?: LocaleCode }) {
   const [locale,  setLocaleState] = useState<LocaleCode>(initialLocale ?? 'en');
   const [dict,    setDict]        = useState<Record<string, string>>({});
+  const [enDict,  setEnDict]      = useState<Record<string, string>>({});
 
   // On mount: read cookie (client-side) and override SSR default
   useEffect(() => {
     const cookieLocale = getInitialLocale();
     if (cookieLocale !== locale) setLocaleState(cookieLocale);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Always keep the English dictionary loaded as a fallback for any key that
+  // hasn't been translated into the active locale yet.
+  useEffect(() => {
+    loaders.en().then((mod) => setEnDict(mod.default as Record<string, string>));
   }, []);
 
   // Whenever locale changes: load dict + persist cookie
@@ -64,7 +71,10 @@ export function LanguageProvider({ children, initialLocale }: { children: React.
 
   const t = useCallback(
     (key: TranslationKeys, vars?: Record<string, string | number>): string => {
-      let str = (dict[key] as string | undefined) ?? key;
+      // current locale → English fallback → the key itself
+      let str = (dict[key] as string | undefined)
+        ?? (enDict[key] as string | undefined)
+        ?? key;
       if (vars) {
         Object.entries(vars).forEach(([k, v]) => {
           str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
@@ -72,7 +82,7 @@ export function LanguageProvider({ children, initialLocale }: { children: React.
       }
       return str;
     },
-    [dict],
+    [dict, enDict],
   );
 
   return (
