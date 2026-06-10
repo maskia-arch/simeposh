@@ -24,5 +24,7 @@ const ro = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Acceptați Termenii şi Condițiile pentru a continua.',
   lang_select:'Limbă',
+  topup_error_invalid_iccid: 'Codul ICCID specificat este nevalid sau nu a putut fi găsit.',
+  topup_error_general: 'A apărut o eroare neașteptată. Vă rugăm să încercați din nou mai târziu.',
 } as const;
 export default ro;

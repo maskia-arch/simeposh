@@ -1,21 +1,13 @@
 /**
- * Crypto checkout session creation — the server-authoritative pricing flow.
+ * Crypto checkout session creation — pure-wallet integration.
  *
  *   1. base EUR price (from the order, never the client)
- *   2. + coin surcharge (percent and/or fixed)            → fiat target
- *   3. convert to crypto via a live rate
- *   4. reserve a free 4-digit slot id and embed it in the LAST 4 decimals
- *   5. fix the exact crypto amount + rate for 20 minutes
- *
- * Example: base 0.16000000 LTC → reserved slot 1121 → 0.16001121 LTC.
+ *   2. + coin surcharge (percent and/or fixed) → fiat target
+ *   3. Calls pure-wallet API to derive next address and convert to LTC
+ *   4. Saves the derived address, exact LTC amount, and expiration
  */
 import { createServiceClient } from '@/lib/supabase/server';
-import { getCoin, buildPaymentUri, type CoinConfig } from '@/lib/crypto/coins';
-import { getCoinEurRate } from '@/lib/crypto/rates';
-
-export const SESSION_TTL_MS = 20 * 60 * 1000; // 20 minutes
-const SLOT_MODULUS = 10_000;                  // last 4 decimals = slot id
-const MAX_SLOT_TRIES = 40;
+import { getCoin, type CoinConfig } from '@/lib/crypto/coins';
 
 export interface CryptoSession {
   id:            string;
@@ -27,7 +19,6 @@ export interface CryptoSession {
   surchargePct:  number;
   surchargeFixedEur: number;
   rateEur:       number;
-  slotId:        number;
   confirmationsRequired: number;
   paymentUri:    string;
   expiresAt:     string;
@@ -45,7 +36,7 @@ export function applySurcharge(baseEur: number, coin: CoinConfig): number {
 
 /**
  * Create a fixed-amount crypto session for a set of already-created (pending)
- * orders. Returns the session the customer must pay.
+ * orders by calling the local pure-wallet gateway.
  */
 export async function createCryptoSession(opts: {
   orderIds: string[];
@@ -56,70 +47,102 @@ export async function createCryptoSession(opts: {
   const coin = await getCoin(opts.coinCode);
   if (!coin) throw new Error(`Coin ${opts.coinCode} is not available`);
 
+  if (opts.coinCode.toUpperCase() !== 'LTC') {
+    throw new Error('Only Litecoin (LTC) is supported by the payment gateway at this time.');
+  }
+
   const db = createServiceClient();
 
-  // 1+2. fiat target incl. surcharge
+  // 1. Calculate final EUR price (including surcharge)
   const amountEur = applySurcharge(opts.baseEur, coin);
+  const expiresAtTemp = new Date(Date.now() + 25 * 60 * 1000).toISOString();
 
-  // 3. convert to crypto
-  const rateEur = await getCoinEurRate(coin.coingecko_id);
-  const rawCrypto = amountEur / rateEur; // coins
-
-  // 4. compute the base block (round UP so the amount always covers the price)
-  const factor = Math.pow(10, coin.decimals);          // e.g. 1e8 for LTC
-  const rawUnits = Math.ceil(rawCrypto * factor);       // integer smallest-units
-  const baseBlock = Math.ceil(rawUnits / SLOT_MODULUS) * SLOT_MODULUS; // zero last 4 digits, round up
-
-  const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
-
-  // Reserve a free slot: the (coin, crypto_amount) unique index guarantees
-  // exclusivity; we retry with a new random slot on collision.
-  for (let attempt = 0; attempt < MAX_SLOT_TRIES; attempt++) {
-    const slotId = Math.floor(Math.random() * SLOT_MODULUS);
-    const units  = baseBlock + slotId;
-    const cryptoAmount = (units / factor).toFixed(coin.decimals);
-
-    const { data, error } = await db.from('crypto_sessions').insert({
+  // 2. Insert pending session in database to acquire session UUID
+  const { data: sData, error: insertErr } = await db
+    .from('crypto_sessions')
+    .insert({
       order_ids:              opts.orderIds,
       customer_email:         opts.email,
       coin:                   coin.code,
-      wallet_address:         coin.walletAddress,
+      wallet_address:         'TBD',
       base_eur:               roundEur(opts.baseEur),
       amount_eur:             amountEur,
       surcharge_pct:          Number(coin.surcharge_pct),
       surcharge_fixed_eur:    Number(coin.surcharge_fixed_eur),
-      rate_eur:               rateEur,
-      slot_id:                slotId,
-      crypto_amount:          Number(cryptoAmount),
+      rate_eur:               0, // resolved below
+      slot_id:                0,
+      crypto_amount:          0, // resolved below
       confirmations_required: coin.confirmations,
       status:                 'pending',
-      expires_at:             expiresAt,
-    }).select('id').single();
+      expires_at:             expiresAtTemp,
+    })
+    .select('id')
+    .single();
 
-    if (!error && data) {
-      return {
-        id: data.id,
-        coin: coin.code,
-        walletAddress: coin.walletAddress,
-        cryptoAmount,
-        amountEur,
-        baseEur: roundEur(opts.baseEur),
-        surchargePct: Number(coin.surcharge_pct),
-        surchargeFixedEur: Number(coin.surcharge_fixed_eur),
-        rateEur,
-        slotId,
-        confirmationsRequired: coin.confirmations,
-        paymentUri: buildPaymentUri(coin, cryptoAmount),
-        expiresAt,
-      };
-    }
-
-    // 23505 = unique_violation → slot taken, retry; otherwise abort
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((error as any)?.code && (error as any).code !== '23505') {
-      throw new Error(`crypto session insert failed: ${error!.message}`);
-    }
+  if (insertErr || !sData) {
+    throw new Error(`Failed to create crypto session in database: ${insertErr?.message}`);
   }
 
-  throw new Error('No free payment slot available, please retry');
+  const sessionId = sData.id;
+
+  // 3. Call local pure-wallet gateway to derive address and convert price to LTC
+  let walletRes: { address: string; amount_ltc: number; expires_at: string };
+  try {
+    const gatewayUrl = process.env.PURE_WALLET_URL || 'http://localhost:7777';
+    const res = await fetch(`${gatewayUrl}/api/v1/payment/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount_eur: amountEur,
+        order_id: sessionId,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `Gateway returned status ${res.status}`);
+    }
+
+    walletRes = await res.json();
+  } catch (err) {
+    // Clean up created pending orders and session on failure
+    await db.from('orders').delete().in('id', opts.orderIds);
+    await db.from('crypto_sessions').delete().eq('id', sessionId);
+    throw new Error(`Krypto-Gateway-Fehler: ${(err as Error).message}`);
+  }
+
+  // 4. Update the session with derived address, ltc rate, and real expiration
+  const rateEur = amountEur / walletRes.amount_ltc;
+
+  const { error: updateErr } = await db
+    .from('crypto_sessions')
+    .update({
+      wallet_address: walletRes.address,
+      crypto_amount:  walletRes.amount_ltc,
+      rate_eur:       rateEur,
+      expires_at:     walletRes.expires_at,
+    } as any)
+    .eq('id', sessionId);
+
+  if (updateErr) {
+    throw new Error(`Failed to update session address: ${updateErr.message}`);
+  }
+
+  // P2PKH payment URI
+  const paymentUri = `litecoin:${walletRes.address}?amount=${walletRes.amount_ltc}`;
+
+  return {
+    id: sessionId,
+    coin: coin.code,
+    walletAddress: walletRes.address,
+    cryptoAmount: String(walletRes.amount_ltc),
+    amountEur,
+    baseEur: roundEur(opts.baseEur),
+    surchargePct: Number(coin.surcharge_pct),
+    surchargeFixedEur: Number(coin.surcharge_fixed_eur),
+    rateEur,
+    confirmationsRequired: coin.confirmations,
+    paymentUri,
+    expiresAt: walletRes.expires_at,
+  };
 }

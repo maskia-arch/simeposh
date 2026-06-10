@@ -104,7 +104,7 @@ export default function TopUpPage() {
       {/* Error */}
       {error && (
         <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
+          {t(error as any)}
         </div>
       )}
 

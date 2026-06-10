@@ -399,6 +399,8 @@ const en = {
   checkout_agree_link: 'Terms and Conditions',
   checkout_agree_suffix: '.',
   checkout_agree_error: 'Please accept the Terms and Conditions to proceed.',
+  topup_error_invalid_iccid: 'The specified ICCID is invalid or could not be found.',
+  topup_error_general: 'An unexpected error occurred. Please try again later.',
 } as const;
 
 export default en;

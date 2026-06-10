@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { roundToX9, getDiscountPct, discountLabel } from '@/lib/utils';
+import { roundToX9, getDiscountPct, discountLabel, formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import type { Database } from '@/lib/supabase/types';
 import { CheckoutModal } from '@/components/CheckoutModal';
@@ -285,7 +285,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
   // ── Step 4: pick the BEST base package for the chosen GB ──────────────────
   // We must use the actual package (its packageCode) that yields the lowest
   // per-day rate — not just availablePackages[0] — so checkout & provisioning
-  // reference the correct esimaccess product.
+  // reference the correct supplier product.
   const bestPackage = useMemo<Tariff | null>(() => {
     if (selectedGb === null) return null;
     const matching = availablePackages.filter((t) => Number(t.data_gb) === selectedGb);
@@ -427,7 +427,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                         : 'border-slate-200 text-slate-700 hover:border-brand-300 hover:bg-brand-50'
                     }`}
                   >
-                    {gb} {t('cfg_gb_per_day')}
+                    {formatGb(gb)} / {t('cfg_day')}
                   </button>
                 ))}
               </div>
@@ -456,7 +456,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                     </div>
                     <p className="text-slate-500">
                       {tariffType === 'unlimited_eco' ? `♾️ ${t('cfg_eco')}` : `⚡ ${t('cfg_pro')}`}
-                      &ensp;·&ensp;{selectedGb} {t('cfg_gb_per_day')}
+                      &ensp;·&ensp;{formatGb(selectedGb)} / {t('cfg_day')}
                       &ensp;·&ensp;{days} {days === 1 ? t('cfg_day') : t('cfg_days')}
                     </p>
                     {/* Operator info */}

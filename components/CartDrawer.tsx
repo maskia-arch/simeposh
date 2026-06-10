@@ -121,13 +121,13 @@ export function CartDrawer() {
             </a>
           </div>
         ) : (
-          <>
-            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+            <div className="flex-1 space-y-3 px-5 py-4">
               {items.map((i) => {
                 const badge = i.tariffType ? TYPE_BADGE[i.tariffType] : null;
                 const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
                 return (
-                  <div key={i.key} className="flex gap-3 rounded-2xl border border-slate-200 p-3">
+                  <div key={i.key} className="flex items-start gap-3 rounded-2xl border border-slate-200 p-3 bg-white hover:border-brand-300 transition-all">
                     <CountryFlag countryCode={i.countryCode} countryName={i.countryName} size={36} className="mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
@@ -153,16 +153,16 @@ export function CartDrawer() {
 
                       <div className="mt-2 flex items-center justify-between">
                         {/* Quantity stepper */}
-                        <div className="flex items-center rounded-lg border border-slate-200">
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50/50">
                           <button
                             onClick={() => setQuantity(i.key, i.quantity - 1)}
-                            className="px-2.5 py-1 text-slate-500 hover:bg-slate-50"
+                            className="px-2.5 py-1 text-slate-500 hover:bg-slate-50 transition-colors rounded-l-lg"
                             aria-label="Weniger"
                           >−</button>
                           <span className="min-w-[2rem] text-center text-sm font-semibold tabular-nums">{i.quantity}</span>
                           <button
                             onClick={() => setQuantity(i.key, i.quantity + 1)}
-                            className="px-2.5 py-1 text-slate-500 hover:bg-slate-50"
+                            className="px-2.5 py-1 text-slate-500 hover:bg-slate-50 transition-colors rounded-r-lg"
                             aria-label="Mehr"
                           >+</button>
                         </div>
@@ -182,14 +182,14 @@ export function CartDrawer() {
             </div>
 
             {/* Footer / checkout */}
-            <div className="border-t border-slate-200 px-5 py-4 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-sm text-slate-600">{t('cart_total')} ({count} {count === 1 ? t('cart_unit_one') : t('cart_unit_many')})</span>
+            <div className="border-t border-slate-200 px-5 py-5 space-y-4 bg-slate-50/60">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <span className="text-sm text-slate-600 font-medium">{t('cart_total')} ({count} {count === 1 ? t('cart_unit_one') : t('cart_unit_many')})</span>
                 <Price eur={total} className="text-xl font-extrabold text-slate-900" />
               </div>
 
               {/* Cashback Promo Banner */}
-              <div className="rounded-xl p-3 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 shadow-sm">
+              <div className="rounded-xl p-3.5 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 shadow-sm">
                 {user ? (
                   <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 leading-normal">
                     {t('checkout_cashback_earned' as any, { 
@@ -208,13 +208,13 @@ export function CartDrawer() {
                     >
                       {t('checkout_cashback_guest_link' as any)}
                     </a>
-                    <span>{t('checkout_cashback_guest_text' as any)}</span>
+                    <span> {t('checkout_cashback_guest_text' as any)}</span>
                   </div>
                 )}
               </div>
 
               {user ? (
-                <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                <div className="rounded-xl bg-white border border-slate-200 px-4 py-3 shadow-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('checkout_email_label') || 'Email Address'}</p>
                   <p className="text-sm font-semibold text-slate-700 mt-0.5">{user.email}</p>
                   <p className="text-[11px] text-slate-400 mt-1">{t('cart_email_hint')}</p>
@@ -226,14 +226,14 @@ export function CartDrawer() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('cart_email_ph')}
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
                   />
                   <p className="mt-1 text-xs text-slate-400">{t('cart_email_hint')}</p>
                 </div>
               )}
 
               {/* Payment selector */}
-              <div className="border-t border-slate-100 pt-4">
+              <div className="border-t border-slate-200 pt-4">
                 <CryptoPaySelector
                   email={email}
                   items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined }))}
@@ -243,7 +243,7 @@ export function CartDrawer() {
                 />
               </div>
             </div>
-          </>
+          </div>
         )}
       </aside>
     </>

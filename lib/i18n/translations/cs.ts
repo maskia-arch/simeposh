@@ -24,5 +24,7 @@ const cs = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Pro pokračování přijměte obchodní podmínky.',
   lang_select:'Jazyk',
+  topup_error_invalid_iccid: 'Zadané ICCID je neplatné nebo nebylo nalezeno.',
+  topup_error_general: 'Došlo k neočekávané chybě. Zkuste to prosím znovu později.',
 } as const;
 export default cs;

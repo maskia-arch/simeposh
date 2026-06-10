@@ -104,5 +104,7 @@ const de = {
   checkout_agree_link: 'AGB',
   checkout_agree_suffix: 'gelesen und akzeptiere diese.',
   checkout_agree_error: 'Bitte akzeptiere die AGB, um fortzufahren.',
+  topup_error_invalid_iccid: 'Die angegebene ICCID ist ungültig oder konnte nicht gefunden werden.',
+  topup_error_general: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später noch einmal.',
 } as const;
 export default de;

@@ -24,5 +24,7 @@ const da = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Accepter vilkårene og betingelserne for at fortsætte.',
   lang_select:'Sprog',
+  topup_error_invalid_iccid: 'Den angivne ICCID er ugyldig eller kunne ikke findes.',
+  topup_error_general: 'Der opstod en uventet fejl. Prøv venligst igen senere.',
 } as const;
 export default da;

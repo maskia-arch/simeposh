@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 
 // Routes that require authentication
-const PROTECTED_ROUTES = ['/dashboard', '/admin'];
+const PROTECTED_ROUTES = ['/dashboard'];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -65,14 +65,7 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // 1. Strict protection for /admin routes (pages only)
-  if (pathname.startsWith('/admin')) {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!user || user.email !== adminEmail) {
-      const dest = user ? '/dashboard' : '/';
-      return NextResponse.redirect(new URL(dest, request.url));
-    }
-  }
+
 
   // 2. Redirect unauthenticated users away from remaining protected routes
   const isProtected = PROTECTED_ROUTES.filter((r) => r !== '/admin').some((route) =>
@@ -86,9 +79,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from auth pages
   if (user && (pathname === '/login' || pathname === '/register')) {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const dest = (adminEmail && user.email === adminEmail) ? '/admin' : '/dashboard';
-    return NextResponse.redirect(new URL(dest, request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return supabaseResponse;

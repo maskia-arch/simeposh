@@ -24,5 +24,7 @@ const hu = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'A folytatáshoz fogadja el a felhasználási feltételeket.',
   lang_select:'Nyelv',
+  topup_error_invalid_iccid: 'A megadott ICCID érvénytelen vagy nem található.',
+  topup_error_general: 'Váratlan hiba történt. Kérjük, próbálja meg később.',
 } as const;
 export default hu;

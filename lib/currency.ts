@@ -5,7 +5,7 @@
  * The other currencies are display-only conversions for the storefront.
  */
 
-export type CurrencyCode = 'EUR' | 'USD' | 'BTC' | 'ETH' | 'LTC' | 'SOL';
+export type CurrencyCode = 'EUR' | 'USD' | 'BTC' | 'ETH' | 'LTC' | 'SOL' | 'USDT' | 'USDC' | 'TON' | 'TRX';
 
 export interface CurrencyDef {
   code:     CurrencyCode;
@@ -22,6 +22,10 @@ export const CURRENCIES: CurrencyDef[] = [
   { code: 'ETH', label: 'Ethereum', symbol: 'Ξ', type: 'crypto', decimals: 6 },
   { code: 'LTC', label: 'Litecoin', symbol: 'Ł', type: 'crypto', decimals: 4 },
   { code: 'SOL', label: 'Solana',   symbol: '◎', type: 'crypto', decimals: 4 },
+  { code: 'USDT', label: 'Tether',   symbol: '₮', type: 'crypto', decimals: 4 },
+  { code: 'USDC', label: 'USD Coin', symbol: 'Ⓢ', type: 'crypto', decimals: 4 },
+  { code: 'TON', label: 'Toncoin',   symbol: '💎', type: 'crypto', decimals: 4 },
+  { code: 'TRX', label: 'Tron',      symbol: '🔴', type: 'crypto', decimals: 4 },
 ];
 
 export const DEFAULT_CURRENCY: CurrencyCode = 'EUR';

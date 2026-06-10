@@ -24,5 +24,7 @@ const fi = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Hyväksy käyttöehdot jatkaaksesi.',
   lang_select:'Kieli',
+  topup_error_invalid_iccid: 'Määritetty ICCID on virheellinen tai sitä ei löytynyt.',
+  topup_error_general: 'Tapahtui odottamaton virhe. Yritä myöhemmin uudelleen.',
 } as const;
 export default fi;

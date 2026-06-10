@@ -110,7 +110,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             </p>
             <p className="text-xs text-slate-500 mt-0.5">{t('card_data')}</p>
             {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
-              <p className="text-[10px] text-brand-500">{tariff.data_gb} GB/Tag</p>
+              <p className="text-[10px] text-brand-500">{formatGb(tariff.data_gb)}/{t('cfg_day')}</p>
             )}
           </div>
           <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-center">

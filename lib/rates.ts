@@ -21,7 +21,10 @@ export interface StoredRates {
 }
 
 /** Sensible fallback so the UI never breaks if all providers fail. */
-const FALLBACK: Rates = { EUR: 1, USD: 1.08, BTC: 0.000016, ETH: 0.0004, LTC: 0.012, SOL: 0.007 };
+const FALLBACK: Rates = {
+  EUR: 1, USD: 1.08, BTC: 0.000016, ETH: 0.0004, LTC: 0.012, SOL: 0.007,
+  USDT: 1.08, USDC: 1.08, TON: 0.15, TRX: 8.0,
+};
 
 export async function getRates(forceRefresh = false): Promise<StoredRates> {
   const db = createServiceClient();
@@ -55,7 +58,7 @@ async function fetchAndStore(db: ReturnType<typeof createServiceClient>): Promis
   // ── Crypto: EUR price per coin → coins per EUR (CoinGecko) ───
   try {
     const res = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,litecoin,solana&vs_currencies=eur',
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,litecoin,solana,tether,usd-coin,the-open-network,tron&vs_currencies=eur',
       { signal: AbortSignal.timeout(10_000), headers: { accept: 'application/json' } },
     );
     if (res.ok) {
@@ -68,11 +71,15 @@ async function fetchAndStore(db: ReturnType<typeof createServiceClient>): Promis
       set('ETH', 'ethereum');
       set('LTC', 'litecoin');
       set('SOL', 'solana');
+      set('USDT', 'tether');
+      set('USDC', 'usd-coin');
+      set('TON', 'the-open-network');
+      set('TRX', 'tron');
     }
   } catch { /* keep whatever we have */ }
 
   // Fill any missing crypto with fallback so options always work
-  for (const k of ['BTC', 'ETH', 'LTC', 'SOL'] as const) {
+  for (const k of ['BTC', 'ETH', 'LTC', 'SOL', 'USDT', 'USDC', 'TON', 'TRX'] as const) {
     if (!rates[k] || rates[k]! <= 0) rates[k] = FALLBACK[k];
   }
 

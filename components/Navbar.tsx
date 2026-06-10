@@ -181,7 +181,6 @@ export function Navbar() {
   useEffect(() => {
     // Hide search entirely on checkout, success, callback, and admin routes
     const isExemptRoute =
-      pathname.startsWith('/admin') ||
       pathname.startsWith('/checkout') ||
       pathname.startsWith('/success') ||
       pathname.startsWith('/auth/callback');
@@ -216,25 +215,10 @@ export function Navbar() {
     window.location.href = '/';
   }
 
-  const isAdmin = user && process.env.NEXT_PUBLIC_ADMIN_EMAIL && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  const showAdminBack = isAdmin && !pathname.startsWith('/admin');
-  const showCustomerBack = isAdmin && pathname.startsWith('/admin');
+
 
   return (
     <div className="sticky top-0 z-50 w-full shadow-sm">
-      {/* Top Announcement Bar */}
-      <div className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
-        {user ? (
-          <span>
-            {t('announcement_user' as any, { rate: cashbackRate ?? 5 })}
-          </span>
-        ) : (
-          <span>
-            {t('announcement_guest' as any)}
-          </span>
-        )}
-      </div>
-
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
@@ -259,16 +243,7 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-              {showAdminBack && (
-                <Link href="/admin" className="rounded-lg bg-amber-50 px-3 py-1.5 text-amber-800 hover:bg-amber-100 transition-colors font-semibold">
-                  zurück zum Admin Dashboard
-                </Link>
-              )}
-              {showCustomerBack && (
-                <Link href="/dashboard" className="rounded-lg bg-brand-50 px-3 py-1.5 text-brand-700 hover:bg-brand-100 transition-colors font-semibold">
-                  zurück zum Dashboard
-                </Link>
-              )}
+
               <DashboardDropdown t={t} />
               <button
                 onClick={handleLogout}
@@ -328,16 +303,7 @@ export function Navbar() {
             <Link href="/topup"   onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
             {user ? (
               <>
-                {showAdminBack && (
-                  <Link href="/admin" onClick={() => setMenu(false)} className="text-amber-800 font-semibold">
-                    zurück zum Admin Dashboard
-                  </Link>
-                )}
-                {showCustomerBack && (
-                  <Link href="/dashboard" onClick={() => setMenu(false)} className="text-brand-700 font-semibold">
-                    zurück zum Dashboard
-                  </Link>
-                )}
+
                 <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
                   <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('nav_dashboard')}</span>
                   <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
@@ -369,6 +335,19 @@ export function Navbar() {
         </div>
       )}
     </nav>
+
+      {/* Announcement Bar under the Header */}
+      <div className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+        {user ? (
+          <span>
+            {t('announcement_user' as any, { rate: cashbackRate ?? 5 })}
+          </span>
+        ) : (
+          <span>
+            {t('announcement_guest' as any)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -159,7 +159,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               </p>
               <p className="text-xs text-slate-500 mt-0.5">{t('card_data')}</p>
               {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
-                <p className="text-[10px] text-brand-500 mt-0.5">{tariff.data_gb} {t('cfg_gb_per_day')}</p>
+                <p className="text-[10px] text-brand-500 mt-0.5">{formatGb(tariff.data_gb)}/{t('cfg_day')}</p>
               )}
             </div>
             <div className="rounded-2xl bg-slate-50 p-3.5 text-center border border-slate-200">

@@ -342,6 +342,7 @@ export interface Database {
           confirmations: number; decimals: number;
           coingecko_id: string; uri_scheme: string; chain: string;
           sort_order: number; updated_at: string;
+          min_payment_pct: number;
         };
         Insert: {
           code: string; name: string; enabled?: boolean;
@@ -349,6 +350,7 @@ export interface Database {
           confirmations?: number; decimals?: number;
           coingecko_id: string; uri_scheme: string; chain: string;
           sort_order?: number;
+          min_payment_pct?: number;
         };
         Update: {
           name?: string; enabled?: boolean;
@@ -356,6 +358,7 @@ export interface Database {
           confirmations?: number; decimals?: number;
           coingecko_id?: string; uri_scheme?: string; chain?: string;
           sort_order?: number;
+          min_payment_pct?: number;
         };
         Relationships: [];
       };
@@ -371,6 +374,8 @@ export interface Database {
           confirmations_required: number; confirmations: number;
           status: string; tx_hash: string | null;
           created_at: string; expires_at: string; paid_at: string | null;
+          payment_memo: string | null;
+          received_amount: number;
         };
         Insert: {
           order_ids: string[]; customer_email: string;
@@ -381,10 +386,14 @@ export interface Database {
           confirmations_required?: number; confirmations?: number;
           status?: string; tx_hash?: string | null;
           expires_at: string; paid_at?: string | null;
+          payment_memo?: string | null;
+          received_amount?: number;
         };
         Update: {
           status?: string; tx_hash?: string | null;
           confirmations?: number; paid_at?: string | null;
+          payment_memo?: string | null;
+          received_amount?: number;
         };
         Relationships: [];
       };

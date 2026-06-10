@@ -14,8 +14,36 @@ export function formatEur(amount: number): string {
 
 export function formatGb(gb: number | null): string {
   if (gb === null) return '–';
-  if (gb >= 1)     return `${gb} GB`;
-  return `${(gb * 1024).toFixed(0)} MB`;
+
+  // If it's a clean integer, just return GB
+  if (Number.isInteger(gb)) {
+    return `${gb} GB`;
+  }
+
+  // Convert to MB and check if it matches a round GB/MB value
+  const mb = Math.round(gb * 1024);
+
+  // If MB is close to a multiple of 1000 MB (within 100MB threshold), round to that GB integer
+  // E.g., 976 MB -> 1 GB, 1953 MB -> 2 GB, 2930 MB -> 3 GB, 4882 MB -> 5 GB, 9765 MB -> 10 GB
+  if (mb >= 900) {
+    const nearestGb = Math.round(mb / 1000);
+    if (Math.abs(mb - nearestGb * 1000) < 100) {
+      return `${nearestGb} GB`;
+    }
+  }
+
+  // If MB is close to 500 MB (within 50MB threshold), round to 500 MB
+  // E.g., 488 MB -> 500 MB
+  if (Math.abs(mb - 500) < 50) {
+    return `500 MB`;
+  }
+
+  if (gb >= 1) {
+    // Fallback for general decimals
+    return gb % 1 === 0 ? `${gb} GB` : `${gb.toFixed(1)} GB`;
+  }
+
+  return `${mb} MB`;
 }
 
 /** Round a price UP to the nearest x.x9 (e.g. 8.34 → 8.39, 8.40 → 8.49) */

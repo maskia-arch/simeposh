@@ -37,12 +37,7 @@ function LoginForm() {
       return;
     }
 
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    if (adminEmail && data.user?.email === adminEmail) {
-      router.push('/admin');
-      router.refresh();
-      return;
-    }
+
 
     router.push('/dashboard');
     router.refresh();

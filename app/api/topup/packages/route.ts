@@ -34,9 +34,16 @@ export async function GET(request: Request) {
     const res = await fetchTopUpPackages(iccid);
 
     if (!res.success) {
+      const errCode = String(res.errorCode);
+      // 310409: eSIM not found / not exist
+      // 310006: parameter error / invalid ICCID format
+      // 310401: eSIM status is not ACTIVE/GOT_RESOURCE (cannot topup)
+      // 310204: no tariff/product package mapping
+      const isInvalidIccid = ['310409', '310006', '310401', '310204', '310410', '310411'].includes(errCode) || errCode.includes('iccid');
+      console.warn(`[topup/packages] Failed to fetch top-up packages for ICCID ${iccid}: code ${errCode}`);
       return NextResponse.json(
-        { error: `esimaccess error: ${res.errorCode}` },
-        { status: 502 }
+        { error: isInvalidIccid ? 'topup_error_invalid_iccid' : 'topup_error_general' },
+        { status: 400 }
       );
     }
 
@@ -98,6 +105,6 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[topup/packages] Error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'topup_error_general' }, { status: 500 });
   }
 }

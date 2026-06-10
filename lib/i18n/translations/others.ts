@@ -29,6 +29,8 @@ export const fr = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Veuillez accepter les CGU pour continuer.',
   lang_select:'Langue',
+  topup_error_invalid_iccid: 'L\'ICCID spécifié est invalide ou introuvable.',
+  topup_error_general: 'Une erreur inattendue est survenue. Veuillez réessayer plus tard.',
 } as const;
 
 export const es = {
@@ -57,6 +59,8 @@ export const es = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Por favor acepta los Términos y Condiciones para continuar.',
   lang_select:'Idioma',
+  topup_error_invalid_iccid: 'El ICCID especificado no es válido o no se pudo encontrar.',
+  topup_error_general: 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.',
 } as const;
 
 export const it = {
@@ -85,6 +89,8 @@ export const it = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Accetta i Termini e Condizioni per procedere.',
   lang_select:'Lingua',
+  topup_error_invalid_iccid: 'L\'ICCID specificato non è valido o non è stato trovato.',
+  topup_error_general: 'Si è verificato un errore imprevisto. Riprova più tardi.',
 } as const;
 
 export const tr = {
@@ -113,6 +119,8 @@ export const tr = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Devam etmek için Kullanım Koşullarını kabul edin.',
   lang_select:'Dil',
+  topup_error_invalid_iccid: 'Belirtilen ICCID geçersiz veya bulunamadı.',
+  topup_error_general: 'Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
 } as const;
 
 export const nl = {
@@ -141,6 +149,8 @@ export const nl = {
   checkout_agree_suffix:'gelezen en accepteer deze.',
   checkout_agree_error:'Accepteer de Algemene Voorwaarden om door te gaan.',
   lang_select:'Taal',
+  topup_error_invalid_iccid: 'De opgegeven ICCID is ongeldig of kon niet worden gevonden.',
+  topup_error_general: 'Er is een onverwachte fout opgetreden. Probeer het later opnieuw.',
 } as const;
 
 export const pl = {
@@ -169,6 +179,8 @@ export const pl = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Zaakceptuj Regulamin, aby kontynuować.',
   lang_select:'Język',
+  topup_error_invalid_iccid: 'Podany numer ICCID jest nieprawidłowy lub nie został znaleziony.',
+  topup_error_general: 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie później.',
 } as const;
 
 export const pt = {
@@ -197,6 +209,8 @@ export const pt = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Aceite os Termos e Condições para continuar.',
   lang_select:'Idioma',
+  topup_error_invalid_iccid: 'O ICCID especificado é inválido ou não pôde ser encontrado.',
+  topup_error_general: 'Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.',
 } as const;
 
 export const sv = {
@@ -225,4 +239,6 @@ export const sv = {
   checkout_agree_suffix:'.',
   checkout_agree_error:'Godkänn villkoren för att fortsätta.',
   lang_select:'Språk',
+  topup_error_invalid_iccid: 'Det angivna ICCID-numret är ogiltigt eller kunde inte hittas.',
+  topup_error_general: 'Ett oväntat fel inträffade. Försök igen senare.',
 } as const;

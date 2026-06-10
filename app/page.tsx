@@ -24,7 +24,6 @@ async function getFeaturedDestinations() {
       .from('tariffs')
       .select('id, country_code, country_name, flag_emoji, sale_price_eur, location_codes, region')
       .eq('is_active', true)
-      .eq('tariff_type', 'travel')
       .range(from, from + PAGE - 1) as any;
     if (!data || data.length === 0) break;
     allTariffs.push(...data);
