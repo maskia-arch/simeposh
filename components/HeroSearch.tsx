@@ -138,8 +138,14 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(0, a - 1)); }
     else if (e.key === 'Enter') {
       e.preventDefault();
-      if (results[active]) go(results[active].name);
-      else go(q);
+      if (results[active]) {
+        const dest = results[active];
+        const val = label(dest);
+        setQ(val);
+        go(val);
+      } else {
+        go(q);
+      }
       setOpen(false);
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -191,7 +197,12 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
                   <li key={d.code}>
                     <button
                       onMouseEnter={() => setActive(i)}
-                      onClick={() => { go(d.name); setOpen(false); }}
+                      onClick={() => {
+                        const val = label(d);
+                        setQ(val);
+                        go(val);
+                        setOpen(false);
+                      }}
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                         i === active ? 'bg-brand-50' : 'hover:bg-slate-50'
                       }`}
@@ -220,7 +231,12 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
                   {popular.map((d) => (
                     <li key={d.code}>
                       <button
-                        onClick={() => { go(d.name); setOpen(false); }}
+                        onClick={() => {
+                        const val = label(d);
+                        setQ(val);
+                        go(val);
+                        setOpen(false);
+                      }}
                         className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 transition-colors"
                       >
                         <CountryFlag countryCode={d.code} countryName={label(d)} size={24} className="shrink-0" />
@@ -241,7 +257,12 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
                     {regions.map((d) => (
                       <li key={d.code}>
                         <button
-                          onClick={() => { go(d.name); setOpen(false); }}
+                          onClick={() => {
+                            const val = label(d);
+                            setQ(val);
+                            go(val);
+                            setOpen(false);
+                          }}
                           className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 transition-colors"
                         >
                           <CountryFlag countryCode={d.code} countryName={label(d)} size={24} className="shrink-0" />

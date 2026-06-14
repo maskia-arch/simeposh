@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Database } from '@/lib/supabase/types';
 import { TariffsGrid }          from '@/components/TariffsGrid';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
@@ -115,6 +115,11 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('travel');
   const [q,   setQ]   = useState(initialQuery);
+  
+  // Sync state `q` with changes to `initialQuery` prop from the URL
+  useEffect(() => {
+    setQ(initialQuery);
+  }, [initialQuery]);
 
   const travelTariffs = useMemo(
     () => tariffs.filter((t) => t.tariff_type === 'travel' || !t.tariff_type?.startsWith('unlimited')),

@@ -84,8 +84,14 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(0, a - 1)); }
     else if (e.key === 'Enter') {
       e.preventDefault();
-      if (results[active]) go(results[active].name);
-      else go(q);
+      if (results[active]) {
+        const dest = results[active];
+        const val = label(dest);
+        setQ(val);
+        go(val);
+      } else {
+        go(q);
+      }
       setOpen(false);
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -123,7 +129,12 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
                 <li key={d.code}>
                   <button
                     onMouseEnter={() => setActive(i)}
-                    onClick={() => { go(d.name); setOpen(false); }}
+                    onClick={() => {
+                      const val = label(d);
+                      setQ(val);
+                      go(val);
+                      setOpen(false);
+                    }}
                     className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${
                       i === active ? 'bg-brand-50 text-brand-900 font-semibold' : 'hover:bg-slate-50 text-slate-700 text-sm'
                     }`}

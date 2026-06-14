@@ -61,7 +61,9 @@ export function displayCountryName(t: TariffLike, locale = 'en'): string {
   const code = (t.country_code ?? '').toUpperCase();
 
   // Virtual region code → localised region label
-  if (REGION_LABELS[code]) {
+  // We only return 'Global' if the package covers 40+ countries. Smaller custom-named
+  // multi-country packages (e.g. UK & Ireland) should show their custom names.
+  if (REGION_LABELS[code] && (code !== 'GLOB' || (t.location_codes ?? []).length >= 40)) {
     return REGION_LABELS[code][locale] ?? REGION_LABELS[code].en;
   }
 
