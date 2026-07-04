@@ -50,22 +50,22 @@ export function HomePageClient({
     <>
       {/* Hero */}
       <section className="bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500 text-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14 text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
             {t('hero_badge')}
           </div>
-          <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
+          <h1 className="mb-3 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
             {t('hero_title').split('–')[0].trim()} –<br />
             <span className="text-brand-200">{t('hero_title_highlight')}</span>
           </h1>
-          <p className="mx-auto mb-8 max-w-xl text-lg text-brand-100">
+          <p className="mx-auto mb-6 max-w-xl text-lg text-brand-100">
             {t('hero_subtitle')}
           </p>
 
           {/* Airalo-style destination search */}
           <HeroSearch destinations={destinations} />
 
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link
               href="/tariffs"
               className="rounded-xl bg-white px-6 py-3 font-semibold text-brand-700 shadow-lg hover:bg-brand-50 transition-colors"
@@ -114,7 +114,7 @@ export function HomePageClient({
           </Link>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+        <div className="grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
           {popularDestinations.map((dest) => {
             const countryLabel = displayCountryName(dest, locale);
             return (
