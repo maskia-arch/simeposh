@@ -240,7 +240,7 @@ export function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-lg shrink-0">
-          <img src="/logo.png" alt="PureSim Logo" className="h-16 w-16 object-contain" />
+          <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
           <span className="text-2xl tracking-tight">
             <span className="text-[#1d4ed8]">Pur</span>
             <span className="text-[#0ea5e9]">eSim</span>

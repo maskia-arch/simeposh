@@ -22,7 +22,7 @@ export default function Loading() {
       <img 
         src="/logo.png" 
         alt="PureSim Logo" 
-        className="w-56 h-56 mb-6 select-none object-contain" 
+        className="w-40 h-40 mb-6 select-none object-contain" 
         style={{ animation: 'pulse-logo 2s infinite ease-in-out' }}
       />
       

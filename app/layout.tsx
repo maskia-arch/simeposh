@@ -86,7 +86,7 @@ export default async function RootLayout({
               50% { opacity: 1; }
             }
           ` }} />
-          <img src="/logo.png" alt="PureSim Logo" style={{ width: '14rem', height: '14rem', marginBottom: '1.5rem', animation: 'pulse-logo 2s infinite ease-in-out', userSelect: 'none', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="PureSim Logo" style={{ width: '10rem', height: '10rem', marginBottom: '1.5rem', animation: 'pulse-logo 2s infinite ease-in-out', userSelect: 'none', objectFit: 'contain' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div
               style={{

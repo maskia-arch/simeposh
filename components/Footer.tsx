@@ -72,7 +72,7 @@ export function Footer() {
           <div className="grid gap-8 sm:grid-cols-3">
             <div>
               <div className="flex items-center gap-2 text-lg font-bold">
-                <img src="/logo.png" alt="PureSim Logo" className="h-16 w-16 object-contain" />
+                <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
                 <span className="text-2xl tracking-tight">
                   <span className="text-[#1d4ed8]">Pur</span>
                   <span className="text-[#0ea5e9]">eSim</span>
