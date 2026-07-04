@@ -48,7 +48,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ count: 0 });
     }
 
-    return NextResponse.json({ count: pool.addresses.length });
+    return NextResponse.json({
+      count: pool.addresses.length,
+      first_address: pool.addresses[0]?.address || null
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[address-pool GET] error:', msg);
