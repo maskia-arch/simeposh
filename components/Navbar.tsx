@@ -239,9 +239,12 @@ export function Navbar() {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-brand-700 text-lg shrink-0">
-          <img src="/logo.png" alt="PureSim Logo" className="h-8 w-8 object-contain" />
-          <span>PureSim</span>
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg shrink-0">
+          <img src="/logo.png" alt="PureSim Logo" className="h-16 w-16 object-contain" />
+          <span className="text-2xl tracking-tight">
+            <span className="text-[#1d4ed8]">Pur</span>
+            <span className="text-[#0ea5e9]">eSim</span>
+          </span>
         </Link>
 
         {/* Desktop search bar */}

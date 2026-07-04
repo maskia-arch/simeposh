@@ -46,6 +46,7 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <head>
+        <link rel="icon" type="image/png" href="/logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -85,7 +86,7 @@ export default async function RootLayout({
               50% { opacity: 1; }
             }
           ` }} />
-          <img src="/logo.png" alt="PureSim Logo" style={{ width: '5rem', height: '5rem', marginBottom: '1.5rem', animation: 'pulse-logo 2s infinite ease-in-out', userSelect: 'none', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="PureSim Logo" style={{ width: '14rem', height: '14rem', marginBottom: '1.5rem', animation: 'pulse-logo 2s infinite ease-in-out', userSelect: 'none', objectFit: 'contain' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div
               style={{
