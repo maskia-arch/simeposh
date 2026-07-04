@@ -41,8 +41,11 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
   }
 
   select(fields = '*', options?: { count?: 'exact' | 'planned' | 'estimated'; head?: boolean }): PostgresQueryBuilder<T, R, Single> {
-    this.method = 'select';
-    this.selectFields = fields;
+    if (this.method === 'select') {
+      this.selectFields = fields;
+    } else {
+      this.selectFields = fields;
+    }
     if (options?.head) {
       this.isSingle = false;
       this.isMaybeSingle = false;
@@ -299,71 +302,78 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
         sql += ` OFFSET ${this.offsetVal}`;
       }
     } 
-    else if (this.method === 'insert') {
-      const data = this.valuesToSave;
-      const isArray = Array.isArray(data);
-      const rows = isArray ? data : [data];
-
-      if (rows.length === 0) {
-        return { data: [], error: null, count: 0 };
+    else {
+      let returning = '*';
+      if (this.selectFields && this.selectFields !== '*' && !this.selectFields.includes('(')) {
+        returning = this.selectFields.split(',').map(f => `"${f.trim()}"`).join(', ');
       }
 
-      const keys = Object.keys(rows[0]);
-      const columns = keys.map(k => `"${k}"`).join(', ');
-      
-      const valuesClauses = rows.map(row => {
-        const valPlaceholders = keys.map(k => pushParam(row[k])).join(', ');
-        return `(${valPlaceholders})`;
-      }).join(', ');
+      if (this.method === 'insert') {
+        const data = this.valuesToSave;
+        const isArray = Array.isArray(data);
+        const rows = isArray ? data : [data];
 
-      sql = `INSERT INTO "${this.table}" (${columns}) VALUES ${valuesClauses} RETURNING *`;
-    } 
-    else if (this.method === 'upsert') {
-      const data = this.valuesToSave;
-      const isArray = Array.isArray(data);
-      const rows = isArray ? data : [data];
+        if (rows.length === 0) {
+          return { data: [], error: null, count: 0 };
+        }
 
-      if (rows.length === 0) {
-        return { data: [], error: null, count: 0 };
+        const keys = Object.keys(rows[0]);
+        const columns = keys.map(k => `"${k}"`).join(', ');
+        
+        const valuesClauses = rows.map(row => {
+          const valPlaceholders = keys.map(k => pushParam(row[k])).join(', ');
+          return `(${valPlaceholders})`;
+        }).join(', ');
+
+        sql = `INSERT INTO "${this.table}" (${columns}) VALUES ${valuesClauses} RETURNING ${returning}`;
+      } 
+      else if (this.method === 'upsert') {
+        const data = this.valuesToSave;
+        const isArray = Array.isArray(data);
+        const rows = isArray ? data : [data];
+
+        if (rows.length === 0) {
+          return { data: [], error: null, count: 0 };
+        }
+
+        const keys = Object.keys(rows[0]);
+        const columns = keys.map(k => `"${k}"`).join(', ');
+        
+        const valuesClauses = rows.map(row => {
+          const valPlaceholders = keys.map(k => pushParam(row[k])).join(', ');
+          return `(${valPlaceholders})`;
+        }).join(', ');
+
+        const conflictTarget = getConflictTarget(this.table);
+        
+        const updateKeys = keys.filter(k => {
+          if (this.table === 'system_settings' && k === 'key') return false;
+          if (this.table === 'users' && k === 'id') return false;
+          if (this.table === 'post_translations' && (k === 'post_id' || k === 'locale')) return false;
+          if (this.table === 'tariffs' && k === 'package_code') return false;
+          return k !== 'id';
+        });
+        
+        const doUpdateSet = updateKeys.map(k => `"${k}" = EXCLUDED."${k}"`).join(', ');
+
+        sql = `INSERT INTO "${this.table}" (${columns}) VALUES ${valuesClauses}`;
+        if (doUpdateSet) {
+          sql += ` ON CONFLICT ${conflictTarget} DO UPDATE SET ${doUpdateSet}`;
+        } else {
+          sql += ` ON CONFLICT ${conflictTarget} DO NOTHING`;
+        }
+        sql += ` RETURNING ${returning}`;
       }
+      else if (this.method === 'update') {
+        const data = this.valuesToSave;
+        const keys = Object.keys(data);
+        const setClauses = keys.map(k => `"${k}" = ${pushParam(data[k])}`).join(', ');
 
-      const keys = Object.keys(rows[0]);
-      const columns = keys.map(k => `"${k}"`).join(', ');
-      
-      const valuesClauses = rows.map(row => {
-        const valPlaceholders = keys.map(k => pushParam(row[k])).join(', ');
-        return `(${valPlaceholders})`;
-      }).join(', ');
-
-      const conflictTarget = getConflictTarget(this.table);
-      
-      const updateKeys = keys.filter(k => {
-        if (this.table === 'system_settings' && k === 'key') return false;
-        if (this.table === 'users' && k === 'id') return false;
-        if (this.table === 'post_translations' && (k === 'post_id' || k === 'locale')) return false;
-        if (this.table === 'tariffs' && k === 'package_code') return false;
-        return k !== 'id';
-      });
-      
-      const doUpdateSet = updateKeys.map(k => `"${k}" = EXCLUDED."${k}"`).join(', ');
-
-      sql = `INSERT INTO "${this.table}" (${columns}) VALUES ${valuesClauses}`;
-      if (doUpdateSet) {
-        sql += ` ON CONFLICT ${conflictTarget} DO UPDATE SET ${doUpdateSet}`;
-      } else {
-        sql += ` ON CONFLICT ${conflictTarget} DO NOTHING`;
+        sql = `UPDATE "${this.table}" SET ${setClauses}` + compileWhere() + ` RETURNING ${returning}`;
+      } 
+      else if (this.method === 'delete') {
+        sql = `DELETE FROM "${this.table}"` + compileWhere() + ` RETURNING ${returning}`;
       }
-      sql += ` RETURNING *`;
-    }
-    else if (this.method === 'update') {
-      const data = this.valuesToSave;
-      const keys = Object.keys(data);
-      const setClauses = keys.map(k => `"${k}" = ${pushParam(data[k])}`).join(', ');
-
-      sql = `UPDATE "${this.table}" SET ${setClauses}` + compileWhere() + ' RETURNING *';
-    } 
-    else if (this.method === 'delete') {
-      sql = `DELETE FROM "${this.table}"` + compileWhere() + ' RETURNING *';
     }
 
     try {
