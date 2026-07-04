@@ -3,7 +3,7 @@ import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
   title: 'Erstattungsrichtlinie | Refund Policy',
-  description: 'Erstattungsrichtlinien und Bestimmungen zur Stornierung von eSIM-Datenpaketen von eSIM Shop.',
+  description: 'Erstattungsrichtlinien und Bestimmungen zur Stornierung von eSIM-Datenpaketen von PureSim.',
 };
 
 export default async function RefundPolicyPage() {

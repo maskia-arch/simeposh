@@ -66,7 +66,7 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
     </div>
     <div class="footer">
       <p>Fragen? <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
-      <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} eSIM Shop</p>
+      <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim</p>
     </div>
   </div>
 </body>

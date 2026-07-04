@@ -19,14 +19,12 @@ export default function Loading() {
       ` }} />
       
       {/* Pulse Logo */}
-      <div 
-        className="text-[5rem] mb-6 select-none leading-none" 
+      <img 
+        src="/logo.png" 
+        alt="PureSim Logo" 
+        className="w-20 h-20 mb-6 select-none object-contain" 
         style={{ animation: 'pulse-logo 2s infinite ease-in-out' }}
-        role="img" 
-        aria-label="📡"
-      >
-        📡
-      </div>
+      />
       
       {/* Modern Glow Spinner */}
       <div className="relative flex items-center justify-center">

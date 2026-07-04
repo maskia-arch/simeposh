@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
 INSERT INTO public.system_settings (key, value, description) VALUES
   ('usd_eur_rate',   '0.92',              'Fallback USD→EUR exchange rate'),
   ('sync_enabled',   'true',              'Enable/disable the daily tariff sync'),
-  ('shop_name',      'eSIM Shop',         'Display name of the shop'),
+  ('shop_name',      'PureSim',           'Display name of the shop'),
   ('support_email',  'support@example.com', 'Customer support email')
 ON CONFLICT (key) DO NOTHING;
 

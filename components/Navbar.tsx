@@ -240,7 +240,8 @@ export function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-brand-700 text-lg shrink-0">
-          📡 {t('nav_tagline')}
+          <img src="/logo.png" alt="PureSim Logo" className="h-8 w-8 object-contain" />
+          <span>PureSim</span>
         </Link>
 
         {/* Desktop search bar */}

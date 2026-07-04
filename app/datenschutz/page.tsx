@@ -3,7 +3,7 @@ import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
   title: 'Datenschutz | Privacy Policy',
-  description: 'Datenschutzerklärung und Bestimmungen zum Schutz personenbezogener Daten von eSIM Shop.',
+  description: 'Datenschutzerklärung und Bestimmungen zum Schutz personenbezogener Daten von PureSim.',
 };
 
 export default async function PrivacyPage() {

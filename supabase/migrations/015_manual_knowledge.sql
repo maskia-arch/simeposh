@@ -29,7 +29,7 @@ END $$;
 -- Insert default guidelines into manual_knowledge if they don't exist
 INSERT INTO public.manual_knowledge (key, value, description)
 VALUES 
-  ('brand_name', 'Global eSIM', 'Der offizielle Markenname des Unternehmens, der in Artikeln verwendet werden soll.'),
+  ('brand_name', 'PureSim', 'Der offizielle Markenname des Unternehmens, der in Artikeln verwendet werden soll.'),
   ('product_offer', 'Wir bieten ausschließlich reine "Data-only eSIMs" an (keine Telefonnummern enthalten, reine mobile Reisedatenpakete). Klassische Anrufe oder SMS sind nicht möglich, Telefonie über Apps wie WhatsApp, Skype oder FaceTime funktioniert jedoch problemlos.', 'Details zum eSIM-Produktangebot.'),
   ('activation', 'Die Aktivierung erfolgt in wenigen Minuten per QR-Code (per E-Mail zugestellt) oder manueller Eingabe der SM-DP+-Adresse und des Aktivierungscodes in den Smartphone-Einstellungen. Es ist zwingend eine aktive Internetverbindung (WLAN oder Mobil) für die Aktivierung erforderlich.', 'Wie die eSIM-Aktivierung abläuft.'),
   ('topup', 'Alle aufladbaren Tarife können direkt auf unserer Website unter "Aufladen" (Top-Up) in Sekunden nachgebucht werden, indem der Nutzer seine ICCID eingibt.', 'Informationen zur Aufladbarkeit.'),

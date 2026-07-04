@@ -13,16 +13,16 @@ import { InitialLoaderRemover } from '@/components/InitialLoaderRemover';
 
 export const metadata: Metadata = {
   title: {
-    default:  'eSIM Shop – Günstige eSIMs weltweit',
-    template: '%s | eSIM Shop',
+    default:  'PureSim – Günstige eSIMs weltweit',
+    template: '%s | PureSim',
   },
   description:
     'Kaufe sofort einsatzbereite eSIMs für über 150 Länder. Günstiger Tarif, einfache Aktivierung, kein Aufpreis.',
-  keywords: ['eSIM', 'Reise SIM', 'Datenpaket', 'Roaming', 'eSIM kaufen'],
+  keywords: ['eSIM', 'Reise SIM', 'Datenpaket', 'Roaming', 'eSIM kaufen', 'PureSim'],
   openGraph: {
     type:   'website',
     locale: 'de_DE',
-    title:  'eSIM Shop',
+    title:  'PureSim',
     description: 'eSIMs für über 150 Länder – sofort verfügbar.',
   },
 };
@@ -85,7 +85,7 @@ export default async function RootLayout({
               50% { opacity: 1; }
             }
           ` }} />
-          <div style={{ fontSize: '5rem', marginBottom: '1.5rem', lineHeight: 1, animation: 'pulse-logo 2s infinite ease-in-out', userSelect: 'none' }}>📡</div>
+          <img src="/logo.png" alt="PureSim Logo" style={{ width: '5rem', height: '5rem', marginBottom: '1.5rem', animation: 'pulse-logo 2s infinite ease-in-out', userSelect: 'none', objectFit: 'contain' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div
               style={{

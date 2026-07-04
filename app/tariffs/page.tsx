@@ -5,7 +5,7 @@ import type { Database }     from '@/lib/supabase/types';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
-export const metadata: Metadata = { title: 'Plans | eSIM Shop' };
+export const metadata: Metadata = { title: 'Plans | PureSim' };
 
 // Revalidate every 10 minutes so freshly-synced tariffs appear quickly
 export const revalidate = 600;

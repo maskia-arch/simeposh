@@ -139,7 +139,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
     </div>
     <div class="footer">
       <p>Fragen? Schreib uns: <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
-      <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} eSIM Shop. Alle Rechte vorbehalten.</p>
+      <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim. Alle Rechte vorbehalten.</p>
     </div>
   </div>
 </body>

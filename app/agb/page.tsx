@@ -3,7 +3,7 @@ import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
   title: 'AGB | Terms and Conditions',
-  description: 'Allgemeine Geschäftsbedingungen und Nutzungsbedingungen von eSIM Shop.',
+  description: 'Allgemeine Geschäftsbedingungen und Nutzungsbedingungen von PureSim.',
 };
 
 export default async function TermsPage() {

@@ -71,7 +71,10 @@ export function Footer() {
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="grid gap-8 sm:grid-cols-3">
             <div>
-              <p className="text-lg font-bold text-brand-700">📡 {t('nav_tagline')}</p>
+              <div className="flex items-center gap-2 text-lg font-bold text-brand-700">
+                <img src="/logo.png" alt="PureSim Logo" className="h-8 w-8 object-contain" />
+                <span>PureSim</span>
+              </div>
               <p className="mt-2 text-sm text-slate-500 leading-relaxed">
                 {t('hero_badge')}
               </p>

@@ -1,4 +1,4 @@
-# 📡 eSIM Shop
+# 📡 PureSim
 
 Ein vollständiger, produktionsbereiter eSIM-Webshop gebaut mit **Next.js 14**, **Supabase** und **Tailwind CSS**.
 
