@@ -10,7 +10,6 @@ build
 README.md
 Dockerfile
 .dockerignore
-.claude
 scratch
 supabase/migrations
 *.tsbuildinfo
