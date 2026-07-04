@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       if (!token) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      user = verifyJwt(token);
+      user = await verifyJwt(token);
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }

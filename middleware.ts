@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   // ── Local Authentication Check (session JWT) ──
   const token = request.cookies.get('session_token')?.value;
-  const user = token ? verifyJwt(token) : null;
+  const user = token ? await verifyJwt(token) : null;
 
   // ── Auto-detect & persist the visitor's language on first visit ──
   if (!request.cookies.get('locale')) {

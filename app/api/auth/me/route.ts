@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    const decoded = verifyJwt(token);
+    const decoded = await verifyJwt(token);
     if (!decoded) {
       return NextResponse.json({ user: null });
     }

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     );
 
     // Sign the user in by generating a JWT
-    const token = signJwt({
+    const token = await signJwt({
       id: userId,
       email: trimmedEmail,
       fullName: fullName || '',

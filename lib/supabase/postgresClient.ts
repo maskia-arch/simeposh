@@ -410,7 +410,7 @@ export class PostgresAuthClient {
         return { data: { user: null }, error: null };
       }
 
-      const decoded = verifyJwt(token);
+      const decoded = await verifyJwt(token);
       if (!decoded) {
         return { data: { user: null }, error: { message: 'Invalid or expired session' } };
       }
