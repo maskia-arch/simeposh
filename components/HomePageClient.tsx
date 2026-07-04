@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { displayCountryName } from '@/lib/tariff-display';
-import { SearchIcon, CreditCardIcon, CameraIcon, GlobeIcon, BookIcon, NetworkIcon } from '@/components/Icons';
+import { SearchIcon, CreditCardIcon, CameraIcon, GlobeIcon, BookIcon, NetworkIcon, CheckCircleIcon, ScalesIcon } from '@/components/Icons';
 
 interface PopularDestination {
   country_code: string;
@@ -53,12 +53,7 @@ export function HomePageClient({
       desc: t('feat_countries_d')
     },
     {
-      icon: (
-        <svg className="h-6 w-6 text-[#0ea5e9] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5h16.5a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" />
-        </svg>
-      ),
+      icon: <ScalesIcon size={24} className="text-[#0ea5e9] shrink-0" />,
       label: t('feat_price'),
       desc: t('feat_price_d')
     },
@@ -77,7 +72,7 @@ export function HomePageClient({
     { step: '1', icon: <SearchIcon size={32} className="text-[#1d4ed8] mx-auto" />, title: t('how_1_t'), desc: t('how_1_d') },
     { step: '2', icon: <CreditCardIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_2_t'), desc: t('how_2_d') },
     { step: '3', icon: <CameraIcon size={32} className="text-[#1d4ed8] mx-auto" />, title: t('how_3_t'), desc: t('how_3_d') },
-    { step: '4', icon: <GlobeIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_4_t'), desc: t('how_4_d') },
+    { step: '4', icon: <CheckCircleIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_4_t'), desc: t('how_4_d') },
   ];
 
   return (
