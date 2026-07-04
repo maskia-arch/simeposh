@@ -114,14 +114,14 @@ export function HomePageClient({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
           {popularDestinations.map((dest) => {
             const countryLabel = displayCountryName(dest, locale);
             return (
               <Link
                 key={dest.country_code}
                 href={`/tariffs?q=${encodeURIComponent(countryLabel)}`}
-                className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-1"
+                className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-1 shrink-0 w-[280px] snap-start sm:w-auto sm:shrink"
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-brand-50 transition-colors duration-300 overflow-hidden border border-slate-100">
                   <CountryFlag
