@@ -16,7 +16,4 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON public.orders(customer_e
 -- The /order page is public and looks up by the unguessable checkout_ref.
 -- Reads go through the service client, so no extra RLS policy is required here.
 
--- ── Persist the reusable Sellauth "eSIM" product id ─────────
-INSERT INTO public.system_settings (key, value, description) VALUES
-  ('sellauth_esim_product_id', '', 'Reusable unlisted Sellauth product id for eSIM checkouts')
-ON CONFLICT (key) DO NOTHING;
+

@@ -148,10 +148,41 @@ export async function createCryptoSession(opts: {
 
       walletRes = await res.json() as { address: string; amount_ltc: number; expires_at: string };
     } catch (err) {
-      // Clean up created pending orders and session on failure
-      await db.from('orders').delete().in('id', opts.orderIds);
-      await db.from('crypto_sessions').delete().eq('id', sessionId);
-      throw new Error(`Krypto-Gateway-Fehler: ${(err as Error).message}`);
+      const fallbackAddress = process.env.FALLBACK_LTC_ADDRESS;
+      if (fallbackAddress) {
+        console.warn('[Session] Wallet gateway is offline or failed. Using fallback static address:', fallbackAddress);
+        try {
+          const rate = await getCoinEurRate('litecoin');
+          // Add a small random offset (100 to 999 Satoshis) to make the amount unique for tracking/matching
+          const randomSatoshis = Math.floor(Math.random() * 900) + 100;
+          const amountLtcBase = amountEur / rate;
+          const amountLtc = Math.round((amountLtcBase + (randomSatoshis / 1e8)) * 1e8) / 1e8;
+
+          walletRes = {
+            address: fallbackAddress,
+            amount_ltc: amountLtc,
+            expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+          };
+        } catch (rateErr) {
+          // If even rate fetching fails, use a fallback static rate (e.g. 75.0 EUR/LTC)
+          const fallbackRate = 75.0; 
+          const randomSatoshis = Math.floor(Math.random() * 900) + 100;
+          const amountLtcBase = amountEur / fallbackRate;
+          const amountLtc = Math.round((amountLtcBase + (randomSatoshis / 1e8)) * 1e8) / 1e8;
+
+          walletRes = {
+            address: fallbackAddress,
+            amount_ltc: amountLtc,
+            expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+          };
+          console.warn('[Session] Even rate service failed. Using fallback LTC rate:', fallbackRate);
+        }
+      } else {
+        // Clean up created pending orders and session on failure
+        await db.from('orders').delete().in('id', opts.orderIds);
+        await db.from('crypto_sessions').delete().eq('id', sessionId);
+        throw new Error(`Krypto-Gateway-Fehler: ${(err as Error).message}`);
+      }
     }
   }
 

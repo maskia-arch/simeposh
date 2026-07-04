@@ -91,7 +91,7 @@ const en = {
   checkout_email_hint:  'Your eSIM details will be sent to this address.',
   checkout_submit:      'Buy now for',
   checkout_loading:     'Redirecting…',
-  checkout_secure:      '🔒 Secure payment via Sellauth',
+  checkout_secure:      '🔒 Secure payment via PureWallet',
 
   // Top-up page
   topup_page_title: 'Top-Up Your eSIM',
@@ -440,7 +440,7 @@ const en = {
   faq_q5:"How does the eSIM Cash cashback program work?",
   faq_a5:"You earn up to 15% cashback on every purchase. You can also refer friends to earn extra cashback tickets. Your earned balance can be used directly as a payment method at checkout.",
   faq_q6:"What payment methods do you support?",
-  faq_a6:"We accept secure payments via Sellauth, including credit cards and various cryptocurrencies with zero fee on selected networks."
+  faq_a6:"We accept secure cryptocurrency payments (Litecoin) directly via PureWallet with zero processing fees."
 } as const;
 
 export default en;

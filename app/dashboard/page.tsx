@@ -171,7 +171,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   return (
                     <OrderRow
                       key={order.id}
-                      order={order as OrderType}
+                      order={order as unknown as OrderType}
                       t={t}
                       sessionId={session?.id}
                     />
@@ -194,7 +194,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
             ) : (
               <div className="space-y-3">
-                {completed.map((order) => <OrderRow key={order.id} order={order as OrderType} t={t} showEsim />)}
+                {completed.map((order) => <OrderRow key={order.id} order={order as unknown as OrderType} t={t} showEsim />)}
               </div>
             )}
           </div>

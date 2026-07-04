@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS public.esim_cash_accounts (
   id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email                  TEXT NOT NULL UNIQUE,
-  user_id                UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_id                UUID REFERENCES public.users(id) ON DELETE SET NULL,
   balance_eur            NUMERIC(12,2) NOT NULL DEFAULT 0.00,
   total_spend_eur        NUMERIC(12,2) NOT NULL DEFAULT 0.00,
   affiliate_code         TEXT NOT NULL UNIQUE,
@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_esim_cash_accounts_affiliate ON public.esim_cash_
 CREATE TABLE IF NOT EXISTS public.esim_cash_transactions (
   id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email                  TEXT NOT NULL,
-  user_id                UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_id                UUID REFERENCES public.users(id) ON DELETE SET NULL,
   amount                 NUMERIC(12,2) NOT NULL, -- positive for earn, negative for spend
   type                   TEXT NOT NULL,          -- earn|spend|referral_bonus
   description            TEXT,
@@ -42,22 +42,7 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS referred_by_code TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cashback_earned_eur NUMERIC(12,2) DEFAULT 0.00;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cashback_applied_eur NUMERIC(12,2) DEFAULT 0.00;
 
--- Enable RLS
-ALTER TABLE public.esim_cash_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.esim_cash_transactions ENABLE ROW LEVEL SECURITY;
 
--- Add RLS policies
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='esim_cash_accounts' AND policyname='esim_cash_accounts_self_select') THEN
-    CREATE POLICY "esim_cash_accounts_self_select" ON public.esim_cash_accounts FOR SELECT USING (auth.uid() = user_id);
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='esim_cash_transactions' AND policyname='esim_cash_transactions_self_select') THEN
-    CREATE POLICY "esim_cash_transactions_self_select" ON public.esim_cash_transactions FOR SELECT USING (auth.uid() = user_id);
-  END IF;
-END $$;
 
 -- Trigger to automatically update updated_at on esim_cash_accounts
 DROP TRIGGER IF EXISTS trg_esim_cash_accounts_updated_at ON public.esim_cash_accounts;

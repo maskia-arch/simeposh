@@ -28,8 +28,9 @@ END $$;
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.users (
-  id            UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email         TEXT NOT NULL UNIQUE,
+  password_hash TEXT,
   full_name     TEXT,
   phone         TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -73,9 +74,6 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_name         TEXT,
   amount_eur            NUMERIC(10,2) NOT NULL,
   usd_eur_rate          NUMERIC(10,6) NOT NULL,
-  sellauth_order_id     TEXT UNIQUE,
-  sellauth_product_id   TEXT,
-  sellauth_invoice_id   TEXT,
   payment_confirmed_at  TIMESTAMPTZ,
   iccid                 TEXT,
   qr_code_url           TEXT,
@@ -91,7 +89,6 @@ CREATE TABLE IF NOT EXISTS public.orders (
 
 CREATE INDEX IF NOT EXISTS idx_orders_user_id           ON public.orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status            ON public.orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_sellauth_order_id ON public.orders(sellauth_order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_iccid             ON public.orders(iccid);
 CREATE INDEX IF NOT EXISTS idx_orders_top_up_iccid      ON public.orders(top_up_iccid);
 
@@ -110,61 +107,8 @@ INSERT INTO public.system_settings (key, value, description) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- ============================================================
--- ROW LEVEL SECURITY  (idempotent via pg_policies check)
--- ============================================================
-ALTER TABLE public.users           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tariffs         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='users' AND policyname='users_select_own') THEN
-    CREATE POLICY "users_select_own" ON public.users FOR SELECT USING (auth.uid() = id);
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='users' AND policyname='users_update_own') THEN
-    CREATE POLICY "users_update_own" ON public.users FOR UPDATE USING (auth.uid() = id);
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='tariffs' AND policyname='tariffs_public_read') THEN
-    CREATE POLICY "tariffs_public_read" ON public.tariffs FOR SELECT USING (true);
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='orders' AND policyname='orders_select_own') THEN
-    CREATE POLICY "orders_select_own" ON public.orders FOR SELECT USING (auth.uid() = user_id);
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='system_settings' AND policyname='settings_public_read') THEN
-    CREATE POLICY "settings_public_read" ON public.system_settings FOR SELECT USING (true);
-  END IF;
-END $$;
-
--- ============================================================
 -- FUNCTIONS & TRIGGERS
 -- ============================================================
-
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  INSERT INTO public.users (id, email, full_name)
-  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', ''))
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -194,3 +138,4 @@ CREATE TRIGGER trg_orders_updated_at
 CREATE TRIGGER trg_settings_updated_at
   BEFORE UPDATE ON public.system_settings
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+

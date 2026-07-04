@@ -126,9 +126,6 @@ export interface Database {
           customer_name:        string | null;
           amount_eur:           number;
           usd_eur_rate:         number;
-          sellauth_order_id:    string | null;
-          sellauth_product_id:  string | null;
-          sellauth_invoice_id:  string | null;
           payment_confirmed_at: string | null;
           iccid:                string | null;
           qr_code_url:          string | null;
@@ -138,7 +135,6 @@ export interface Database {
           apn:                  string | null;
           top_up_iccid:         string | null;
           period_num:           number | null;
-          sellauth_product_ref: string | null;
           short_url:            string | null;
           checkout_ref:         string | null;
           esim_status:          string | null;
@@ -159,9 +155,6 @@ export interface Database {
           customer_name?:       string | null;
           amount_eur:           number;
           usd_eur_rate:         number;
-          sellauth_order_id?:   string | null;
-          sellauth_product_id?: string | null;
-          sellauth_invoice_id?: string | null;
           payment_confirmed_at?: string | null;
           iccid?:               string | null;
           qr_code_url?:         string | null;
@@ -171,7 +164,6 @@ export interface Database {
           apn?:                 string | null;
           top_up_iccid?:        string | null;
           period_num?:          number | null;
-          sellauth_product_ref?: string | null;
           short_url?:           string | null;
           checkout_ref?:        string | null;
           esim_status?:         string | null;
@@ -190,9 +182,6 @@ export interface Database {
           customer_name?:       string | null;
           amount_eur?:          number;
           usd_eur_rate?:        number;
-          sellauth_order_id?:   string | null;
-          sellauth_product_id?: string | null;
-          sellauth_invoice_id?: string | null;
           payment_confirmed_at?: string | null;
           iccid?:               string | null;
           qr_code_url?:         string | null;
@@ -202,7 +191,6 @@ export interface Database {
           apn?:                 string | null;
           top_up_iccid?:        string | null;
           period_num?:          number | null;
-          sellauth_product_ref?: string | null;
           short_url?:           string | null;
           checkout_ref?:        string | null;
           esim_status?:         string | null;

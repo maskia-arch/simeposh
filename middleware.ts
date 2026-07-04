@@ -1,51 +1,28 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
+import { verifyJwt } from '@/lib/auth/jwt';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard'];
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
 
   // ── Affiliate Referral Link cookie tracker ──
   const refCode = request.nextUrl.searchParams.get('ref');
   if (refCode) {
-    supabaseResponse.cookies.set('referred_by', refCode.trim(), {
+    response.cookies.set('referred_by', refCode.trim(), {
       path:     '/',
       maxAge:   60 * 60 * 24 * 30, // 30 days
       sameSite: 'lax',
     });
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
-          );
-        },
-      },
-    }
-  );
-
-  // Refresh session – required for Server Components to read auth state
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // ── Local Authentication Check (session JWT) ──
+  const token = request.cookies.get('session_token')?.value;
+  const user = token ? verifyJwt(token) : null;
 
   // ── Auto-detect & persist the visitor's language on first visit ──
-  // Respects a manual choice (LanguageSwitcher writes the same cookie).
   if (!request.cookies.get('locale')) {
     const geo = (request as { geo?: { country?: string } }).geo?.country
       ?? countryFromHeaders((n) => request.headers.get(n));
@@ -53,10 +30,10 @@ export async function middleware(request: NextRequest) {
       country:        geo,
       acceptLanguage: request.headers.get('accept-language'),
     });
-    // Make it visible to THIS request's SSR render (no first-paint flash)…
+    // Make it visible to THIS request's SSR render...
     request.cookies.set('locale', locale);
-    // …and persist it in the browser for subsequent visits.
-    supabaseResponse.cookies.set('locale', locale, {
+    // ...and persist it in the browser for subsequent visits.
+    response.cookies.set('locale', locale, {
       path:     '/',
       maxAge:   60 * 60 * 24 * 365,
       sameSite: 'lax',
@@ -65,10 +42,8 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-
-
-  // 2. Redirect unauthenticated users away from remaining protected routes
-  const isProtected = PROTECTED_ROUTES.filter((r) => r !== '/admin').some((route) =>
+  // 2. Redirect unauthenticated users away from protected routes
+  const isProtected = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
   if (isProtected && !user) {
@@ -82,7 +57,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  return supabaseResponse;
+  return response;
 }
 
 export const config = {

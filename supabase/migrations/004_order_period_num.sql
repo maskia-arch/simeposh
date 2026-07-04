@@ -18,13 +18,4 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Optional: remember the Sellauth product/variant we create per checkout,
--- useful for later cleanup of unlisted on-demand products.
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='orders' AND column_name='sellauth_product_ref'
-  ) THEN
-    ALTER TABLE public.orders ADD COLUMN sellauth_product_ref TEXT;
-  END IF;
-END $$;
+
