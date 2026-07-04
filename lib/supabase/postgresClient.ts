@@ -17,6 +17,7 @@ function getConflictTarget(table: string): string {
   if (table === 'post_translations') return '("post_id", "locale")';
   if (table === 'crypto_coins') return '("code")';
   if (table === 'tariffs') return '("package_code")';
+  if (table === 'sync_logs') return '("sync_id")';
   if (table === 'orders') return '("id")';
   return '("id")';
 }
