@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase/server';
 import { formatEur, formatGb } from '@/lib/utils';
+import { CountryFlag } from '@/components/CountryFlag';
+import { ShieldIcon, HourglassIcon, SearchIcon, GlobeIcon } from '@/components/Icons';
 
 export const metadata: Metadata = { title: 'Bestellung erfolgreich' };
 
@@ -30,13 +32,27 @@ function OrderCard({ order }: { order: OrderRow }) {
     <div className="rounded-2xl border border-slate-200 bg-white p-6">
       {tariff && (
         <div className="mb-4 flex items-center gap-3">
-          <span className="text-2xl">{tariff.flag_emoji ?? '🌐'}</span>
+          {tariff.country_code ? (
+            <CountryFlag countryCode={tariff.country_code} countryName={tariff.country_name} size={32} className="shrink-0" />
+          ) : (
+            <GlobeIcon size={24} className="text-slate-400" />
+          )}
           <div>
             <p className="font-semibold text-slate-800">{tariff.country_name}</p>
             <p className="text-xs text-slate-500">{tariff.name}</p>
           </div>
-          <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium ${isCompleted ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-            {isCompleted ? '✅ Bereit' : '⏳ In Arbeit'}
+          <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium flex items-center gap-1.5 ${isCompleted ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+            {isCompleted ? (
+              <>
+                <ShieldIcon size={12} className="text-green-700" />
+                <span>Bereit</span>
+              </>
+            ) : (
+              <>
+                <HourglassIcon size={12} className="text-amber-700" />
+                <span>In Arbeit</span>
+              </>
+            )}
           </span>
         </div>
       )}
@@ -88,7 +104,9 @@ export default async function SuccessPage({
   if (orders.length === 0) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <p className="text-5xl mb-4">🔍</p>
+        <div className="flex justify-center mb-4">
+          <SearchIcon size={48} className="text-slate-300" />
+        </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Bestellung wird bearbeitet</h1>
         <p className="text-slate-500 mb-6">
           Deine Bestellung wird gerade verarbeitet. Schau in deine E-Mails – du bekommst alle eSIM-Details und QR-Codes dorthin.
@@ -107,7 +125,13 @@ export default async function SuccessPage({
     <div className="mx-auto max-w-2xl px-4 py-12">
       {/* Status banner */}
       <div className={`mb-8 rounded-2xl p-6 text-center ${allCompleted ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
-        <p className="text-5xl mb-3">{allCompleted ? '✅' : '⏳'}</p>
+        <div className="flex justify-center mb-3">
+          {allCompleted ? (
+            <ShieldIcon size={48} className="text-green-600" />
+          ) : (
+            <HourglassIcon size={48} className="text-amber-500" />
+          )}
+        </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-1">
           {allCompleted
             ? (orders.length > 1 ? `${orders.length} eSIMs bereit!` : 'eSIM bereit!')

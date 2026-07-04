@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTranslation } from '@/lib/i18n';
+import { NetworkIcon } from '@/components/Icons';
 
 function LoginForm() {
   const router       = useRouter();
@@ -44,7 +45,9 @@ function LoginForm() {
     <div className="flex min-h-[70vh] items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="text-4xl mb-2">📡</p>
+          <div className="flex justify-center mb-2">
+            <NetworkIcon size={40} className="text-brand-600" />
+          </div>
           <h1 className="text-2xl font-bold text-slate-900">{t('login_welcome')}</h1>
           <p className="text-slate-500 text-sm mt-1">{t('login_sub')}</p>
         </div>

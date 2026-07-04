@@ -6,6 +6,7 @@ import { formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
 import type { Database } from '@/lib/supabase/types';
+import { NetworkIcon, SearchIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -71,7 +72,9 @@ export default function TopUpPage() {
     <div className="mx-auto max-w-2xl px-4 py-12">
       {/* Header */}
       <div className="mb-8 text-center">
-        <p className="text-5xl mb-3">📶</p>
+        <div className="flex justify-center mb-3">
+          <NetworkIcon size={48} className="text-brand-600" />
+        </div>
         <h1 className="text-3xl font-bold text-slate-900">{t('topup_page_title')}</h1>
         <p className="mt-2 text-slate-500">{t('topup_page_sub')}</p>
       </div>
@@ -111,7 +114,9 @@ export default function TopUpPage() {
       {/* Results */}
       {searched && packages.length === 0 && !loading && (
         <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-400">
-          <p className="text-3xl mb-2">🔍</p>
+          <div className="flex justify-center mb-2">
+            <SearchIcon size={32} className="text-slate-300" />
+          </div>
           <p className="font-medium">{t('topup_no_results')}</p>
           <p className="text-sm mt-1">{t('topup_no_results_sub')}</p>
         </div>

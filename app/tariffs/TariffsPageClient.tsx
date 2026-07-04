@@ -6,6 +6,7 @@ import { TariffsGrid }          from '@/components/TariffsGrid';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { useTranslation }        from '@/lib/i18n';
 import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
+import { PlaneIcon, InfinityIcon, BoltIcon, SearchIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 type Tab = 'travel' | 'unlimited';
@@ -159,7 +160,8 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
               : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'
           }`}
         >
-          ✈️ Travel
+          <PlaneIcon size={16} className={tab === 'travel' ? 'text-white' : 'text-[#0ea5e9]'} />
+          <span>Travel</span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${tab === 'travel' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
             {travelCount.toLocaleString()}
           </span>
@@ -173,7 +175,8 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
               : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'
           }`}
         >
-          ♾️ Unlimited
+          <InfinityIcon size={16} className={tab === 'unlimited' ? 'text-white' : 'text-[#1d4ed8]'} />
+          <span>Unlimited</span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${tab === 'unlimited' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
             {unlimitedCount.toLocaleString()}
           </span>
@@ -185,7 +188,7 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
         <>
           {/* Info bar */}
           <div className="mb-6 rounded-2xl bg-sky-50 border border-sky-200 px-5 py-4 flex items-start gap-3">
-            <span className="text-2xl">✈️</span>
+            <span className="text-2xl shrink-0 mt-0.5"><PlaneIcon size={24} className="text-sky-700" /></span>
             <div>
               <p className="font-semibold text-sky-800">{t('tp_travel_title')}</p>
               <p className="text-sm text-sky-700 mt-0.5">{t('tp_travel_desc')}</p>
@@ -227,7 +230,9 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
 
           {filteredTravel.length === 0 ? (
             <div className="py-20 text-center">
-              <p className="text-5xl mb-4">🔍</p>
+              <div className="flex justify-center mb-4">
+                <SearchIcon size={48} className="text-slate-300" />
+              </div>
               <p className="text-lg font-semibold text-slate-600">{t('tariffs_empty')}</p>
               <p className="mt-1 text-sm text-slate-400">{t('tariffs_empty_sub')}</p>
               {q && (
@@ -252,14 +257,14 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
           <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-50 to-violet-50 border border-slate-200 px-5 py-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-start gap-3">
-                <span className="text-2xl">♾️</span>
+                <span className="text-2xl shrink-0 mt-0.5"><InfinityIcon size={24} className="text-emerald-600" /></span>
                 <div>
                   <p className="font-semibold text-slate-800">{t('tp_eco_title')}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{t('tp_eco_desc')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-2xl">⚡</span>
+                <span className="text-2xl shrink-0 mt-0.5"><BoltIcon size={24} className="text-violet-600" /></span>
                 <div>
                   <p className="font-semibold text-slate-800">{t('tp_pro_title')}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{t('tp_pro_desc')}</p>
@@ -276,7 +281,9 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
 
           {unlimitedTariffs.length === 0 ? (
             <div className="py-20 text-center">
-              <p className="text-5xl mb-4">♾️</p>
+              <div className="flex justify-center mb-4">
+                <InfinityIcon size={48} className="text-slate-300" />
+              </div>
               <p className="text-lg font-semibold text-slate-600">{t('tp_unlimited_empty')}</p>
               <p className="mt-1 text-sm text-slate-400">{t('tp_unlimited_empty_sub')}</p>
             </div>

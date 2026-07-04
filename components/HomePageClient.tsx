@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { displayCountryName } from '@/lib/tariff-display';
+import { SearchIcon, CreditCardIcon, CameraIcon, GlobeIcon, BookIcon, NetworkIcon } from '@/components/Icons';
 
 interface PopularDestination {
   country_code: string;
@@ -17,7 +18,7 @@ interface PopularDestination {
   region: string | null;
 }
 
-const STEP_ICONS = ['🔍', '💳', '📷', '🌐'];
+
 
 export function HomePageClient({
   popularDestinations,
@@ -73,10 +74,10 @@ export function HomePageClient({
   ];
 
   const steps = [
-    { step: '1', icon: STEP_ICONS[0], title: t('how_1_t'), desc: t('how_1_d') },
-    { step: '2', icon: STEP_ICONS[1], title: t('how_2_t'), desc: t('how_2_d') },
-    { step: '3', icon: STEP_ICONS[2], title: t('how_3_t'), desc: t('how_3_d') },
-    { step: '4', icon: STEP_ICONS[3], title: t('how_4_t'), desc: t('how_4_d') },
+    { step: '1', icon: <SearchIcon size={32} className="text-[#1d4ed8] mx-auto" />, title: t('how_1_t'), desc: t('how_1_d') },
+    { step: '2', icon: <CreditCardIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_2_t'), desc: t('how_2_d') },
+    { step: '3', icon: <CameraIcon size={32} className="text-[#1d4ed8] mx-auto" />, title: t('how_3_t'), desc: t('how_3_d') },
+    { step: '4', icon: <GlobeIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_4_t'), desc: t('how_4_d') },
   ];
 
   return (
@@ -120,7 +121,7 @@ export function HomePageClient({
 
       {/* Feature badges */}
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6">
+        <div className="mx-auto max-w-6xl px-4 py-4 md:py-5">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {features.map((f) => (
               <div key={f.label} className="flex items-start gap-3">
@@ -136,7 +137,7 @@ export function HomePageClient({
       </section>
 
       {/* Popular Destinations */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
+      <section className="mx-auto max-w-6xl px-4 py-8 md:py-10">
         <div className="mb-8 flex items-end justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">{t('section_popular')}</h2>
@@ -192,21 +193,21 @@ export function HomePageClient({
 
       {/* Top-Up teaser */}
       <section className="bg-gradient-to-r from-brand-50 to-slate-50 border-y border-slate-200">
-        <div className="mx-auto max-w-6xl px-4 py-14">
+        <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
           <TopUpTeaser />
         </div>
       </section>
 
       {/* How it works */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <h2 className="mb-10 text-center text-2xl font-bold text-slate-900">{t('how_title')}</h2>
+      <section className="mx-auto max-w-6xl px-4 py-10 md:py-12">
+        <h2 className="mb-8 text-center text-2xl font-bold text-slate-900">{t('how_title')}</h2>
         <div className="grid gap-6 md:grid-cols-4">
           {steps.map((s) => (
             <div key={s.step} className="relative text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white font-bold">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-white font-bold text-sm">
                 {s.step}
               </div>
-              <p className="text-3xl mb-2">{s.icon}</p>
+              <div className="mb-2 h-10 flex items-center justify-center">{s.icon}</div>
               <p className="font-semibold text-slate-800">{s.title}</p>
               <p className="text-sm text-slate-500 mt-1">{s.desc}</p>
             </div>
@@ -215,8 +216,8 @@ export function HomePageClient({
       </section>
 
       {/* Blog Teaser Section */}
-      <section className="mx-auto max-w-6xl px-4 py-14 border-t border-slate-100">
-        <div className="mb-10 text-center">
+      <section className="mx-auto max-w-6xl px-4 py-10 md:py-12 border-t border-slate-100">
+        <div className="mb-8 text-center">
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             {t('blog_tagline' as any) || 'Mehr über eSIM erfahren & News'}
           </h2>
@@ -279,7 +280,7 @@ export function HomePageClient({
                 <div key={index} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px]">
                   <div className="h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-                    <span className="text-4xl">📡</span>
+                    <NetworkIcon size={40} className="text-white" />
                     <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                       {t('blog_category_news' as any) || 'News'}
                     </span>
@@ -339,7 +340,7 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
         ) : (
           <div className="h-48 w-full bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 relative flex items-center justify-center text-white overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-            <span className="text-5xl">📖</span>
+            <BookIcon size={48} className="text-white" />
             <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
               {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
             </span>
@@ -386,7 +387,7 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
       ) : (
         <div className="h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-          <span className="text-4xl">📡</span>
+          <NetworkIcon size={40} className="text-white" />
           <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
             {t('blog_category_news' as any) || 'News'}
           </span>

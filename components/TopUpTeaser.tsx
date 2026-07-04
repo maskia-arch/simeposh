@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
+import { NetworkIcon } from '@/components/Icons';
 
 export function TopUpTeaser() {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">
-          📶 {t('topup_title')}
+        <h2 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+          <NetworkIcon size={24} className="text-brand-600" />
+          <span>{t('topup_title')}</span>
         </h2>
         <p className="text-slate-600 max-w-lg">
           {t('topup_sub')}

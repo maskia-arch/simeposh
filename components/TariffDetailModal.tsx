@@ -10,6 +10,7 @@ import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName } from '@/lib/tariff-display';
+import { PlaneIcon, InfinityIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -21,10 +22,10 @@ const NETWORK_COLORS: Record<string, string> = {
   '2G':  'bg-slate-100 text-slate-500 border-slate-200',
 };
 
-const TYPE_INFO: Record<string, { icon: string; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
-  travel:        { icon: '✈️', color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
-  unlimited_eco: { icon: '♾️', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
-  unlimited_pro: { icon: '⚡', color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
+const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
+  travel:        { icon: <PlaneIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  unlimited_eco: { icon: <InfinityIcon size={14} className="currentColor" />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
+  unlimited_pro: { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
 
 interface Props {
@@ -83,7 +84,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <h2 className="text-2xl font-extrabold text-slate-900">{countryLabel}</h2>
               {coverage && (
                 <div className="relative inline-flex items-center gap-1.5 text-sm text-slate-400">
-                  <span>🌍 {coverage}</span>
+                  <GlobeIcon size={14} className="text-slate-400" />
+                  <span>{coverage}</span>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -145,8 +147,9 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
           {/* ── Promo label ── */}
           {tariff.label && (
             <div className="mb-4">
-              <span className="inline-flex items-center rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-sm font-semibold text-amber-800">
-                🏷️ {tariff.label}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-sm font-semibold text-amber-800">
+                <TagIcon size={14} className="text-amber-800" />
+                {tariff.label}
               </span>
             </div>
           )}
@@ -203,13 +206,17 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
 
           {/* ── Data-only note (no phone number) ── */}
           <div className="mb-3 flex items-center gap-2 text-sm text-slate-600">
-            <span>📵</span>
+            <NoPhoneIcon size={14} className="text-[#ef4444]" />
             <span>{t('det_no_number')}</span>
           </div>
 
           {/* ── Reloadability (travel = reloadable, day-pass = not) ── */}
           <div className="mb-5 flex items-center gap-2 text-sm text-slate-600">
-            <span>{isTravel ? '✅' : 'ℹ️'}</span>
+            {isTravel ? (
+              <ShieldIcon size={14} className="text-emerald-500" />
+            ) : (
+              <InfoIcon size={14} className="text-slate-400" />
+            )}
             <span>{isTravel ? t('det_reloadable') : t('det_not_reloadable')}</span>
           </div>
 

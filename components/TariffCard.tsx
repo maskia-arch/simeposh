@@ -8,6 +8,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
 import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName } from '@/lib/tariff-display';
+import { PlaneIcon, InfinityIcon, BoltIcon, NetworkIcon, TagIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -17,10 +18,10 @@ const NET_COLOR: Record<string, string> = {
   '3G': 'bg-slate-100 text-slate-600',
 };
 
-const TYPE_BADGE: Record<string, { icon: string; labelKey: 'badge_travel'|'badge_eco'|'badge_pro'; cls: string; descKey: 'type_travel_desc'|'type_eco_desc'|'type_pro_desc' }> = {
-  travel:        { icon: '✈️', labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  unlimited_eco: { icon: '♾️', labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  unlimited_pro: { icon: '⚡', labelKey: 'badge_pro',    descKey: 'type_pro_desc',    cls: 'bg-violet-50 text-violet-700 border-violet-200' },
+const TYPE_BADGE: Record<string, { icon: React.ReactNode; labelKey: 'badge_travel'|'badge_eco'|'badge_pro'; cls: string; descKey: 'type_travel_desc'|'type_eco_desc'|'type_pro_desc' }> = {
+  travel:        { icon: <PlaneIcon size={12} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  unlimited_eco: { icon: <InfinityIcon size={12} className="currentColor" />, labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, labelKey: 'badge_pro',    descKey: 'type_pro_desc',    cls: 'bg-violet-50 text-violet-700 border-violet-200' },
 };
 
 interface TariffCardProps {
@@ -96,8 +97,9 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
         {/* ── Promo label ── */}
         {tariff.label && (
           <div className="mb-2">
-            <span className="inline-flex items-center rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-              🏷️ {tariff.label}
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+              <TagIcon size={12} className="text-amber-800" />
+              {tariff.label}
             </span>
           </div>
         )}
@@ -123,13 +125,15 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
 
         {/* ── Speed note ── */}
         {tariff.tariff_type === 'unlimited_eco' && (
-          <p className="mb-2 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1 leading-tight">
-            ♾️ Nach Limit: 512 kbps
+          <p className="mb-2 flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1 leading-tight">
+            <InfinityIcon size={12} className="text-emerald-700" />
+            <span>Nach Limit: 512 kbps</span>
           </p>
         )}
         {tariff.tariff_type === 'unlimited_pro' && (
-          <p className="mb-2 text-xs text-violet-700 bg-violet-50 rounded-lg px-2.5 py-1 leading-tight">
-            ⚡ Nach Limit: ≥ 1 Mbps
+          <p className="mb-2 flex items-center gap-1 text-xs text-violet-700 bg-violet-50 rounded-lg px-2.5 py-1 leading-tight">
+            <BoltIcon size={12} className="text-violet-700" />
+            <span>Nach Limit: ≥ 1 Mbps</span>
           </p>
         )}
 
@@ -142,11 +146,14 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           )}
           {ops.length > 0 ? (
             <span className="flex items-center gap-1 text-[11px] text-slate-500 truncate">
-              <span>📡</span>
+              <NetworkIcon size={12} className="text-slate-500" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
             </span>
           ) : (
-            <span className="text-[11px] text-slate-400">📡 {t('card_best_network')}</span>
+            <span className="flex items-center gap-1 text-[11px] text-slate-400">
+              <NetworkIcon size={12} className="text-slate-400" />
+              <span>{t('card_best_network')}</span>
+            </span>
           )}
         </div>
 

@@ -10,11 +10,12 @@ import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { displayCountryName, coverageLabel } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
+import { PlaneIcon, InfinityIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon } from '@/components/Icons';
 
-const TYPE_BADGE: Record<string, { icon: string; label: string }> = {
-  travel:        { icon: '✈️', label: 'Travel' },
-  unlimited_eco: { icon: '♾️', label: 'Unlimited Eco' },
-  unlimited_pro: { icon: '⚡', label: 'Unlimited Pro' },
+const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
+  travel:        { icon: <PlaneIcon size={12} className="currentColor" />, label: 'Travel' },
+  unlimited_eco: { icon: <InfinityIcon size={12} className="currentColor" />, label: 'Unlimited Eco' },
+  unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, label: 'Unlimited Pro' },
 };
 
 export default function CartPage() {
@@ -77,7 +78,9 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <p className="mb-4 text-6xl">🛒</p>
+        <div className="flex justify-center mb-4">
+          <CartIcon size={64} className="text-slate-300" />
+        </div>
         <h1 className="mb-2 text-2xl font-bold text-slate-900">{t('cart_empty_title')}</h1>
         <p className="mb-6 text-slate-500">{t('cart_empty_sub')}</p>
         <Link href="/tariffs" className="rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white hover:bg-brand-700 transition-colors">
@@ -89,7 +92,10 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
-      <h1 className="mb-6 text-3xl font-bold text-slate-900">🛒 {t('cart_title')}</h1>
+      <h1 className="mb-6 text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <CartIcon size={28} className="text-slate-900" />
+        <span>{t('cart_title')}</span>
+      </h1>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Items */}
@@ -113,12 +119,19 @@ export default function CartPage() {
                     <div>
                       <p className="font-bold text-slate-800">{label}</p>
                       <p className="text-xs text-slate-500">
-                        {badge && <span>{badge.icon} {badge.label} · </span>}
+                        {badge && <span className="inline-flex items-center gap-1">{badge.icon} {badge.label} · </span>}
                         {isUnlimited ? '∞' : formatGb(i.dataGb)} · {i.validityDays} {t('cfg_days')}
-                        {coverage && <span> · 🌍 {coverage}</span>}
+                        {coverage && (
+                          <span className="inline-flex items-center gap-0.5 ml-1">
+                            · <GlobeIcon size={12} className="text-slate-400" />
+                            <span>{coverage}</span>
+                          </span>
+                        )}
                       </p>
                     </div>
-                    <button onClick={() => removeItem(i.key)} className="text-slate-300 hover:text-red-500" title={t('cart_clear')}>🗑️</button>
+                    <button onClick={() => removeItem(i.key)} className="text-slate-300 hover:text-red-500 p-1 rounded hover:bg-slate-50 transition-colors" title={t('cart_clear')}>
+                      <TrashIcon size={16} />
+                    </button>
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center rounded-lg border border-slate-200">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
+import { MailIcon, NetworkIcon, EyeIcon, EyeOffIcon, ShieldIcon } from '@/components/Icons';
 
 interface PasswordRule {
   id:    string;
@@ -71,7 +72,9 @@ export default function RegisterPage() {
     return (
       <div className="flex min-h-[70vh] items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
-          <p className="text-5xl mb-4">✉️</p>
+          <div className="flex justify-center mb-4">
+            <MailIcon size={48} className="text-[#1d4ed8]" />
+          </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('register_success_title')}</h1>
           <p className="text-slate-500 text-sm leading-relaxed">
             {t('register_success_sub', { email })}
@@ -91,7 +94,9 @@ export default function RegisterPage() {
     <div className="flex min-h-[70vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="text-4xl mb-2">📡</p>
+          <div className="flex justify-center mb-2">
+            <NetworkIcon size={40} className="text-brand-600" />
+          </div>
           <h1 className="text-2xl font-bold text-slate-900">{t('register_title')}</h1>
           <p className="text-slate-500 text-sm mt-1">{t('register_sub')}</p>
         </div>
@@ -133,10 +138,10 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm flex items-center justify-center"
                 tabIndex={-1}
               >
-                {showPw ? '🙈' : '👁️'}
+                {showPw ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
               </button>
             </div>
 
@@ -162,7 +167,11 @@ export default function RegisterPage() {
                 <ul className="space-y-1">
                   {rules.map((r) => (
                     <li key={r.id} className={`flex items-center gap-1.5 text-xs ${r.passed ? 'text-green-600' : 'text-slate-400'}`}>
-                      <span>{r.passed ? '✅' : '○'}</span>
+                      {r.passed ? (
+                        <ShieldIcon size={12} className="text-green-600 shrink-0" />
+                      ) : (
+                        <span className="inline-block w-3 h-3 rounded-full border border-slate-300 shrink-0" />
+                      )}
                       {t(r.tKey)}
                     </li>
                   ))}

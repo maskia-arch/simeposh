@@ -9,6 +9,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
 import { useTranslation } from '@/lib/i18n';
 import { useCart } from '@/components/CartProvider';
+import { InfinityIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 type TariffType = 'unlimited_eco' | 'unlimited_pro';
@@ -120,12 +121,14 @@ function DaySlider({
       <div className="mt-4 min-h-[24px]">
         {pct > 0 ? (
           <p className="text-xs font-medium text-green-700 bg-green-50 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5">
-            🎉 <span>{t('cfg_disc_incl', { pct })}</span>
+            <GiftIcon size={14} className="text-green-700" />
+            <span>{t('cfg_disc_incl', { pct })}</span>
             {nextAt && <span className="text-green-600"> {t('cfg_disc_next', { days: nextAt, pct: nextPct })}</span>}
           </p>
         ) : nextAt ? (
           <p className="text-xs text-slate-400 bg-slate-50 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5">
-            💡 {t('cfg_disc_hint', { days: nextAt, pct: nextPct })}
+            <InfoIcon size={14} className="text-slate-400" />
+            <span>{t('cfg_disc_hint', { days: nextAt, pct: nextPct })}</span>
           </p>
         ) : null}
       </div>
@@ -167,7 +170,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
       if (!entry) {
         entry = {
           name:   t.country_name,
-          flag:   t.flag_emoji ?? '🌐',
+          flag:   t.flag_emoji ?? '',
           code:   t.country_code,
           covers: new Set<string>(),
         };
@@ -376,8 +379,8 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
             <div className="grid grid-cols-2 gap-3">
               {(
                 [
-                  { type: 'unlimited_eco' as TariffType, icon: '♾️', label: t('cfg_eco'), sub: t('cfg_eco_sub') },
-                  { type: 'unlimited_pro' as TariffType, icon: '⚡', label: t('cfg_pro'), sub: t('cfg_pro_sub') },
+                  { type: 'unlimited_eco' as TariffType, icon: <InfinityIcon size={24} className="text-emerald-600" />, label: t('cfg_eco'), sub: t('cfg_eco_sub') },
+                  { type: 'unlimited_pro' as TariffType, icon: <BoltIcon size={24} className="text-violet-600" />, label: t('cfg_pro'), sub: t('cfg_pro_sub') },
                 ] as const
               ).map(({ type, icon, label, sub }) => {
                 const hasPackages = tariffs.some(
@@ -395,7 +398,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                         : 'border-slate-200 hover:border-brand-300'
                     }`}
                   >
-                    <p className="text-2xl mb-1">{icon}</p>
+                    <div className="mb-2">{icon}</div>
                     <p className="font-semibold text-slate-800">{label}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
                     {!hasPackages && <p className="text-xs text-red-400 mt-1">{t('cfg_unavailable')}</p>}
@@ -454,15 +457,30 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                       )}
                       <span className="font-semibold text-slate-800">{selectedCountryData?.name}</span>
                     </div>
-                    <p className="text-slate-500">
-                      {tariffType === 'unlimited_eco' ? `♾️ ${t('cfg_eco')}` : `⚡ ${t('cfg_pro')}`}
-                      &ensp;·&ensp;{formatGb(selectedGb)} / {t('cfg_day')}
-                      &ensp;·&ensp;{days} {days === 1 ? t('cfg_day') : t('cfg_days')}
-                    </p>
+                    <div className="text-slate-500 flex flex-wrap items-center gap-x-2">
+                      <span className="inline-flex items-center gap-1">
+                        {tariffType === 'unlimited_eco' ? (
+                          <>
+                            <InfinityIcon size={14} className="text-emerald-600" />
+                            <span>{t('cfg_eco')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <BoltIcon size={14} className="text-violet-600" />
+                            <span>{t('cfg_pro')}</span>
+                          </>
+                        )}
+                      </span>
+                      <span>·</span>
+                      <span>{formatGb(selectedGb)} / {t('cfg_day')}</span>
+                      <span>·</span>
+                      <span>{days} {days === 1 ? t('cfg_day') : t('cfg_days')}</span>
+                    </div>
                     {/* Operator info */}
                     {availablePackages[0] && getOperators(availablePackages[0]).length > 0 && (
-                      <p className="text-xs text-slate-400">
-                        📡 {getOperators(availablePackages[0]).join(' · ')}
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
+                        <NetworkIcon size={13} className="text-slate-400" />
+                        <span>{getOperators(availablePackages[0]).join(' · ')}</span>
                       </p>
                     )}
                   </div>

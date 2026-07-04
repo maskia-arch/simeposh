@@ -23,10 +23,10 @@ export function Footer() {
   ];
 
   return (
-    <footer className="border-t border-slate-200 bg-slate-50/40 mt-16">
+    <footer className="border-t border-slate-200 bg-slate-50/40 mt-10 md:mt-12">
       {/* FAQ Section */}
-      <div className="mx-auto max-w-4xl px-4 py-16 border-b border-slate-200/80">
-        <h2 className="text-2xl font-bold text-center text-slate-900 mb-8 tracking-tight">
+      <div className="mx-auto max-w-4xl px-4 py-10 md:py-12 border-b border-slate-200/80">
+        <h2 className="text-2xl font-bold text-center text-slate-900 mb-6 tracking-tight">
           {t('faq_title' as any) || 'Häufig gestellte Fragen (FAQ)'}
         </h2>
         
@@ -68,7 +68,7 @@ export function Footer() {
 
       {/* Main Footer Links */}
       <div className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-12">
+        <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
           <div className="grid gap-8 sm:grid-cols-3">
             <div>
               <div className="flex items-center gap-2 text-lg font-bold">

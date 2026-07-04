@@ -11,6 +11,7 @@ import { useCart } from '@/components/CartProvider';
 import { usePathname } from 'next/navigation';
 import { HeaderSearch } from '@/components/HeaderSearch';
 import type { Destination } from '@/components/HeroSearch';
+import { WrenchIcon } from '@/components/Icons';
 
 /** Globe (language) | divider | banknote (currency) – Airalo-style controls. */
 function LocaleCurrencyControls() {
@@ -269,8 +270,9 @@ export function Navbar() {
             <>
               <DashboardDropdown t={t} isAdmin={user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL} />
               {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-                <Link href="/dashboard?tab=blog_admin" className="rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
-                  🛠️ Admin
+                <Link href="/dashboard?tab=blog_admin" className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                  <WrenchIcon size={13} className="text-indigo-700" />
+                  Admin
                 </Link>
               )}
               <button
