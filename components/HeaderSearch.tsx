@@ -16,7 +16,7 @@ interface Props {
 
 export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props) {
   const router = useRouter();
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const [q, setQ]         = useState('');
   const [open, setOpen]   = useState(false);
   const [active, setActive] = useState(0);
@@ -109,7 +109,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
           onChange={(e) => { setQ(e.target.value); setOpen(true); setActive(0); }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder={placeholder ?? (locale === 'de' ? 'Ziel suchen…' : 'Search destination…')}
+          placeholder={placeholder ?? t('tariffs_search')}
           className="w-full bg-transparent text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-500 outline-none"
         />
         {q && (

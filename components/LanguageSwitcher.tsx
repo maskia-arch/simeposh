@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SUPPORTED_LOCALES } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n';
 
 export function LanguageSwitcher() {
+  const router = useRouter();
   const { locale, setLocale, t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -45,7 +47,10 @@ export function LanguageSwitcher() {
             {SUPPORTED_LOCALES.map((lang) => (
               <button
                 key={lang.code}
-                onClick={() => { setLocale(lang.code); setOpen(false); }}
+                onClick={() => {
+                  setLocale(lang.code);
+                  setOpen(false);
+                }}
                 className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-slate-50 ${
                   lang.code === locale ? 'bg-brand-50 font-semibold text-brand-700' : 'text-slate-700'
                 }`}

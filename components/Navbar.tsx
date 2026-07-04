@@ -43,7 +43,7 @@ function CartButton() {
   );
 }
 
-function DashboardDropdown({ t }: { t: any }) {
+function DashboardDropdown({ t, isAdmin }: { t: any; isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -117,6 +117,23 @@ function DashboardDropdown({ t }: { t: any }) {
               </p>
             </div>
           </Link>
+          {isAdmin && (
+            <Link
+              href="/dashboard?tab=blog_admin"
+              onClick={() => setOpen(false)}
+              className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 transition-colors group border-t border-slate-100"
+            >
+              <span className="text-2xl mt-0.5 group-hover:scale-110 transition-transform">🛠️</span>
+              <div>
+                <p className="font-semibold text-slate-800 group-hover:text-brand-700 transition-colors text-sm">
+                  Admin Dashboard
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  Blog & Einstellungen verwalten
+                </p>
+              </div>
+            </Link>
+          )}
         </div>
       )}
     </div>
@@ -235,6 +252,9 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
+          <Link href="/blog" className="text-slate-600 hover:text-brand-700 transition-colors">
+            {t('nav_blog' as any) || 'Blog'}
+          </Link>
           <Link href="/tariffs" className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_tariffs')}
           </Link>
@@ -243,8 +263,12 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-
-              <DashboardDropdown t={t} />
+              <DashboardDropdown t={t} isAdmin={user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL} />
+              {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
+                <Link href="/dashboard?tab=blog_admin" className="rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                  🛠️ Admin
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="rounded-lg bg-slate-100 px-4 py-2 text-slate-700 hover:bg-slate-200 transition-colors"
@@ -299,11 +323,12 @@ export function Navbar() {
       {menuOpen && (
         <div className="border-t border-slate-100 bg-white px-4 pb-4 md:hidden">
           <div className="flex flex-col gap-3 pt-3 text-sm font-medium">
+            <Link href="/blog" onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
             <Link href="/tariffs" onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
             <Link href="/topup"   onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
             {user ? (
               <>
-
+ 
                 <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
                   <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('nav_dashboard')}</span>
                   <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
@@ -312,6 +337,11 @@ export function Navbar() {
                   <Link href="/dashboard?tab=cash" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     💰 {t('nav_esim_cash' as any) || 'eSIM Cash'}
                   </Link>
+                  {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
+                    <Link href="/dashboard?tab=blog_admin" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium border-t border-slate-100 pt-2 mt-1">
+                      🛠️ Admin Dashboard
+                    </Link>
+                  )}
                 </div>
                 <button onClick={handleLogout} className="text-left text-red-600">{t('nav_logout')}</button>
               </>

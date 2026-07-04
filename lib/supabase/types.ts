@@ -471,6 +471,128 @@ export interface Database {
         Relationships: [];
       };
 
+      // ── posts ───────────────────────────────────────────────────────
+      posts: {
+        Row: {
+          id:             string;
+          title:          string;
+          slug:           string;
+          content:        string;
+          excerpt:        string | null;
+          category:       'guide' | 'news';
+          featured_image: string | null;
+          published_at:   string | null;
+          is_published:   boolean;
+          status:         'review' | 'approved' | 'rejected';
+          conflict_details: string | null;
+          created_at:     string;
+          updated_at:     string;
+        };
+        Insert: {
+          id?:            string;
+          title:          string;
+          slug:           string;
+          content:        string;
+          excerpt?:       string | null;
+          category:       'guide' | 'news';
+          featured_image?: string | null;
+          published_at?:  string | null;
+          is_published?:  boolean;
+          status?:        'review' | 'approved' | 'rejected';
+          conflict_details?: string | null;
+          created_at?:    string;
+          updated_at?:    string;
+        };
+        Update: {
+          title?:         string;
+          slug?:          string;
+          content?:       string;
+          excerpt?:       string | null;
+          category?:      'guide' | 'news';
+          featured_image?: string | null;
+          published_at?:  string | null;
+          is_published?:  boolean;
+          status?:        'review' | 'approved' | 'rejected';
+          conflict_details?: string | null;
+          created_at?:    string;
+          updated_at?:    string;
+        };
+        Relationships: [];
+      };
+
+      // ── post_translations ───────────────────────────────────────────
+      post_translations: {
+        Row: {
+          id:             string;
+          post_id:        string;
+          locale:         string;
+          title:          string;
+          slug:           string;
+          excerpt:        string | null;
+          content:        string;
+          created_at:     string;
+          updated_at:     string;
+        };
+        Insert: {
+          id?:            string;
+          post_id:        string;
+          locale:         string;
+          title:          string;
+          slug:           string;
+          excerpt?:       string | null;
+          content:        string;
+          created_at?:    string;
+          updated_at?:    string;
+        };
+        Update: {
+          post_id?:       string;
+          locale?:        string;
+          title?:         string;
+          slug?:          string;
+          excerpt?:       string | null;
+          content?:       string;
+          created_at?:    string;
+          updated_at?:    string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'post_translations_post_id_fkey';
+            columns: ['post_id'];
+            isOneToOne: false;
+            referencedRelation: 'posts';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+
+      // ── manual_knowledge ───────────────────────────────────────────
+      manual_knowledge: {
+        Row: {
+          id:          string;
+          key:         string;
+          value:       string;
+          description: string | null;
+          created_at:  string;
+          updated_at:  string;
+        };
+        Insert: {
+          id?:          string;
+          key:         string;
+          value:       string;
+          description?: string | null;
+          created_at?:  string;
+          updated_at?:  string;
+        };
+        Update: {
+          key?:         string;
+          value?:       string;
+          description?: string | null;
+          created_at?:  string;
+          updated_at?:  string;
+        };
+        Relationships: [];
+      };
+
     };
     Views: {
       [_ in never]: never;

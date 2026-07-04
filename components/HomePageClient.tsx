@@ -19,7 +19,17 @@ interface PopularDestination {
 
 const STEP_ICONS = ['🔍', '💳', '📷', '🌐'];
 
-export function HomePageClient({ popularDestinations, destinations }: { popularDestinations: PopularDestination[]; destinations: Destination[] }) {
+export function HomePageClient({
+  popularDestinations,
+  destinations,
+  featuredGuide,
+  latestNews,
+}: {
+  popularDestinations: PopularDestination[];
+  destinations: Destination[];
+  featuredGuide: any;
+  latestNews: any[];
+}) {
   const { t, locale } = useTranslation();
 
   const features = [
@@ -167,6 +177,205 @@ export function HomePageClient({ popularDestinations, destinations }: { popularD
           ))}
         </div>
       </section>
+
+      {/* Blog Teaser Section */}
+      <section className="mx-auto max-w-6xl px-4 py-14 border-t border-slate-100">
+        <div className="mb-10 text-center">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            {t('blog_tagline' as any) || 'Mehr über eSIM erfahren & News'}
+          </h2>
+          <p className="mt-3 text-slate-500 text-sm max-w-xl mx-auto">
+            {t('blog_teaser_subtitle' as any)}
+          </p>
+        </div>
+
+        <div className="grid gap-8 md:grid-cols-3">
+          {/* Card 1: Guide (Fixed / Primary) */}
+          {featuredGuide ? (
+            <BlogTeaserCard post={featuredGuide} isPrimary={true} t={t} />
+          ) : (
+            <div className="relative group overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-850 text-white p-8 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-350 hover:-translate-y-1 min-h-[350px]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
+              <div>
+                <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                  {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
+                </span>
+                <h3 className="mt-6 text-2xl font-bold leading-tight group-hover:text-brand-100 transition-colors">
+                  {t('blog_fallback_guide_title' as any)}
+                </h3>
+                <p className="mt-3 text-brand-100 text-sm leading-relaxed">
+                  {t('blog_fallback_guide_desc' as any)}
+                </p>
+              </div>
+              <Link
+                href="/blog"
+                className="mt-8 inline-flex items-center gap-2 font-semibold text-white group-hover:underline text-sm"
+              >
+                <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
+                <svg className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+          )}
+
+          {/* Cards 2 & 3: News (Dynamic/Latest 2) */}
+          {[0, 1].map((index) => {
+            const post = latestNews?.[index];
+            if (post) {
+              return <BlogTeaserCard key={post.id} post={post} isPrimary={false} t={t} />;
+            } else {
+              // Static fallbacks for news if not enough posts in database
+              const fallbackNews = [
+                {
+                  title: t('blog_fallback_news1_title' as any),
+                  excerpt: t('blog_fallback_news1_desc' as any),
+                  date: t('blog_fallback_news1_date' as any),
+                },
+                {
+                  title: t('blog_fallback_news2_title' as any),
+                  excerpt: t('blog_fallback_news2_desc' as any),
+                  date: t('blog_fallback_news2_date' as any),
+                },
+              ];
+              const fallback = fallbackNews[index];
+              return (
+                <div key={index} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px]">
+                  <div className="h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
+                    <span className="text-4xl">📡</span>
+                    <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                      {t('blog_category_news' as any) || 'News'}
+                    </span>
+                  </div>
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <p className="text-xs text-slate-400 font-medium">{fallback.date}</p>
+                      <h3 className="mt-2 text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
+                        {fallback.title}
+                      </h3>
+                      <p className="mt-2 text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                        {fallback.excerpt}
+                      </p>
+                    </div>
+                    <Link
+                      href="/blog"
+                      className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs sm:text-sm group"
+                    >
+                      <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
+                      <svg className="h-3.5 w-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
+      </section>
     </>
+  );
+}
+
+function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean; t: any }) {
+  const { locale } = useTranslation();
+  const formattedDate = post.published_at 
+    ? new Date(post.published_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : new Date(post.created_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  if (isPrimary) {
+    // Primary/Featured guide visual
+    return (
+      <div className="relative group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px] flex flex-col">
+        {post.featured_image ? (
+          <div className="h-48 w-full overflow-hidden relative">
+            <img 
+              src={post.featured_image} 
+              alt={post.title} 
+              className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <span className="absolute bottom-3 left-3 rounded-full bg-brand-600 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
+              {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
+            </span>
+          </div>
+        ) : (
+          <div className="h-48 w-full bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 relative flex items-center justify-center text-white overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
+            <span className="text-5xl">📖</span>
+            <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+              {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
+            </span>
+          </div>
+        )}
+        <div className="p-6 flex-1 flex flex-col justify-between">
+          <div>
+            <p className="text-xs text-slate-400 font-medium">{formattedDate}</p>
+            <h3 className="mt-2 text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-700 transition-colors">
+              {post.title}
+            </h3>
+            <p className="mt-2 text-slate-500 text-sm leading-relaxed line-clamp-3">
+              {post.excerpt}
+            </p>
+          </div>
+          <Link
+            href={`/blog/${post.slug}`}
+            className="mt-6 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-sm group"
+          >
+            <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
+            <svg className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Secondary/News card visual
+  return (
+    <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px]">
+      {post.featured_image ? (
+        <div className="h-44 w-full overflow-hidden relative">
+          <img 
+            src={post.featured_image} 
+            alt={post.title} 
+            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <span className="absolute bottom-3 left-3 rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
+            {t('blog_category_news' as any) || 'News'}
+          </span>
+        </div>
+      ) : (
+        <div className="h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
+          <span className="text-4xl">📡</span>
+          <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+            {t('blog_category_news' as any) || 'News'}
+          </span>
+        </div>
+      )}
+      <div className="p-6 flex-1 flex flex-col justify-between">
+        <div>
+          <p className="text-xs text-slate-400 font-medium">{formattedDate}</p>
+          <h3 className="mt-2 text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
+            {post.title}
+          </h3>
+          <p className="mt-2 text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-3">
+            {post.excerpt}
+          </p>
+        </div>
+        <Link
+          href={`/blog/${post.slug}`}
+          className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs sm:text-sm group"
+        >
+          <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
+          <svg className="h-3.5 w-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
+    </div>
   );
 }

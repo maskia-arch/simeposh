@@ -36,9 +36,6 @@ function LoginForm() {
       router.refresh();
       return;
     }
-
-
-
     router.push('/dashboard');
     router.refresh();
   }

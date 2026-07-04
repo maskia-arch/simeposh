@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { HomePageClient } from '@/components/HomePageClient';
 import { isRegionCode } from '@/lib/tariff-display';
 import type { Destination } from '@/components/HeroSearch';
+import { getServerLocale } from '@/lib/i18n/server';
 
 export const revalidate = 600;
 
@@ -148,10 +149,63 @@ async function getDestinations(): Promise<Destination[]> {
   return Array.from(seen.values());
 }
 
+async function getBlogPosts(locale: string) {
+  const supabase = await createClient();
+
+  // Fetch latest published guide
+  const { data: guidePosts } = (await supabase
+    .from('posts')
+    .select('id, title, slug, excerpt, category, featured_image, published_at, created_at, post_translations(locale, title, slug, excerpt)')
+    .eq('is_published', true)
+    .eq('status', 'approved')
+    .eq('category', 'guide')
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(1)) as any;
+
+  // Fetch latest 2 news
+  const { data: newsPosts } = (await supabase
+    .from('posts')
+    .select('id, title, slug, excerpt, category, featured_image, published_at, created_at, post_translations(locale, title, slug, excerpt)')
+    .eq('is_published', true)
+    .eq('status', 'approved')
+    .eq('category', 'news')
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(2)) as any;
+
+  const mapPost = (post: any) => {
+    if (!post) return null;
+    const translation = post.post_translations?.find((tr: any) => tr.locale === locale);
+    return {
+      ...post,
+      title: translation?.title || post.title,
+      slug: translation?.slug || post.slug,
+      excerpt: translation?.excerpt || post.excerpt,
+    };
+  };
+
+  return {
+    featuredGuide: mapPost(guidePosts?.[0]) || null,
+    latestNews: (newsPosts ?? []).map(mapPost).filter(Boolean),
+  };
+}
+
 export default async function HomePage() {
-  const [popularDestinations, destinations] = await Promise.all([
+  const locale = await getServerLocale();
+  const [popularDestinations, destinations, blogData] = await Promise.all([
     getFeaturedDestinations(),
     getDestinations(),
+    getBlogPosts(locale),
   ]);
-  return <HomePageClient popularDestinations={popularDestinations} destinations={destinations} />;
+  return (
+    <HomePageClient
+      popularDestinations={popularDestinations}
+      destinations={destinations}
+      featuredGuide={blogData.featuredGuide}
+      latestNews={blogData.latestNews}
+    />
+  );
 }
