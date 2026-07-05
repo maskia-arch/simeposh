@@ -153,12 +153,14 @@ export function Navbar() {
   const [cashbackRate, setCashbackRate] = useState<number | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_, session) => setUser(session?.user ?? null),
-    );
-    return () => subscription.unsubscribe();
-  }, []);
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => setUser(data.user))
+      .catch((err) => {
+        console.error('Error fetching current user:', err);
+        setUser(null);
+      });
+  }, [pathname]);
 
   useEffect(() => {
     if (user && user.email) {
@@ -229,7 +231,15 @@ export function Navbar() {
   }, [pathname]);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout request failed:', err);
+    }
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    setUser(null);
     window.location.href = '/';
   }
 
@@ -341,7 +351,9 @@ export function Navbar() {
               <>
  
                 <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
-                  <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{t('nav_dashboard')}</span>
+                  <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-800 font-bold hover:text-brand-700 transition-colors text-sm">
+                    {t('nav_dashboard')}
+                  </Link>
                   <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     📱 {t('nav_my_esims')}
                   </Link>
