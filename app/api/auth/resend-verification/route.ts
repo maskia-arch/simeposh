@@ -29,9 +29,17 @@ export async function POST(req: Request) {
       [userId, token, expiresAt]
     );
 
-    // Resolve site base URL from request headers or env
-    const host = req.headers.get('host');
-    const protocol = host?.includes('localhost') || host?.includes('127.0.0.1') ? 'http' : 'https';
+    // Resolve site base URL checking reverse proxy headers (e.g. Traefik/Nginx in Docker)
+    const forwardedHost = req.headers.get('x-forwarded-host');
+    const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
+    let host = forwardedHost || req.headers.get('host') || 'puresim.net';
+    
+    // Fallback if resolving to internal Docker container addresses
+    if (host.includes('0.0.0.0') || host.includes('127.0.0.1') || (host.includes('localhost') && process.env.NODE_ENV === 'production')) {
+      host = 'puresim.net';
+    }
+
+    const protocol = forwardedHost ? forwardedProto : (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`;
 
     const verificationLink = `${siteUrl}/api/auth/verify?token=${token}`;
@@ -41,7 +49,7 @@ export async function POST(req: Request) {
       to: email,
       subject: '🔑 Bestätige dein PureSim E-Mail-Konto',
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px border #e2e8f0; border-radius: 16px;">
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
           <h2 style="color: #1d4ed8; font-size: 20px;">Hallo,</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.5;">
             vielen Dank für dein Vertrauen in <strong>PureSim</strong>. Bitte bestätige deine E-Mail-Adresse, um alle Funktionen deines Kontos uneingeschränkt freizuschalten.
