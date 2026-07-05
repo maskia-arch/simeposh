@@ -150,8 +150,6 @@ export function Navbar() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [cashbackRate, setCashbackRate] = useState<number | null>(null);
-
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
@@ -162,32 +160,7 @@ export function Navbar() {
       });
   }, [pathname]);
 
-  useEffect(() => {
-    if (user && user.email) {
-      (supabase
-        .from('esim_cash_accounts')
-        .select('total_spend_eur, extra_cashback_queue')
-        .maybeSingle() as any)
-        .then(({ data }: any) => {
-          if (data) {
-            const spend = Number(data.total_spend_eur) || 0;
-            let rate = 5;
-            if (spend >= 1000) rate = 10;
-            else if (spend >= 500) rate = 8;
-            else if (spend >= 100) rate = 6;
-            
-            if (Number(data.extra_cashback_queue) > 0) {
-              rate += 5;
-            }
-            setCashbackRate(rate);
-          } else {
-            setCashbackRate(5);
-          }
-        });
-    } else {
-      setCashbackRate(null);
-    }
-  }, [user]);
+  const cashbackRate = user ? (user as any).cashback_rate ?? 5 : null;
 
   useEffect(() => {
     fetch('/api/destinations')
