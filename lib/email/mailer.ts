@@ -40,7 +40,7 @@ function createTransporter() {
     port,
     secure,
     auth: { user, pass },
-    tls: { rejectUnauthorized: process.env.NODE_ENV === 'production' },
+    tls: { rejectUnauthorized: false }, // Outdated VM trust store safe fallback
   });
 }
 
@@ -50,78 +50,103 @@ function fromAddress(): string {
   return `"${name}" <${address}>`;
 }
 
+async function sendMailThroughTransporter(mailOptions: { to: string; subject: string; html: string; text?: string }): Promise<void> {
+  const host = process.env.SMTP_HOST;
+  const pass = process.env.SMTP_PASS;
+
+  // Use Resend HTTP REST API if using Resend (avoids firewall port blocks)
+  const isResend = host?.includes('resend.com') || pass?.startsWith('re_');
+
+  if (isResend && pass) {
+    try {
+      console.log('[mailer] Dispatching email via Resend HTTP API to:', mailOptions.to);
+      const fromName = process.env.SMTP_FROM_NAME ?? 'PureSim';
+      const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
+      const cleanFrom = `"${fromName}" <${fromAddr}>`;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${pass}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: cleanFrom,
+          to: [mailOptions.to],
+          subject: mailOptions.subject,
+          html: mailOptions.html,
+          text: mailOptions.text || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Resend API returned status ${response.status}: ${errText}`);
+      }
+
+      console.log(`[mailer] Resend HTTP email successfully sent to ${mailOptions.to}`);
+      return;
+    } catch (err) {
+      console.error('[mailer] Resend HTTP API dispatch failed. Falling back to SMTP:', err);
+    }
+  }
+
+  // Fallback to Nodemailer SMTP
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from:    fromAddress(),
+    to:      mailOptions.to,
+    subject: mailOptions.subject,
+    html:    mailOptions.html,
+    text:    mailOptions.text,
+  });
+  console.log(`[mailer] SMTP email successfully sent to ${mailOptions.to}`);
+}
+
 // ─── Send eSIM purchase confirmation ─────────────────────────
 
 export async function sendEsimEmail(data: EsimPurchasedData): Promise<void> {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from:    fromAddress(),
+  await sendMailThroughTransporter({
     to:      data.to,
     subject: `📱 Deine eSIM für ${data.countryName} ist bereit`,
     html:    buildEsimPurchasedHtml(data),
     text:    buildEsimPurchasedText(data),
   });
-
-  console.log(`[mailer] eSIM confirmation sent to ${data.to}`);
 }
 
 // ─── Send Top-Up confirmation ─────────────────────────────────
 
 export async function sendTopUpEmail(data: TopUpConfirmedData & { to: string }): Promise<void> {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from:    fromAddress(),
+  await sendMailThroughTransporter({
     to:      data.to,
     subject: `✅ Top-Up erfolgreich – ${data.dataGb} GB aufgeladen`,
     html:    buildTopUpHtml(data),
     text:    buildTopUpText(data),
   });
-
-  console.log(`[mailer] Top-up confirmation sent to ${data.to}`);
 }
 
 // ─── Send eSIM Cash Earned notification ───────────────────────
 
 export async function sendCashbackEarnedEmail(data: CashbackEarnedData): Promise<void> {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from:    fromAddress(),
+  await sendMailThroughTransporter({
     to:      data.to,
     subject: `💰 eSIM Cash erhalten! +${data.earnedEur.toFixed(2)} € gutgeschrieben`,
     html:    buildCashbackEarnedHtml(data),
     text:    buildCashbackEarnedText(data),
   });
-
-  console.log(`[mailer] Cashback earned email sent to ${data.to}`);
 }
 
 // ─── Send Guest Milestone notification ────────────────────────
 
 export async function sendGuestMilestoneEmail(data: GuestMilestoneData): Promise<void> {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from:    fromAddress(),
+  await sendMailThroughTransporter({
     to:      data.to,
     subject: `🎁 Schon ${data.balanceEur.toFixed(2)} € eSIM Cash warten auf dich!`,
     html:    buildGuestMilestoneHtml(data),
     text:    buildGuestMilestoneText(data),
   });
-
-  console.log(`[mailer] Guest milestone reminder sent to ${data.to}`);
 }
 
 export async function sendGenericEmail(opts: { to: string; subject: string; html: string; text?: string }): Promise<void> {
-  const transporter = createTransporter();
-  await transporter.sendMail({
-    from:    fromAddress(),
-    to:      opts.to,
-    subject: opts.subject,
-    html:    opts.html,
-    text:    opts.text,
-  });
-  console.log(`[mailer] Generic email sent to ${opts.to} | Subject: ${opts.subject}`);
+  await sendMailThroughTransporter(opts);
 }

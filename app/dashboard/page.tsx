@@ -170,13 +170,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div className="flex gap-6 -mb-px">
           <Link
             href="/dashboard"
-            className={`pb-4 text-sm font-semibold border-b-2 transition-all ${
+            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
               activeTab === 'esims'
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            {t('dash_my_esims')}
+            <span>📶</span>
+            <span>{t('dash_my_esims')}</span>
           </Link>
           <Link
             href="/dashboard?tab=cash"
@@ -187,7 +188,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             }`}
           >
             <span>💰</span>
-            <span>{t('dash_tab_cash' as any) || 'eSIM Cash'}</span>
+            <span>{t('dash_tab_cash')}</span>
           </Link>
           <Link
             href="/dashboard?tab=settings"
@@ -198,7 +199,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             }`}
           >
             <span>⚙️</span>
-            <span>{t('dash_tab_settings' as any) || 'Einstellungen'}</span>
+            <span>{t('dash_tab_settings')}</span>
           </Link>
         </div>
       </div>
