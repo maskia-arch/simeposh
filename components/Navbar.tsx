@@ -268,13 +268,18 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-              <DashboardDropdown t={t} isAdmin={user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL} />
               {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
                 <Link href="/dashboard?tab=blog_admin" className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
                   <WrenchIcon size={13} className="text-indigo-700" />
                   Admin
                 </Link>
               )}
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition-colors font-semibold text-sm"
+              >
+                {t('nav_dashboard')}
+              </Link>
               <button
                 onClick={handleLogout}
                 className="rounded-lg bg-slate-100 px-4 py-2 text-slate-700 hover:bg-slate-200 transition-colors"
