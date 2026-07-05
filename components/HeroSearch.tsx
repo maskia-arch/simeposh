@@ -157,27 +157,25 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
   return (
     <div ref={boxRef} className="relative mx-auto w-full max-w-2xl text-left">
       {/* Search field */}
-      <div className="flex items-stretch overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
-        <div className="flex flex-1 items-center gap-3 px-4">
-          <svg className="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            value={q}
-            onChange={(e) => { setQ(e.target.value); setOpen(true); setActive(0); }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={onKeyDown}
-            placeholder={s('ph')}
-            className="w-full bg-transparent py-4 text-base text-slate-800 placeholder:text-slate-400 outline-none"
-            aria-label={s('ph')}
-          />
-          {q && (
-            <button onClick={() => { setQ(''); setOpen(true); }} className="text-slate-300 hover:text-slate-500" aria-label="Clear">✕</button>
-          )}
-        </div>
+      <div className="flex items-center rounded-full bg-white p-1.5 pl-4 pr-1.5 shadow-md border border-slate-200">
+        <svg className="h-5 w-5 shrink-0 text-slate-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); setActive(0); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          placeholder={s('ph')}
+          className="w-full bg-transparent py-2.5 text-base text-slate-800 placeholder:text-slate-500 outline-none"
+          aria-label={s('ph')}
+        />
+        {q && (
+          <button onClick={() => { setQ(''); setOpen(true); }} className="text-slate-300 hover:text-slate-500 mr-2" aria-label="Clear">✕</button>
+        )}
         <button
           onClick={() => go(q)}
-          className="shrink-0 bg-brand-600 px-5 sm:px-7 font-semibold text-white hover:bg-brand-700 transition-colors"
+          className="shrink-0 rounded-full bg-brand-600 px-6 py-2.5 font-bold text-white hover:bg-brand-700 transition-colors shadow-sm"
         >
           {s('btn')}
         </button>

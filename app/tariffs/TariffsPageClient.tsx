@@ -26,51 +26,6 @@ type Tab = 'travel' | 'unlimited';
  *
  * → Germany tariffs always rank above "EU eSIM" tariffs that merely include DE.
  */
-function scoreTariff(
-  t: Tariff,
-  qLow: string,
-  matchedCountryCodes: Set<string>,
-  matchedRegionCodes: Set<string>,
-): number {
-  const code   = (t.country_code ?? '').toUpperCase();
-  const name   = (t.country_name ?? '').toLowerCase();
-  const region = (t.region       ?? '').toLowerCase();
-  const title  = (t.name         ?? '').toLowerCase();
-  const pkg    = (t.package_code ?? '').toLowerCase();
-  const locs   = (t.location_codes ?? []).map((c) => c.toUpperCase());
-
-  // ── Strongest: exact country match / alias match ──────────────
-  if (matchedCountryCodes.has(code)) {
-    const exactMatch = Object.entries(COUNTRY_ALIASES).some(([alias, c]) => alias === qLow && c.toUpperCase() === code);
-    return exactMatch ? 100 : 85;
-  }
-  if (code === qLow.toUpperCase()) return 100;
-
-  // Region match
-  if (matchedRegionCodes.has(code)) {
-    const exactMatch = Object.entries(REGION_ALIASES).some(([alias, c]) => alias === qLow && c.toUpperCase() === code);
-    return exactMatch ? 90 : 80;
-  }
-
-  // Country name exact / prefix / substring
-  if (name === qLow)       return 95;
-  if (name.startsWith(qLow)) return 80;
-  if (name.includes(qLow))   return 70;
-
-  // Region / multi-country tariff that COVERS the searched country
-  for (const c of Array.from(matchedCountryCodes)) {
-    if (locs.includes(c)) return 50;
-  }
-
-  // Region name substring
-  if (region.includes(qLow))   return 40;
-  // Title / package-code substrings
-  if (title.includes(qLow))    return 30;
-  if (pkg.includes(qLow))      return 10;
-
-  return 0;
-}
-
 /**
  * Multi-lingual, coverage-aware, ranked tariff search.
  * Returns tariffs sorted by relevance (best matches first), then price.
@@ -88,7 +43,7 @@ function filterTariffs(tariffs: Tariff[], rawQuery: string): Tariff[] {
   // Data-driven fallback: if no alias matched (e.g. English "germany"),
   // derive the ISO code from a single-country tariff whose stored name
   // matches or starts with the query.
-  if (matchedCountryCodes.size === 0) {
+  if (matchedCountryCodes.size === 0 && matchedRegionCodes.size === 0) {
     for (const t of tariffs) {
       const codes = t.location_codes ?? [];
       const single = codes.length <= 1 && /^[A-Za-z]{2}$/.test(t.country_code ?? '');
@@ -98,10 +53,33 @@ function filterTariffs(tariffs: Tariff[], rawQuery: string): Tariff[] {
     }
   }
 
+  const hasMatchedCodes = matchedCountryCodes.size > 0 || matchedRegionCodes.size > 0;
   const scored: Array<{ t: Tariff; score: number }> = [];
+
   for (const t of tariffs) {
-    const score = scoreTariff(t, qLow, matchedCountryCodes, matchedRegionCodes);
-    if (score > 0) scored.push({ t, score });
+    const code   = (t.country_code ?? '').toUpperCase();
+    const name   = (t.country_name ?? '').toLowerCase();
+    const region = (t.region       ?? '').toLowerCase();
+    const title  = (t.name         ?? '').toLowerCase();
+    const pkg    = (t.package_code ?? '').toLowerCase();
+
+    if (hasMatchedCodes) {
+      // Strict filter mode: only match exact country/region code
+      if (matchedCountryCodes.has(code) || matchedRegionCodes.has(code)) {
+        scored.push({ t, score: 100 });
+      }
+    } else {
+      // Free-text fallback mode: match substrings
+      let s = 0;
+      if (name === qLow)            s = 95;
+      else if (name.startsWith(qLow)) s = 80;
+      else if (name.includes(qLow))   s = 70;
+      else if (region.includes(qLow)) s = 40;
+      else if (title.includes(qLow))  s = 30;
+      else if (pkg.includes(qLow))    s = 10;
+
+      if (s > 0) scored.push({ t, score: s });
+    }
   }
 
   scored.sort((a, b) => {

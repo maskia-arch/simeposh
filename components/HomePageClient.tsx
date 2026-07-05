@@ -100,13 +100,13 @@ export function HomePageClient({
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link
               href="/tariffs"
-              className="rounded-xl bg-white px-6 py-3 font-semibold text-brand-700 shadow-lg hover:bg-brand-50 transition-colors"
+              className="rounded-full bg-brand-600 px-6 py-3 font-semibold text-white shadow-md hover:bg-brand-700 transition-colors border border-brand-500/20"
             >
               {t('hero_cta_plans')}
             </Link>
             <Link
               href="/topup"
-              className="rounded-xl border-2 border-white/40 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
+              className="rounded-full border-2 border-white bg-transparent px-6 py-3 font-semibold text-white hover:bg-white/10 transition-colors"
             >
               {t('hero_cta_topup')}
             </Link>

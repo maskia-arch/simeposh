@@ -374,10 +374,7 @@ export function Navbar() {
 
       {/* Announcement Bar under the Header */}
       <div className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 transition-all">
-        <svg className="h-4 w-4 text-[#38bdf8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581a1.125 1.125 0 001.591 0l4.318-4.318a1.125 1.125 0 000-1.591L9.568 3.659A2.25 2.25 0 008.97 3z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 7.5h.008v.008H6V7.5z" />
-        </svg>
+        <span className="text-sm">🪙</span>
         {user ? (
           <span>
             {t('announcement_user' as any, { rate: cashbackRate ?? 5 })}
