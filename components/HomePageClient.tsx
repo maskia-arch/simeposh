@@ -69,10 +69,10 @@ export function HomePageClient({
   ];
 
   const steps = [
-    { step: '1', icon: <SearchIcon size={32} className="text-[#1d4ed8] mx-auto" />, title: t('how_1_t'), desc: t('how_1_d') },
-    { step: '2', icon: <CreditCardIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_2_t'), desc: t('how_2_d') },
-    { step: '3', icon: <CameraIcon size={32} className="text-[#1d4ed8] mx-auto" />, title: t('how_3_t'), desc: t('how_3_d') },
-    { step: '4', icon: <CheckCircleIcon size={32} className="text-[#0ea5e9] mx-auto" />, title: t('how_4_t'), desc: t('how_4_d') },
+    { step: '1', icon: <SearchIcon size={28} className="text-[#1d4ed8] mx-auto" />, title: t('how_1_t'), desc: t('how_1_d') },
+    { step: '2', icon: <CreditCardIcon size={28} className="text-[#0ea5e9] mx-auto" />, title: t('how_2_t'), desc: t('how_2_d') },
+    { step: '3', icon: <CameraIcon size={28} className="text-[#1d4ed8] mx-auto" />, title: t('how_3_t'), desc: t('how_3_d') },
+    { step: '4', icon: <CheckCircleIcon size={28} className="text-[#0ea5e9] mx-auto" />, title: t('how_4_t'), desc: t('how_4_d') },
   ];
 
   return (
@@ -195,16 +195,16 @@ export function HomePageClient({
 
       {/* How it works */}
       <section className="mx-auto max-w-6xl px-4 py-10 md:py-12">
-        <h2 className="mb-8 text-center text-2xl font-bold text-slate-900">{t('how_title')}</h2>
-        <div className="grid gap-6 md:grid-cols-4">
+        <h2 className="mb-6 md:mb-8 text-center text-xl md:text-2xl font-bold text-slate-900">{t('how_title')}</h2>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-6">
           {steps.map((s) => (
-            <div key={s.step} className="relative text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-white font-bold text-sm">
+            <div key={s.step} className="relative text-center flex flex-col items-center">
+              <div className="mb-2 flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-brand-600 text-white font-bold text-xs md:text-sm shadow-sm">
                 {s.step}
               </div>
-              <div className="mb-2 h-10 flex items-center justify-center">{s.icon}</div>
-              <p className="font-semibold text-slate-800">{s.title}</p>
-              <p className="text-sm text-slate-500 mt-1">{s.desc}</p>
+              <div className="mb-1 h-8 md:h-10 flex items-center justify-center">{s.icon}</div>
+              <p className="font-bold text-slate-800 text-xs md:text-base leading-snug px-1">{s.title}</p>
+              <p className="text-[10px] sm:text-xs md:text-sm text-slate-500 mt-0.5 md:mt-1 leading-relaxed max-w-[150px] md:max-w-none">{s.desc}</p>
             </div>
           ))}
         </div>
