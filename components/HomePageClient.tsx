@@ -221,27 +221,27 @@ export function HomePageClient({
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="flex gap-4 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:pb-0 md:snap-none">
           {/* Card 1: Guide (Fixed / Primary) */}
           {featuredGuide ? (
             <BlogTeaserCard post={featuredGuide} isPrimary={true} t={t} />
           ) : (
-            <div className="relative group overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-850 text-white p-8 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-350 hover:-translate-y-1 min-h-[350px]">
+            <div className="relative group overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-850 text-white p-6 md:p-8 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-350 hover:-translate-y-1 min-h-[310px] md:min-h-[350px] w-[280px] sm:w-[320px] md:w-auto shrink-0 md:shrink snap-start">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
               <div>
                 <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                   {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
                 </span>
-                <h3 className="mt-6 text-2xl font-bold leading-tight group-hover:text-brand-100 transition-colors">
+                <h3 className="mt-4 md:mt-6 text-xl md:text-2xl font-bold leading-tight group-hover:text-brand-100 transition-colors">
                   {t('blog_fallback_guide_title' as any)}
                 </h3>
-                <p className="mt-3 text-brand-100 text-sm leading-relaxed">
+                <p className="mt-2 md:mt-3 text-brand-100 text-xs md:text-sm leading-relaxed">
                   {t('blog_fallback_guide_desc' as any)}
                 </p>
               </div>
               <Link
                 href="/blog"
-                className="mt-8 inline-flex items-center gap-2 font-semibold text-white group-hover:underline text-sm"
+                className="mt-6 md:mt-8 inline-flex items-center gap-2 font-semibold text-white group-hover:underline text-xs md:text-sm"
               >
                 <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
                 <svg className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -272,27 +272,27 @@ export function HomePageClient({
               ];
               const fallback = fallbackNews[index];
               return (
-                <div key={index} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px]">
-                  <div className="h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
+                <div key={index} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[310px] md:min-h-[350px] w-[280px] sm:w-[320px] md:w-auto shrink-0 md:shrink snap-start">
+                  <div className="h-36 md:h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-                    <NetworkIcon size={40} className="text-white" />
+                    <NetworkIcon size={36} className="text-white" />
                     <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                       {t('blog_category_news' as any) || 'News'}
                     </span>
                   </div>
-                  <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div className="p-5 md:p-6 flex-1 flex flex-col justify-between">
                     <div>
-                      <p className="text-xs text-slate-400 font-medium">{fallback.date}</p>
-                      <h3 className="mt-2 text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
+                      <p className="text-[10px] md:text-xs text-slate-400 font-medium">{fallback.date}</p>
+                      <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
                         {fallback.title}
                       </h3>
-                      <p className="mt-2 text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                      <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3">
                         {fallback.excerpt}
                       </p>
                     </div>
                     <Link
                       href="/blog"
-                      className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs sm:text-sm group"
+                      className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
                     >
                       <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
                       <svg className="h-3.5 w-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -319,9 +319,9 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
   if (isPrimary) {
     // Primary/Featured guide visual
     return (
-      <div className="relative group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px] flex flex-col">
+      <div className="relative group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[310px] md:min-h-[350px] flex flex-col w-[280px] sm:w-[320px] md:w-auto shrink-0 md:shrink snap-start">
         {post.featured_image ? (
-          <div className="h-48 w-full overflow-hidden relative">
+          <div className="h-36 md:h-48 w-full overflow-hidden relative">
             <img 
               src={post.featured_image} 
               alt={post.title} 
@@ -333,27 +333,27 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
             </span>
           </div>
         ) : (
-          <div className="h-48 w-full bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 relative flex items-center justify-center text-white overflow-hidden">
+          <div className="h-36 md:h-48 w-full bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 relative flex items-center justify-center text-white overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-            <BookIcon size={48} className="text-white" />
+            <BookIcon size={36} className="text-white" />
             <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
               {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
             </span>
           </div>
         )}
-        <div className="p-6 flex-1 flex flex-col justify-between">
+        <div className="p-5 md:p-6 flex-1 flex flex-col justify-between">
           <div>
-            <p className="text-xs text-slate-400 font-medium">{formattedDate}</p>
-            <h3 className="mt-2 text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-700 transition-colors">
+            <p className="text-[10px] md:text-xs text-slate-400 font-medium">{formattedDate}</p>
+            <h3 className="mt-1 md:mt-2 text-base md:text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-700 transition-colors">
               {post.title}
             </h3>
-            <p className="mt-2 text-slate-500 text-sm leading-relaxed line-clamp-3">
+            <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3">
               {post.excerpt}
             </p>
           </div>
           <Link
             href={`/blog/${post.slug}`}
-            className="mt-6 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-sm group"
+            className="mt-4 md:mt-6 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
           >
             <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
             <svg className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -367,9 +367,9 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
 
   // Secondary/News card visual
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[350px]">
+    <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[310px] md:min-h-[350px] w-[280px] sm:w-[320px] md:w-auto shrink-0 md:shrink snap-start">
       {post.featured_image ? (
-        <div className="h-44 w-full overflow-hidden relative">
+        <div className="h-36 md:h-44 w-full overflow-hidden relative">
           <img 
             src={post.featured_image} 
             alt={post.title} 
@@ -380,27 +380,27 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
           </span>
         </div>
       ) : (
-        <div className="h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
+        <div className="h-36 md:h-44 w-full bg-gradient-to-br from-indigo-500 to-brand-500 relative flex items-center justify-center text-white overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
-          <NetworkIcon size={40} className="text-white" />
+          <NetworkIcon size={36} className="text-white" />
           <span className="absolute bottom-3 left-3 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
             {t('blog_category_news' as any) || 'News'}
           </span>
         </div>
       )}
-      <div className="p-6 flex-1 flex flex-col justify-between">
+      <div className="p-5 md:p-6 flex-1 flex flex-col justify-between">
         <div>
-          <p className="text-xs text-slate-400 font-medium">{formattedDate}</p>
-          <h3 className="mt-2 text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
+          <p className="text-[10px] md:text-xs text-slate-400 font-medium">{formattedDate}</p>
+          <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
             {post.title}
           </h3>
-          <p className="mt-2 text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-3">
+          <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3">
             {post.excerpt}
           </p>
         </div>
         <Link
           href={`/blog/${post.slug}`}
-          className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs sm:text-sm group"
+          className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
         >
           <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
           <svg className="h-3.5 w-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
