@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     // Fetch active sessions from Supabase
     const { data: sessions, error } = await db
       .from('crypto_sessions')
-      .select('id, amount_eur, crypto_amount, wallet_address, status, created_at, expires_at, paid_at, confirmations_required, confirmations, tx_hash, received_amount')
+      .select('id, coin, amount_eur, crypto_amount, wallet_address, status, created_at, expires_at, paid_at, confirmations_required, confirmations, tx_hash, received_amount')
       .in('status', ['pending', 'detected', 'partially_paid']);
 
     if (error) {
@@ -37,6 +37,7 @@ export async function GET(request: Request) {
 
     const payments = (sessions || []).map(s => ({
       order_id: s.id,
+      coin: s.coin || 'LTC',
       amount_eur: Number(s.amount_eur),
       amount_ltc: Number(s.crypto_amount),
       address: s.wallet_address,

@@ -31,12 +31,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const coin = (searchParams.get('coin') || 'ltc').toLowerCase();
+  const poolKey = `crypto_address_pool_${coin}`;
+
   try {
     const db = createServiceClient();
     const { data } = await db
       .from('system_settings')
       .select('value')
-      .eq('key', 'crypto_address_pool')
+      .eq('key', poolKey)
       .maybeSingle();
 
     if (!data?.value) {
@@ -79,7 +83,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    const payload = JSON.parse(rawBody) as { addresses?: Array<{ address: string; index: number }> };
+    const payload = JSON.parse(rawBody) as { coin?: string; addresses?: Array<{ address: string; index: number }> };
+    const coinCode = (payload.coin || 'ltc').toLowerCase();
+    const poolKey = `crypto_address_pool_${coinCode}`;
     const newAddrs = payload.addresses || [];
 
     if (newAddrs.length === 0) {
@@ -101,16 +107,16 @@ export async function POST(request: Request) {
     const { error: saveError } = await db
       .from('system_settings')
       .upsert({
-        key: 'crypto_address_pool',
+        key: poolKey,
         value: JSON.stringify(pool),
-        description: 'Static pool of offline pre-derived cryptocurrency receiving addresses',
+        description: `Static pool of offline pre-derived ${coinCode.toUpperCase()} receiving addresses`,
       }, { onConflict: 'key' });
 
     if (saveError) {
       return NextResponse.json({ error: saveError.message }, { status: 500 });
     }
 
-    console.log(`[Address Pool] Initialized static pool with ${pool.addresses.length} addresses.`);
+    console.log(`[Address Pool] Initialized static pool for ${coinCode.toUpperCase()} with ${pool.addresses.length} addresses.`);
     return NextResponse.json({ success: true, count: pool.addresses.length });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

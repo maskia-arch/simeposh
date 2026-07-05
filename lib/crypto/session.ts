@@ -49,10 +49,7 @@ export async function createCryptoSession(opts: {
   const coin = await getCoin(opts.coinCode);
   if (!coin) throw new Error(`Coin ${opts.coinCode} is not available`);
 
-  if (opts.coinCode.toUpperCase() !== 'LTC') {
-    throw new Error('Only Litecoin (LTC) is supported by the payment gateway at this time.');
-  }
-
+  const coinCode = coin.code.toUpperCase();
   const db = createServiceClient();
 
   // 1. Calculate final EUR price (including surcharge)
@@ -89,12 +86,13 @@ export async function createCryptoSession(opts: {
 
   // 3. Resolve wallet address and amount. Check pool first, fall back to wallet gateway.
   let walletRes: { address: string; amount_ltc: number; expires_at: string } | null = null;
+  const poolKey = `crypto_address_pool_${coin.code.toLowerCase()}`;
 
   try {
     const { data: poolRow, error: poolError } = await db
       .from('system_settings')
       .select('value')
-      .eq('key', 'crypto_address_pool')
+      .eq('key', poolKey)
       .maybeSingle();
 
     if (poolRow?.value) {
@@ -109,17 +107,18 @@ export async function createCryptoSession(opts: {
         const { error: saveError } = await db
           .from('system_settings')
           .update({ value: JSON.stringify(pool) })
-          .eq('key', 'crypto_address_pool');
+          .eq('key', poolKey);
 
         if (!saveError) {
-          const rate = await getCoinEurRate('litecoin');
-          const amountLtc = Math.round((amountEur / rate) * 1e8) / 1e8;
+          const rate = await getCoinEurRate(coin.coingecko_id);
+          const decimals = coin.decimals || 8;
+          const amountLtc = Math.round((amountEur / rate) * Math.pow(10, decimals)) / Math.pow(10, decimals);
           walletRes = {
             address: entry.address,
             amount_ltc: amountLtc,
             expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
           };
-          console.log(`[Session] Rotated address ${entry.address} (index ${entry.index}) from pool for session ${sessionId}`);
+          console.log(`[Session] Rotated address ${entry.address} (index ${entry.index}) from pool for session ${sessionId} (${coin.code})`);
         } else {
           console.error('[Session] Failed to save updated pool:', saveError.message);
         }
@@ -138,6 +137,7 @@ export async function createCryptoSession(opts: {
         body: JSON.stringify({
           amount_eur: amountEur,
           order_id: sessionId,
+          coin: coin.code,
         }),
       });
 
@@ -148,34 +148,36 @@ export async function createCryptoSession(opts: {
 
       walletRes = await res.json() as { address: string; amount_ltc: number; expires_at: string };
     } catch (err) {
-      const fallbackAddress = process.env.FALLBACK_LTC_ADDRESS;
+      const fallbackAddress = process.env[`FALLBACK_${coinCode}_ADDRESS` as any] || process.env.FALLBACK_LTC_ADDRESS;
       if (fallbackAddress) {
         console.warn('[Session] Wallet gateway is offline or failed. Using fallback static address:', fallbackAddress);
         try {
-          const rate = await getCoinEurRate('litecoin');
-          // Add a small random offset (100 to 999 Satoshis) to make the amount unique for tracking/matching
+          const rate = await getCoinEurRate(coin.coingecko_id);
+          const decimals = coin.decimals || 8;
+          // Add a small random offset to make the amount unique for tracking/matching
           const randomSatoshis = Math.floor(Math.random() * 900) + 100;
           const amountLtcBase = amountEur / rate;
-          const amountLtc = Math.round((amountLtcBase + (randomSatoshis / 1e8)) * 1e8) / 1e8;
+          const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
 
           walletRes = {
-            address: fallbackAddress,
+            address: fallbackAddress as string,
             amount_ltc: amountLtc,
             expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
           };
         } catch (rateErr) {
-          // If even rate fetching fails, use a fallback static rate (e.g. 75.0 EUR/LTC)
-          const fallbackRate = 75.0; 
+          const fallbackRates: Record<string, number> = { LTC: 75.0, BTC: 60000.0, ETH: 3000.0, SOL: 130.0 };
+          const fallbackRate = fallbackRates[coinCode] || 75.0; 
+          const decimals = coin.decimals || 8;
           const randomSatoshis = Math.floor(Math.random() * 900) + 100;
           const amountLtcBase = amountEur / fallbackRate;
-          const amountLtc = Math.round((amountLtcBase + (randomSatoshis / 1e8)) * 1e8) / 1e8;
+          const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
 
           walletRes = {
-            address: fallbackAddress,
+            address: fallbackAddress as string,
             amount_ltc: amountLtc,
             expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
           };
-          console.warn('[Session] Even rate service failed. Using fallback LTC rate:', fallbackRate);
+          console.warn(`[Session] Even rate service failed. Using fallback ${coinCode} rate:`, fallbackRate);
         }
       } else {
         // Clean up created pending orders and session on failure
@@ -190,7 +192,7 @@ export async function createCryptoSession(opts: {
     throw new Error('Krypto-Gateway-Fehler: Failed to resolve wallet address');
   }
 
-  // 4. Update the session with derived address, ltc rate, and real expiration
+  // 4. Update the session with derived address, coin rate, and real expiration
   const rateEur = amountEur / walletRes.amount_ltc;
 
   const { error: updateErr } = await db
@@ -210,8 +212,8 @@ export async function createCryptoSession(opts: {
   // Queue the address to be synchronized by the wallet gateway
   await queueAddressSync(walletRes.address);
 
-  // P2PKH payment URI
-  const paymentUri = `litecoin:${walletRes.address}?amount=${walletRes.amount_ltc}`;
+  // Build URI scheme
+  const paymentUri = `${coin.uri_scheme}:${walletRes.address}?amount=${walletRes.amount_ltc}`;
 
   return {
     id: sessionId,

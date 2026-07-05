@@ -87,11 +87,6 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
   async function start(coin: string) {
     setError('');
     
-    if (coin.toUpperCase() !== 'LTC') {
-      setError('Zurzeit wird nur Litecoin (LTC) durch unser Zahlungsgateway unterstützt. Weitere Coins folgen in Kürze.');
-      return;
-    }
-    
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;

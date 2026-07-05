@@ -10,7 +10,6 @@ import type { Database } from '@/lib/supabase/types';
 export type CoinRow = Database['public']['Tables']['crypto_coins']['Row'];
 export type CoinConfig = CoinRow & { walletAddress: string };
 
-/** All coins that are enabled in the database. */
 export async function getOfferableCoins(): Promise<CoinConfig[]> {
   const db = createServiceClient();
   const { data } = await db
@@ -19,8 +18,7 @@ export async function getOfferableCoins(): Promise<CoinConfig[]> {
     .eq('enabled', true)
     .order('sort_order', { ascending: true });
 
-  // Strictly filter to Litecoin (LTC) in Phase 1
-  const activeCoins = (data ?? []).filter(c => c.code === 'LTC');
+  const activeCoins = data ?? [];
 
   return activeCoins.map((c) => ({
     ...c,
@@ -30,8 +28,6 @@ export async function getOfferableCoins(): Promise<CoinConfig[]> {
 
 /** A single enabled coin by code. */
 export async function getCoin(code: string): Promise<CoinConfig | null> {
-  if (code.toUpperCase() !== 'LTC') return null; // strictly Litecoin in Phase 1
-
   const db = createServiceClient();
   const { data } = await db
     .from('crypto_coins')
@@ -49,6 +45,5 @@ export async function getCoin(code: string): Promise<CoinConfig | null> {
 
 /** Build a native crypto payment URI. */
 export function buildPaymentUri(coin: CoinConfig, amount: string, memo?: string | null): string {
-  // Litecoin URI scheme: litecoin:ADDRESS?amount=AMOUNT
-  return `litecoin:${coin.walletAddress}?amount=${amount}`;
+  return `${coin.uri_scheme}:${coin.walletAddress}?amount=${amount}`;
 }

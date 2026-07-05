@@ -56,8 +56,8 @@ const STR: Record<string, Record<string, string>> = {
   confirming_status: { en: 'Confirming', de: 'Bestätigung läuft' },
   detected_title:    { en: '📥 Payment detected!', de: '📥 Zahlung erkannt!' },
   detected_desc:     {
-    en: 'We successfully detected your transaction on the Litecoin network. We are now waiting for the required confirmation on the blockchain.',
-    de: 'Wir haben deine Transaktion im Litecoin-Netzwerk erfolgreich erkannt. Wir warten nun auf die erforderliche Bestätigung auf der Blockchain.'
+    en: 'We successfully detected your transaction on the {coin} network. We are now waiting for the required confirmation on the blockchain.',
+    de: 'Wir haben deine Transaktion im {coin}-Netzwerk erfolgreich erkannt. Wir warten nun auf die erforderliche Bestätigung auf der Blockchain.'
   },
   detected_hint:     {
     en: 'You can leave this page open or close it – your order will be processed automatically as soon as the confirmation is complete.',
@@ -423,7 +423,7 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
           return (
             <div className="mb-6 rounded-2xl bg-blue-50/60 border border-blue-100 p-5 text-xs text-blue-800 leading-relaxed shadow-sm">
               <p className="font-bold mb-2 text-sm">{s('detected_title')}</p>
-              <p className="mb-4">{s('detected_desc')}</p>
+              <p className="mb-4">{s('detected_desc').replace('{coin}', sess.coinName)}</p>
               
               {/* Payment coverage progress indicator */}
               <div className="mb-4 rounded-xl bg-white border border-blue-100 p-3 shadow-inner">
