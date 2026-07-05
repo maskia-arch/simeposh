@@ -18,7 +18,8 @@ export async function getOfferableCoins(): Promise<CoinConfig[]> {
     .eq('enabled', true)
     .order('sort_order', { ascending: true });
 
-  const activeCoins = data ?? [];
+  const supported = ['LTC', 'BTC', 'ETH', 'SOL'];
+  const activeCoins = (data ?? []).filter((c) => supported.includes(c.code.toUpperCase()));
 
   return activeCoins.map((c) => ({
     ...c,
@@ -28,6 +29,9 @@ export async function getOfferableCoins(): Promise<CoinConfig[]> {
 
 /** A single enabled coin by code. */
 export async function getCoin(code: string): Promise<CoinConfig | null> {
+  const supported = ['LTC', 'BTC', 'ETH', 'SOL'];
+  if (!supported.includes(code.toUpperCase())) return null;
+
   const db = createServiceClient();
   const { data } = await db
     .from('crypto_coins')
