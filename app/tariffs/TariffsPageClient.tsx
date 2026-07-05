@@ -87,6 +87,8 @@ function filterTariffs(tariffs: Tariff[], rawQuery: string): Tariff[] {
     return (a.t.sale_price_eur ?? 0) - (b.t.sale_price_eur ?? 0); // then cheapest
   });
 
+  console.log(`[Search] Query: "${q}" | Matched codes:`, Array.from(matchedCountryCodes), `| Result count: ${scored.length}`);
+
   return scored.map((s) => s.t);
 }
 
