@@ -193,3 +193,13 @@ export const ScalesIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18" />
   </svg>
 );
+
+// 29. Coins Icon (replaces 🪙 emoji for universal compatibility)
+export const CoinsIcon: React.FC<IconProps> = ({ size = 20, className = '', ...props }) => (
+  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" className={`${className} shrink-0`} {...props}>
+    <circle cx="15.5" cy="11.5" r="5.5" fill="#f59e0b" stroke="#d97706" strokeWidth="1.5" />
+    <circle cx="15.5" cy="11.5" r="2.5" stroke="#b45309" strokeWidth="1" fill="none" />
+    <circle cx="9.5" cy="13.5" r="5.5" fill="#fbbf24" stroke="#d97706" strokeWidth="1.5" />
+    <circle cx="9.5" cy="13.5" r="2.5" stroke="#b45309" strokeWidth="1" fill="none" />
+  </svg>
+);

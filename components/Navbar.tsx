@@ -11,7 +11,7 @@ import { useCart } from '@/components/CartProvider';
 import { usePathname } from 'next/navigation';
 import { HeaderSearch } from '@/components/HeaderSearch';
 import type { Destination } from '@/components/HeroSearch';
-import { WrenchIcon } from '@/components/Icons';
+import { WrenchIcon, CoinsIcon } from '@/components/Icons';
 
 /** Globe (language) | divider | banknote (currency) – Airalo-style controls. */
 function LocaleCurrencyControls() {
@@ -374,7 +374,7 @@ export function Navbar() {
 
       {/* Announcement Bar under the Header */}
       <div className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 transition-all">
-        <span className="text-sm">🪙</span>
+        <CoinsIcon size={16} />
         {user ? (
           <span>
             {t('announcement_user' as any, { rate: cashbackRate ?? 5 })}
