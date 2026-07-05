@@ -9,7 +9,7 @@ import { fulfillOrders } from '@/lib/fulfillment';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function checkBtcLtcAddress(address: string, coinCode: string): Promise<{ received: number; confirmations: number; txid: string | null }> {
+async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date): Promise<{ received: number; confirmations: number; txid: string | null }> {
   const isLtc = coinCode === 'LTC';
   const baseUrl = isLtc ? 'https://litecoinspace.org/api' : 'https://mempool.space/api';
   
@@ -30,6 +30,14 @@ async function checkBtcLtcAddress(address: string, coinCode: string): Promise<{ 
   let lastTxid: string | null = null;
 
   for (const tx of txs) {
+    // Skip transactions confirmed before this checkout session was created
+    if (tx.status?.confirmed && tx.status?.block_time && createdAfter) {
+      const txTimeMs = tx.status.block_time * 1000;
+      if (txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
+        continue;
+      }
+    }
+
     let txReceived = 0;
     if (tx.vout) {
       for (const out of tx.vout) {
@@ -159,10 +167,12 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
       try {
         const coinCode = currentSession.coin.toUpperCase();
         const address = currentSession.wallet_address;
+        // Only count transactions that occurred AFTER this checkout session was created
+        const createdAfter = currentSession.created_at ? new Date(currentSession.created_at) : undefined;
         let chainInfo = { received: 0, confirmations: 0, txid: null as string | null };
 
         if (coinCode === 'LTC' || coinCode === 'BTC') {
-          chainInfo = await checkBtcLtcAddress(address, coinCode);
+          chainInfo = await checkBtcLtcAddress(address, coinCode, createdAfter);
         } else if (coinCode === 'ETH') {
           chainInfo = await checkEthAddress(address);
         } else if (coinCode === 'SOL') {
