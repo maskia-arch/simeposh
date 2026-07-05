@@ -4,13 +4,14 @@ import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { formatEur, formatGb } from '@/lib/utils';
-import { claimGuestOrders }    from '@/lib/customers';
+import { claimGuestOrders, resolveCustomer } from '@/lib/customers';
 import { queryEsimLifecycle, type EsimLifecycle } from '@/lib/esimaccess/client';
 import { getServerT, getServerLocale, type ServerT } from '@/lib/i18n/server';
 import type { TranslationKeys } from '@/lib/i18n/translations/en';
 import { resolveEsimCashAccount } from '@/lib/cashback';
 import EsimCashDashboard from '@/components/EsimCashDashboard';
 import { PendingOrderActions } from '@/components/PendingOrderActions';
+import { AccountSettings } from '@/components/AccountSettings';
 
 export const metadata: Metadata = { title: 'Mein Bereich' };
 export const dynamic = 'force-dynamic';
@@ -99,7 +100,39 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const completed = orderList.filter((o) => o.status === 'completed');
   const pending   = orderList.filter((o) => ['pending', 'paid', 'provisioning'].includes(o.status));
 
-  const activeTab = searchParams?.tab === 'cash' ? 'cash' : 'esims';
+  const tabParam = searchParams?.tab;
+  const activeTab = tabParam === 'cash' ? 'cash' : tabParam === 'settings' ? 'settings' : 'esims';
+
+  // Resolve user profile row from database
+  let profile = null;
+  const { data: profileData } = await service
+    .from('users')
+    .select('full_name, phone, billing_address, two_factor_enabled, is_verified')
+    .eq('id', user.id)
+    .single();
+
+  if (profileData) {
+    profile = profileData;
+  } else {
+    // If user row is missing, resolve it and re-query
+    const resolvedId = await resolveCustomer(service, user, user.email || '');
+    if (resolvedId) {
+      const { data: retryData } = await service
+        .from('users')
+        .select('full_name, phone, billing_address, two_factor_enabled, is_verified')
+        .eq('id', user.id)
+        .single();
+      profile = retryData;
+    }
+  }
+
+  const resolvedProfile = (profile ?? {
+    full_name: user.user_metadata?.full_name ?? '',
+    phone: '',
+    billing_address: '',
+    two_factor_enabled: false,
+    is_verified: false,
+  }) as any;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
@@ -156,10 +189,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <span>💰</span>
             <span>{t('dash_tab_cash' as any) || 'eSIM Cash'}</span>
           </Link>
+          <Link
+            href="/dashboard?tab=settings"
+            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'settings'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <span>⚙️</span>
+            <span>{t('dash_tab_settings' as any) || 'Einstellungen'}</span>
+          </Link>
         </div>
       </div>
 
-      {activeTab === 'esims' ? (
+      {activeTab === 'esims' && (
         <>
           {/* Pending */}
           {pending.length > 0 && (
@@ -199,10 +243,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             )}
           </div>
         </>
-      ) : (
-        cashAccount && (
-          <EsimCashDashboard account={cashAccount} transactions={cashTransactions} />
-        )
+      )}
+
+      {activeTab === 'cash' && cashAccount && (
+        <EsimCashDashboard account={cashAccount} transactions={cashTransactions} />
+      )}
+
+      {activeTab === 'settings' && (
+        <AccountSettings user={user} profile={resolvedProfile} />
       )}
     </div>
   );

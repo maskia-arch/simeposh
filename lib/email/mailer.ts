@@ -113,3 +113,15 @@ export async function sendGuestMilestoneEmail(data: GuestMilestoneData): Promise
 
   console.log(`[mailer] Guest milestone reminder sent to ${data.to}`);
 }
+
+export async function sendGenericEmail(opts: { to: string; subject: string; html: string; text?: string }): Promise<void> {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from:    fromAddress(),
+    to:      opts.to,
+    subject: opts.subject,
+    html:    opts.html,
+    text:    opts.text,
+  });
+  console.log(`[mailer] Generic email sent to ${opts.to} | Subject: ${opts.subject}`);
+}
