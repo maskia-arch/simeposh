@@ -130,7 +130,7 @@ export async function createCryptoSession(opts: {
 
   if (!walletRes) {
     try {
-      const gatewayUrl = process.env.PURE_WALLET_URL || 'http://localhost:7777';
+      const gatewayUrl = process.env.PURE_WALLET_URL || 'http://127.0.0.1:7777';
       const res = await fetch(`${gatewayUrl}/api/v1/payment/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

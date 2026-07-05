@@ -120,7 +120,7 @@ async function checkSolAddress(address: string): Promise<{ received: number; con
  * Helper to sync the session state with pure-wallet gateway or direct blockchain explorers.
  */
 async function syncSessionWithGateway(id: string, db: any): Promise<any> {
-  const gatewayUrl = process.env.PURE_WALLET_URL || 'http://localhost:7777';
+  const gatewayUrl = process.env.PURE_WALLET_URL || 'http://127.0.0.1:7777';
   
   let gatewayData: any = null;
   try {
