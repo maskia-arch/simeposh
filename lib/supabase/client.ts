@@ -174,7 +174,8 @@ class BrowserAuthClient {
       if (!res.ok) {
         return { data: { user: null }, error: null };
       }
-      return await res.json();
+      const body = await res.json();
+      return { data: { user: body.user }, error: null };
     } catch {
       return { data: { user: null }, error: null };
     }
