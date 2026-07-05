@@ -129,8 +129,15 @@ export default function CartPage() {
                         )}
                       </p>
                     </div>
-                    <button onClick={() => removeItem(i.key)} className="text-slate-300 hover:text-red-500 p-1 rounded hover:bg-slate-50 transition-colors" title={t('cart_clear')}>
-                      <TrashIcon size={16} />
+                    <button
+                      onClick={() => removeItem(i.key)}
+                      className="flex items-center justify-center w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
+                      title={t('cart_clear')}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                        <line x1="1" y1="1" x2="11" y2="11" />
+                        <line x1="11" y1="1" x2="1" y2="11" />
+                      </svg>
                     </button>
                   </div>
                   <div className="mt-3 flex items-center justify-between">

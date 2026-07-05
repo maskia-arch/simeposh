@@ -161,10 +161,13 @@ export function CartDrawer() {
                         </p>
                         <button
                           onClick={() => removeItem(i.key)}
-                          className="shrink-0 text-slate-300 hover:text-red-500 text-xs transition-colors p-1"
+                          className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
                           aria-label={t('cart_clear')}
                         >
-                          ✕
+                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                            <line x1="1" y1="1" x2="11" y2="11" />
+                            <line x1="11" y1="1" x2="1" y2="11" />
+                          </svg>
                         </button>
                       </div>
                       <p className="text-[10px] text-slate-450 mt-0.5">

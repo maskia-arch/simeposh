@@ -44,7 +44,7 @@ function CartButton() {
   );
 }
 
-function DashboardDropdown({ t, isAdmin }: { t: any; isAdmin: boolean }) {
+function DashboardDropdown({ t }: { t: any }) {
   const [open, setOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -118,23 +118,6 @@ function DashboardDropdown({ t, isAdmin }: { t: any; isAdmin: boolean }) {
               </p>
             </div>
           </Link>
-          {isAdmin && (
-            <Link
-              href="/dashboard?tab=blog_admin"
-              onClick={() => setOpen(false)}
-              className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 transition-colors group border-t border-slate-100"
-            >
-              <span className="text-2xl mt-0.5 group-hover:scale-110 transition-transform">🛠️</span>
-              <div>
-                <p className="font-semibold text-slate-800 group-hover:text-brand-700 transition-colors text-sm">
-                  Admin Dashboard
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                  Blog & Einstellungen verwalten
-                </p>
-              </div>
-            </Link>
-          )}
         </div>
       )}
     </div>
@@ -251,12 +234,6 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-              {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-                <Link href="/dashboard?tab=blog_admin" className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
-                  <WrenchIcon size={13} className="text-indigo-700" />
-                  Admin
-                </Link>
-              )}
               <Link
                 href="/dashboard"
                 className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition-colors font-semibold text-sm"
@@ -333,11 +310,6 @@ export function Navbar() {
                   <Link href="/dashboard?tab=cash" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     💰 {t('nav_esim_cash' as any) || 'eSIM Cash'}
                   </Link>
-                  {user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-                    <Link href="/dashboard?tab=blog_admin" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium border-t border-slate-100 pt-2 mt-1">
-                      🛠️ Admin Dashboard
-                    </Link>
-                  )}
                 </div>
                 <button onClick={handleLogout} className="text-left text-red-600">{t('nav_logout')}</button>
               </>
