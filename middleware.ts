@@ -6,6 +6,17 @@ import { verifyJwt } from '@/lib/auth/jwt';
 const PROTECTED_ROUTES = ['/dashboard'];
 
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get('host') || '';
+  const pathname = request.nextUrl.pathname;
+
+  // Dynamic subdomain rewrite for esim.puresim.net
+  if (host.includes('esim.puresim.net')) {
+    // Avoid rewriting static assets or API calls
+    if (pathname !== '/' && !pathname.includes('.') && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+      return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
+    }
+  }
+
   let response = NextResponse.next({ request });
 
   // ── Affiliate Referral Link cookie tracker ──
@@ -40,7 +51,7 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  const pathname = request.nextUrl.pathname;
+
 
   // 2. Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED_ROUTES.some((route) =>

@@ -30,6 +30,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ ref, found: false, orders: [] }, { status: 200 });
   }
 
+  // Find corresponding crypto session to use its ID as the secure token (or fallback to ref)
+  let txId = ref;
+  try {
+    const orderIds = data.map((o: any) => o.id);
+    const customerEmail = data[0].customer_email;
+    const { data: sessions } = await service
+      .from('crypto_sessions')
+      .select('id, order_ids')
+      .eq('customer_email', customerEmail);
+
+    if (sessions) {
+      const session = sessions.find((s) => s.order_ids?.includes(orderIds[0]));
+      if (session) {
+        txId = session.id;
+      }
+    }
+  } catch (err) {
+    console.error('[order/status] session lookup failed:', err);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orders = data.map((o: any) => ({
     id:             o.id,
@@ -45,6 +65,7 @@ export async function GET(request: Request) {
     activationCode: o.activation_code,
     qrCodeUrl:      o.qr_code_url,
     esimStatus:     o.esim_status,
+    overviewUrl:    o.iccid ? `https://esim.puresim.net/${txId}/${o.iccid}` : null,
   }));
 
   const allDone = orders.every((o) => o.status === 'completed' || o.status === 'failed');

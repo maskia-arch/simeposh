@@ -64,7 +64,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Fetch the user's orders.
   const { data: orders } = await service
     .from('orders')
-    .select('id, status, order_type, amount_eur, iccid, short_url, qr_code_url, activation_code, smdp_address, apn, top_up_iccid, period_num, esim_status, esim_status_at, created_at, tariffs(name, country_name, data_gb, validity_days, flag_emoji, tariff_type)')
+    .select('id, status, order_type, amount_eur, iccid, short_url, qr_code_url, activation_code, smdp_address, apn, top_up_iccid, period_num, esim_status, esim_status_at, created_at, checkout_ref, tariffs(name, country_name, data_gb, validity_days, flag_emoji, tariff_type)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -75,9 +75,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const { data: sessions } = await service
     .from('crypto_sessions')
     .select('id, order_ids, status')
-    .eq('customer_email', user.email || '')
-    .eq('status', 'pending');
-  const activeSessions = sessions ?? [];
+    .eq('customer_email', user.email || '');
+  const activeSessions = sessions?.filter((s) => s.status === 'pending') ?? [];
+  const allSessions = sessions ?? [];
 
   // ── Refresh eSIM lifecycle status from esimaccess (rate-limited) ──
   const now = Date.now();
@@ -239,7 +239,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
             ) : (
               <div className="space-y-3">
-                {completed.map((order) => <OrderRow key={order.id} order={order as unknown as OrderType} t={t} showEsim />)}
+                {completed.map((order) => {
+                  const session = allSessions.find((s) => s.order_ids?.includes(order.id));
+                  const txId = session?.id ?? (order as any).checkout_ref;
+                  const overviewUrl = order.iccid ? `https://esim.puresim.net/${txId}/${order.iccid}` : null;
+                  return (
+                    <OrderRow
+                      key={order.id}
+                      order={order as unknown as OrderType}
+                      t={t}
+                      showEsim
+                      overviewUrl={overviewUrl}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -292,7 +305,19 @@ function statusBadge(status: string, t: ServerT) {
   );
 }
 
-function OrderRow({ order, t, showEsim, sessionId }: { order: OrderType; t: ServerT; showEsim?: boolean; sessionId?: string }) {
+function OrderRow({
+  order,
+  t,
+  showEsim,
+  sessionId,
+  overviewUrl,
+}: {
+  order: OrderType;
+  t: ServerT;
+  showEsim?: boolean;
+  sessionId?: string;
+  overviewUrl?: string | null;
+}) {
   const tariff = order.tariffs;
   const isTravel = (tariff?.tariff_type ?? 'travel') === 'travel';
   const lifecycle = (order.esim_status as EsimLifecycle | null) ?? 'unknown';
@@ -343,6 +368,16 @@ function OrderRow({ order, t, showEsim, sessionId }: { order: OrderType; t: Serv
               >
                 {t('dash_topup')}
               </Link>
+            )}
+            {overviewUrl && (
+              <a
+                href={overviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
+              >
+                Installieren
+              </a>
             )}
           </div>
         </div>

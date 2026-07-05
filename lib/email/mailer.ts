@@ -150,3 +150,80 @@ export async function sendGuestMilestoneEmail(data: GuestMilestoneData): Promise
 export async function sendGenericEmail(opts: { to: string; subject: string; html: string; text?: string }): Promise<void> {
   await sendMailThroughTransporter(opts);
 }
+
+export async function sendCheckoutNotificationEmail(opts: {
+  to: string;
+  invoiceId: string;
+  coin: string;
+  cryptoAmount: string;
+  amountEur: number;
+  expiresAt: string;
+  checkoutLink: string;
+}): Promise<void> {
+  const expiryDate = new Date(opts.expiresAt);
+  const expiryString = expiryDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+  
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #0f172a; margin-bottom: 16px;">📋 Zahlungsanforderung für deine eSIM</h2>
+      <p style="color: #475569; font-size: 14px; line-height: 1.5;">Hallo,</p>
+      <p style="color: #475569; font-size: 14px; line-height: 1.5;">
+        wir haben eine neue Krypto-Zahlungsanforderung für deine eSIM-Bestellung erstellt.
+      </p>
+      <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 20px 0; border: 1px solid #f1f5f9;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #334155;">
+          <tr>
+            <td style="padding: 6px 0; font-weight: 600;">Rechnungs-ID:</td>
+            <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold;">${opts.invoiceId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-weight: 600;">Zahlungsmethode:</td>
+            <td style="padding: 6px 0; text-align: right;">${opts.coin}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-weight: 600;">Betrag (EUR):</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: bold;">${opts.amountEur.toFixed(2)} €</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; font-weight: 600;">Gültig bis:</td>
+            <td style="padding: 6px 0; text-align: right; color: #dc2626; font-weight: bold;">${expiryString} (25 Min.)</td>
+          </tr>
+        </table>
+      </div>
+      <p style="color: #475569; font-size: 14px; line-height: 1.5; margin-bottom: 24px;">
+        Bitte schließe deine Zahlung über den folgenden Direktlink ab:
+      </p>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${opts.checkoutLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-weight: bold; border-radius: 6px; text-decoration: none; display: inline-block;">
+          Jetzt Bezahlen (${opts.amountEur.toFixed(2)} €)
+        </a>
+      </div>
+      <p style="color: #94a3b8; font-size: 11px; line-height: 1.4;">
+        Falls du diese Bestellung nicht getätigt hast, kannst du diese E-Mail einfach ignorieren.
+      </p>
+    </div>
+  `;
+
+  const text = `
+Hallo,
+
+wir haben eine neue Krypto-Zahlungsanforderung für deine eSIM-Bestellung erstellt.
+
+Rechnungs-ID: ${opts.invoiceId}
+Zahlungsmethode: ${opts.coin}
+Betrag: ${opts.amountEur.toFixed(2)} €
+Gültig bis: ${expiryString} (25 Min.)
+
+Bitte schließe deine Zahlung über den folgenden Direktlink ab:
+${opts.checkoutLink}
+
+Falls du diese Bestellung nicht getätigt hast, kannst du diese E-Mail einfach ignorieren.
+  `.trim();
+
+  await sendMailThroughTransporter({
+    to: opts.to,
+    subject: `📋 Zahlungsanforderung für deine eSIM (ID: ${opts.invoiceId})`,
+    html,
+    text,
+  });
+}

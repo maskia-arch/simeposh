@@ -13,6 +13,7 @@ export interface EsimPurchasedData {
   apn:             string;
   lpaCode:         string;
   orderId:         string;
+  overviewUrl?:    string;
 }
 
 export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
@@ -61,6 +62,15 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
     <div class="body">
       <p>${greeting}</p>
       <p>vielen Dank für deinen Einkauf. Deine eSIM für <strong>${data.countryName}</strong> wurde erfolgreich aktiviert und ist jetzt einsatzbereit.</p>
+
+      ${data.overviewUrl ? `
+      <div style="text-align: center; margin: 24px 0 32px;">
+        <a href="${data.overviewUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: bold; border-radius: 8px; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.15);">
+          📱 Direkt auf dem Handy installieren
+        </a>
+        <p style="margin: 8px 0 0; font-size: 11px; color: #6b7280;">Mit 1-Klick Installation & Datenverbrauchs-Check</p>
+      </div>
+      ` : ''}
 
       <div class="section">
         <h2>📦 Tarifdetails</h2>
@@ -155,7 +165,10 @@ Land: ${data.countryName}
 Daten: ${data.dataGb} GB | Gültigkeit: ${data.validityDays} Tage
 Preis: ${data.priceEur.toFixed(2)} €
 
---- AKTIVIERUNGSDATEN ---
+${data.overviewUrl ? `Direkt auf dem Smartphone installieren & verwalten:
+${data.overviewUrl}
+
+` : ''}--- AKTIVIERUNGSDATEN ---
 ICCID:           ${data.iccid}
 SM-DP+ Adresse:  ${data.smdpAddress}
 Aktivierungscode: ${data.activationCode}

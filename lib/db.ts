@@ -32,6 +32,15 @@ async function runMigrations() {
     )
   `);
 
+  // Ensure newsletter_consent column exists
+  try {
+    await p.query(`
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS newsletter_consent BOOLEAN DEFAULT FALSE;
+    `);
+  } catch (err: any) {
+    console.error('[Migrations] Failed to ensure users.newsletter_consent column:', err.message);
+  }
+
   // 2. Read migration files
   const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
   if (!fs.existsSync(migrationsDir)) {

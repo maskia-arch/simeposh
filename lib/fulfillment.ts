@@ -73,6 +73,25 @@ export async function fulfillOrder(
       esim_status_at:  new Date().toISOString(),
     }).eq('id', orderId);
 
+    // Compute the secure overview URL
+    let txId = o.checkout_ref;
+    try {
+      const { data: sessions } = await supabase
+        .from('crypto_sessions')
+        .select('id, order_ids')
+        .eq('customer_email', o.customer_email);
+
+      if (sessions) {
+        const session = sessions.find((s) => s.order_ids?.includes(orderId));
+        if (session) {
+          txId = session.id;
+        }
+      }
+    } catch (err) {
+      console.error('[fulfillment] session lookup failed:', err);
+    }
+    const overviewUrl = `https://esim.puresim.net/${txId}/${esim.iccid}`;
+
     await sendEsimEmail({
       to: o.customer_email, customerName: o.customer_name ?? undefined,
       tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
@@ -80,6 +99,7 @@ export async function fulfillOrder(
       priceEur: o.amount_eur ?? o.tariffs.sale_price_eur,
       iccid: esim.iccid, qrCodeUrl: esim.qrCodeUrl, activationCode: esim.matchingId,
       smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
+      overviewUrl,
     });
     await applyOrderCompletionCashback(supabase, orderId);
     return { orderId, ok: true };

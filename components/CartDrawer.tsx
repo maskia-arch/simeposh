@@ -16,6 +16,15 @@ const TYPE_BADGE: Record<string, { icon: string; label: string }> = {
   unlimited_pro: { icon: '⚡', label: 'Pro' },
 };
 
+// Custom brand-aligned Vector Cart Icon
+function CustomCartIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+    </svg>
+  );
+}
+
 export function CartDrawer() {
   const { locale, t } = useTranslation();
   const { items, isOpen, close, total, count, setQuantity, removeItem, clear } = useCart();
@@ -73,7 +82,6 @@ export function CartDrawer() {
     return () => subscription.unsubscribe();
   }, []);
 
-
   return (
     <>
       {/* Backdrop */}
@@ -92,46 +100,60 @@ export function CartDrawer() {
         aria-hidden={!isOpen}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
-            🛒 {t('cart_title')}
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <h2 className="flex items-center gap-2 text-md font-extrabold text-slate-900">
+            <CustomCartIcon className="h-5 w-5 text-brand-600" />
+            {t('cart_title')}
             {count > 0 && (
               <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-700">
                 {count}
               </span>
             )}
           </h2>
-          <button onClick={close} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Close">
-            ✕
-          </button>
+          <div className="flex items-center gap-3">
+            {count > 0 && (
+              <button
+                onClick={clear}
+                className="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors"
+              >
+                {t('cart_clear')}
+              </button>
+            )}
+            <button onClick={close} className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 transition-colors" aria-label="Close">
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Items */}
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-slate-400">
-            <p className="mb-3 text-5xl">🛒</p>
-            <p className="font-semibold text-slate-600">{t('cart_empty_title')}</p>
-            <p className="mt-1 text-sm">{t('cart_empty_sub')}</p>
+            <div className="mb-3 rounded-full bg-slate-50 p-4 text-brand-500 shadow-sm ring-1 ring-slate-100/50">
+              <CustomCartIcon className="h-10 w-10" />
+            </div>
+            <p className="font-bold text-slate-700">{t('cart_empty_title')}</p>
+            <p className="mt-1 text-xs text-slate-450">{t('cart_empty_sub')}</p>
             <a
               href="/tariffs"
               onClick={close}
-              className="mt-5 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+              className="mt-4 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 shadow-sm transition-all"
             >
               {t('cart_discover')}
             </a>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
-            <div className="flex-1 space-y-3 px-5 py-4">
+            {/* Sleek, borderless list layout with divide separator */}
+            <div className="flex-1 divide-y divide-slate-100 px-4 min-h-0 overflow-y-auto">
               {items.map((i) => {
                 const badge = i.tariffType ? TYPE_BADGE[i.tariffType] : null;
                 const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
                 return (
-                  <div key={i.key} className="flex items-start gap-3 rounded-2xl border border-slate-200 p-3 bg-white hover:border-brand-300 transition-all">
-                    <CountryFlag countryCode={i.countryCode} countryName={i.countryName} size={36} className="mt-0.5 shrink-0" />
+                  <div key={i.key} className="flex items-center gap-3 py-3 bg-white">
+                    <CountryFlag countryCode={i.countryCode} countryName={i.countryName} size={24} className="shrink-0 rounded-sm shadow-sm ring-1 ring-black/5" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="truncate font-semibold text-slate-800">
+                      <div className="flex items-center justify-between">
+                        <p className="truncate text-xs font-bold text-slate-800">
                           {displayCountryName(
                             { country_name: i.countryName, country_code: i.countryCode, location_codes: i.locationCodes, region: i.region },
                             locale,
@@ -139,85 +161,82 @@ export function CartDrawer() {
                         </p>
                         <button
                           onClick={() => removeItem(i.key)}
-                          className="shrink-0 text-slate-300 hover:text-red-500"
+                          className="shrink-0 text-slate-300 hover:text-red-500 text-xs transition-colors p-1"
                           aria-label={t('cart_clear')}
-                          title={t('cart_clear')}
                         >
-                          🗑️
+                          ✕
                         </button>
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-[10px] text-slate-450 mt-0.5">
                         {badge && <span className="mr-1">{badge.icon} {badge.label}</span>}
                         · {isUnlimited ? '∞' : formatGb(i.dataGb)} · {i.validityDays}d
                       </p>
-
-                      <div className="mt-2 flex items-center justify-between">
+                      
+                      <div className="mt-1.5 flex items-center justify-between">
                         {/* Quantity stepper */}
-                        <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50/50">
+                        <div className="flex items-center rounded-md border border-slate-200 bg-slate-50">
                           <button
                             onClick={() => setQuantity(i.key, i.quantity - 1)}
-                            className="px-2.5 py-1 text-slate-500 hover:bg-slate-50 transition-colors rounded-l-lg"
+                            className="px-1.5 py-0.5 text-xs text-slate-500 hover:bg-slate-100 transition-colors rounded-l-md"
                             aria-label="Weniger"
                           >−</button>
-                          <span className="min-w-[2rem] text-center text-sm font-semibold tabular-nums">{i.quantity}</span>
+                          <span className="min-w-[1.25rem] text-center text-[11px] font-semibold tabular-nums text-slate-700">{i.quantity}</span>
                           <button
                             onClick={() => setQuantity(i.key, i.quantity + 1)}
-                            className="px-2.5 py-1 text-slate-500 hover:bg-slate-50 transition-colors rounded-r-lg"
+                            className="px-1.5 py-0.5 text-xs text-slate-500 hover:bg-slate-100 transition-colors rounded-r-md"
                             aria-label="Mehr"
                           >+</button>
                         </div>
-                        <Price eur={i.priceEur * i.quantity} className="font-bold text-slate-900 tabular-nums" />
+                        <Price eur={i.priceEur * i.quantity} className="text-xs font-extrabold text-slate-900 tabular-nums" />
                       </div>
                     </div>
                   </div>
                 );
               })}
-
-              <button
-                onClick={clear}
-                className="w-full rounded-lg py-2 text-xs text-slate-400 hover:text-red-500 transition-colors"
-              >
-                {t('cart_clear')}
-              </button>
             </div>
 
             {/* Footer / checkout */}
-            <div className="border-t border-slate-200 px-5 py-5 space-y-4 bg-slate-50/60">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                <span className="text-sm text-slate-600 font-medium">{t('cart_total')} ({count} {count === 1 ? t('cart_unit_one') : t('cart_unit_many')})</span>
-                <Price eur={total} className="text-xl font-extrabold text-slate-900" />
+            <div className="border-t border-slate-150 px-4 py-3.5 space-y-2.5 bg-slate-50/50">
+              <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                <span className="text-xs text-slate-500 font-medium">{t('cart_total')} ({count} {count === 1 ? t('cart_unit_one') : t('cart_unit_many')})</span>
+                <Price eur={total} className="text-md font-extrabold text-slate-900" />
               </div>
 
-              {/* Cashback Promo Banner */}
-              <div className="rounded-xl p-3.5 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 shadow-sm">
-                {user ? (
-                  <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 leading-normal">
-                    {t('checkout_cashback_earned' as any, { 
-                      amount: (total * (
-                        (totalSpend >= 1000 ? 0.10 : totalSpend >= 500 ? 0.08 : totalSpend >= 100 ? 0.06 : 0.05) + 
-                        (extraCashbackQueue > 0 ? 0.05 : 0)
-                      )).toFixed(2)
-                    })}
-                  </p>
-                ) : (
-                  <div className="text-xs text-amber-800 leading-normal font-medium">
-                    <span className="font-bold block text-[13px] text-amber-900 mb-1">{t('checkout_cashback_guest_promo' as any)}</span>
-                    <a
-                      href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
-                      className="font-extrabold text-brand-700 underline hover:text-brand-900 transition-colors"
-                    >
-                      {t('checkout_cashback_guest_link' as any)}
-                    </a>
-                    <span> {t('checkout_cashback_guest_text' as any)}</span>
-                  </div>
-                )}
+              {/* Compact Cashback Promo Banner in Brand Blue */}
+              <div className="rounded-lg p-2 bg-blue-50/50 border border-blue-100/60 text-[10px] text-blue-800 leading-normal flex items-start gap-2 shadow-sm">
+                <span className="text-[11px] shrink-0">✨</span>
+                <div className="flex-1 font-medium">
+                  {user ? (
+                    <p className="font-semibold text-blue-900">
+                      {t('checkout_cashback_earned' as any, { 
+                        amount: (total * (
+                          (totalSpend >= 1000 ? 0.10 : totalSpend >= 500 ? 0.08 : totalSpend >= 100 ? 0.06 : 0.05) + 
+                          (extraCashbackQueue > 0 ? 0.05 : 0)
+                        )).toFixed(2)
+                      })}
+                    </p>
+                  ) : (
+                    <div>
+                      <span className="font-bold block text-blue-950 mb-0.5">{t('checkout_cashback_guest_promo' as any)}</span>
+                      <a
+                        href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
+                        className="font-extrabold text-brand-600 underline hover:text-brand-855 transition-colors"
+                      >
+                        {t('checkout_cashback_guest_link' as any)}
+                      </a>
+                      <span> {t('checkout_cashback_guest_text' as any)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {user ? (
-                <div className="rounded-xl bg-white border border-slate-200 px-4 py-3 shadow-sm">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('checkout_email_label') || 'Email Address'}</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{user.email}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{t('cart_email_hint')}</p>
+                <div className="rounded-lg bg-white border border-slate-200 px-3 py-1.5 shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{t('checkout_email_label') || 'Email Address'}</p>
+                    <p className="text-xs font-semibold text-slate-700 mt-0.5">{user.email}</p>
+                  </div>
+                  <span className="text-[9px] text-slate-400">{t('cart_email_hint')}</span>
                 </div>
               ) : (
                 <div>
@@ -226,14 +245,13 @@ export function CartDrawer() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('cart_email_ph')}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+                    className="w-full rounded-lg border border-slate-350 bg-white px-3 py-2 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all text-slate-800"
                   />
-                  <p className="mt-1 text-xs text-slate-400">{t('cart_email_hint')}</p>
                 </div>
               )}
 
               {/* Payment selector */}
-              <div className="border-t border-slate-200 pt-4">
+              <div className="border-t border-slate-200/50 pt-2.5">
                 <CryptoPaySelector
                   email={email}
                   items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined }))}

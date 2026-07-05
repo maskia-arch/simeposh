@@ -14,6 +14,7 @@ import { customUnlimitedPriceEur, clampDays } from '@/lib/quote';
 import { resolveCustomer }     from '@/lib/customers';
 import { createCryptoSession } from '@/lib/crypto/session';
 import { fulfillOrder }        from '@/lib/fulfillment';
+import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +22,7 @@ interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIcci
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { email?: string; coin?: string; items?: ReqItem[] };
+    const body = await request.json() as { email?: string; coin?: string; items?: ReqItem[]; newsletterConsent?: boolean };
     const email = body.email?.trim();
     const coin  = body.coin?.trim().toUpperCase();
     const items = Array.isArray(body.items) ? body.items : [];
@@ -161,6 +162,18 @@ export async function POST(request: Request) {
         await fulfillOrder(service, orderId);
       }
 
+      // Save newsletter consent if checked
+      if (body.newsletterConsent && email) {
+        try {
+          await service
+            .from('users')
+            .update({ newsletter_consent: true } as any)
+            .eq('email', email.trim().toLowerCase());
+        } catch (dbErr) {
+          console.error('[checkout] newsletter update failed:', dbErr);
+        }
+      }
+
       return NextResponse.json({ ref });
     } else {
       // Standard Crypto Checkout
@@ -205,6 +218,35 @@ export async function POST(request: Request) {
       const session = await createCryptoSession({
         orderIds, email, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin,
       });
+
+      // Save newsletter consent if checked
+      if (body.newsletterConsent && email) {
+        try {
+          await service
+            .from('users')
+            .update({ newsletter_consent: true } as any)
+            .eq('email', email.trim().toLowerCase());
+        } catch (dbErr) {
+          console.error('[checkout] newsletter update failed:', dbErr);
+        }
+      }
+
+      // Send checkout email notification
+      try {
+        const checkoutLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net'}/checkout/crypto/${session.id}`;
+        const invoiceId = `INV-${session.id.split('-')[0].toUpperCase()}`;
+        await sendCheckoutNotificationEmail({
+          to: email,
+          invoiceId,
+          coin: session.coin.toUpperCase(),
+          cryptoAmount: session.cryptoAmount,
+          amountEur: session.amountEur,
+          expiresAt: session.expiresAt,
+          checkoutLink,
+        });
+      } catch (mailErr) {
+        console.error('[checkout] failed to send checkout email:', mailErr);
+      }
 
       return NextResponse.json({ sessionId: session.id, ref });
     }

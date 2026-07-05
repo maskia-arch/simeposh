@@ -16,6 +16,7 @@ export interface DeliveredEsim {
   activationCode: string | null;
   qrCodeUrl:      string | null;
   esimStatus?:    string | null;
+  overviewUrl?:   string | null;
 }
 
 /** Build the LPA activation string a phone scans to install the eSIM. */
@@ -102,12 +103,15 @@ export function EsimDelivery({ esim }: { esim: DeliveredEsim }) {
 
         {/* Details */}
         <div className="space-y-2">
-          {esim.shortUrl && (
-            <div className="rounded-lg bg-brand-50 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-500">{t('esim_install_link')}</p>
-              <a href={esim.shortUrl} target="_blank" rel="noopener noreferrer" className="break-all text-sm font-medium text-brand-700 underline">
-                {esim.shortUrl}
-              </a>
+          {esim.overviewUrl && (
+            <div className="rounded-lg bg-brand-50/50 border border-brand-100 p-3 space-y-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600">Deine eSIM Installationsseite</p>
+                <a href={esim.overviewUrl} target="_blank" rel="noopener noreferrer" className="break-all text-xs font-semibold text-brand-700 hover:text-brand-900 underline">
+                  {esim.overviewUrl}
+                </a>
+              </div>
+              <CopyField label="Installations-Link" value={esim.overviewUrl} />
             </div>
           )}
           {esim.iccid && <CopyField label="ICCID" value={esim.iccid} />}
