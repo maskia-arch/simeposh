@@ -69,8 +69,8 @@ export function Footer() {
       {/* Main Footer Links */}
       <div className="bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
-          <div className="grid gap-8 sm:grid-cols-3">
-            <div>
+          <div className="grid gap-8 md:grid-cols-3">
+            <div className="md:col-span-1">
               <div className="flex items-center gap-2 text-lg font-bold">
                 <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
                 <span className="text-2xl tracking-tight">
@@ -82,22 +82,25 @@ export function Footer() {
                 {t('hero_badge')}
               </p>
             </div>
-            <div>
-              <p className="font-semibold text-slate-800 mb-3">{t('footer_nav_title')}</p>
-              <ul className="space-y-2 text-sm text-slate-500">
-                <li><Link href="/tariffs"   className="hover:text-brand-700 transition-colors">{t('footer_browse')}</Link></li>
-                <li><Link href="/topup"     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
-                <li><Link href="/dashboard" className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
-                <li><Link href="/blog"      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold text-slate-800 mb-3">{t('footer_legal_title')}</p>
-              <ul className="space-y-2 text-sm text-slate-500">
-                <li><Link href="/agb"         className="hover:text-brand-700 transition-colors">{t('footer_terms')}</Link></li>
-                <li><Link href="/datenschutz" className="hover:text-brand-700 transition-colors">{t('footer_privacy')}</Link></li>
-                <li><Link href="/refund-policy" className="hover:text-brand-700 transition-colors">{t('footer_refund')}</Link></li>
-              </ul>
+            
+            <div className="grid grid-cols-2 gap-8 md:col-span-2">
+              <div>
+                <p className="font-semibold text-slate-800 mb-3">{t('footer_nav_title')}</p>
+                <ul className="space-y-2 text-sm text-slate-500">
+                  <li><Link href="/tariffs"   className="hover:text-brand-700 transition-colors">{t('footer_browse')}</Link></li>
+                  <li><Link href="/topup"     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
+                  <li><Link href="/dashboard" className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
+                  <li><Link href="/blog"      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-3">{t('footer_legal_title')}</p>
+                <ul className="space-y-2 text-sm text-slate-500">
+                  <li><Link href="/agb"         className="hover:text-brand-700 transition-colors">{t('footer_terms')}</Link></li>
+                  <li><Link href="/datenschutz" className="hover:text-brand-700 transition-colors">{t('footer_privacy')}</Link></li>
+                  <li><Link href="/refund-policy" className="hover:text-brand-700 transition-colors">{t('footer_refund')}</Link></li>
+                </ul>
+              </div>
             </div>
           </div>
           <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-400">
