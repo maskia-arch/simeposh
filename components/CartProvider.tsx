@@ -125,13 +125,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, item];
     });
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    if (isMobile) {
-      const msg = locale === 'de' ? 'Tarif zum Warenkorb hinzugefügt' : 'Tariff added to cart';
-      setToast({ show: true, message: msg });
-    } else {
-      setIsOpen(true);
-    }
+    const msg = locale === 'de' 
+      ? 'Möchtest du zum Warenkorb wechseln oder weiter shoppen?' 
+      : 'Would you like to go to your cart or continue shopping?';
+    setToast({ show: true, message: msg });
   }, [locale]);
 
   const removeItem = useCallback((key: string) => {
@@ -163,29 +160,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return (
     <CartContext.Provider value={value}>
       {children}
-      {/* Mobile Add to Cart Toast overlay */}
+      {/* Add to Cart Toast Overlay (Desktop & Mobile) */}
       {toast && (
-        <div className="fixed bottom-4 left-4 right-4 z-[9999] md:hidden animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center justify-between gap-3 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">🛒</span>
-              <p className="text-[11px] font-bold leading-none">{toast.message}</p>
+        <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 z-[9999] animate-in slide-in-from-bottom duration-300">
+          <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-2xl border border-slate-800 flex flex-col gap-3.5">
+            <div className="flex items-start gap-2.5">
+              <span className="text-sm mt-0.5">🛒</span>
+              <div>
+                <p className="text-xs font-extrabold text-slate-100">
+                  {locale === 'de' ? 'Produkt hinzugefügt' : 'Product added'}
+                </p>
+                <p className="text-[11px] text-slate-350 mt-1 leading-normal">
+                  {toast.message}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-end gap-2.5 border-t border-slate-800/80 pt-3">
+              <button
+                onClick={() => setToast(null)}
+                className="rounded-xl px-3 py-2 text-[10px] font-bold text-slate-350 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                {locale === 'de' ? 'Weiter shoppen' : 'Continue shopping'}
+              </button>
               <button
                 onClick={() => {
                   setIsOpen(true);
                   setToast(null);
                 }}
-                className="bg-brand-600 hover:bg-brand-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm"
+                className="bg-brand-600 hover:bg-brand-700 text-white text-[10px] font-bold px-3.5 py-2 rounded-xl transition-all shadow-md cursor-pointer"
               >
-                {locale === 'de' ? 'Ansehen' : 'View'}
-              </button>
-              <button
-                onClick={() => setToast(null)}
-                className="text-slate-400 hover:text-white text-xs font-bold p-1 leading-none"
-              >
-                ✕
+                {locale === 'de' ? 'Zum Warenkorb' : 'Go to cart'}
               </button>
             </div>
           </div>

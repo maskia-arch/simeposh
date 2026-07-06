@@ -28,6 +28,15 @@ function CustomCartIcon({ className = 'h-5 w-5' }: { className?: string }) {
 export function CartDrawer() {
   const { locale, t } = useTranslation();
   const { items, isOpen, close, total, count, setQuantity, removeItem, clear } = useCart();
+  
+  const handleClearConfirm = () => {
+    const confirmMsg = locale === 'de'
+      ? 'Möchtest du deinen Warenkorb wirklich leeren?'
+      : 'Are you sure you want to empty your cart?';
+    if (window.confirm(confirmMsg)) {
+      clear();
+    }
+  };
   const [email,   setEmail]   = useState('');
   const [user,    setUser]    = useState<any>(null);
   const [balance, setBalance] = useState<number>(0);
@@ -111,15 +120,7 @@ export function CartDrawer() {
             )}
           </h2>
           <div className="flex items-center gap-3">
-            {count > 0 && (
-              <button
-                onClick={clear}
-                className="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors"
-              >
-                {t('cart_clear')}
-              </button>
-            )}
-            <button onClick={close} className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 transition-colors" aria-label="Close">
+            <button onClick={close} className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 transition-colors cursor-pointer" aria-label="Close">
               ✕
             </button>
           </div>
@@ -196,6 +197,16 @@ export function CartDrawer() {
                   </div>
                 );
               })}
+              
+              {/* Clear Cart Button */}
+              <div className="flex justify-end py-3 border-t border-slate-100 mt-2">
+                <button
+                  onClick={handleClearConfirm}
+                  className="text-xs font-bold text-slate-400 hover:text-red-650 flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <span>🗑️</span> {t('cart_clear')}
+                </button>
+              </div>
             </div>
 
             {/* Footer / checkout */}
