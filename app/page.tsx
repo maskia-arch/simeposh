@@ -3,6 +3,7 @@ import { HomePageClient } from '@/components/HomePageClient';
 import { isRegionCode } from '@/lib/tariff-display';
 import type { Destination } from '@/components/HeroSearch';
 import { getServerLocale } from '@/lib/i18n/server';
+import { query } from '@/lib/db';
 
 export const revalidate = 600;
 
@@ -193,12 +194,31 @@ async function getBlogPosts(locale: string) {
   };
 }
 
+async function getFeedbackStats() {
+  try {
+    const { rows } = await query('SELECT rating FROM public.feedbacks');
+    if (!rows || rows.length === 0) {
+      return { averageRating: 5.0, totalCount: 0 };
+    }
+
+    const totalCount = rows.length;
+    const sum = rows.reduce((acc: number, item: any) => acc + item.rating, 0);
+    const averageRating = parseFloat((sum / totalCount).toFixed(1));
+
+    return { averageRating, totalCount };
+  } catch (err) {
+    console.error('[getFeedbackStats] Error:', err);
+    return { averageRating: 5.0, totalCount: 0 };
+  }
+}
+
 export default async function HomePage() {
   const locale = await getServerLocale();
-  const [popularDestinations, destinations, blogData] = await Promise.all([
+  const [popularDestinations, destinations, blogData, feedbackStats] = await Promise.all([
     getFeaturedDestinations(),
     getDestinations(),
     getBlogPosts(locale),
+    getFeedbackStats(),
   ]);
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
@@ -234,6 +254,8 @@ export default async function HomePage() {
         destinations={destinations}
         featuredGuide={blogData.featuredGuide}
         latestNews={blogData.latestNews}
+        averageRating={feedbackStats.averageRating}
+        totalCount={feedbackStats.totalCount}
       />
     </>
   );
