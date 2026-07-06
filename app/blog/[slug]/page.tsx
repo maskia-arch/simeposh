@@ -143,9 +143,9 @@ function parseMarkdownToHtml(markdown: string): string {
     // Standard paragraph
     if (inList) {
       inList = false;
-      return '</ul>\n<p class="text-slate-700 leading-relaxed mb-5 text-[15px] sm:text-base">' + trimmed + '</p>';
+      return '</ul>\n<p class="text-slate-700 leading-relaxed mb-5 text-sm sm:text-base">' + trimmed + '</p>';
     }
-    return '<p class="text-slate-700 leading-relaxed mb-5 text-[15px] sm:text-base">' + trimmed + '</p>';
+    return '<p class="text-slate-700 leading-relaxed mb-5 text-sm sm:text-base">' + trimmed + '</p>';
   });
 
   if (inList) {
