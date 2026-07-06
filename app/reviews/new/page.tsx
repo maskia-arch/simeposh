@@ -9,6 +9,10 @@ export default function NewReviewPage() {
   const { locale } = useTranslation();
   
   const [orderId, setOrderId] = useState('');
+  const [verifying, setVerifying] = useState(true);
+  const [orderVerified, setOrderVerified] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
@@ -23,14 +27,36 @@ export default function NewReviewPage() {
 
   const isDe = locale === 'de';
 
-  // Read orderId from URL query param
+  // Verify orderId from URL query param on mount
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('orderId');
-    if (id) {
-      setOrderId(id);
+    async function verify() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('orderId')?.trim();
+      
+      if (!id) {
+        setVerifying(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/feedbacks/verify-order?orderId=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          setOrderId(id);
+          setCustomerName(data.customerName);
+          setOrderVerified(true);
+        } else {
+          setError(data.error || 'Verifizierung fehlgeschlagen.');
+        }
+      } catch (err) {
+        setError(isDe ? 'Netzwerkfehler bei der Verifizierung.' : 'Network verification error.');
+      } finally {
+        setVerifying(false);
+      }
     }
-  }, []);
+    verify();
+  }, [isDe]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +93,64 @@ export default function NewReviewPage() {
     }
   };
 
+  // 1. Loading State
+  if (verifying) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-20 text-center animate-fade-in">
+        <div className="inline-block animate-spin h-8 w-8 rounded-full border-4 border-brand-500 border-t-transparent"></div>
+        <p className="mt-4 text-xs font-semibold text-slate-500">
+          {isDe ? 'Einladung wird verifiziert...' : 'Verifying invitation...'}
+        </p>
+      </div>
+    );
+  }
+
+  // 2. Unverified / Missing Invite Landing Page
+  if (!orderVerified) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center animate-fade-in">
+        <div className="bg-white border border-slate-150 rounded-3xl p-8 shadow-lg">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-red-50 border border-red-200 mb-6 text-red-500 text-3xl font-bold shadow-xs">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-3 tracking-tight">
+            {isDe ? 'Bewertung nur mit Einladung' : 'Review by Invitation Only'}
+          </h2>
+          <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+            {isDe 
+              ? 'Um die absolute Vertrauenswürdigkeit und Transparenz unserer Rezensionen zu gewährleisten, können Bewertungen ausschließlich von Kunden mit einer verifizierten, aktiven eSIM abgegeben werden.'
+              : 'To guarantee absolute trust and transparency in our reviews, ratings can only be submitted by verified customers with active eSIMs.'}
+          </p>
+          {error && (
+            <div className="mb-6 rounded-xl bg-slate-50 border border-slate-200 p-3 text-[11px] font-semibold text-slate-500">
+              {isDe ? 'Fehlerursache: ' : 'Reason: '} {error}
+            </div>
+          )}
+          <p className="text-xs text-slate-400 mb-8 leading-relaxed">
+            {isDe 
+              ? 'Nachdem du eine eSIM gekauft und aktiviert hast, senden wir dir automatisch einen persönlichen Einladungslink per E-Mail zu.'
+              : 'Once you purchase and activate an eSIM, we will automatically email you a personalized link to leave your review.'}
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push('/reviews')}
+              className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-xs font-bold text-white hover:bg-brand-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
+            >
+              {isDe ? 'Kundenbewertungen ansehen' : 'View customer reviews'}
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full rounded-xl border border-slate-250 bg-white px-5 py-3.5 text-xs font-bold text-slate-650 hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              {isDe ? 'Zur Startseite' : 'Back to homepage'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Success State
   if (success) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
@@ -93,11 +177,12 @@ export default function NewReviewPage() {
     );
   }
 
+  // 4. Form State (Verified Order)
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
       <div className="bg-white border border-slate-150 rounded-3xl p-6 md:p-8 shadow-lg">
         <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-2">
-          {isDe ? 'Kauf bewerten' : 'Rate your purchase'}
+          {isDe ? `Hallo ${customerName}! 👋` : `Hello ${customerName}! 👋`}
         </h1>
         <p className="text-xs text-slate-500 mb-6 leading-relaxed">
           {isDe 
@@ -105,21 +190,19 @@ export default function NewReviewPage() {
             : 'Share your experience with PureSim. Your honest rating helps other travelers select the perfect eSIM for their adventure.'}
         </p>
 
-        {orderId && (
-          <div className="mb-6 rounded-2xl border border-emerald-150 bg-emerald-50/40 p-4 flex items-start gap-3">
-            <span className="text-emerald-700 text-lg shrink-0 mt-0.5">✓</span>
-            <div>
-              <p className="text-xs font-bold text-emerald-800">
-                {isDe ? 'Verifizierte Bewertung aktiv' : 'Verified Review Active'}
-              </p>
-              <p className="text-[11px] text-emerald-600 mt-0.5 leading-relaxed">
-                {isDe 
-                  ? 'Du bewertest aus einer E-Mail-Einladung heraus. Deine Bewertung erhält automatisch das Label „Verifizierter Kauf“.' 
-                  : 'You are reviewing from an email invitation. Your review will automatically get the „Verified Purchase“ label.'}
-              </p>
-            </div>
+        <div className="mb-6 rounded-2xl border border-emerald-150 bg-emerald-50/40 p-4 flex items-start gap-3">
+          <span className="text-emerald-700 text-lg shrink-0 mt-0.5">✓</span>
+          <div>
+            <p className="text-xs font-bold text-emerald-800">
+              {isDe ? 'Verifizierte Bewertung aktiv' : 'Verified Review Active'}
+            </p>
+            <p className="text-[11px] text-emerald-600 mt-0.5 leading-relaxed">
+              {isDe 
+                ? 'Deine Bewertung erhält automatisch das Label „Verifizierter Kauf“ auf unserer Website.' 
+                : 'Your review will automatically get the „Verified Purchase“ label on our website.'}
+            </p>
           </div>
-        )}
+        </div>
 
         {error && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 leading-relaxed">
@@ -170,7 +253,7 @@ export default function NewReviewPage() {
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full rounded-2xl border border-slate-350 px-4 py-3.5 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 h-32 leading-relaxed transition-all"
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 h-32 leading-relaxed transition-all"
               placeholder={isDe ? 'Beschreibe deine Erfahrung (Verbindung, Aktivierung, Abdeckung)...' : 'Describe your experience (activation, connection, coverage)...'}
             />
           </div>

@@ -365,13 +365,21 @@ export default function ReviewsPage() {
           </div>
         </div>
 
-        {/* CTA Button */}
-        <Link
-          href="/reviews/new"
-          className="px-5 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-xs shrink-0 text-center cursor-pointer"
-        >
-          {isDe ? 'Jetzt bewerten' : 'Write a review'}
-        </Link>
+      </div>
+
+      {/* Trust Notice Info box */}
+      <div className="mb-8 rounded-2xl border border-blue-150 bg-brand-50/20 px-5 py-4 text-xs font-medium text-brand-850 flex items-start gap-3">
+        <span className="text-base leading-none">🔒</span>
+        <div>
+          <p className="font-bold text-slate-800 mb-0.5">
+            {isDe ? 'Echte Bewertungen durch Verifizierung' : 'Verified Genuine Reviews'}
+          </p>
+          <p className="leading-relaxed text-slate-500">
+            {isDe 
+              ? 'Um gefälschte Kundenstimmen auszuschließen, können Bewertungen ausschließlich über einen persönlichen Einladungslink abgegeben werden. Diesen erhältst du nach der Aktivierung deiner eSIM automatisch per E-Mail.' 
+              : 'To eliminate fake ratings, feedback can only be submitted via a personal invitation link. You will receive this link automatically by email after activating your eSIM.'}
+          </p>
+        </div>
       </div>
 
       {/* Feedbacks List */}

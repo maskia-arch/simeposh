@@ -48,42 +48,50 @@ export async function POST(request: Request) {
     const comment = body?.comment?.trim() || null;
     const displayNameInput = body?.displayName?.trim() || 'Anonym';
     const orderId = body?.orderId?.trim() || null;
-
     if (isNaN(rating) || rating < 1 || rating > 5) {
       return NextResponse.json({ error: 'Bitte gib eine Bewertung zwischen 1 und 5 Sternen ab.' }, { status: 400 });
     }
+    if (!orderId) {
+      return NextResponse.json({ error: 'Eine Einladung (Bestellungs-ID) ist erforderlich.' }, { status: 400 });
+    }
 
-    let isVerified = false;
+    // 1. Verify that the order exists and has an active eSIM
+    const { rows: orderRows } = await query(
+      `SELECT id, customer_name, status, iccid FROM public.orders WHERE id = $1`,
+      [orderId]
+    );
+
+    if (orderRows.length === 0) {
+      return NextResponse.json({ error: 'Ungültige Bestellungs-ID.' }, { status: 400 });
+    }
+
+    const order = orderRows[0];
+    const isActive = order.status === 'completed' || order.status === 'provisioning' || !!order.iccid;
+
+    if (!isActive) {
+      return NextResponse.json({ error: 'Diese Bestellung besitzt noch keine aktive eSIM.' }, { status: 400 });
+    }
+
+    // 2. Check if feedback has already been submitted for this order
+    const { rows: duplicateRows } = await query(
+      'SELECT id FROM public.feedbacks WHERE order_id = $1',
+      [orderId]
+    );
+
+    if (duplicateRows.length > 0) {
+      return NextResponse.json({ error: 'Für diese Bestellung wurde bereits eine Bewertung abgegeben.' }, { status: 400 });
+    }
+
     let finalDisplayName = displayNameInput;
-
-    // If orderId is provided, check if it's valid to mark the purchase as verified
-    if (orderId) {
-      const { rows: orderRows } = await query(
-        'SELECT id, customer_name FROM public.orders WHERE id = $1',
-        [orderId]
-      );
-      if (orderRows.length > 0) {
-        isVerified = true;
-        // If display name is not custom alias, we can default it or anonymize
-        if (!displayNameInput || displayNameInput.toLowerCase() === 'anonym') {
-          finalDisplayName = 'Anonym';
-        }
-      } else {
-        // invalid orderId
-        return NextResponse.json({ error: 'Ungültige Bestellungs-ID.' }, { status: 400 });
-      }
-    } else {
-      // If not from an invitation email, it is not verified, but they can still leave a public review
-      if (!displayNameInput) {
-        finalDisplayName = 'Anonym';
-      }
+    if (!displayNameInput || displayNameInput.toLowerCase() === 'anonym') {
+      finalDisplayName = 'Anonym';
     }
 
     const { rows: insertRows } = await query(
       `INSERT INTO public.feedbacks (order_id, rating, comment, display_name, is_verified) 
        VALUES ($1, $2, $3, $4, $5) 
        RETURNING id, rating, comment, display_name, is_verified, created_at`,
-      [orderId, rating, comment, finalDisplayName, isVerified]
+      [orderId, rating, comment, finalDisplayName, true]
     );
 
     return NextResponse.json({
