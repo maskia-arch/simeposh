@@ -50,26 +50,33 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const userAgent = request.headers.get('user-agent') || '';
 
-  // 1. Block suspicious path probes (e.g. php admin portals, env files)
-  const isSuspiciousPath = SUSPICIOUS_PATH_PATTERNS.some(p => p.test(pathname));
-  if (isSuspiciousPath) {
-    console.warn(`[Bot Blocked] Suspicious path access: "${pathname}" | UA: "${userAgent}"`);
-    return new NextResponse('Forbidden', { status: 403 });
-  }
+  // Bypass all bot checks for trusted machine-to-machine integrations (e.g. the wallet)
+  const authHeader = request.headers.get('authorization');
+  const webhookSecret = process.env.SHOP_WEBHOOK_SECRET;
+  const isTrustedM2M = (webhookSecret && authHeader === `Bearer ${webhookSecret}`) || request.headers.has('x-pure-wallet-signature');
 
-  // 2. Block requests with empty/missing User-Agent
-  if (!userAgent.trim()) {
-    console.warn(`[Bot Blocked] Empty User-Agent accessing: "${pathname}"`);
-    return new NextResponse('Forbidden', { status: 403 });
-  }
-
-  // 3. User-Agent checking (whitelist search engines, blacklist known bad/scraper bots)
-  const isWhitelistedBot = WHITELIST_BOT_PATTERNS.some(p => p.test(userAgent));
-  if (!isWhitelistedBot) {
-    const isBlacklistedBot = BLACKLIST_BOT_PATTERNS.some(p => p.test(userAgent));
-    if (isBlacklistedBot) {
-      console.warn(`[Bot Blocked] Bad bot/scraper UA: "${userAgent}" | Path: "${pathname}"`);
+  if (!isTrustedM2M) {
+    // 1. Block suspicious path probes (e.g. php admin portals, env files)
+    const isSuspiciousPath = SUSPICIOUS_PATH_PATTERNS.some(p => p.test(pathname));
+    if (isSuspiciousPath) {
+      console.warn(`[Bot Blocked] Suspicious path access: "${pathname}" | UA: "${userAgent}"`);
       return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    // 2. Block requests with empty/missing User-Agent
+    if (!userAgent.trim()) {
+      console.warn(`[Bot Blocked] Empty User-Agent accessing: "${pathname}"`);
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    // 3. User-Agent checking (whitelist search engines, blacklist known bad/scraper bots)
+    const isWhitelistedBot = WHITELIST_BOT_PATTERNS.some(p => p.test(userAgent));
+    if (!isWhitelistedBot) {
+      const isBlacklistedBot = BLACKLIST_BOT_PATTERNS.some(p => p.test(userAgent));
+      if (isBlacklistedBot) {
+        console.warn(`[Bot Blocked] Bad bot/scraper UA: "${userAgent}" | Path: "${pathname}"`);
+        return new NextResponse('Forbidden', { status: 403 });
+      }
     }
   }
 

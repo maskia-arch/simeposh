@@ -200,12 +200,41 @@ export default async function HomePage() {
     getDestinations(),
     getBlogPosts(locale),
   ]);
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
+
+  const webSiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'PureSim',
+    alternateName: ['PureSim eSIM', 'puresim.net'],
+    url: baseUrl,
+  };
+
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'PureSim',
+    url: baseUrl,
+    logo: `${baseUrl}/logo.png`,
+  };
+
   return (
-    <HomePageClient
-      popularDestinations={popularDestinations}
-      destinations={destinations}
-      featuredGuide={blogData.featuredGuide}
-      latestNews={blogData.latestNews}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <HomePageClient
+        popularDestinations={popularDestinations}
+        destinations={destinations}
+        featuredGuide={blogData.featuredGuide}
+        latestNews={blogData.latestNews}
+      />
+    </>
   );
 }
