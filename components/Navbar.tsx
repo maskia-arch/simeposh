@@ -26,10 +26,22 @@ function LocaleCurrencyControls() {
 
 function CartButton() {
   const { count, toggle } = useCart();
+  const [shouldBounce, setShouldBounce] = useState(false);
+
+  useEffect(() => {
+    if (count > 0) {
+      setShouldBounce(true);
+      const timer = setTimeout(() => setShouldBounce(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [count]);
+
   return (
     <button
       onClick={toggle}
-      className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-colors"
+      className={`relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-all ${
+        shouldBounce ? 'animate-bounce scale-120 text-brand-600' : ''
+      }`}
       aria-label="Warenkorb"
     >
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

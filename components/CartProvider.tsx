@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Database } from '@/lib/supabase/types';
+import { useTranslation } from '@/lib/i18n';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -57,15 +58,25 @@ function loadCart(): CartItem[] {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { locale } = useTranslation();
   const [items,  setItems]  = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string } | null>(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
     setItems(loadCart());
     setHydrated(true);
   }, []);
+
+  // Auto-hide toast notification
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Persist whenever items change (after hydration)
   useEffect(() => {
@@ -113,8 +124,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       };
       return [...prev, item];
     });
-    setIsOpen(true);
-  }, []);
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobile) {
+      const msg = locale === 'de' ? 'Tarif zum Warenkorb hinzugefügt' : 'Tariff added to cart';
+      setToast({ show: true, message: msg });
+    } else {
+      setIsOpen(true);
+    }
+  }, [locale]);
 
   const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => i.key !== key));
@@ -142,7 +160,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     open, close, toggle, addItem, removeItem, setQuantity, clear,
   };
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+      {/* Mobile Add to Cart Toast overlay */}
+      {toast && (
+        <div className="fixed bottom-4 left-4 right-4 z-[9999] md:hidden animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center justify-between gap-3 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">🛒</span>
+              <p className="text-[11px] font-bold leading-none">{toast.message}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setIsOpen(true);
+                  setToast(null);
+                }}
+                className="bg-brand-600 hover:bg-brand-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm"
+              >
+                {locale === 'de' ? 'Ansehen' : 'View'}
+              </button>
+              <button
+                onClick={() => setToast(null)}
+                className="text-slate-400 hover:text-white text-xs font-bold p-1 leading-none"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </CartContext.Provider>
+  );
 }
 
 export function useCart(): CartContextValue {

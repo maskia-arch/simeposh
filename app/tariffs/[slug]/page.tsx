@@ -146,7 +146,7 @@ export default async function TariffDetailPage({
     },
     offers: {
       '@type': 'Offer',
-      price: tariff.sale_price_eur.toFixed(2),
+      price: Number(tariff.sale_price_eur).toFixed(2),
       priceCurrency: 'EUR',
       availability: 'https://schema.org/InStock',
       url: `${baseUrl}/tariffs/${tariff.slug}`,
