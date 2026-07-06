@@ -76,95 +76,120 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
     );
   };
 
+  const getInitials = (name: string) => {
+    if (!name || name === 'Anonym') return 'A';
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getAvatarColorClass = (name: string) => {
+    if (!name || name === 'Anonym') return 'from-slate-400 to-slate-500';
+    const charCode = name.charCodeAt(0);
+    const colors = [
+      'from-brand-600 to-brand-800',
+      'from-indigo-500 to-indigo-700',
+      'from-sky-500 to-sky-700',
+      'from-violet-500 to-violet-700',
+      'from-emerald-500 to-emerald-700',
+    ];
+    return colors[charCode % colors.length];
+  };
+
   return (
-    <div className="border border-slate-200 rounded-3xl p-6 bg-white shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 relative">
-          <span className="font-semibold text-slate-800 text-sm">{item.display_name}</span>
-          
-          {item.is_verified && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-250 text-[10px] font-semibold text-emerald-700">
-              ✓ {isDe ? 'Verifizierter Kauf' : 'Verified Purchase'}
-            </span>
-          )}
-          
-          {/* Legacy Import Source Info Icon */}
-          {item.source === 'ValueShop25.com' && (
-            <div className="relative inline-flex items-center">
-              <button
-                type="button"
-                onClick={() => setIsInfoOpen(!isInfoOpen)}
-                className="text-slate-400 hover:text-brand-600 transition-colors p-0.5 focus:outline-none cursor-pointer flex items-center"
-                title={isDe ? 'Herkunft Info' : 'Source Info'}
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
+    <div className="border border-slate-150 rounded-3xl p-6 bg-white shadow-xs hover:shadow-md hover:border-slate-200 transition-all duration-300">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        {/* User profile row */}
+        <div className="flex items-center gap-3">
+          <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${getAvatarColorClass(item.display_name)} text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs`}>
+            {getInitials(item.display_name)}
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-slate-800 text-sm">{item.display_name}</span>
               
-              {isInfoOpen && (
-                <div className="absolute left-0 top-6 z-20 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-[11px] text-slate-600 animate-fade-in leading-relaxed">
-                  <p className="font-bold text-slate-800 flex items-center gap-1">
-                    <span>ℹ️</span> {isDe ? 'Herkunft der Bewertung' : 'Review Source'}
-                  </p>
-                  <p className="mt-1">
-                    {isDe 
-                      ? 'Synchronisierte Feedbacks von ValueShop25.com' 
-                      : 'Synchronized feedbacks from ValueShop25.com'}
-                  </p>
+              {item.is_verified && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
+                  ✓ {isDe ? 'Verifizierter Kauf' : 'Verified Purchase'}
+                </span>
+              )}
+              
+              {/* Legacy Import Source Info Icon */}
+              {item.source === 'ValueShop25.com' && (
+                <div className="relative inline-flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsInfoOpen(!isInfoOpen)}
+                    className="text-slate-400 hover:text-brand-600 transition-colors p-0.5 focus:outline-none cursor-pointer flex items-center"
+                    title={isDe ? 'Herkunft Info' : 'Source Info'}
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  
+                  {isInfoOpen && (
+                    <div className="absolute left-0 top-6 z-20 w-64 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xl text-[11px] text-slate-600 animate-fade-in leading-relaxed">
+                      <p className="font-bold text-slate-800 flex items-center gap-1">
+                        <span>ℹ️</span> {isDe ? 'Herkunft der Bewertung' : 'Review Source'}
+                      </p>
+                      <p className="mt-1.5 text-slate-500">
+                        {isDe 
+                          ? 'Synchronisierte Feedbacks von ValueShop25.com' 
+                          : 'Synchronized feedbacks from ValueShop25.com'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {new Date(item.created_at).toLocaleDateString(isDe ? 'de-DE' : 'en-US', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400">
-          {new Date(item.created_at).toLocaleDateString(isDe ? 'de-DE' : 'en-US', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })}
-        </span>
+
+        {/* Stars */}
+        <div className="shrink-0">{renderStars(item.rating, 'h-4 w-4')}</div>
       </div>
 
-      <div className="mb-3 flex items-center justify-between">
-        {renderStars(item.rating)}
-        
-        {/* Translate button for any comment */}
-        {item.comment && (
-          <div className="flex items-center gap-2">
+      {item.comment && (
+        <div className="pl-0 md:pl-13">
+          <p className="text-slate-700 text-[13px] leading-relaxed whitespace-pre-line">
+            {showOriginal ? item.comment : translatedText}
+          </p>
+
+          {/* Translate button */}
+          <div className="mt-3 flex items-center gap-2">
             {isTranslating ? (
               <span className="inline-block animate-spin h-3.5 w-3.5 rounded-full border-2 border-brand-500 border-t-transparent"></span>
             ) : showOriginal ? (
               <button
                 onClick={handleTranslate}
-                className="text-[11px] font-bold text-brand-600 hover:text-brand-850 cursor-pointer flex items-center gap-1 bg-brand-50 hover:bg-brand-100/70 px-2 py-1 rounded-lg transition-all"
+                className="text-[10px] font-bold text-brand-600 hover:text-brand-850 cursor-pointer flex items-center gap-1 bg-brand-50 hover:bg-brand-100/70 px-2.5 py-1 rounded-lg transition-all"
               >
                 🌐 {isDe ? 'Übersetzen' : 'Translate'}
               </button>
             ) : (
               <button
                 onClick={() => setShowOriginal(true)}
-                className="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg transition-all"
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1 bg-slate-100 hover:bg-slate-205 px-2.5 py-1 rounded-lg transition-all"
               >
                 ↩ {isDe ? 'Original anzeigen' : 'Show Original'}
               </button>
             )}
             {err && <span className="text-[10px] text-red-500">{err}</span>}
           </div>
-        )}
-      </div>
-
-      {item.comment && (
-        <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
-          {showOriginal ? item.comment : translatedText}
-        </p>
+        </div>
       )}
 
       {/* Admin reply section */}
       {item.reply_text && (
-        <div className="mt-5 border-t border-slate-100 pt-4 pl-4 border-l-2 border-l-brand-500 bg-slate-50/50 p-4 rounded-r-2xl">
+        <div className="mt-5 ml-0 md:ml-13 border-t border-slate-100 pt-4 pl-4 border-l-2 border-l-brand-600 bg-brand-50/20 p-4 rounded-r-2xl">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-brand-900 flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-brand-900 flex items-center gap-1.5">
               💬 {isDe ? 'Antwort von PureSim Support' : 'Reply from PureSim Support'}
             </span>
             {item.replied_at && (
@@ -177,7 +202,7 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-700 leading-relaxed">
+          <p className="text-[11px] text-slate-650 leading-relaxed">
             {item.reply_text}
           </p>
         </div>
@@ -196,6 +221,9 @@ export default function ReviewsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Rating Filter state
+  const [ratingFilter, setRatingFilter] = useState<string>('all');
 
   useEffect(() => {
     async function fetchFeedbacks() {
@@ -248,17 +276,26 @@ export default function ReviewsPage() {
     );
   }
 
+  // Filter feedbacks locally based on active ratingFilter chip
+  const filteredFeedbacks = feedbacks.filter((fb) => {
+    if (ratingFilter === 'all') return true;
+    return fb.rating.toString() === ratingFilter;
+  });
+
+  const ratingChips = ['all', '5', '4', '3', '2', '1'];
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
       {/* Header */}
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
-          {isDe ? 'Kundenbewertungen & Feedback' : 'Customer Reviews & Feedback'}
+          {isDe ? 'Kundenbewertungen & ' : 'Customer Reviews & '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-850">Feedback</span>
         </h1>
-        <p className="mt-3 text-slate-500 max-w-xl mx-auto">
+        <p className="mt-3 text-slate-500 max-w-2xl mx-auto text-sm leading-relaxed">
           {isDe
-            ? 'Transparente Erfahrungsberichte unserer Kunden. Jede Bewertung mit dem Label "Verifizierter Kauf" wurde durch eine verifizierte eSIM-Bestellung ausgelöst.'
-            : 'Transparent feedback from our customers. Every review labeled "Verified Purchase" is linked to a verified eSIM order.'}
+            ? 'Entdecke die echten Erfahrungen unserer Reisenden. Jede Bewertung mit dem Label "Verifizierter Kauf" stammt von Kunden, die unsere eSIMs in über 150 Ländern aktiv nutzen.'
+            : 'Explore genuine experiences from our travelers. Every review labeled "Verified Purchase" is linked to customers actively using our eSIMs in over 150 countries.'}
         </p>
       </div>
 
@@ -269,31 +306,31 @@ export default function ReviewsPage() {
       )}
 
       {/* Stats Summary Grid */}
-      <div className="mb-12 grid gap-6 md:grid-cols-3 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+      <div className="mb-10 grid gap-6 md:grid-cols-3 bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-xs">
         {/* Large Average Score */}
         <div className="flex flex-col items-center justify-center border-b border-slate-100 pb-6 md:border-b-0 md:border-r md:pb-0">
-          <p className="text-5xl font-extrabold text-slate-900">{stats.averageRating}</p>
-          <div className="mt-2">{renderStars(Math.round(stats.averageRating), 'h-5 w-5')}</div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="text-6xl font-black text-slate-900 tracking-tight">{stats.averageRating}</p>
+          <div className="mt-3">{renderStars(Math.round(stats.averageRating), 'h-5 w-5')}</div>
+          <p className="mt-3 text-xs font-semibold text-slate-400">
             {isDe
-              ? `Basierend auf ${stats.totalCount} Bewertungen`
-              : `Based on ${stats.totalCount} reviews`}
+              ? `Basierend auf ${stats.totalCount} Stimmen`
+              : `Based on ${stats.totalCount} ratings`}
           </p>
         </div>
 
         {/* Rating Bars Distribution */}
-        <div className="md:col-span-2 space-y-2.5">
+        <div className="md:col-span-2 space-y-3 flex flex-col justify-center">
           {[5, 4, 3, 2, 1].map((stars) => {
             const count = stats.distribution[stars] || 0;
             const percentage = stats.totalCount > 0 ? (count / stats.totalCount) * 100 : 0;
             return (
-              <div key={stars} className="flex items-center gap-3 text-xs">
-                <span className="w-12 font-medium text-slate-600 shrink-0 text-right">
+              <div key={stars} className="flex items-center gap-3.5 text-xs font-semibold text-slate-600">
+                <span className="w-14 shrink-0 text-right">
                   {stars} {isDe ? 'Sterne' : 'stars'}
                 </span>
-                <div className="h-2.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -304,32 +341,55 @@ export default function ReviewsPage() {
         </div>
       </div>
 
-      {/* Call to action button */}
-      <div className="mb-10 flex justify-between items-center border-b border-slate-200 pb-5">
-        <h3 className="text-lg font-bold text-slate-900">
-          {isDe ? 'Erfahrungsberichte' : 'Customer Experiences'}
-        </h3>
+      {/* Filters & CTA Header */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-150 pb-5">
+        {/* Filter chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+            {isDe ? 'Filter:' : 'Filter:'}
+          </span>
+          <div className="flex gap-2">
+            {ratingChips.map((chip) => {
+              const isActive = ratingFilter === chip;
+              const label = chip === 'all' ? (isDe ? 'Alle' : 'All') : `${chip} ★`;
+              return (
+                <button
+                  key={chip}
+                  onClick={() => setRatingFilter(chip)}
+                  className={`rounded-full px-4 py-1.5 text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${isActive ? 'bg-brand-600 border-brand-600 text-white shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* CTA Button */}
         <Link
           href="/reviews/new"
-          className="px-5 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-xs"
+          className="px-5 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-xs shrink-0 text-center cursor-pointer"
         >
           {isDe ? 'Jetzt bewerten' : 'Write a review'}
         </Link>
       </div>
 
       {/* Feedbacks List */}
-      {feedbacks.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-250 rounded-3xl">
-          <p className="text-slate-500">
-            {isDe ? 'Noch keine Bewertungen abgegeben.' : 'No reviews have been written yet.'}
+      {filteredFeedbacks.length === 0 ? (
+        <div className="text-center py-16 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl">
+          <p className="text-slate-500 font-medium">
+            {isDe ? 'Keine Bewertungen für diesen Filter.' : 'No reviews match this filter.'}
           </p>
-          <p className="text-xs text-slate-400 mt-1">
-            {isDe ? 'Sei der Erste und teile deine Erfahrung!' : 'Be the first to share your experience!'}
-          </p>
+          <button
+            onClick={() => setRatingFilter('all')}
+            className="text-xs font-bold text-brand-600 mt-2 hover:underline cursor-pointer"
+          >
+            {isDe ? 'Alle Filter zurücksetzen' : 'Reset filters'}
+          </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {feedbacks.map((item) => (
+        <div className="space-y-5">
+          {filteredFeedbacks.map((item) => (
             <FeedbackCard key={item.id} item={item} locale={locale} />
           ))}
         </div>

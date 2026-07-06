@@ -18,8 +18,6 @@ export default function NewReviewPage() {
   const [alias, setAlias] = useState('');
   
   const [loading, setLoading] = useState(false);
-  const [isVerifyingOrder, setIsVerifyingOrder] = useState(false);
-  const [orderVerified, setOrderVerified] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -31,24 +29,8 @@ export default function NewReviewPage() {
     const id = params.get('orderId');
     if (id) {
       setOrderId(id);
-      verifyOrder(id);
     }
   }, []);
-
-  const verifyOrder = async (id: string) => {
-    setIsVerifyingOrder(true);
-    setError('');
-    try {
-      const res = await fetch(`/api/feedbacks`); // we check via API or just let the submission route handle validation
-      // But to be secure, let's keep it simple: the submission route will validate it when POST is called.
-      // We can just trust the presence of orderId for the UI presentation.
-      setOrderVerified(true);
-    } catch {
-      // ignore
-    } finally {
-      setIsVerifyingOrder(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,21 +70,21 @@ export default function NewReviewPage() {
   if (success) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-md">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-50 border border-emerald-250 mb-6 text-emerald-600 text-3xl">
+        <div className="bg-white border border-slate-150 rounded-3xl p-8 shadow-lg animate-fade-in">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-50 border border-emerald-200 mb-6 text-emerald-600 text-3xl font-bold shadow-xs">
             ✓
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 mb-3">
-            {isDe ? 'Vielen Dank für dein Feedback!' : 'Thank you for your feedback!'}
+          <h2 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
+            {isDe ? 'Vielen Dank!' : 'Thank you!'}
           </h2>
           <p className="text-sm text-slate-500 mb-8 leading-relaxed">
             {isDe 
-              ? 'Deine Bewertung wurde erfolgreich übermittelt und ist nun öffentlich einsehbar.' 
-              : 'Your review has been successfully submitted and is now publicly visible.'}
+              ? 'Deine Bewertung wurde erfolgreich übermittelt und ist nun öffentlich im Review-Bereich zu sehen.' 
+              : 'Your review has been successfully submitted and is now publicly visible in the reviews section.'}
           </p>
           <button
             onClick={() => router.push('/reviews')}
-            className="w-full rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm"
+            className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-xs font-bold text-white hover:bg-brand-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
           >
             {isDe ? 'Zurück zu den Bewertungen' : 'Back to reviews'}
           </button>
@@ -113,34 +95,34 @@ export default function NewReviewPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-md">
-        <h1 className="text-2xl font-extrabold text-slate-900 mb-2">
+      <div className="bg-white border border-slate-150 rounded-3xl p-6 md:p-8 shadow-lg">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-2">
           {isDe ? 'Kauf bewerten' : 'Rate your purchase'}
         </h1>
-        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
           {isDe 
-            ? 'Teile deine Erfahrung mit PureSim. Deine Bewertung hilft anderen Reisenden dabei, die richtige Entscheidung zu treffen.' 
-            : 'Share your experience with PureSim. Your rating helps other travelers make the right choice.'}
+            ? 'Teile deine Erfahrung mit PureSim. Deine ehrliche Bewertung hilft anderen Reisenden dabei, die passende eSIM für ihr Abenteuer auszuwählen.' 
+            : 'Share your experience with PureSim. Your honest rating helps other travelers select the perfect eSIM for their adventure.'}
         </p>
 
         {orderId && (
-          <div className="mb-6 rounded-2xl border border-emerald-150 bg-emerald-50/50 p-4 flex items-start gap-2.5">
-            <span className="text-emerald-700 text-base shrink-0 mt-0.5">✓</span>
+          <div className="mb-6 rounded-2xl border border-emerald-150 bg-emerald-50/40 p-4 flex items-start gap-3">
+            <span className="text-emerald-700 text-lg shrink-0 mt-0.5">✓</span>
             <div>
               <p className="text-xs font-bold text-emerald-800">
                 {isDe ? 'Verifizierte Bewertung aktiv' : 'Verified Review Active'}
               </p>
               <p className="text-[11px] text-emerald-600 mt-0.5 leading-relaxed">
                 {isDe 
-                  ? 'Du bewertest aus einer E-Mail-Einladung heraus. Deine Bewertung erhält automatisch das Label "Verifizierter Kauf".' 
-                  : 'You are reviewing from an email invitation. Your review will automatically get the "Verified Purchase" label.'}
+                  ? 'Du bewertest aus einer E-Mail-Einladung heraus. Deine Bewertung erhält automatisch das Label „Verifizierter Kauf“.' 
+                  : 'You are reviewing from an email invitation. Your review will automatically get the „Verified Purchase“ label.'}
               </p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-800 leading-relaxed">
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 leading-relaxed">
             {error}
           </div>
         )}
@@ -148,10 +130,10 @@ export default function NewReviewPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Star Rating selector */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
               {isDe ? 'Bewertung *' : 'Rating *'}
             </label>
-            <div className="flex gap-2.5 py-1">
+            <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((star) => {
                 const isSelected = hoverRating !== null ? star <= hoverRating : star <= rating;
                 return (
@@ -161,10 +143,10 @@ export default function NewReviewPage() {
                     onClick={() => setRating(star)}
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(null)}
-                    className="p-1 cursor-pointer transition-transform hover:scale-110 outline-none"
+                    className="p-1 cursor-pointer transition-transform duration-150 hover:scale-120 outline-none"
                   >
                     <svg
-                      className={`h-9 w-9 ${isSelected ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`}
+                      className={`h-9 w-9 ${isSelected ? 'text-amber-400 fill-amber-400 filter drop-shadow-xs' : 'text-slate-200 fill-slate-200'}`}
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -174,44 +156,44 @@ export default function NewReviewPage() {
                 );
               })}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">
-              {isDe ? '5 Sterne ist die beste Bewertung' : '5 stars is the highest rating'}
+            <p className="text-[10px] text-slate-400 mt-1.5">
+              {isDe ? '5 Sterne ist die höchste Auszeichnung' : '5 stars is the highest award'}
             </p>
           </div>
 
           {/* Comment text */}
           <div>
-            <label htmlFor="comment" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              {isDe ? 'Kommentar (Optional)' : 'Review Comment (Optional)'}
+            <label htmlFor="comment" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              {isDe ? 'Erfahrungsbericht (Optional)' : 'Review text (Optional)'}
             </label>
             <textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 h-28 leading-relaxed"
-              placeholder={isDe ? 'Wie verlief die Aktivierung? Hattest du guten Empfang? Schreib uns deine Meinung...' : 'How was the activation? Did you have good network coverage? Write your feedback...'}
+              className="w-full rounded-2xl border border-slate-350 px-4 py-3.5 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 h-32 leading-relaxed transition-all"
+              placeholder={isDe ? 'Beschreibe deine Erfahrung (Verbindung, Aktivierung, Abdeckung)...' : 'Describe your experience (activation, connection, coverage)...'}
             />
           </div>
 
           {/* Display Name Privacy Toggle */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-              {isDe ? 'Öffentlicher Name *' : 'Public Display Name *'}
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+              {isDe ? 'Name für die Veröffentlichung *' : 'Name for publication *'}
             </label>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <button
                 type="button"
                 onClick={() => setNameType('anon')}
-                className={`rounded-xl px-4 py-3 text-xs font-bold border transition-all cursor-pointer ${nameType === 'anon' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
+                className={`rounded-xl px-4 py-3 text-xs font-bold border transition-all cursor-pointer ${nameType === 'anon' ? 'bg-brand-50 border-brand-500 text-brand-700 shadow-xs' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
               >
-                👤 {isDe ? 'Anonym' : 'Anonymous'}
+                👤 {isDe ? 'Anonym verbleiben' : 'Stay Anonymous'}
               </button>
               <button
                 type="button"
                 onClick={() => setNameType('alias')}
-                className={`rounded-xl px-4 py-3 text-xs font-bold border transition-all cursor-pointer ${nameType === 'alias' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
+                className={`rounded-xl px-4 py-3 text-xs font-bold border transition-all cursor-pointer ${nameType === 'alias' ? 'bg-brand-50 border-brand-500 text-brand-700 shadow-xs' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
               >
-                ✏️ {isDe ? 'Alias / Name' : 'Custom Alias'}
+                ✏️ {isDe ? 'Name / Alias wählen' : 'Choose Custom Name'}
               </button>
             </div>
 
@@ -222,7 +204,7 @@ export default function NewReviewPage() {
                 value={alias}
                 onChange={(e) => setAlias(e.target.value)}
                 maxLength={50}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 transition-all"
                 placeholder={isDe ? 'z.B. Max M.' : 'e.g. Max M.'}
               />
             )}
@@ -232,7 +214,7 @@ export default function NewReviewPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
           >
             {loading ? (
               <>
