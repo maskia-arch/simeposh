@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS public.media (
+  id UUID PRIMARY KEY,
+  filename TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  data BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
