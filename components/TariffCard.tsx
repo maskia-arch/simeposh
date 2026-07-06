@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
@@ -34,7 +33,7 @@ interface TariffCardProps {
 
 export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps) {
   const { t, locale } = useTranslation();
-  const { addItem }   = useCart();
+  const { addItem, open } = useCart();
   const [showCountryList, setShowCountryList] = useState(false);
   const badge   = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
   const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 3);
@@ -44,15 +43,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
   const coverage     = coverageLabel(tariff, locale);
 
   return (
-    <Link
-      href={`/tariffs/${tariff.slug || tariff.package_code}`}
-      onClick={(e) => {
-        if (onDetail) {
-          e.preventDefault();
-          onDetail(tariff);
-        }
-      }}
-      className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-brand-300 hover:shadow-md overflow-hidden cursor-pointer"
+    <div
+      className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-brand-300 hover:shadow-md overflow-hidden"
     >
       {/* ── Type colour strip ── */}
       <div className={`h-1 w-full ${
@@ -191,11 +183,14 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             <span className="hidden sm:inline">{t('card_add_cart')}</span>
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onBuy(tariff); }}
-            disabled={loading}
-            className="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 active:scale-95 disabled:opacity-60"
+            onClick={(e) => {
+              e.stopPropagation();
+              addItem(tariff);
+              open();
+            }}
+            className="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 active:scale-95 cursor-pointer text-center"
           >
-            {loading ? t('card_loading') : t('card_buy_now')}
+            {t('card_buy_now')}
           </button>
         </div>
       </div>
@@ -231,6 +226,6 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </div>
         </div>
       )}
-    </Link>
+    </div>
   );
 }

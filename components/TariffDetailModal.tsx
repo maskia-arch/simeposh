@@ -38,7 +38,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const [added, setAdded] = useState(false);
   const [showCountryList, setShowCountryList] = useState(false);
   const { locale, t } = useTranslation();
-  const { addItem } = useCart();
+  const { addItem, open } = useCart();
 
   const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 8);
   const typeInfo = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
@@ -241,8 +241,12 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               {added ? t('det_added') : t('det_add_cart')}
             </button>
             <button
-              onClick={() => setShowCheckout(true)}
-              className="flex-1 rounded-2xl bg-brand-600 py-3.5 text-base font-bold text-white hover:bg-brand-700 active:scale-[0.98] transition-all shadow-lg"
+              onClick={() => {
+                addItem(tariff);
+                open();
+                onClose();
+              }}
+              className="flex-1 rounded-2xl bg-brand-600 py-3.5 text-base font-bold text-white hover:bg-brand-700 active:scale-[0.98] transition-all shadow-lg cursor-pointer"
             >
               {t('det_buy_now')}
             </button>
