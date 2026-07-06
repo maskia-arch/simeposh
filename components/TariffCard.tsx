@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
@@ -43,9 +44,15 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
   const coverage     = coverageLabel(tariff, locale);
 
   return (
-    <div
+    <Link
+      href={`/tariffs/${tariff.slug || tariff.package_code}`}
+      onClick={(e) => {
+        if (onDetail) {
+          e.preventDefault();
+          onDetail(tariff);
+        }
+      }}
       className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-brand-300 hover:shadow-md overflow-hidden cursor-pointer"
-      onClick={() => onDetail?.(tariff)}
     >
       {/* ── Type colour strip ── */}
       <div className={`h-1 w-full ${
@@ -224,6 +231,6 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </div>
         </div>
       )}
-    </div>
+    </Link>
   );
 }
