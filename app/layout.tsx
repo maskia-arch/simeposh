@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
+import Script from 'next/script';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -122,6 +123,10 @@ export default async function RootLayout({
         </LanguageProvider>
 
         <InitialLoaderRemover />
+        <Script
+          src="https://puresimaisupport.autoacts.link/widget.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
