@@ -87,7 +87,7 @@ Du kannst dieses Guthaben bei deinem nächsten Einkauf im Warenkorb einlösen.
 }
 
 export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
-  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/register`;
+  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net'}/register`;
   
   return `<!DOCTYPE html>
 <html lang="de">
@@ -139,7 +139,7 @@ export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
 }
 
 export function buildGuestMilestoneText(data: GuestMilestoneData): string {
-  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/register`;
+  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net'}/register`;
   
   return `Dein eSIM Cash Guthaben wartet auf dich!
 
