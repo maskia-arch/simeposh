@@ -13,6 +13,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { customUnlimitedPriceEur, clampDays } from '@/lib/quote';
 import { resolveCustomer }     from '@/lib/customers';
 import { createCryptoSession } from '@/lib/crypto/session';
+import { getCoin }             from '@/lib/crypto/coins';
 import { fulfillOrder }        from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 
@@ -79,6 +80,18 @@ export async function POST(request: Request) {
     }
 
     // 2. Process checkouts based on payment method
+    if (coin !== 'ESIM_CASH') {
+      const coinCfg = await getCoin(coin);
+      if (!coinCfg) {
+        return NextResponse.json({ error: `Coin ${coin} ist nicht verfügbar` }, { status: 400 });
+      }
+      if (coinCfg.min_order_eur > 0 && totalBaseEur < coinCfg.min_order_eur) {
+        return NextResponse.json({
+          error: `Mindestbestellwert für ${coinCfg.code} ist ${coinCfg.min_order_eur.toFixed(2)} € (Ihr Warenkorb: ${totalBaseEur.toFixed(2)} €)`
+        }, { status: 400 });
+      }
+    }
+
     if (coin === 'ESIM_CASH') {
       if (!userId) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });

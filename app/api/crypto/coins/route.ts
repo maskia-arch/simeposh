@@ -19,6 +19,7 @@ export async function GET() {
         surchargePct:      Number(c.surcharge_pct),
         surchargeFixedEur: Number(c.surcharge_fixed_eur),
         confirmations:     c.confirmations,
+        minOrderEur:       Number(c.min_order_eur || 0),
       })),
     });
   } catch (err) {

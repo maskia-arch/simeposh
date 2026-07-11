@@ -54,7 +54,8 @@ export async function createCryptoSession(opts: {
 
   // 1. Calculate final EUR price (including surcharge)
   const amountEur = applySurcharge(opts.baseEur, coin);
-  const expiresAtTemp = new Date(Date.now() + 25 * 60 * 1000).toISOString();
+  const checkoutDurationMins = coin.checkout_duration_mins || 30;
+  const expiresAtTemp = new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString();
 
   // 2. Insert pending session in database to acquire session UUID
   const { data: sData, error: insertErr } = await db
@@ -116,7 +117,7 @@ export async function createCryptoSession(opts: {
           walletRes = {
             address: entry.address,
             amount_ltc: amountLtc,
-            expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
           };
           console.log(`[Session] Rotated address ${entry.address} (index ${entry.index}) from pool for session ${sessionId} (${coin.code})`);
         } else {
@@ -138,6 +139,7 @@ export async function createCryptoSession(opts: {
           amount_eur: amountEur,
           order_id: sessionId,
           coin: coin.code,
+          duration_mins: checkoutDurationMins,
         }),
       });
 
@@ -162,7 +164,7 @@ export async function createCryptoSession(opts: {
           walletRes = {
             address: fallbackAddress as string,
             amount_ltc: amountLtc,
-            expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
           };
         } catch (rateErr) {
           const fallbackRates: Record<string, number> = { LTC: 75.0, BTC: 60000.0, ETH: 3000.0, SOL: 130.0 };
@@ -175,7 +177,7 @@ export async function createCryptoSession(opts: {
           walletRes = {
             address: fallbackAddress as string,
             amount_ltc: amountLtc,
-            expires_at: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
           };
           console.warn(`[Session] Even rate service failed. Using fallback ${coinCode} rate:`, fallbackRate);
         }

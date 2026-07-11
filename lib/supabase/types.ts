@@ -331,6 +331,8 @@ export interface Database {
           coingecko_id: string; uri_scheme: string; chain: string;
           sort_order: number; updated_at: string;
           min_payment_pct: number;
+          min_order_eur: number;
+          checkout_duration_mins: number;
         };
         Insert: {
           code: string; name: string; enabled?: boolean;
@@ -339,6 +341,8 @@ export interface Database {
           coingecko_id: string; uri_scheme: string; chain: string;
           sort_order?: number;
           min_payment_pct?: number;
+          min_order_eur?: number;
+          checkout_duration_mins?: number;
         };
         Update: {
           name?: string; enabled?: boolean;
@@ -347,8 +351,44 @@ export interface Database {
           coingecko_id?: string; uri_scheme?: string; chain?: string;
           sort_order?: number;
           min_payment_pct?: number;
+          min_order_eur?: number;
+          checkout_duration_mins?: number;
         };
         Relationships: [];
+      };
+
+      // ── tariff_price_history ────────────────────────────────────────
+      tariff_price_history: {
+        Row: {
+          id:           string;
+          tariff_id:     string;
+          package_code:  string;
+          price_eur:     number;
+          recorded_at:   string;
+        };
+        Insert: {
+          id?:          string;
+          tariff_id:     string;
+          package_code:  string;
+          price_eur:     number;
+          recorded_at?:  string;
+        };
+        Update: {
+          id?:          string;
+          tariff_id?:    string;
+          package_code?: string;
+          price_eur?:    number;
+          recorded_at?:  string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tariff_price_history_tariff_id_fkey';
+            columns: ['tariff_id'];
+            isOneToOne: false;
+            referencedRelation: 'tariffs';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       // ── crypto_sessions ─────────────────────────────────────────────

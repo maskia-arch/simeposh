@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
+import { PriceChart } from '@/components/PriceChart';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -182,6 +183,11 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <p className="mt-1 text-xs opacity-80">{t('det_renew_note')}</p>
             </div>
           )}
+
+          {/* ── Price Chart ── */}
+          <div className="mb-5">
+            <PriceChart tariffId={tariff.id} currentPrice={Number(tariff.sale_price_eur)} />
+          </div>
 
           {/* ── Operators / network ── */}
           {ops.length > 0 && (

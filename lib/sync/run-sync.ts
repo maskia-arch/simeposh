@@ -31,6 +31,7 @@ import { calculateSalePrice, fetchUsdEurRate } from '@/lib/pricing';
 import { createServiceClient }                 from '@/lib/supabase/server';
 import type { EsimAccessPackage }              from '@/lib/esimaccess/types';
 import { revalidatePath }                      from 'next/cache';
+import { query as runRawQuery }                from '@/lib/db';
 
 export interface SyncResult {
   success:      boolean;
@@ -62,6 +63,44 @@ async function writeProgress(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (db.from('sync_logs').update(fields as any).eq('sync_id', syncId));
   } catch { /* ignore – progress writes are best-effort */ }
+}
+
+function isTariffChanged(existing: any, generated: any): boolean {
+  if (!existing) return true; // new package
+  
+  if (existing.name !== generated.name) return true;
+  if (existing.description !== generated.description) return true;
+  if (existing.country_code !== generated.country_code) return true;
+  if (existing.country_name !== generated.country_name) return true;
+  if (existing.region !== generated.region) return true;
+  if (existing.flag_emoji !== generated.flag_emoji) return true;
+  
+  if (Number(existing.data_gb) !== Number(generated.data_gb)) return true;
+  if (existing.validity_days !== generated.validity_days) return true;
+  
+  if (Math.abs(Number(existing.ek_price_usd) - Number(generated.ek_price_usd)) >= 0.0001) return true;
+  if (Math.abs(Number(existing.sale_price_eur) - Number(generated.sale_price_eur)) >= 0.01) return true;
+  if (Math.abs(Number(existing.usd_eur_rate) - Number(generated.usd_eur_rate)) >= 0.0001) return true;
+  
+  if (existing.is_active !== generated.is_active) return true;
+  if (existing.tariff_type !== generated.tariff_type) return true;
+  if (existing.speed_kbps !== generated.speed_kbps) return true;
+
+  // location_codes
+  const a = existing.location_codes || [];
+  const b = generated.location_codes || [];
+  if (a.length !== b.length) return true;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return true;
+  }
+
+  // raw_data (operatorList)
+  const aOps = existing.raw_data?.operatorList || [];
+  const bOps = generated.raw_data?.operatorList || [];
+  if (aOps.length !== bOps.length) return true;
+  if (JSON.stringify(aOps) !== JSON.stringify(bOps)) return true;
+
+  return false;
 }
 
 export async function runSync(syncId = new Date().toISOString()): Promise<SyncResult> {
@@ -121,11 +160,11 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       error_message:  `fetched:${packages.length}|eta_ms:${lastDurationMs > 0 ? lastDurationMs : 120_000}`,
     });
 
-    // ── 3. Load existing prices for change detection ────────────
+    // ── 3. Load existing tariffs for change detection ────────────
     const { data: existing } = await db
-      .from('tariffs').select('id, package_code, sale_price_eur').limit(200_000);
+      .from('tariffs').select('*').limit(200_000);
     const existingMap = new Map(
-      (existing ?? []).map((t) => [t.package_code, { id: t.id, price: t.sale_price_eur }])
+      (existing ?? []).map((t) => [t.package_code, t])
     );
 
     // ── 4. Build upsert rows ────────────────────────────────────
@@ -237,49 +276,78 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
     for (const row of rows) {
       const prev = existingMap.get(row.package_code);
-      if (prev && Math.abs(row.sale_price_eur - prev.price) >= 0.01) {
-        const changePct = ((row.sale_price_eur - prev.price) / prev.price) * 100;
+      if (prev && Math.abs(row.sale_price_eur - prev.sale_price_eur) >= 0.01) {
+        const changePct = ((row.sale_price_eur - prev.sale_price_eur) / prev.sale_price_eur) * 100;
         proposals.push({
           sync_id:       syncId,
           tariff_id:     prev.id,
           package_code:  row.package_code,
-          old_price_eur: prev.price,
+          old_price_eur: prev.sale_price_eur,
           new_price_eur: row.sale_price_eur,
           change_pct:    Math.round(changePct * 100) / 100,
           status:        'pending',
         });
-        row.sale_price_eur = prev.price; // keep old price until admin approves
+        row.sale_price_eur = prev.sale_price_eur; // keep old price until admin approves
       }
     }
 
-    // ── 6. Upsert in batches of 200 ─────────────────────────────
-    // onConflict: 'package_code' – slug is no longer unique, package_code is the PK.
+    // ── 5.5. Filter out unchanged packages (Delta Sync) ─────────
+    const rowsToUpsert: typeof rows = [];
+    const unchangedCodes: string[] = [];
+
+    for (const row of rows) {
+      const ext = existingMap.get(row.package_code);
+      if (isTariffChanged(ext, row)) {
+        rowsToUpsert.push(row);
+      } else {
+        unchangedCodes.push(row.package_code);
+      }
+    }
+
+    console.log(`[sync] Delta Sync: ${rowsToUpsert.length} packages to upsert, ${unchangedCodes.length} unchanged packages.`);
+
+    // ── 6. Upsert changed packages in batches of 200 ─────────────
     const BATCH = 200;
     let upserted = 0, errors = 0;
     const errorDetails: string[] = [];
 
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const batch = rows.slice(i, i + BATCH);
-      const { error } = await db.from('tariffs').upsert(batch, { onConflict: 'package_code' });
-      if (error) {
-        const detail = `Batch ${Math.floor(i / BATCH) + 1}: ${error.message}`;
-        console.error('[sync] upsert error:', detail, error.details ?? '');
-        errors += batch.length;
-        errorDetails.push(detail);
-      } else {
-        upserted += batch.length;
-      }
+    if (rowsToUpsert.length > 0) {
+      for (let i = 0; i < rowsToUpsert.length; i += BATCH) {
+        const batch = rowsToUpsert.slice(i, i + BATCH);
+        const { error } = await db.from('tariffs').upsert(batch, { onConflict: 'package_code' });
+        if (error) {
+          const detail = `Batch ${Math.floor(i / BATCH) + 1}: ${error.message}`;
+          console.error('[sync] upsert error:', detail, error.details ?? '');
+          errors += batch.length;
+          errorDetails.push(detail);
+        } else {
+          upserted += batch.length;
+        }
 
-      // Write progress every 10 batches (~2000 rows)
-      if ((i / BATCH) % 10 === 0) {
-        const etaMs = lastDurationMs > 0
-          ? Math.round(lastDurationMs * (1 - i / rows.length))
-          : 120_000;
-        await writeProgress(db, syncId, {
-          upserted,
-          errors,
-          error_message: `fetched:${packages.length}|upserted:${upserted}|errors:${errors}|eta_ms:${etaMs}`,
-        });
+        // Write progress every 10 batches
+        if ((i / BATCH) % 10 === 0) {
+          const etaMs = lastDurationMs > 0
+            ? Math.round(lastDurationMs * (1 - i / rowsToUpsert.length))
+            : 120_000;
+          await writeProgress(db, syncId, {
+            upserted,
+            errors,
+            error_message: `fetched:${packages.length}|upserted:${upserted}|errors:${errors}|eta_ms:${etaMs}`,
+          });
+        }
+      }
+    }
+
+    // ── 6.5. Bulk update last_synced_at for unchanged packages ──
+    if (unchangedCodes.length > 0) {
+      try {
+        await runRawQuery(
+          'UPDATE public.tariffs SET last_synced_at = $1 WHERE package_code = ANY($2)',
+          [syncedAt, unchangedCodes]
+        );
+        console.log(`[sync] Bulk updated last_synced_at for ${unchangedCodes.length} unchanged packages.`);
+      } catch (err: any) {
+        console.error('[sync] Bulk update last_synced_at failed:', err.message);
       }
     }
 
@@ -293,6 +361,13 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         .map(p => ({ ...p, tariff_id: freshMap.get(p.package_code) ?? p.tariff_id }))
         .filter(p => p.tariff_id);
       if (toInsert.length > 0) {
+        // Delete existing pending proposals for these package codes to avoid duplicates
+        const codes = toInsert.map(p => p.package_code);
+        await db.from('tariff_price_proposals')
+          .delete()
+          .eq('status', 'pending')
+          .in('package_code', codes);
+
         await db.from('tariff_price_proposals').insert(toInsert);
       }
     }

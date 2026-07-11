@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 
 interface CoinOption {
-  code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number;
+  code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number; minOrderEur?: number;
 }
 const COIN_ICON: Record<string, string> = {
   BTC: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png',
@@ -128,7 +128,8 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
     }
   }
 
-  const selectedCoin = coins.find((c) => c.code === selectedMethod);
+  const visibleCoins = coins.filter((c) => total >= (c.minOrderEur || 0));
+  const selectedCoin = visibleCoins.find((c) => c.code === selectedMethod);
   let fee = 0;
   if (selectedCoin) {
     if (selectedCoin.surchargePct > 0) {
@@ -181,7 +182,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       </div>
 
       {/* Pay with Crypto Accordion */}
-      {coins.length > 0 && (
+      {visibleCoins.length > 0 && (
         <div className="space-y-1">
           <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Krypto-Zahlung</p>
           <button
@@ -190,7 +191,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
             className={`w-full flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all border-slate-200 bg-white hover:bg-slate-50 hover:border-brand-300`}
           >
             <div className="flex -space-x-1.5 shrink-0">
-              {coins.slice(0, 4).map((c) => (
+              {visibleCoins.slice(0, 4).map((c) => (
                 <img
                   key={c.code}
                   src={COIN_ICON[c.code] ?? '🪙'}
@@ -204,7 +205,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
                 {t('pay_crypto' as any) || 'Pay with crypto'}
               </span>
               <span className="block text-[10px] text-slate-550 mt-0.5 truncate">
-                {coins.map((c) => c.code).join(', ')}
+                {visibleCoins.map((c) => c.code).join(', ')}
               </span>
             </span>
             <span className="text-slate-455 transition-transform duration-200 shrink-0">
@@ -223,7 +224,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
           {/* Expanded Coin Selector List */}
           {cryptoOpen && (
             <div className="grid grid-cols-2 gap-1.5 mt-1 rounded-xl border border-slate-100 bg-slate-50/50 p-1.5 shadow-inner">
-              {coins.map((c) => {
+              {visibleCoins.map((c) => {
                 const isSelected = selectedMethod === c.code;
                 const feeText = c.surchargePct > 0
                   ? `+${c.surchargePct}%`
