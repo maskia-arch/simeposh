@@ -347,7 +347,12 @@ export function Navbar() {
     </nav>
 
       {/* Announcement Bar under the Header */}
-      <div className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 transition-all">
+      <Link
+        href={user ? "/dashboard?tab=cash" : "https://puresim.net/blog/puresim-esim-cash-cashback-programm"}
+        target={user ? undefined : "_blank"}
+        rel={user ? undefined : "noopener noreferrer"}
+        className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer"
+      >
         <CoinsIcon size={16} />
         {user ? (
           <span>
@@ -358,7 +363,7 @@ export function Navbar() {
             {t('announcement_guest' as any)}
           </span>
         )}
-      </div>
+      </Link>
     </div>
   );
 }
