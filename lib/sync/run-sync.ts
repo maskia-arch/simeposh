@@ -108,6 +108,38 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
   const syncStartIso = new Date(startedAt).toISOString();
   const db           = createServiceClient();
 
+  // Concurrency Guard: Check if another sync is already running (started less than 15 minutes ago)
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const { data: runningSyncs } = await db
+    .from('sync_logs')
+    .select('sync_id')
+    .eq('status', 'running')
+    .neq('sync_id', syncId)
+    .gt('created_at', fifteenMinutesAgo)
+    .limit(1);
+
+  if (runningSyncs && runningSyncs.length > 0) {
+    console.warn(`[sync] Aborting. Another sync is already running: ${runningSyncs[0].sync_id}`);
+    
+    await db.from('sync_logs').update({
+      status: 'failed',
+      error_message: 'Aborted: Another synchronization is already running.',
+      completed_at: new Date().toISOString(),
+    }).eq('sync_id', syncId);
+
+    return {
+      success: false,
+      upserted: 0,
+      errors: 0,
+      total: 0,
+      usdEurRate: 0,
+      priceChanges: 0,
+      syncId,
+      duration_ms: 0,
+      error: 'Another synchronization is already running.',
+    };
+  }
+
   // Create sync log entry (upsert so caller can pre-create if needed)
   await db.from('sync_logs').upsert(
     { sync_id: syncId, status: 'running' },
