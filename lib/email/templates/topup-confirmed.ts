@@ -1,4 +1,5 @@
 import { getEmailTranslations, normalizeEmailLocale } from '../i18n';
+import { formatGb } from '../../utils';
 
 export interface TopUpConfirmedData {
   customerName?: string;
@@ -16,16 +17,27 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
   const t = getEmailTranslations(normLoc);
   const greeting = t.greeting(data.customerName);
   const shortOrderId = data.orderId.split('-')[0].toUpperCase();
+  const formattedVolume = formatGb(data.dataGb);
 
   return `<!DOCTYPE html>
 <html lang="${normLoc}">
 <head>
   <meta charset="UTF-8" />
   <title>${t.topUpTitle}</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "PureSim",
+    "url": "https://puresim.com",
+    "logo": "https://puresim.com/icon.png"
+  }
+  </script>
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
     .header { background:linear-gradient(135deg,#059669,#10b981); padding:40px 32px; text-align:center; }
+    .logo-img { display:block; margin:0 auto 14px; width:52px; height:52px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.2); }
     .header h1 { margin:0; color:#fff; font-size:26px; font-weight:700; }
     .header p { margin:8px 0 0; color:#a7f3d0; font-size:14px; }
     .body { padding:32px; }
@@ -40,6 +52,8 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
 <body>
   <div class="wrapper">
     <div class="header">
+      <!-- PureSim Official Brand Logo -->
+      <img src="https://puresim.com/icon.png" width="52" height="52" alt="PureSim" class="logo-img" />
       <h1>${t.topUpTitle}</h1>
       <p>${t.esimOrderBadge(shortOrderId)}</p>
     </div>
@@ -57,7 +71,7 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
         </div>
         <div class="info-item">
           <div class="label">${t.esimDataLabel}</div>
-          <div class="value">${data.dataGb} GB</div>
+          <div class="value">${formattedVolume}</div>
         </div>
         <div class="info-item">
           <div class="label">${t.esimValidityLabel}</div>

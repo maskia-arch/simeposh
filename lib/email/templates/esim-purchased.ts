@@ -1,4 +1,5 @@
 import { getEmailTranslations, normalizeEmailLocale } from '../i18n';
+import { formatGb } from '../../utils';
 
 export interface EsimPurchasedData {
   to:              string;   // recipient email address
@@ -24,6 +25,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
   const t = getEmailTranslations(normLoc);
   const greeting = t.greeting(data.customerName);
   const shortOrderId = data.orderId.split('-')[0].toUpperCase();
+  const formattedVolume = formatGb(data.dataGb);
 
   return `<!DOCTYPE html>
 <html lang="${normLoc}">
@@ -31,10 +33,20 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${t.esimTitle}</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "PureSim",
+    "url": "https://puresim.com",
+    "logo": "https://puresim.com/icon.png"
+  }
+  </script>
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
     .header { background:linear-gradient(135deg,#1d4ed8,#3b82f6); padding:40px 32px; text-align:center; }
+    .logo-img { display:block; margin:0 auto 14px; width:52px; height:52px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.2); }
     .header h1 { margin:0; color:#ffffff; font-size:26px; font-weight:700; letter-spacing:-0.3px; }
     .header p { margin:8px 0 0; color:#bfdbfe; font-size:14px; }
     .body { padding:32px; }
@@ -60,6 +72,8 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
 <body>
   <div class="wrapper">
     <div class="header">
+      <!-- PureSim Official Brand Logo -->
+      <img src="https://puresim.com/icon.png" width="52" height="52" alt="PureSim" class="logo-img" />
       <h1>${t.esimTitle}</h1>
       <p>${t.esimOrderBadge(shortOrderId)}</p>
     </div>
@@ -85,7 +99,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
           </div>
           <div class="info-item">
             <div class="label">${t.esimDataLabel}</div>
-            <div class="value">${data.dataGb} GB</div>
+            <div class="value">${formattedVolume}</div>
           </div>
           <div class="info-item">
             <div class="label">${t.esimValidityLabel}</div>

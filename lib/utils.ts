@@ -12,20 +12,28 @@ export function formatEur(amount: number): string {
   }).format(amount);
 }
 
-export function formatGb(gb: number | string | null): string {
-  if (gb === null || gb === undefined) return '–';
+export function formatGb(gb: number | string | null | undefined, unlimitedText = 'Unbegrenzt'): string {
+  if (gb === null || gb === undefined || gb === 0) return unlimitedText;
   const num = Number(gb);
-  if (isNaN(num)) return '–';
+  if (isNaN(num)) return unlimitedText;
 
-  // If it's a clean integer, just return GB
+  // Convert to MB
+  const mb = Math.round(num * 1024);
+
+  // If data volume is under 1 GB (0.95 GB), format as MB
+  if (num < 0.95) {
+    if (Math.abs(mb - 500) < 60) return '500 MB';
+    if (Math.abs(mb - 250) < 35) return '250 MB';
+    if (Math.abs(mb - 100) < 20) return '100 MB';
+    return `${mb} MB`;
+  }
+
+  // Integer GB
   if (Number.isInteger(num)) {
     return `${num} GB`;
   }
 
-  // Convert to MB and check if it matches a round GB/MB value
-  const mb = Math.round(num * 1024);
-
-  // Check both decimal GB (e.g. 5000 MB) and binary GB (e.g. 5120 MB) with 100MB tolerance
+  // Check decimal vs binary GB
   if (mb >= 900) {
     const nearestGbDec = Math.round(mb / 1000);
     if (Math.abs(mb - nearestGbDec * 1000) < 100) {
@@ -37,18 +45,7 @@ export function formatGb(gb: number | string | null): string {
     }
   }
 
-  // If MB is close to 500 MB (within 50MB threshold), round to 500 MB
-  // E.g., 488 MB -> 500 MB
-  if (Math.abs(mb - 500) < 50) {
-    return `500 MB`;
-  }
-
-  if (num >= 1) {
-    // Fallback for general decimals
-    return num % 1 === 0 ? `${num} GB` : `${num.toFixed(1)} GB`;
-  }
-
-  return `${mb} MB`;
+  return num % 1 === 0 ? `${num} GB` : `${num.toFixed(1)} GB`;
 }
 
 

@@ -54,11 +54,24 @@ function fromAddress(): string {
 async function sendMailThroughTransporter(mailOptions: { to: string; subject: string; html: string; text?: string }): Promise<void> {
   const host = process.env.SMTP_HOST;
   const pass = process.env.SMTP_PASS;
+  const cleanTo = mailOptions.to.trim();
+
+  if (!cleanTo || !cleanTo.includes('@')) {
+    console.error('[mailer] Cannot send email: invalid or empty recipient address:', mailOptions.to);
+    return;
+  }
+
+  const domain = (process.env.SMTP_FROM_ADDRESS?.split('@')[1] || 'puresim.com').toLowerCase();
+  const msgId = `<ps-${Date.now()}-${Math.random().toString(36).substring(2, 9)}@${domain}>`;
 
   const priorityHeaders = {
     'X-Priority': '1 (Highest)',
     'X-MSMail-Priority': 'High',
     'Importance': 'High',
+    'Priority': 'urgent',
+    'Precedence': 'first-class',
+    'X-Auto-Response-Suppress': 'OOF, AutoReply',
+    'Message-ID': msgId,
   };
 
   // Use Resend HTTP REST API if using Resend (avoids firewall port blocks)
@@ -66,9 +79,9 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
 
   if (isResend && pass) {
     try {
-      console.log('[mailer] Dispatching High Priority email via Resend HTTP API to:', mailOptions.to);
+      console.log('[mailer] Dispatching High Priority email via Resend HTTP API to:', cleanTo);
       const fromName = process.env.SMTP_FROM_NAME ?? 'PureSim';
-      const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
+      const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.com';
       const cleanFrom = `"${fromName}" <${fromAddr}>`;
 
       const response = await fetch('https://api.resend.com/emails', {
@@ -79,7 +92,7 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
         },
         body: JSON.stringify({
           from: cleanFrom,
-          to: [mailOptions.to],
+          to: [cleanTo],
           subject: mailOptions.subject,
           html: mailOptions.html,
           text: mailOptions.text || undefined,
@@ -92,7 +105,7 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
         throw new Error(`Resend API returned status ${response.status}: ${errText}`);
       }
 
-      console.log(`[mailer] Resend HTTP email successfully sent to ${mailOptions.to}`);
+      console.log(`[mailer] Resend HTTP email successfully sent to ${cleanTo}`);
       return;
     } catch (err) {
       console.error('[mailer] Resend HTTP API dispatch failed. Falling back to SMTP:', err);
@@ -100,17 +113,23 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
   }
 
   // Fallback to Nodemailer SMTP
-  const transporter = createTransporter();
-  await transporter.sendMail({
-    from:     fromAddress(),
-    to:       mailOptions.to,
-    subject:  mailOptions.subject,
-    html:     mailOptions.html,
-    text:     mailOptions.text,
-    priority: 'high',
-    headers:  priorityHeaders,
-  });
-  console.log(`[mailer] High Priority SMTP email successfully sent to ${mailOptions.to}`);
+  try {
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from:     fromAddress(),
+      to:       cleanTo,
+      subject:  mailOptions.subject,
+      html:     mailOptions.html,
+      text:     mailOptions.text,
+      priority: 'high',
+      headers:  priorityHeaders,
+      messageId: msgId,
+    });
+    console.log(`[mailer] High Priority SMTP email successfully sent to ${cleanTo}`);
+  } catch (smtpErr) {
+    console.error('[mailer] SMTP dispatch failed for recipient:', cleanTo, smtpErr);
+    throw smtpErr;
+  }
 }
 
 // ─── Send eSIM purchase confirmation ─────────────────────────
@@ -192,8 +211,11 @@ export async function sendCheckoutNotificationEmail(opts: {
   const expiryDisplay = `${berlinTimeFormatted} ${t.validMinutes(duration)}`;
 
   const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-      <h2 style="color: #0f172a; margin-bottom: 16px;">${t.checkoutTitle}</h2>
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="https://puresim.com/icon.png" width="52" height="52" alt="PureSim" style="display: block; margin: 0 auto 12px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);" />
+        <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 20px; font-weight: 800;">${t.checkoutTitle}</h2>
+      </div>
       <p style="color: #475569; font-size: 14px; line-height: 1.5;">${t.greeting()}</p>
       <p style="color: #475569; font-size: 14px; line-height: 1.5;">
         ${t.checkoutSub}

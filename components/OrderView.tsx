@@ -65,53 +65,62 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
-      {/* Banner */}
-      <div className={`mb-8 rounded-2xl p-6 text-center ${allDone && failed.length === 0 ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
-        <p className="mb-3 text-5xl">{allDone && failed.length === 0 ? '✅' : '⏳'}</p>
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">
+    <div className="mx-auto max-w-3xl px-4 py-10 md:py-16">
+      {/* Top Banner */}
+      <div className={`mb-8 rounded-3xl p-6 text-center border shadow-lg transition-all ${
+        allDone && failed.length === 0
+          ? 'bg-gradient-to-b from-emerald-50/80 via-white to-emerald-50/30 border-emerald-200/80 shadow-emerald-500/5'
+          : 'bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5'
+      }`}>
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100">
+          <span className="text-3xl">{allDone && failed.length === 0 ? '✨' : '⏳'}</span>
+        </div>
+        <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
           {allDone && failed.length === 0
             ? (completed.length > 1 ? t('op_ready_many', { count: completed.length }) : t('op_ready_one'))
             : t('op_provisioning_title')}
         </h1>
-        <p className="text-sm text-slate-600">
+        <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
           {allDone ? t('op_ready_sub') : t('op_provisioning_sub')}
         </p>
         {data?.totalPaid != null && data.totalPaid > 0 && (
-          <p className="mt-2 text-sm font-semibold text-slate-700">{t('op_paid')}: {formatEur(data.totalPaid)}</p>
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+            <span>{t('op_paid')}:</span>
+            <span className="font-extrabold text-brand-600">{formatEur(data.totalPaid)}</span>
+          </div>
         )}
       </div>
 
       {/* Delivered eSIMs */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {completed.map((o) => <EsimDelivery key={o.id} esim={o} />)}
 
         {provisioning.map((o) => (
-          <div key={o.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5">
-            <svg className="h-5 w-5 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none">
+          <div key={o.id} className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
+            <svg className="h-6 w-6 animate-spin text-brand-600 shrink-0" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
             </svg>
             <div>
-              <p className="font-medium text-slate-800">{o.flag ?? '🌐'} {o.countryName}</p>
-              <p className="text-xs text-slate-500">{t('op_provisioning_item')}</p>
+              <p className="font-extrabold text-slate-800">{o.flag ?? '🌐'} {o.countryName}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t('op_provisioning_item')}</p>
             </div>
           </div>
         ))}
 
         {failed.map((o) => (
-          <div key={o.id} className="rounded-2xl border border-red-200 bg-red-50 p-5">
-            <p className="font-medium text-red-800">{o.flag ?? '🌐'} {o.countryName} – {t('op_failed_item')}</p>
+          <div key={o.id} className="rounded-3xl border border-red-200 bg-red-50/80 p-6 shadow-sm">
+            <p className="font-bold text-red-800">{o.flag ?? '🌐'} {o.countryName} – {t('op_failed_item')}</p>
             <p className="text-xs text-red-600 mt-1">{t('op_failed_sub')}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href="/dashboard" className="rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
+      <div className="mt-10 flex flex-wrap justify-center gap-3">
+        <Link href="/dashboard" className="rounded-2xl bg-brand-600 px-6 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all active:scale-95">
           {t('op_to_orders')}
         </Link>
-        <Link href="/tariffs" className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+        <Link href="/tariffs" className="rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95">
           {t('op_buy_more')}
         </Link>
       </div>
