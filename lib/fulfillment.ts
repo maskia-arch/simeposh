@@ -143,7 +143,7 @@ export async function fulfillOrder(
     }
 
     const finalToken = txId || o.checkout_ref || orderId;
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.com').replace(/\/$/, '');
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net').replace(/\/$/, '');
     const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
     const hostname = isLocal ? 'localhost' : new URL(appUrl).hostname.replace(/^www\./, '');
     const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);

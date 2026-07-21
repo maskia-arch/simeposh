@@ -7,6 +7,25 @@ interface OverviewViewProps {
   params: Promise<{ invoiceId: string; iccid: string }> | { invoiceId: string; iccid: string };
 }
 
+function parseOrderIds(raw: any): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(s => String(s).trim());
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      return trimmed.slice(1, -1).split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.map(s => String(s).trim());
+      return [String(parsed).trim()];
+    } catch {
+      return [trimmed];
+    }
+  }
+  return [String(raw).trim()];
+}
+
 export async function EsimOverviewView({ params }: OverviewViewProps) {
   const resolvedParams = await Promise.resolve(params);
   const invoiceId = resolvedParams?.invoiceId;
@@ -31,28 +50,16 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
       .maybeSingle();
 
     if (session && session.order_ids) {
-      let orderIds: string[] = [];
-      if (Array.isArray(session.order_ids)) {
-        orderIds = session.order_ids;
-      } else if (typeof session.order_ids === 'string') {
-        try {
-          const parsed = JSON.parse(session.order_ids);
-          orderIds = Array.isArray(parsed) ? parsed : [parsed];
-        } catch {
-          orderIds = [session.order_ids];
-        }
-      }
-
+      const orderIds = parseOrderIds(session.order_ids);
       if (orderIds.length > 0) {
         const { data: orders } = await db
           .from('orders')
           .select('*')
           .in('id', orderIds)
-          .eq('iccid', cleanIccid)
-          .eq('status', 'completed');
+          .eq('iccid', cleanIccid);
 
         if (orders && orders.length > 0) {
-          matchingOrder = orders[0];
+          matchingOrder = orders.find(o => ['completed', 'paid', 'provisioning'].includes(o.status)) || orders[0];
         }
       }
     }
@@ -67,11 +74,10 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
         .from('orders')
         .select('*')
         .eq('checkout_ref', cleanInvoiceId)
-        .eq('iccid', cleanIccid)
-        .eq('status', 'completed');
+        .eq('iccid', cleanIccid);
 
       if (orders && orders.length > 0) {
-        matchingOrder = orders[0];
+        matchingOrder = orders.find(o => ['completed', 'paid', 'provisioning'].includes(o.status)) || orders[0];
       }
     } catch (err) {
       console.error('[EsimOverviewPage] Checkout ref lookup error:', err);
@@ -85,36 +91,34 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
         .from('orders')
         .select('*')
         .eq('id', cleanInvoiceId)
-        .eq('iccid', cleanIccid)
-        .eq('status', 'completed');
+        .eq('iccid', cleanIccid);
 
       if (orders && orders.length > 0) {
-        matchingOrder = orders[0];
+        matchingOrder = orders.find(o => ['completed', 'paid', 'provisioning'].includes(o.status)) || orders[0];
       }
     } catch (err) {
       console.error('[EsimOverviewPage] Order ID lookup error:', err);
     }
   }
 
-  // 4. Look up via ICCID directly (resilient fallback for completed eSIMs)
+  // 4. Look up via ICCID directly (resilient fallback for completed/paid eSIMs)
   if (!matchingOrder) {
     try {
       const { data: orders } = await db
         .from('orders')
         .select('*')
-        .eq('iccid', cleanIccid)
-        .eq('status', 'completed');
+        .eq('iccid', cleanIccid);
 
       if (orders && orders.length > 0) {
-        matchingOrder = orders[0];
+        matchingOrder = orders.find(o => ['completed', 'paid', 'provisioning'].includes(o.status)) || orders[0];
       }
     } catch (err) {
       console.error('[EsimOverviewPage] Direct ICCID lookup error:', err);
     }
   }
 
-  // Anti-tampering & Security Check: If order is not found or not completed, deny access (404)
-  if (!matchingOrder || matchingOrder.status !== 'completed') {
+  // Anti-tampering & Security Check: If order is not found or failed, deny access (404)
+  if (!matchingOrder || !['completed', 'paid', 'provisioning'].includes(matchingOrder.status)) {
     return notFound();
   }
 

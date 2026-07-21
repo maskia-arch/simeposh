@@ -89,17 +89,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 301);
   }
 
-  // Dynamic subdomain rewrite for esim.puresim.com / esim.puresim.net
+  // Dynamic subdomain handler for esim.puresim.net / esim.puresim.com
   if (cleanHost.startsWith('esim.')) {
-    // Avoid rewriting static assets, API calls, or already rewritten esim-overview paths
-    if (
-      pathname !== '/' &&
-      !pathname.includes('.') &&
-      !pathname.startsWith('/api') &&
-      !pathname.startsWith('/_next') &&
-      !pathname.startsWith('/esim-overview')
-    ) {
-      return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
+    const mainDomain = cleanHost.replace(/^esim\./, '') || 'puresim.net';
+
+    // Allow static assets, next internal files, and API endpoints
+    const isStaticOrApi =
+      pathname.includes('.') ||
+      pathname.startsWith('/api') ||
+      pathname.startsWith('/_next');
+
+    if (!isStaticOrApi) {
+      // 1. If path is already /esim-overview/..., allow pass-through
+      if (pathname.startsWith('/esim-overview')) {
+        // Proceed normally
+      }
+      // 2. If path is root '/' or webshop route, REDIRECT to main domain (puresim.net)
+      else if (
+        pathname === '/' ||
+        /^\/(tariffs|cart|checkout|dashboard|login|register|reviews|blog|agb|datenschutz|refund-policy|order|topup)/i.test(pathname)
+      ) {
+        return NextResponse.redirect(new URL(pathname + request.nextUrl.search, `https://${mainDomain}`), 302);
+      }
+      // 3. If path is a 2-segment installation URL (e.g. /[token]/[iccid]), REWRITE to /esim-overview/[token]/[iccid]
+      else {
+        return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
+      }
     }
   }
 

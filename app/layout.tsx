@@ -49,6 +49,31 @@ export default async function RootLayout({
         acceptLanguage: headerStore.get('accept-language'),
       }) as LocaleCode);
 
+  const host = (headerStore.get('host') || '').toLowerCase();
+  const isEsimDomain = host.startsWith('esim.');
+
+  // Standalone Layout for esim.puresim.net (Independent eSIM Installation Center)
+  if (isEsimDomain) {
+    return (
+      <html lang={locale}>
+        <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+          />
+        </head>
+        <body className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+          <LanguageProvider initialLocale={locale}>
+            <main className="min-h-screen flex flex-col">{children}</main>
+          </LanguageProvider>
+          <InitialLoaderRemover />
+        </body>
+      </html>
+    );
+  }
+
+  // Standard Main Webshop Layout for puresim.net
   return (
     <html lang={locale}>
       <head>
