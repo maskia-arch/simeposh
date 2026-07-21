@@ -7,6 +7,6 @@ interface PageProps {
   params: Promise<{ invoiceId: string; iccid: string }> | { invoiceId: string; iccid: string };
 }
 
-export default async function EsimOverviewPage({ params }: PageProps) {
+export default async function DirectOverviewPage({ params }: PageProps) {
   return <EsimOverviewView params={params} />;
 }
