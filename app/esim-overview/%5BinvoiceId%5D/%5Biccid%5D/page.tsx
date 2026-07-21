@@ -105,15 +105,29 @@ export default async function EsimOverviewPage({ params }: PageProps) {
     return notFound();
   }
 
-  // Fetch tariff specifications
-  const { data: tariff } = await db
-    .from('tariffs')
-    .select('country_name, flag_emoji, data_gb, validity_days')
-    .eq('id', matchingOrder.tariff_id)
-    .maybeSingle();
+  // Fetch tariff specifications with resilient fallback
+  let countryName = 'eSIM';
+  let flag: string | null = '🌐';
+  let dataGb: number | null = null;
+  let validityDays = 1;
 
-  if (!tariff) {
-    return notFound();
+  if (matchingOrder.tariff_id) {
+    try {
+      const { data: tariff } = await db
+        .from('tariffs')
+        .select('country_name, flag_emoji, data_gb, validity_days')
+        .eq('id', matchingOrder.tariff_id)
+        .maybeSingle();
+
+      if (tariff) {
+        countryName = tariff.country_name;
+        flag = tariff.flag_emoji;
+        dataGb = matchingOrder.period_num ? null : tariff.data_gb;
+        validityDays = matchingOrder.period_num ?? tariff.validity_days;
+      }
+    } catch (err) {
+      console.error('[EsimOverviewPage] Tariff fetch error:', err);
+    }
   }
 
   // Server-side generate QR Code as base64 data URL
@@ -136,10 +150,10 @@ export default async function EsimOverviewPage({ params }: PageProps) {
       activationCode={matchingOrder.activation_code ?? ''}
       apn={matchingOrder.apn ?? 'internet'}
       qrCodeDataUrl={qrCodeDataUrl}
-      countryName={tariff.country_name}
-      flag={tariff.flag_emoji}
-      dataGb={matchingOrder.period_num ? null : tariff.data_gb}
-      validityDays={matchingOrder.period_num ?? tariff.validity_days}
+      countryName={countryName}
+      flag={flag}
+      dataGb={dataGb}
+      validityDays={validityDays}
     />
   );
 }

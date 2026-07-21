@@ -168,7 +168,7 @@ export async function sendCashbackEarnedEmail(data: CashbackEarnedData): Promise
 
   await sendMailThroughTransporter({
     to:      data.to,
-    subject: t.cashbackEarnedSubject(data.earnedEur.toFixed(2)),
+    subject: t.cashbackEarnedSubject((Number(data.earnedEur) || 0).toFixed(2)),
     html:    buildCashbackEarnedHtml(data),
     text:    buildCashbackEarnedText(data),
   });
@@ -232,7 +232,7 @@ export async function sendCheckoutNotificationEmail(opts: {
           </tr>
           <tr>
             <td style="padding: 6px 0; font-weight: 600;">${t.amountLabel}</td>
-            <td style="padding: 6px 0; text-align: right; font-weight: bold;">${opts.amountEur.toFixed(2)} €</td>
+            <td style="padding: 6px 0; text-align: right; font-weight: bold;">${(Number(opts.amountEur) || 0).toFixed(2)} €</td>
           </tr>
           <tr>
             <td style="padding: 6px 0; font-weight: 600;">${t.validUntilLabel}</td>
@@ -245,7 +245,7 @@ export async function sendCheckoutNotificationEmail(opts: {
       </p>
       <div style="text-align: center; margin-bottom: 24px;">
         <a href="${opts.checkoutLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-weight: bold; border-radius: 6px; text-decoration: none; display: inline-block;">
-          ${t.checkoutCta(opts.amountEur.toFixed(2))}
+          ${t.checkoutCta((Number(opts.amountEur) || 0).toFixed(2))}
         </a>
       </div>
       <p style="color: #94a3b8; font-size: 11px; line-height: 1.4;">
@@ -261,7 +261,7 @@ ${t.checkoutSub}
 
 ${t.invoiceIdLabel} ${opts.invoiceId}
 ${t.paymentMethodLabel} ${opts.coin}
-${t.amountLabel} ${opts.amountEur.toFixed(2)} €
+${t.amountLabel} ${(Number(opts.amountEur) || 0).toFixed(2)} €
 ${t.validUntilLabel} ${expiryDisplay}
 
 ${t.checkoutInstruction}

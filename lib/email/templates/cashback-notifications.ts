@@ -56,13 +56,13 @@ export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
       
       <div class="stat-card">
         <div class="stat-label">${t.cashbackEarnedValLabel}</div>
-        <div class="stat-val">+${data.earnedEur.toFixed(2)} €</div>
+        <div class="stat-val">+${(Number(data.earnedEur) || 0).toFixed(2)} €</div>
       </div>
 
       <div class="info-grid">
         <div class="info-item">
           <div class="label">${t.cashbackNewBalanceLabel}</div>
-          <div class="value">${data.newBalanceEur.toFixed(2)} €</div>
+          <div class="value">${(Number(data.newBalanceEur) || 0).toFixed(2)} €</div>
         </div>
         <div class="info-item">
           <div class="label">${t.cashbackCurrentRankLabel}</div>
@@ -88,8 +88,8 @@ export function buildCashbackEarnedText(data: CashbackEarnedData): string {
   return `${t.cashbackEarnedTitle}
 ${t.esimOrderBadge(data.orderId)}
 
-${t.cashbackEarnedValLabel}: +${data.earnedEur.toFixed(2)} €
-${t.cashbackNewBalanceLabel}: ${data.newBalanceEur.toFixed(2)} €
+${t.cashbackEarnedValLabel}: +${(Number(data.earnedEur) || 0).toFixed(2)} €
+${t.cashbackNewBalanceLabel}: ${(Number(data.newBalanceEur) || 0).toFixed(2)} €
 ${t.cashbackCurrentRankLabel}: ${data.rank}
 
 ${t.cashbackRedeemHint}
@@ -132,7 +132,7 @@ export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
       <p>${t.guestMilestoneSub}</p>
       
       <div class="amount-box">
-        <div class="amount-val">${data.balanceEur.toFixed(2)} €</div>
+        <div class="amount-val">${(Number(data.balanceEur) || 0).toFixed(2)} €</div>
         <div class="amount-label">${t.guestMilestoneValLabel}</div>
       </div>
 
@@ -156,7 +156,7 @@ export function buildGuestMilestoneText(data: GuestMilestoneData): string {
   
   return `${t.guestMilestoneSubject}
 
-${t.guestMilestoneSub} ${data.balanceEur.toFixed(2)} €
+${t.guestMilestoneSub} ${(Number(data.balanceEur) || 0).toFixed(2)} €
 
 ${t.guestMilestoneText}
 

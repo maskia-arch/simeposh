@@ -107,7 +107,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
           </div>
           <div class="info-item">
             <div class="label">${t.esimPaidLabel}</div>
-            <div class="value">${data.priceEur.toFixed(2)} €</div>
+            <div class="value">${(Number(data.priceEur) || 0).toFixed(2)} €</div>
           </div>
         </div>
       </div>
@@ -183,7 +183,7 @@ ${t.esimOrderBadge(data.orderId)}
 
 ${t.esimTariffLabel}: ${data.tariffName}
 ${t.esimDataLabel}: ${data.dataGb} GB | ${t.esimValidityLabel}: ${t.esimDays(data.validityDays)}
-${t.esimPaidLabel}: ${data.priceEur.toFixed(2)} €
+${t.esimPaidLabel}: ${(Number(data.priceEur) || 0).toFixed(2)} €
 
 ${data.overviewUrl ? `${t.esimInstallBtn}:
 ${data.overviewUrl}

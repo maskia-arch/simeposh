@@ -79,7 +79,7 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
         </div>
         <div class="info-item">
           <div class="label">${t.esimPaidLabel}</div>
-          <div class="value">${data.priceEur.toFixed(2)} €</div>
+          <div class="value">${(Number(data.priceEur) || 0).toFixed(2)} €</div>
         </div>
       </div>
       <p style="font-size:13px;color:#6b7280;">${t.topUpAutoCredited}</p>
@@ -103,7 +103,7 @@ ${t.esimOrderBadge(data.orderId)}
 ICCID: ${data.iccid}
 ${t.esimTariffLabel}: ${data.tariffName}
 ${t.esimDataLabel}: ${data.dataGb} GB | ${t.esimValidityLabel}: ${t.esimDays(data.validityDays)}
-${t.esimPaidLabel}: ${data.priceEur.toFixed(2)} €
+${t.esimPaidLabel}: ${(Number(data.priceEur) || 0).toFixed(2)} €
 
 ${t.topUpAutoCredited}
 `;

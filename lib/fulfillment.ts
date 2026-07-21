@@ -16,6 +16,7 @@ export interface FulfillResult { orderId: string; ok: boolean; error?: string }
 export async function fulfillOrder(
   supabase: ReturnType<typeof createServiceClient>,
   orderId:  string,
+  options?: { forceResendEmail?: boolean },
 ): Promise<FulfillResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: order, error } = await supabase
@@ -28,7 +29,56 @@ export async function fulfillOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const o = order as any;
 
-  if (o.status === 'completed') return { orderId, ok: true };
+  if (o.status === 'completed' && !options?.forceResendEmail) return { orderId, ok: true };
+
+  // If already completed and forceResendEmail is requested, just dispatch email & return
+  if (o.status === 'completed' && options?.forceResendEmail) {
+    let txId = o.checkout_ref;
+    try {
+      const { data: sessions } = await supabase
+        .from('crypto_sessions')
+        .select('id, order_ids')
+        .eq('customer_email', o.customer_email);
+
+      if (sessions) {
+        const session = sessions.find((s: any) => s.order_ids?.includes(orderId));
+        if (session) txId = session.id;
+      }
+    } catch (err) {
+      console.error('[fulfillment] session lookup failed:', err);
+    }
+
+    const finalToken = txId || o.checkout_ref || orderId;
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.com').replace(/\/$/, '');
+    const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+    const hostname = isLocal ? 'localhost' : new URL(appUrl).hostname.replace(/^www\./, '');
+    const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);
+    const overviewUrl = isLocal
+      ? `${appUrl}/esim-overview/${finalToken}/${o.iccid}`
+      : `https://${esimDomain}/${finalToken}/${o.iccid}`;
+
+    if (o.order_type === 'top_up') {
+      await sendTopUpEmail({
+        to: o.customer_email, customerName: o.customer_name ?? undefined,
+        iccid: o.top_up_iccid, tariffName: o.tariffs.name,
+        dataGb: Number(o.tariffs.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs.validity_days ?? 1),
+        priceEur: Number(o.amount_eur ?? o.tariffs.sale_price_eur ?? 0), orderId,
+        locale: o.locale ?? undefined,
+      });
+    } else {
+      await sendEsimEmail({
+        to: o.customer_email, customerName: o.customer_name ?? undefined,
+        tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
+        dataGb: Number(o.tariffs.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs.validity_days ?? 1),
+        priceEur: Number(o.amount_eur ?? o.tariffs.sale_price_eur ?? 0),
+        iccid: o.iccid, qrCodeUrl: o.qr_code_url, activationCode: o.activation_code,
+        smdpAddress: o.smdp_address, apn: o.apn ?? 'internet', lpaCode: `LPA:1$${o.smdp_address || ''}$${o.activation_code || ''}`, orderId,
+        overviewUrl,
+        locale: o.locale ?? undefined,
+      });
+    }
+    return { orderId, ok: true };
+  }
 
   await supabase.from('orders')
     .update({ status: 'provisioning', payment_confirmed_at: o.payment_confirmed_at ?? new Date().toISOString() })
@@ -105,8 +155,8 @@ export async function fulfillOrder(
       await sendEsimEmail({
         to: o.customer_email, customerName: o.customer_name ?? undefined,
         tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
-        dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
-        priceEur: o.amount_eur ?? o.tariffs.sale_price_eur,
+        dataGb: Number(o.tariffs.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs.validity_days ?? 1),
+        priceEur: Number(o.amount_eur ?? o.tariffs.sale_price_eur ?? 0),
         iccid: esim.iccid, qrCodeUrl: esim.qrCodeUrl, activationCode: esim.matchingId,
         smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
         overviewUrl,
