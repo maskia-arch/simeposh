@@ -69,7 +69,7 @@ async function runMigrations() {
         await client.query('BEGIN');
         await client.query(sql);
         await client.query(
-          'INSERT INTO public.schema_migrations (version) VALUES ($1)',
+          'INSERT INTO public.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING',
           [file]
         );
         await client.query('COMMIT');

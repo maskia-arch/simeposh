@@ -1,8 +1,9 @@
 /**
- * E-Mail service using Nodemailer over SMTP.
- * All credentials loaded strictly from process.env.
+ * E-Mail service using Nodemailer over SMTP or Resend HTTP API.
+ * Marked as High Priority for client push notifications & full multi-language i18n support.
  */
 import nodemailer from 'nodemailer';
+import { getEmailTranslations, formatBerlinTime, normalizeEmailLocale } from './i18n';
 import {
   buildEsimPurchasedHtml,
   buildEsimPurchasedText,
@@ -54,12 +55,18 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
   const host = process.env.SMTP_HOST;
   const pass = process.env.SMTP_PASS;
 
+  const priorityHeaders = {
+    'X-Priority': '1 (Highest)',
+    'X-MSMail-Priority': 'High',
+    'Importance': 'High',
+  };
+
   // Use Resend HTTP REST API if using Resend (avoids firewall port blocks)
   const isResend = host?.includes('resend.com') || pass?.startsWith('re_');
 
   if (isResend && pass) {
     try {
-      console.log('[mailer] Dispatching email via Resend HTTP API to:', mailOptions.to);
+      console.log('[mailer] Dispatching High Priority email via Resend HTTP API to:', mailOptions.to);
       const fromName = process.env.SMTP_FROM_NAME ?? 'PureSim';
       const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
       const cleanFrom = `"${fromName}" <${fromAddr}>`;
@@ -76,6 +83,7 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
           subject: mailOptions.subject,
           html: mailOptions.html,
           text: mailOptions.text || undefined,
+          headers: priorityHeaders,
         }),
       });
 
@@ -94,21 +102,26 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
   // Fallback to Nodemailer SMTP
   const transporter = createTransporter();
   await transporter.sendMail({
-    from:    fromAddress(),
-    to:      mailOptions.to,
-    subject: mailOptions.subject,
-    html:    mailOptions.html,
-    text:    mailOptions.text,
+    from:     fromAddress(),
+    to:       mailOptions.to,
+    subject:  mailOptions.subject,
+    html:     mailOptions.html,
+    text:     mailOptions.text,
+    priority: 'high',
+    headers:  priorityHeaders,
   });
-  console.log(`[mailer] SMTP email successfully sent to ${mailOptions.to}`);
+  console.log(`[mailer] High Priority SMTP email successfully sent to ${mailOptions.to}`);
 }
 
 // ─── Send eSIM purchase confirmation ─────────────────────────
 
 export async function sendEsimEmail(data: EsimPurchasedData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+
   await sendMailThroughTransporter({
     to:      data.to,
-    subject: `📱 Deine eSIM für ${data.countryName} ist bereit`,
+    subject: t.esimSubject(data.countryName),
     html:    buildEsimPurchasedHtml(data),
     text:    buildEsimPurchasedText(data),
   });
@@ -117,9 +130,12 @@ export async function sendEsimEmail(data: EsimPurchasedData): Promise<void> {
 // ─── Send Top-Up confirmation ─────────────────────────────────
 
 export async function sendTopUpEmail(data: TopUpConfirmedData & { to: string }): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+
   await sendMailThroughTransporter({
     to:      data.to,
-    subject: `✅ Top-Up erfolgreich – ${data.dataGb} GB aufgeladen`,
+    subject: t.topUpSubject(data.dataGb),
     html:    buildTopUpHtml(data),
     text:    buildTopUpText(data),
   });
@@ -128,9 +144,12 @@ export async function sendTopUpEmail(data: TopUpConfirmedData & { to: string }):
 // ─── Send eSIM Cash Earned notification ───────────────────────
 
 export async function sendCashbackEarnedEmail(data: CashbackEarnedData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+
   await sendMailThroughTransporter({
     to:      data.to,
-    subject: `💰 eSIM Cash erhalten! +${data.earnedEur.toFixed(2)} € gutgeschrieben`,
+    subject: t.cashbackEarnedSubject(data.earnedEur.toFixed(2)),
     html:    buildCashbackEarnedHtml(data),
     text:    buildCashbackEarnedText(data),
   });
@@ -139,9 +158,12 @@ export async function sendCashbackEarnedEmail(data: CashbackEarnedData): Promise
 // ─── Send Guest Milestone notification ────────────────────────
 
 export async function sendGuestMilestoneEmail(data: GuestMilestoneData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+
   await sendMailThroughTransporter({
     to:      data.to,
-    subject: `🎁 Schon ${data.balanceEur.toFixed(2)} € eSIM Cash warten auf dich!`,
+    subject: t.guestMilestoneSubject,
     html:    buildGuestMilestoneHtml(data),
     text:    buildGuestMilestoneText(data),
   });
@@ -159,70 +181,76 @@ export async function sendCheckoutNotificationEmail(opts: {
   amountEur: number;
   expiresAt: string;
   checkoutLink: string;
+  locale?: string;
+  durationMins?: number;
 }): Promise<void> {
-  const expiryDate = new Date(opts.expiresAt);
-  const expiryString = expiryDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-  
+  const normLoc = normalizeEmailLocale(opts.locale);
+  const t = getEmailTranslations(normLoc);
+  const duration = opts.durationMins && opts.durationMins > 0 ? opts.durationMins : 30;
+
+  const { fullString: berlinTimeFormatted } = formatBerlinTime(opts.expiresAt, normLoc);
+  const expiryDisplay = `${berlinTimeFormatted} ${t.validMinutes(duration)}`;
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-      <h2 style="color: #0f172a; margin-bottom: 16px;">📋 Zahlungsanforderung für deine eSIM</h2>
-      <p style="color: #475569; font-size: 14px; line-height: 1.5;">Hallo,</p>
+      <h2 style="color: #0f172a; margin-bottom: 16px;">${t.checkoutTitle}</h2>
+      <p style="color: #475569; font-size: 14px; line-height: 1.5;">${t.greeting()}</p>
       <p style="color: #475569; font-size: 14px; line-height: 1.5;">
-        wir haben eine neue Krypto-Zahlungsanforderung für deine eSIM-Bestellung erstellt.
+        ${t.checkoutSub}
       </p>
       <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 20px 0; border: 1px solid #f1f5f9;">
         <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #334155;">
           <tr>
-            <td style="padding: 6px 0; font-weight: 600;">Rechnungs-ID:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${t.invoiceIdLabel}</td>
             <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: bold;">${opts.invoiceId}</td>
           </tr>
           <tr>
-            <td style="padding: 6px 0; font-weight: 600;">Zahlungsmethode:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${t.paymentMethodLabel}</td>
             <td style="padding: 6px 0; text-align: right;">${opts.coin}</td>
           </tr>
           <tr>
-            <td style="padding: 6px 0; font-weight: 600;">Betrag (EUR):</td>
+            <td style="padding: 6px 0; font-weight: 600;">${t.amountLabel}</td>
             <td style="padding: 6px 0; text-align: right; font-weight: bold;">${opts.amountEur.toFixed(2)} €</td>
           </tr>
           <tr>
-            <td style="padding: 6px 0; font-weight: 600;">Gültig bis:</td>
-            <td style="padding: 6px 0; text-align: right; color: #dc2626; font-weight: bold;">${expiryString} (25 Min.)</td>
+            <td style="padding: 6px 0; font-weight: 600;">${t.validUntilLabel}</td>
+            <td style="padding: 6px 0; text-align: right; color: #dc2626; font-weight: bold;">${expiryDisplay}</td>
           </tr>
         </table>
       </div>
       <p style="color: #475569; font-size: 14px; line-height: 1.5; margin-bottom: 24px;">
-        Bitte schließe deine Zahlung über den folgenden Direktlink ab:
+        ${t.checkoutInstruction}
       </p>
       <div style="text-align: center; margin-bottom: 24px;">
         <a href="${opts.checkoutLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-weight: bold; border-radius: 6px; text-decoration: none; display: inline-block;">
-          Jetzt Bezahlen (${opts.amountEur.toFixed(2)} €)
+          ${t.checkoutCta(opts.amountEur.toFixed(2))}
         </a>
       </div>
       <p style="color: #94a3b8; font-size: 11px; line-height: 1.4;">
-        Falls du diese Bestellung nicht getätigt hast, kannst du diese E-Mail einfach ignorieren.
+        ${t.checkoutIgnoreText}
       </p>
     </div>
   `;
 
   const text = `
-Hallo,
+${t.greeting()}
 
-wir haben eine neue Krypto-Zahlungsanforderung für deine eSIM-Bestellung erstellt.
+${t.checkoutSub}
 
-Rechnungs-ID: ${opts.invoiceId}
-Zahlungsmethode: ${opts.coin}
-Betrag: ${opts.amountEur.toFixed(2)} €
-Gültig bis: ${expiryString} (25 Min.)
+${t.invoiceIdLabel} ${opts.invoiceId}
+${t.paymentMethodLabel} ${opts.coin}
+${t.amountLabel} ${opts.amountEur.toFixed(2)} €
+${t.validUntilLabel} ${expiryDisplay}
 
-Bitte schließe deine Zahlung über den folgenden Direktlink ab:
+${t.checkoutInstruction}
 ${opts.checkoutLink}
 
-Falls du diese Bestellung nicht getätigt hast, kannst du diese E-Mail einfach ignorieren.
+${t.checkoutIgnoreText}
   `.trim();
 
   await sendMailThroughTransporter({
     to: opts.to,
-    subject: `📋 Zahlungsanforderung für deine eSIM (ID: ${opts.invoiceId})`,
+    subject: t.checkoutSubject(opts.invoiceId),
     html,
     text,
   });

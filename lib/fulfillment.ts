@@ -44,6 +44,7 @@ export async function fulfillOrder(
         iccid: o.top_up_iccid, tariffName: o.tariffs.name,
         dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
         priceEur: o.amount_eur ?? o.tariffs.sale_price_eur, orderId,
+        locale: o.locale ?? undefined,
       });
       await applyOrderCompletionCashback(supabase, orderId);
       return { orderId, ok: true };
@@ -90,18 +91,35 @@ export async function fulfillOrder(
     } catch (err) {
       console.error('[fulfillment] session lookup failed:', err);
     }
-    const overviewUrl = `https://esim.puresim.net/${txId}/${esim.iccid}`;
 
-    await sendEsimEmail({
-      to: o.customer_email, customerName: o.customer_name ?? undefined,
-      tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
-      dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
-      priceEur: o.amount_eur ?? o.tariffs.sale_price_eur,
-      iccid: esim.iccid, qrCodeUrl: esim.qrCodeUrl, activationCode: esim.matchingId,
-      smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
-      overviewUrl,
-    });
-    await applyOrderCompletionCashback(supabase, orderId);
+    const finalToken = txId || o.checkout_ref || orderId;
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net').replace(/\/$/, '');
+    const overviewUrl = appUrl.includes('localhost') || appUrl.includes('127.0.0.1')
+      ? `${appUrl}/esim-overview/${finalToken}/${esim.iccid}`
+      : `https://esim.puresim.net/${finalToken}/${esim.iccid}`;
+
+    try {
+      await sendEsimEmail({
+        to: o.customer_email, customerName: o.customer_name ?? undefined,
+        tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
+        dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
+        priceEur: o.amount_eur ?? o.tariffs.sale_price_eur,
+        iccid: esim.iccid, qrCodeUrl: esim.qrCodeUrl, activationCode: esim.matchingId,
+        smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
+        overviewUrl,
+        locale: o.locale ?? undefined,
+      });
+    } catch (emailErr) {
+      console.error('[fulfillment] sendEsimEmail dispatch error for order', orderId, emailErr);
+      // Order remains status='completed' since eSIM allocation at esimaccess succeeded
+    }
+
+    try {
+      await applyOrderCompletionCashback(supabase, orderId);
+    } catch (cbErr) {
+      console.error('[fulfillment] cashback application error:', cbErr);
+    }
+
     return { orderId, ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

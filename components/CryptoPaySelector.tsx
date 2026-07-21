@@ -47,7 +47,7 @@ function ShieldCheckIcon({ className = 'h-4 w-4' }: { className?: string }) {
 }
 
 export function CryptoPaySelector({ email, items, total, balance, user }: CryptoPaySelectorProps) {
-  const { t } = useTranslation();
+  const { locale, t } = useTranslation();
   const [coins, setCoins]     = useState<CoinOption[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError]     = useState('');
@@ -90,7 +90,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       const res = await fetch('/api/crypto/checkout', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ email, coin: 'ESIM_CASH', items, newsletterConsent: acceptedNewsletter }),
+         body: JSON.stringify({ email, coin: 'ESIM_CASH', items, newsletterConsent: acceptedNewsletter, locale }),
       });
       const data = await res.json();
       if (!res.ok || !data.ref) throw new Error(data.error ?? (t('pay_error' as any) || 'Could not start checkout.'));
@@ -117,7 +117,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
     try {
       const res = await fetch('/api/crypto/checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, coin, items, newsletterConsent: acceptedNewsletter }),
+        body: JSON.stringify({ email, coin, items, newsletterConsent: acceptedNewsletter, locale }),
       });
       const data = await res.json();
       if (!res.ok || !data.sessionId) throw new Error(data.error ?? (t('pay_error' as any) || 'Could not start checkout.'));

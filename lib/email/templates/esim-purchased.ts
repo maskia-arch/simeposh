@@ -1,3 +1,5 @@
+import { getEmailTranslations, normalizeEmailLocale } from '../i18n';
+
 export interface EsimPurchasedData {
   to:              string;   // recipient email address
   customerName?:   string;
@@ -14,19 +16,21 @@ export interface EsimPurchasedData {
   lpaCode:         string;
   orderId:         string;
   overviewUrl?:    string;
+  locale?:         string;
 }
 
 export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
-  const greeting = data.customerName
-    ? `Hallo ${data.customerName},`
-    : 'Hallo,';
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+  const greeting = t.greeting(data.customerName);
+  const shortOrderId = data.orderId.split('-')[0].toUpperCase();
 
   return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${normLoc}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Deine eSIM ist bereit</title>
+  <title>${t.esimTitle}</title>
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
@@ -56,55 +60,55 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
 <body>
   <div class="wrapper">
     <div class="header">
-      <h1>📱 Deine eSIM ist bereit!</h1>
-      <p>Bestellung #${data.orderId.split('-')[0].toUpperCase()}</p>
+      <h1>${t.esimTitle}</h1>
+      <p>${t.esimOrderBadge(shortOrderId)}</p>
     </div>
     <div class="body">
       <p>${greeting}</p>
-      <p>vielen Dank für deinen Einkauf. Deine eSIM für <strong>${data.countryName}</strong> wurde erfolgreich aktiviert und ist jetzt einsatzbereit.</p>
+      <p>${t.esimThankYou(data.countryName)}</p>
 
       ${data.overviewUrl ? `
       <div style="text-align: center; margin: 24px 0 32px;">
         <a href="${data.overviewUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-size: 14px; font-weight: bold; border-radius: 8px; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.15);">
-          📱 Direkt auf dem Handy installieren
+          ${t.esimInstallBtn}
         </a>
-        <p style="margin: 8px 0 0; font-size: 11px; color: #6b7280;">Mit 1-Klick Installation & Datenverbrauchs-Check</p>
+        <p style="margin: 8px 0 0; font-size: 11px; color: #6b7280;">${t.esimInstallSub}</p>
       </div>
       ` : ''}
 
       <div class="section">
-        <h2>📦 Tarifdetails</h2>
+        <h2>${t.esimPlanDetails}</h2>
         <div class="info-grid">
           <div class="info-item">
-            <div class="label">Tarif</div>
+            <div class="label">${t.esimTariffLabel}</div>
             <div class="value">${data.tariffName}</div>
           </div>
           <div class="info-item">
-            <div class="label">Datenvolumen</div>
+            <div class="label">${t.esimDataLabel}</div>
             <div class="value">${data.dataGb} GB</div>
           </div>
           <div class="info-item">
-            <div class="label">Gültigkeit</div>
-            <div class="value">${data.validityDays} Tage</div>
+            <div class="label">${t.esimValidityLabel}</div>
+            <div class="value">${t.esimDays(data.validityDays)}</div>
           </div>
           <div class="info-item">
-            <div class="label">Bezahlt</div>
+            <div class="label">${t.esimPaidLabel}</div>
             <div class="value">${data.priceEur.toFixed(2)} €</div>
           </div>
         </div>
       </div>
 
       <div class="section">
-        <h2>📷 QR-Code Installation (empfohlen)</h2>
+        <h2>${t.esimQrTitle}</h2>
         <div class="qr-box">
           <img src="${data.qrCodeUrl}" alt="eSIM QR-Code" />
-          <p>Scanne diesen QR-Code in den Einstellungen deines Smartphones<br/>(Einstellungen → Mobilfunk → eSIM hinzufügen)</p>
+          <p>${t.esimQrSub}</p>
         </div>
       </div>
 
       <div class="section">
-        <h2>⌨️ Manuelle Aktivierung (Alternative)</h2>
-        <p style="font-size:13px;color:#6b7280;margin:0 0 8px">Falls der QR-Code nicht funktioniert, kannst du die eSIM manuell hinzufügen:</p>
+        <h2>${t.esimManualTitle}</h2>
+        <p style="font-size:13px;color:#6b7280;margin:0 0 8px">${t.esimManualSub}</p>
         <div class="info-item" style="margin-bottom:8px">
           <div class="label">ICCID</div>
           <div class="value" style="font-family:monospace">${data.iccid}</div>
@@ -125,31 +129,31 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
       </div>
 
       <div class="section">
-        <h2>📖 Installationsanleitung</h2>
+        <h2>${t.esimStepsTitle}</h2>
         <div class="steps">
           <div class="step">
             <div class="step-num">1</div>
-            <div class="step-text"><strong>iPhone:</strong> Einstellungen → Mobilfunk → eSIM hinzufügen → QR-Code verwenden</div>
+            <div class="step-text">${t.esimStep1}</div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
-            <div class="step-text"><strong>Android:</strong> Einstellungen → Netzwerk → SIM-Karten → eSIM hinzufügen → QR-Code scannen</div>
+            <div class="step-text">${t.esimStep2}</div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
-            <div class="step-text">Wähle die neue eSIM für Mobilfunkdaten aus und aktiviere „Datenroaming".</div>
+            <div class="step-text">${t.esimStep3}</div>
           </div>
           <div class="step">
             <div class="step-num">4</div>
-            <div class="step-text">Die Gültigkeitsdauer beginnt mit der ersten Datennutzung.</div>
+            <div class="step-text">${t.esimStep4}</div>
           </div>
         </div>
       </div>
 
     </div>
     <div class="footer">
-      <p>Fragen? Schreib uns: <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
-      <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim. Alle Rechte vorbehalten.</p>
+      <p>${t.esimFooterQuestions} <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
+      <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim. ${t.esimFooterRights}</p>
     </div>
   </div>
 </body>
@@ -157,30 +161,32 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
 }
 
 export function buildEsimPurchasedText(data: EsimPurchasedData): string {
-  return `Deine eSIM ist bereit!
-Bestellung: ${data.orderId}
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
 
-Tarif: ${data.tariffName}
-Land: ${data.countryName}
-Daten: ${data.dataGb} GB | Gültigkeit: ${data.validityDays} Tage
-Preis: ${data.priceEur.toFixed(2)} €
+  return `${t.esimTitle}
+${t.esimOrderBadge(data.orderId)}
 
-${data.overviewUrl ? `Direkt auf dem Smartphone installieren & verwalten:
+${t.esimTariffLabel}: ${data.tariffName}
+${t.esimDataLabel}: ${data.dataGb} GB | ${t.esimValidityLabel}: ${t.esimDays(data.validityDays)}
+${t.esimPaidLabel}: ${data.priceEur.toFixed(2)} €
+
+${data.overviewUrl ? `${t.esimInstallBtn}:
 ${data.overviewUrl}
 
-` : ''}--- AKTIVIERUNGSDATEN ---
+` : ''}--- ${t.esimManualTitle} ---
 ICCID:           ${data.iccid}
-SM-DP+ Adresse:  ${data.smdpAddress}
-Aktivierungscode: ${data.activationCode}
+SM-DP+ Address:  ${data.smdpAddress}
+Matching ID:     ${data.activationCode}
 APN:             ${data.apn}
 LPA-String:      ${data.lpaCode}
 
 QR-Code: ${data.qrCodeUrl}
 
-Anleitung:
-1. iPhone: Einstellungen → Mobilfunk → eSIM hinzufügen → QR-Code verwenden
-2. Android: Einstellungen → Netzwerk → SIM-Karten → eSIM hinzufügen → QR-Code scannen
-3. Datenroaming aktivieren
-4. Gültigkeit beginnt mit der ersten Datennutzung.
+${t.esimStepsTitle}:
+1. ${t.esimStep1.replace(/<[^>]+>/g, '')}
+2. ${t.esimStep2.replace(/<[^>]+>/g, '')}
+3. ${t.esimStep3}
+4. ${t.esimStep4}
 `;
 }

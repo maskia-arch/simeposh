@@ -1,3 +1,5 @@
+import { getEmailTranslations, normalizeEmailLocale } from '../i18n';
+
 export interface TopUpConfirmedData {
   customerName?: string;
   iccid:         string;
@@ -6,16 +8,20 @@ export interface TopUpConfirmedData {
   validityDays:  number;
   priceEur:      number;
   orderId:       string;
+  locale?:       string;
 }
 
 export function buildTopUpHtml(data: TopUpConfirmedData): string {
-  const greeting = data.customerName ? `Hallo ${data.customerName},` : 'Hallo,';
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+  const greeting = t.greeting(data.customerName);
+  const shortOrderId = data.orderId.split('-')[0].toUpperCase();
 
   return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${normLoc}">
 <head>
   <meta charset="UTF-8" />
-  <title>Top-Up erfolgreich</title>
+  <title>${t.topUpTitle}</title>
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
@@ -34,38 +40,38 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
 <body>
   <div class="wrapper">
     <div class="header">
-      <h1>✅ Top-Up erfolgreich!</h1>
-      <p>Bestellung #${data.orderId.split('-')[0].toUpperCase()}</p>
+      <h1>${t.topUpTitle}</h1>
+      <p>${t.esimOrderBadge(shortOrderId)}</p>
     </div>
     <div class="body">
       <p>${greeting}</p>
-      <p>dein eSIM-Datenpaket wurde erfolgreich aufgeladen. Die zusätzlichen Daten sind sofort verfügbar.</p>
+      <p>${t.topUpSub}</p>
       <div class="info-grid">
         <div class="info-item">
           <div class="label">ICCID</div>
           <div class="value" style="font-family:monospace;font-size:12px">${data.iccid}</div>
         </div>
         <div class="info-item">
-          <div class="label">Tarif</div>
+          <div class="label">${t.esimTariffLabel}</div>
           <div class="value">${data.tariffName}</div>
         </div>
         <div class="info-item">
-          <div class="label">Datenvolumen</div>
+          <div class="label">${t.esimDataLabel}</div>
           <div class="value">${data.dataGb} GB</div>
         </div>
         <div class="info-item">
-          <div class="label">Gültigkeit</div>
-          <div class="value">${data.validityDays} Tage</div>
+          <div class="label">${t.esimValidityLabel}</div>
+          <div class="value">${t.esimDays(data.validityDays)}</div>
         </div>
         <div class="info-item">
-          <div class="label">Bezahlt</div>
+          <div class="label">${t.esimPaidLabel}</div>
           <div class="value">${data.priceEur.toFixed(2)} €</div>
         </div>
       </div>
-      <p style="font-size:13px;color:#6b7280;">Du musst nichts weiter tun – die Daten wurden automatisch deiner eSIM gutgeschrieben.</p>
+      <p style="font-size:13px;color:#6b7280;">${t.topUpAutoCredited}</p>
     </div>
     <div class="footer">
-      <p>Fragen? <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
+      <p>${t.esimFooterQuestions} <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
       <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim</p>
     </div>
   </div>
@@ -74,14 +80,17 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
 }
 
 export function buildTopUpText(data: TopUpConfirmedData): string {
-  return `Top-Up erfolgreich!
-Bestellung: ${data.orderId}
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+
+  return `${t.topUpTitle}
+${t.esimOrderBadge(data.orderId)}
 
 ICCID: ${data.iccid}
-Tarif: ${data.tariffName}
-Daten: ${data.dataGb} GB | Gültigkeit: ${data.validityDays} Tage
-Preis: ${data.priceEur.toFixed(2)} €
+${t.esimTariffLabel}: ${data.tariffName}
+${t.esimDataLabel}: ${data.dataGb} GB | ${t.esimValidityLabel}: ${t.esimDays(data.validityDays)}
+${t.esimPaidLabel}: ${data.priceEur.toFixed(2)} €
 
-Die Daten wurden deiner eSIM automatisch gutgeschrieben.
+${t.topUpAutoCredited}
 `;
 }

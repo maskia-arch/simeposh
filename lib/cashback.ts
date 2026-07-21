@@ -253,7 +253,8 @@ export async function applyOrderCompletionCashback(
         earnedEur: earned,
         newBalanceEur: newBalance,
         rank: getUserRankAndRate(newSpend).rank,
-        orderId: o.id
+        orderId: o.id,
+        locale: o.locale ?? undefined,
       });
     } else {
       // Guest User: Check milestone thresholds (10€, 5€, 3€) and send reminders
@@ -280,7 +281,8 @@ export async function applyOrderCompletionCashback(
         await sendGuestMilestoneEmail({
           to: cleanEmail,
           balanceEur: newBalance,
-          milestoneEur: highestMilestone
+          milestoneEur: highestMilestone,
+          locale: o.locale ?? undefined,
         });
       }
     }

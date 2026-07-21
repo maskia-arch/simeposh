@@ -16,41 +16,74 @@ export default async function EsimOverviewPage({ params }: PageProps) {
     return notFound();
   }
 
+  const cleanInvoiceId = invoiceId.trim();
+  const cleanIccid = iccid.trim();
+
   const db = createServiceClient();
-  let matchingOrder = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let matchingOrder: any = null;
 
-  // 1. Look up via crypto session
-  const { data: session } = await db
-    .from('crypto_sessions')
-    .select('order_ids')
-    .eq('id', invoiceId)
-    .maybeSingle();
+  // 1. Look up via crypto session (invoiceId == crypto_sessions.id)
+  try {
+    const { data: session } = await db
+      .from('crypto_sessions')
+      .select('order_ids')
+      .eq('id', cleanInvoiceId)
+      .maybeSingle();
 
-  if (session && Array.isArray(session.order_ids)) {
-    const { data: orders } = await db
-      .from('orders')
-      .select('*')
-      .in('id', session.order_ids);
+    if (session && Array.isArray(session.order_ids) && session.order_ids.length > 0) {
+      const { data: orders } = await db
+        .from('orders')
+        .select('*')
+        .in('id', session.order_ids)
+        .eq('iccid', cleanIccid)
+        .eq('status', 'completed');
 
-    if (orders) {
-      matchingOrder = orders.find((o) => o.iccid === iccid);
+      if (orders && orders.length > 0) {
+        matchingOrder = orders[0];
+      }
     }
+  } catch (err) {
+    console.error('[EsimOverviewPage] Session lookup error:', err);
   }
 
-  // 2. Fallback lookup via checkout_ref directly (for eSIM Cash or direct checkout)
+  // 2. Look up via checkout_ref
   if (!matchingOrder) {
-    const { data: orders } = await db
-      .from('orders')
-      .select('*')
-      .eq('checkout_ref', invoiceId)
-      .eq('iccid', iccid);
+    try {
+      const { data: orders } = await db
+        .from('orders')
+        .select('*')
+        .eq('checkout_ref', cleanInvoiceId)
+        .eq('iccid', cleanIccid)
+        .eq('status', 'completed');
 
-    if (orders && orders.length > 0) {
-      matchingOrder = orders[0];
+      if (orders && orders.length > 0) {
+        matchingOrder = orders[0];
+      }
+    } catch (err) {
+      console.error('[EsimOverviewPage] Checkout ref lookup error:', err);
     }
   }
 
-  // If order does not exist or is not completed, block access
+  // 3. Look up via order ID directly (invoiceId == orders.id)
+  if (!matchingOrder) {
+    try {
+      const { data: orders } = await db
+        .from('orders')
+        .select('*')
+        .eq('id', cleanInvoiceId)
+        .eq('iccid', cleanIccid)
+        .eq('status', 'completed');
+
+      if (orders && orders.length > 0) {
+        matchingOrder = orders[0];
+      }
+    } catch (err) {
+      console.error('[EsimOverviewPage] Order ID lookup error:', err);
+    }
+  }
+
+  // Anti-tampering & Security Check: If order is not found or not completed, deny access (404)
   if (!matchingOrder || matchingOrder.status !== 'completed') {
     return notFound();
   }

@@ -24,6 +24,8 @@ export interface CryptoSession {
   confirmationsRequired: number;
   paymentUri:    string;
   expiresAt:     string;
+  checkoutDurationMins?: number;
+  locale?:       string;
 }
 
 function roundEur(n: number): number {
@@ -45,6 +47,7 @@ export async function createCryptoSession(opts: {
   email:    string;
   baseEur:  number;
   coinCode: string;
+  locale?:   string;
 }): Promise<CryptoSession> {
   const coin = await getCoin(opts.coinCode);
   if (!coin) throw new Error(`Coin ${opts.coinCode} is not available`);
@@ -75,7 +78,8 @@ export async function createCryptoSession(opts: {
       confirmations_required: coin.confirmations,
       status:                 'pending',
       expires_at:             expiresAtTemp,
-    })
+      locale:                 opts.locale || 'de',
+    } as any)
     .select('id')
     .single();
 
@@ -230,5 +234,7 @@ export async function createCryptoSession(opts: {
     confirmationsRequired: coin.confirmations,
     paymentUri,
     expiresAt: walletRes.expires_at,
+    checkoutDurationMins,
+    locale: opts.locale || 'de',
   };
 }

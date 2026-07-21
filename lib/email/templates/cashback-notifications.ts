@@ -1,23 +1,31 @@
+import { getEmailTranslations, normalizeEmailLocale } from '../i18n';
+
 export interface CashbackEarnedData {
   to:            string;
   earnedEur:     number;
   newBalanceEur: number;
   rank:          string;
   orderId:       string;
+  locale?:       string;
 }
 
 export interface GuestMilestoneData {
   to:            string;
   balanceEur:    number;
   milestoneEur:  number;
+  locale?:       string;
 }
 
 export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
+  const shortOrderId = data.orderId.split('-')[0].toUpperCase();
+
   return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${normLoc}">
 <head>
   <meta charset="UTF-8" />
-  <title>eSIM Cash Gutschrift</title>
+  <title>${t.cashbackEarnedTitle}</title>
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
@@ -39,34 +47,33 @@ export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
 <body>
   <div class="wrapper">
     <div class="header">
-      <h1>💰 eSIM Cash gutgeschrieben!</h1>
-      <p>Bestellung #${data.orderId.split('-')[0].toUpperCase()}</p>
+      <h1>${t.cashbackEarnedTitle}</h1>
+      <p>${t.esimOrderBadge(shortOrderId)}</p>
     </div>
     <div class="body">
-      <p>Hallo,</p>
-      <p>vielen Dank für deinen Einkauf! Wir haben dir soeben neues <strong>eSIM Cash</strong> auf deinem Konto gutgeschrieben.</p>
+      <p>${t.greeting()}</p>
+      <p>${t.cashbackEarnedSub}</p>
       
       <div class="stat-card">
-        <div class="stat-label">Erhaltenes Guthaben</div>
+        <div class="stat-label">${t.cashbackEarnedValLabel}</div>
         <div class="stat-val">+${data.earnedEur.toFixed(2)} €</div>
-        <div class="stat-label" style="margin-top:4px;">Umsatz-Cashback</div>
       </div>
 
       <div class="info-grid">
         <div class="info-item">
-          <div class="label">Neues Gesamtguthaben</div>
+          <div class="label">${t.cashbackNewBalanceLabel}</div>
           <div class="value">${data.newBalanceEur.toFixed(2)} €</div>
         </div>
         <div class="info-item">
-          <div class="label">Aktueller Rang</div>
+          <div class="label">${t.cashbackCurrentRankLabel}</div>
           <div class="value">${data.rank}</div>
         </div>
       </div>
       
-      <p style="font-size:13px;color:#6b7280;line-height:1.5;">Dein Guthaben kannst du ganz bequem bei deinem nächsten Einkauf im Warenkorb als Sofort-Rabatt einlösen.</p>
+      <p style="font-size:13px;color:#6b7280;line-height:1.5;">${t.cashbackRedeemHint}</p>
     </div>
     <div class="footer">
-      <p>Fragen? <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
+      <p>${t.esimFooterQuestions} <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
       <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim</p>
     </div>
   </div>
@@ -75,25 +82,30 @@ export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
 }
 
 export function buildCashbackEarnedText(data: CashbackEarnedData): string {
-  return `eSIM Cash Gutschrift!
-Bestellung: ${data.orderId}
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
 
-Erhaltenes Guthaben: +${data.earnedEur.toFixed(2)} €
-Neues Gesamtguthaben: ${data.newBalanceEur.toFixed(2)} €
-Aktueller Rang: ${data.rank}
+  return `${t.cashbackEarnedTitle}
+${t.esimOrderBadge(data.orderId)}
 
-Du kannst dieses Guthaben bei deinem nächsten Einkauf im Warenkorb einlösen.
+${t.cashbackEarnedValLabel}: +${data.earnedEur.toFixed(2)} €
+${t.cashbackNewBalanceLabel}: ${data.newBalanceEur.toFixed(2)} €
+${t.cashbackCurrentRankLabel}: ${data.rank}
+
+${t.cashbackRedeemHint}
 `;
 }
 
 export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
   const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net'}/register`;
   
   return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${normLoc}">
 <head>
   <meta charset="UTF-8" />
-  <title>Dein eSIM Cash Guthaben wartet auf dich</title>
+  <title>${t.guestMilestoneSubject}</title>
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
@@ -113,24 +125,23 @@ export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
 <body>
   <div class="wrapper">
     <div class="header">
-      <h1>🎁 Dein Guthaben wartet!</h1>
-      <p>Es liegen bereits Ersparnisse bereit</p>
+      <h1>${t.guestMilestoneTitle}</h1>
     </div>
     <div class="body">
-      <p>Hallo,</p>
-      <p>du hast als Gast auf unserer Website eingekauft. Wusstest du schon? Du hast bereits folgendes <strong>eSIM Cash</strong>-Guthaben gesammelt:</p>
+      <p>${t.greeting()}</p>
+      <p>${t.guestMilestoneSub}</p>
       
       <div class="amount-box">
         <div class="amount-val">${data.balanceEur.toFixed(2)} €</div>
-        <div class="amount-label">Verfügbares Guthaben</div>
+        <div class="amount-label">${t.guestMilestoneValLabel}</div>
       </div>
 
-      <p style="line-height:1.6;color:#4b5563;">Um dieses Guthaben sofort bei deinem nächsten Einkauf einlösen zu können, musst du dich lediglich mit dieser E-Mail-Adresse bei uns registrieren. Das Guthaben wird dann automatisch mit deinem neuen Konto verknüpft!</p>
+      <p style="line-height:1.6;color:#4b5563;">${t.guestMilestoneText}</p>
       
-      <a href="${registerUrl}" class="btn">Jetzt kostenlos registrieren</a>
+      <a href="${registerUrl}" class="btn">${t.guestMilestoneBtn}</a>
     </div>
     <div class="footer">
-      <p>Fragen? <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
+      <p>${t.esimFooterQuestions} <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
       <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim</p>
     </div>
   </div>
@@ -139,12 +150,16 @@ export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
 }
 
 export function buildGuestMilestoneText(data: GuestMilestoneData): string {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const t = getEmailTranslations(normLoc);
   const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net'}/register`;
   
-  return `Dein eSIM Cash Guthaben wartet auf dich!
+  return `${t.guestMilestoneSubject}
 
-Du hast bereits ${data.balanceEur.toFixed(2)} € eSIM Cash-Guthaben als Gast gesammelt.
+${t.guestMilestoneSub} ${data.balanceEur.toFixed(2)} €
 
-Registriere dich einfach unter ${registerUrl} mit deiner E-Mail-Adresse, um dein Guthaben freizuschalten und bei deinem nächsten Einkauf einzulösen.
+${t.guestMilestoneText}
+
+${registerUrl}
 `;
 }

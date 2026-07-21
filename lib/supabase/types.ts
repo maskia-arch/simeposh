@@ -21,6 +21,7 @@ export interface Database {
           email:      string;
           full_name:  string | null;
           phone:      string | null;
+          locale:     string | null;
           created_at: string;
           updated_at: string;
         };
@@ -29,10 +30,12 @@ export interface Database {
           email:      string;
           full_name?: string | null;
           phone?:     string | null;
+          locale?:    string | null;
         };
         Update: {
           full_name?: string | null;
           phone?:     string | null;
+          locale?:    string | null;
         };
         Relationships: [];
       };
@@ -143,6 +146,7 @@ export interface Database {
           referred_by_code:     string | null;
           cashback_earned_eur:  number | null;
           cashback_applied_eur: number | null;
+          locale:               string | null;
           created_at:           string;
           updated_at:           string;
         };
@@ -172,6 +176,7 @@ export interface Database {
           referred_by_code?:     string | null;
           cashback_earned_eur?:  number | null;
           cashback_applied_eur?: number | null;
+          locale?:              string | null;
         };
         Update: {
           user_id?:             string | null;
@@ -199,6 +204,7 @@ export interface Database {
           referred_by_code?:     string | null;
           cashback_earned_eur?:  number | null;
           cashback_applied_eur?: number | null;
+          locale?:              string | null;
         };
         Relationships: [
           {
@@ -404,6 +410,7 @@ export interface Database {
           created_at: string; expires_at: string; paid_at: string | null;
           payment_memo: string | null;
           received_amount: number;
+          locale?: string | null;
         };
         Insert: {
           order_ids: string[]; customer_email: string;
@@ -416,12 +423,14 @@ export interface Database {
           expires_at: string; paid_at?: string | null;
           payment_memo?: string | null;
           received_amount?: number;
+          locale?: string | null;
         };
         Update: {
           status?: string; tx_hash?: string | null;
           confirmations?: number; paid_at?: string | null;
           payment_memo?: string | null;
           received_amount?: number;
+          locale?: string | null;
         };
         Relationships: [];
       };

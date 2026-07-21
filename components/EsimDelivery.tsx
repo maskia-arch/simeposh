@@ -104,11 +104,19 @@ export function EsimDelivery({ esim }: { esim: DeliveredEsim }) {
         {/* Details */}
         <div className="space-y-2">
           {esim.overviewUrl && (
-            <div className="rounded-lg bg-brand-50/50 border border-brand-100 p-3 space-y-2">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600">Deine eSIM Installationsseite</p>
-                <a href={esim.overviewUrl} target="_blank" rel="noopener noreferrer" className="break-all text-xs font-semibold text-brand-700 hover:text-brand-900 underline">
-                  {esim.overviewUrl}
+            <div className="rounded-xl bg-brand-50/70 border border-brand-200 p-3.5 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-brand-700">📱 {t('esim_install_center' as any) || 'eSIM Installationsseite'}</p>
+                  <p className="text-[11px] text-slate-600 font-medium">Öffne deine persönliche Einrichtungs- & Statusseite</p>
+                </div>
+                <a
+                  href={esim.overviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors"
+                >
+                  Öffnen ↗
                 </a>
               </div>
               <CopyField label="Installations-Link" value={esim.overviewUrl} />

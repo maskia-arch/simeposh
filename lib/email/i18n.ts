@@ -1,0 +1,1017 @@
+/**
+ * i18n & Timezone translation helpers for all customer emails.
+ * Supports all 15 shop locales: de, en, fr, es, it, nl, pl, pt, tr, sv, da, fi, cs, ro, hu.
+ */
+
+export type EmailLocale = 'de' | 'en' | 'fr' | 'es' | 'it' | 'nl' | 'pl' | 'pt' | 'tr' | 'sv' | 'da' | 'fi' | 'cs' | 'ro' | 'hu';
+
+export function normalizeEmailLocale(locale?: string | null): EmailLocale {
+  if (!locale) return 'de';
+  const clean = locale.toLowerCase().slice(0, 2) as EmailLocale;
+  const supported: EmailLocale[] = ['de', 'en', 'fr', 'es', 'it', 'nl', 'pl', 'pt', 'tr', 'sv', 'da', 'fi', 'cs', 'ro', 'hu'];
+  return supported.includes(clean) ? clean : 'de';
+}
+
+/** Format a date strictly in Europe/Berlin timezone with explicit timezone label. */
+export function formatBerlinTime(dateInput: Date | string, locale: string = 'de'): { timeString: string; fullString: string } {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const normLoc = normalizeEmailLocale(locale);
+
+  // Time in Berlin timezone (e.g. "17:44")
+  const timeString = date.toLocaleTimeString(normLoc === 'de' ? 'de-DE' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Berlin',
+  });
+
+  // Short timezone abbreviation (CEST or CET)
+  let tzAbbr = 'CEST';
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Berlin',
+      timeZoneName: 'short',
+    }).format(date);
+    if (parts.includes('GMT+1') || parts.includes('CET')) {
+      tzAbbr = 'CET';
+    }
+  } catch {
+    // default CEST
+  }
+
+  const berlinLabel: Record<EmailLocale, string> = {
+    de: `Uhr (Berliner Zeit, ${tzAbbr})`,
+    en: `(Berlin Time, ${tzAbbr})`,
+    fr: `(Heure de Berlin, ${tzAbbr})`,
+    es: `(Hora de Berlín, ${tzAbbr})`,
+    it: `(Ora di Berlino, ${tzAbbr})`,
+    nl: `(Berlijnse tijd, ${tzAbbr})`,
+    pl: `(Czas berliński, ${tzAbbr})`,
+    pt: `(Hora de Berlim, ${tzAbbr})`,
+    tr: `(Berlin saati, ${tzAbbr})`,
+    sv: `(Berlintid, ${tzAbbr})`,
+    da: `(Berlintid, ${tzAbbr})`,
+    fi: `(Berliinin aikaa, ${tzAbbr})`,
+    cs: `(Berlínský čas, ${tzAbbr})`,
+    ro: `(Ora Berlinului, ${tzAbbr})`,
+    hu: `(Berlini idő, ${tzAbbr})`,
+  };
+
+  const label = berlinLabel[normLoc] || berlinLabel.de;
+  const fullString = `${timeString} ${label}`;
+
+  return { timeString, fullString };
+}
+
+export interface EmailDictionary {
+  greeting: (name?: string) => string;
+  checkoutSubject: (invoiceId: string) => string;
+  checkoutTitle: string;
+  checkoutSub: string;
+  invoiceIdLabel: string;
+  paymentMethodLabel: string;
+  amountLabel: string;
+  validUntilLabel: string;
+  validMinutes: (mins: number) => string;
+  checkoutCta: (amount: string) => string;
+  checkoutInstruction: string;
+  checkoutIgnoreText: string;
+
+  // eSIM delivery email
+  esimSubject: (country: string) => string;
+  esimTitle: string;
+  esimOrderBadge: (orderId: string) => string;
+  esimThankYou: (country: string) => string;
+  esimInstallBtn: string;
+  esimInstallSub: string;
+  esimPlanDetails: string;
+  esimTariffLabel: string;
+  esimDataLabel: string;
+  esimValidityLabel: string;
+  esimDays: (days: number) => string;
+  esimPaidLabel: string;
+  esimQrTitle: string;
+  esimQrSub: string;
+  esimManualTitle: string;
+  esimManualSub: string;
+  esimStepsTitle: string;
+  esimStep1: string;
+  esimStep2: string;
+  esimStep3: string;
+  esimStep4: string;
+  esimFooterQuestions: string;
+  esimFooterRights: string;
+
+  // TopUp email
+  topUpSubject: (gb: number) => string;
+  topUpTitle: string;
+  topUpSub: string;
+  topUpAutoCredited: string;
+
+  // Cashback emails
+  cashbackEarnedSubject: (amount: string) => string;
+  cashbackEarnedTitle: string;
+  cashbackEarnedSub: string;
+  cashbackEarnedValLabel: string;
+  cashbackNewBalanceLabel: string;
+  cashbackCurrentRankLabel: string;
+  cashbackRedeemHint: string;
+
+  guestMilestoneSubject: string;
+  guestMilestoneTitle: string;
+  guestMilestoneSub: string;
+  guestMilestoneValLabel: string;
+  guestMilestoneText: string;
+  guestMilestoneBtn: string;
+}
+
+export const EMAIL_DICTS: Record<EmailLocale, EmailDictionary> = {
+  de: {
+    greeting: (name) => name ? `Hallo ${name},` : 'Hallo,',
+    checkoutSubject: (invoiceId) => `📋 Zahlungsanforderung für deine eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Zahlungsanforderung für deine eSIM',
+    checkoutSub: 'wir haben eine neue Krypto-Zahlungsanforderung für deine eSIM-Bestellung erstellt.',
+    invoiceIdLabel: 'Rechnungs-ID:',
+    paymentMethodLabel: 'Zahlungsmethode:',
+    amountLabel: 'Betrag (EUR):',
+    validUntilLabel: 'Gültig bis:',
+    validMinutes: (mins) => `(${mins} Min.)`,
+    checkoutCta: (amount) => `Jetzt Bezahlen (${amount} €)`,
+    checkoutInstruction: 'Bitte schließe deine Zahlung über den folgenden Direktlink ab:',
+    checkoutIgnoreText: 'Falls du diese Bestellung nicht getätigt hast, kannst du diese E-Mail einfach ignorieren.',
+
+    esimSubject: (country) => `📱 Deine eSIM für ${country} ist bereit`,
+    esimTitle: '📱 Deine eSIM ist bereit!',
+    esimOrderBadge: (orderId) => `Bestellung #${orderId}`,
+    esimThankYou: (country) => `vielen Dank für deinen Einkauf. Deine eSIM für <strong>${country}</strong> wurde erfolgreich aktiviert und ist jetzt einsatzbereit.`,
+    esimInstallBtn: '📱 Direkt auf dem Handy installieren',
+    esimInstallSub: 'Mit 1-Klick Installation & Datenverbrauchs-Check',
+    esimPlanDetails: '📦 Tarifdetails',
+    esimTariffLabel: 'Tarif',
+    esimDataLabel: 'Datenvolumen',
+    esimValidityLabel: 'Gültigkeit',
+    esimDays: (days) => `${days} Tage`,
+    esimPaidLabel: 'Bezahlt',
+    esimQrTitle: '📷 QR-Code Installation (empfohlen)',
+    esimQrSub: 'Scanne diesen QR-Code in den Einstellungen deines Smartphones<br/>(Einstellungen → Mobilfunk → eSIM hinzufügen)',
+    esimManualTitle: '⌨️ Manuelle Aktivierung (Alternative)',
+    esimManualSub: 'Falls der QR-Code nicht funktioniert, kannst du die eSIM manuell hinzufügen:',
+    esimStepsTitle: '📖 Installationsanleitung',
+    esimStep1: '<strong>iPhone:</strong> Einstellungen → Mobilfunk → eSIM hinzufügen → QR-Code verwenden',
+    esimStep2: '<strong>Android:</strong> Einstellungen → Netzwerk → SIM-Karten → eSIM hinzufügen → QR-Code scannen',
+    esimStep3: 'Wähle die neue eSIM für Mobilfunkdaten aus und aktiviere „Datenroaming".',
+    esimStep4: 'Die Gültigkeitsdauer beginnt mit der ersten Datennutzung.',
+    esimFooterQuestions: 'Fragen? Schreib uns:',
+    esimFooterRights: 'Alle Rechte vorbehalten.',
+
+    topUpSubject: (gb) => `✅ Top-Up erfolgreich – ${gb} GB aufgeladen`,
+    topUpTitle: '✅ Top-Up erfolgreich!',
+    topUpSub: 'dein eSIM-Datenpaket wurde erfolgreich aufgeladen. Die zusätzlichen Daten sind sofort verfügbar.',
+    topUpAutoCredited: 'Du musst nichts weiter tun – die Daten wurden automatisch deiner eSIM gutgeschrieben.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash erhalten! +${amount} € gutgeschrieben`,
+    cashbackEarnedTitle: '💰 eSIM Cash gutgeschrieben!',
+    cashbackEarnedSub: 'vielen Dank für deinen Einkauf! Wir haben dir soeben neues <strong>eSIM Cash</strong> auf deinem Konto gutgeschrieben.',
+    cashbackEarnedValLabel: 'Erhaltenes Guthaben',
+    cashbackNewBalanceLabel: 'Neues Gesamtguthaben',
+    cashbackCurrentRankLabel: 'Aktueller Rang',
+    cashbackRedeemHint: 'Dein Guthaben kannst du ganz bequem bei deinem nächsten Einkauf im Warenkorb als Sofort-Rabatt einlösen.',
+
+    guestMilestoneSubject: '🎁 Dein eSIM Cash Guthaben wartet auf dich',
+    guestMilestoneTitle: '🎁 Dein Guthaben wartet!',
+    guestMilestoneSub: 'du hast als Gast auf unserer Website eingekauft. Wusstest du schon? Du hast bereits folgendes <strong>eSIM Cash</strong>-Guthaben gesammelt:',
+    guestMilestoneValLabel: 'Verfügbares Guthaben',
+    guestMilestoneText: 'Um dieses Guthaben sofort bei deinem nächsten Einkauf einlösen zu können, musst du dich lediglich mit dieser E-Mail-Adresse bei uns registrieren. Das Guthaben wird dann automatisch mit deinem neuen Konto verknüpft!',
+    guestMilestoneBtn: 'Jetzt kostenlos registrieren',
+  },
+
+  en: {
+    greeting: (name) => name ? `Hello ${name},` : 'Hello,',
+    checkoutSubject: (invoiceId) => `📋 Payment request for your eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Payment Request for your eSIM',
+    checkoutSub: 'We have generated a new crypto payment request for your eSIM order.',
+    invoiceIdLabel: 'Invoice ID:',
+    paymentMethodLabel: 'Payment Method:',
+    amountLabel: 'Amount (EUR):',
+    validUntilLabel: 'Valid until:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Pay Now (${amount} €)`,
+    checkoutInstruction: 'Please complete your payment using the direct link below:',
+    checkoutIgnoreText: 'If you did not place this order, you can safely ignore this email.',
+
+    esimSubject: (country) => `📱 Your eSIM for ${country} is ready`,
+    esimTitle: '📱 Your eSIM is Ready!',
+    esimOrderBadge: (orderId) => `Order #${orderId}`,
+    esimThankYou: (country) => `Thank you for your purchase. Your eSIM for <strong>${country}</strong> has been successfully activated and is ready to use.`,
+    esimInstallBtn: '📱 Install directly on phone',
+    esimInstallSub: 'Includes 1-click installation & data usage checker',
+    esimPlanDetails: '📦 Plan Details',
+    esimTariffLabel: 'Plan',
+    esimDataLabel: 'Data Allowance',
+    esimValidityLabel: 'Validity',
+    esimDays: (days) => `${days} days`,
+    esimPaidLabel: 'Paid',
+    esimQrTitle: '📷 QR Code Installation (Recommended)',
+    esimQrSub: 'Scan this QR code in your smartphone settings<br/>(Settings → Cellular / Mobile → Add eSIM)',
+    esimManualTitle: '⌨️ Manual Activation (Alternative)',
+    esimManualSub: 'If the QR code does not scan, enter these details manually:',
+    esimStepsTitle: '📖 Installation Guide',
+    esimStep1: '<strong>iPhone:</strong> Settings → Cellular → Add eSIM → Use QR Code',
+    esimStep2: '<strong>Android:</strong> Settings → Network → SIM Cards → Add eSIM → Scan QR Code',
+    esimStep3: 'Select the new eSIM for mobile data and enable Data Roaming.',
+    esimStep4: 'Validity period starts upon first data connection.',
+    esimFooterQuestions: 'Questions? Contact us:',
+    esimFooterRights: 'All rights reserved.',
+
+    topUpSubject: (gb) => `✅ Top-Up Successful – ${gb} GB Added`,
+    topUpTitle: '✅ Top-Up Successful!',
+    topUpSub: 'Your eSIM data package has been recharged. The extra data is available immediately.',
+    topUpAutoCredited: 'No action required – the data has been credited to your eSIM automatically.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Received! +${amount} € Credited`,
+    cashbackEarnedTitle: '💰 eSIM Cash Credited!',
+    cashbackEarnedSub: 'Thank you for your purchase! We have credited new <strong>eSIM Cash</strong> to your account.',
+    cashbackEarnedValLabel: 'Reward Received',
+    cashbackNewBalanceLabel: 'New Total Balance',
+    cashbackCurrentRankLabel: 'Current Status',
+    cashbackRedeemHint: 'You can easily apply your balance as an instant discount during your next checkout.',
+
+    guestMilestoneSubject: '🎁 Your eSIM Cash Rewards Are Waiting',
+    guestMilestoneTitle: '🎁 Rewards Await You!',
+    guestMilestoneSub: 'You recently purchased as a guest. Did you know? You have already accumulated the following <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Available Rewards',
+    guestMilestoneText: 'To unlock and redeem this reward on your next order, simply register an account using this email address. Your balance will be automatically linked!',
+    guestMilestoneBtn: 'Create Free Account Now',
+  },
+
+  fr: {
+    greeting: (name) => name ? `Bonjour ${name},` : 'Bonjour,',
+    checkoutSubject: (invoiceId) => `📋 Demande de paiement pour votre eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Demande de Paiement pour votre eSIM',
+    checkoutSub: 'Nous avons créé une nouvelle demande de paiement crypto pour votre commande d\'eSIM.',
+    invoiceIdLabel: 'ID de facture:',
+    paymentMethodLabel: 'Moyen de paiement:',
+    amountLabel: 'Montant (EUR):',
+    validUntilLabel: 'Valable jusqu\'à:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Payer Maintenant (${amount} €)`,
+    checkoutInstruction: 'Veuillez finaliser votre paiement via le lien direct ci-dessous:',
+    checkoutIgnoreText: 'Si vous n\'avez pas effectué cette commande, vous pouvez ignorer cet e-mail.',
+
+    esimSubject: (country) => `📱 Votre eSIM pour ${country} est prête`,
+    esimTitle: '📱 Votre eSIM est Prête !',
+    esimOrderBadge: (orderId) => `Commande #${orderId}`,
+    esimThankYou: (country) => `Merci pour votre achat. Votre eSIM pour <strong>${country}</strong> a été activée avec succès et est prête à l'emploi.`,
+    esimInstallBtn: '📱 Installer directement sur le téléphone',
+    esimInstallSub: 'Installation en 1 clic & suivi de consommation',
+    esimPlanDetails: '📦 Détails du forfait',
+    esimTariffLabel: 'Forfait',
+    esimDataLabel: 'Volume de données',
+    esimValidityLabel: 'Validité',
+    esimDays: (days) => `${days} jours`,
+    esimPaidLabel: 'Payé',
+    esimQrTitle: '📷 Installation par QR Code (Recommandé)',
+    esimQrSub: 'Scannez ce QR code dans les réglages de votre smartphone<br/>(Réglages → Données cellulaires → Ajouter une eSIM)',
+    esimManualTitle: '⌨️ Activation Manuelle (Alternative)',
+    esimManualSub: 'Si le QR code ne s\'affiche pas, saisissez manuellement ces codes :',
+    esimStepsTitle: '📖 Guide d\'Installation',
+    esimStep1: '<strong>iPhone:</strong> Réglages → Données cellulaires → Ajouter une eSIM → Utiliser le QR Code',
+    esimStep2: '<strong>Android:</strong> Paramètres → Réseau → Cartes SIM → Ajouter une eSIM → Scanner le QR Code',
+    esimStep3: 'Sélectionnez la nouvelle eSIM pour la connexion de données et activez la "Donnée en itinérance".',
+    esimStep4: 'La durée de validité commence à la première utilisation des données.',
+    esimFooterQuestions: 'Des questions ? Contactez-nous :',
+    esimFooterRights: 'Tous droits réservés.',
+
+    topUpSubject: (gb) => `✅ Recharge Réussie – ${gb} GB ajoutés`,
+    topUpTitle: '✅ Recharge Réussie !',
+    topUpSub: 'Votre forfait de données eSIM a été rechargé. Vos données supplémentaires sont immédiatement disponibles.',
+    topUpAutoCredited: 'Aucune action requise – les données ont été automatiquement créditées sur votre eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Reçu ! +${amount} € crédités`,
+    cashbackEarnedTitle: '💰 eSIM Cash Crédité !',
+    cashbackEarnedSub: 'Merci pour votre achat ! Nous venons de créditer votre compte de nouveaux jetons <strong>eSIM Cash</strong>.',
+    cashbackEarnedValLabel: 'Gains Reçus',
+    cashbackNewBalanceLabel: 'Nouveau Solde Total',
+    cashbackCurrentRankLabel: 'Statut Actuel',
+    cashbackRedeemHint: 'Vous pouvez utiliser votre solde comme remise immédiate lors de votre prochain panier.',
+
+    guestMilestoneSubject: '🎁 Vos récompenses eSIM Cash vous attendent',
+    guestMilestoneTitle: '🎁 Vos Récompenses Vous Attendent !',
+    guestMilestoneSub: 'Vous avez effectué un achat en tant qu\'invité. Le saviez-vous ? Vous avez déjà accumulé le solde <strong>eSIM Cash</strong> suivant :',
+    guestMilestoneValLabel: 'Solde Disponible',
+    guestMilestoneText: 'Pour débloquer et utiliser ce crédit lors de votre prochaine commande, inscrivez-vous simplement avec cette adresse e-mail. Votre crédit sera automatiquement relié à votre compte !',
+    guestMilestoneBtn: 'Créer un Compte Gratuit',
+  },
+
+  es: {
+    greeting: (name) => name ? `Hola ${name},` : 'Hola,',
+    checkoutSubject: (invoiceId) => `📋 Solicitud de pago para tu eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Solicitud de Pago para tu eSIM',
+    checkoutSub: 'Hemos creado una nueva solicitud de pago en criptomonedas para tu pedido de eSIM.',
+    invoiceIdLabel: 'ID de factura:',
+    paymentMethodLabel: 'Método de pago:',
+    amountLabel: 'Monto (EUR):',
+    validUntilLabel: 'Válido hasta:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Pagar Ahora (${amount} €)`,
+    checkoutInstruction: 'Por favor, completa tu pago a través del siguiente enlace directo:',
+    checkoutIgnoreText: 'Si no realizaste este pedido, puedes ignorar este correo electrónico.',
+
+    esimSubject: (country) => `📱 Tu eSIM para ${country} está lista`,
+    esimTitle: '📱 ¡Tu eSIM está Lista!',
+    esimOrderBadge: (orderId) => `Pedido #${orderId}`,
+    esimThankYou: (country) => `Gracias por tu compra. Tu eSIM para <strong>${country}</strong> se ha activado con éxito y ya está lista para usarse.`,
+    esimInstallBtn: '📱 Instalar directamente en el móvil',
+    esimInstallSub: 'Instalación en 1 clic y control del uso de datos',
+    esimPlanDetails: '📦 Detalles del plan',
+    esimTariffLabel: 'Plan',
+    esimDataLabel: 'Volumen de datos',
+    esimValidityLabel: 'Validez',
+    esimDays: (days) => `${days} días`,
+    esimPaidLabel: 'Pagado',
+    esimQrTitle: '📷 Instalación por código QR (Recomendado)',
+    esimQrSub: 'Escanea este código QR en los ajustes de tu smartphone<br/>(Ajustes → Datos móviles → Añadir eSIM)',
+    esimManualTitle: '⌨️ Activación Manual (Alternativa)',
+    esimManualSub: 'Si el código QR no funciona, introduce estos datos manualmente:',
+    esimStepsTitle: '📖 Guía de Instalación',
+    esimStep1: '<strong>iPhone:</strong> Ajustes → Datos móviles → Añadir eSIM → Usar código QR',
+    esimStep2: '<strong>Android:</strong> Ajustes → Redes → Tarjetas SIM → Añadir eSIM → Escanear código QR',
+    esimStep3: 'Selecciona la nueva eSIM para datos móviles y activa la "Itinerancia de datos".',
+    esimStep4: 'El periodo de validez comienza con la primera conexión de datos.',
+    esimFooterQuestions: '¿Preguntas? Contáctanos:',
+    esimFooterRights: 'Todos los derechos reservados.',
+
+    topUpSubject: (gb) => `✅ Recarga Exitosa – ${gb} GB añadidos`,
+    topUpTitle: '✅ ¡Recarga Exitosa!',
+    topUpSub: 'Tu paquete de datos eSIM ha sido recargado. Los datos adicionales están disponibles de inmediato.',
+    topUpAutoCredited: 'No necesitas hacer nada más: los datos se han acreditado automáticamente a tu eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 ¡eSIM Cash Recibido! +${amount} € acreditados`,
+    cashbackEarnedTitle: '💰 ¡eSIM Cash Acreditado!',
+    cashbackEarnedSub: '¡Gracias por tu compra! Hemos abonado nuevo <strong>eSIM Cash</strong> en tu cuenta.',
+    cashbackEarnedValLabel: 'Recompensa Obtenida',
+    cashbackNewBalanceLabel: 'Nuevo Saldo Total',
+    cashbackCurrentRankLabel: 'Nivel Actual',
+    cashbackRedeemHint: 'Puedes usar tu saldo como descuento inmediato en tu próxima compra.',
+
+    guestMilestoneSubject: '🎁 Tus recompensas de eSIM Cash te están esperando',
+    guestMilestoneTitle: '🎁 ¡Tus Recompensas te Esperan!',
+    guestMilestoneSub: 'Compraste como invitado en nuestro sitio. ¿Lo sabías? Ya has acumulado el siguiente saldo de <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Saldo Disponible',
+    guestMilestoneText: 'Para desbloquear y canjear este dinero en tu próxima compra, solo debes registrarte con esta dirección de correo. ¡El saldo se vinculará automáticamente a tu cuenta!',
+    guestMilestoneBtn: 'Registrarme Gratis Ahora',
+  },
+
+  it: {
+    greeting: (name) => name ? `Ciao ${name},` : 'Ciao,',
+    checkoutSubject: (invoiceId) => `📋 Richiesta di pagamento per la tua eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Richiesta di Pagamento per la tua eSIM',
+    checkoutSub: 'Abbiamo creato una nuova richiesta di pagamento crypto per il tuo ordine eSIM.',
+    invoiceIdLabel: 'ID Fattura:',
+    paymentMethodLabel: 'Metodo di pagamento:',
+    amountLabel: 'Importo (EUR):',
+    validUntilLabel: 'Valido fino al:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Paga Ora (${amount} €)`,
+    checkoutInstruction: 'Completa il pagamento tramite il link diretto sottostante:',
+    checkoutIgnoreText: 'Se non hai effettuato tu l\'ordine, puoi ignorare questa email.',
+
+    esimSubject: (country) => `📱 La tua eSIM per ${country} è pronta`,
+    esimTitle: '📱 La tua eSIM è Pronta!',
+    esimOrderBadge: (orderId) => `Ordine #${orderId}`,
+    esimThankYou: (country) => `Grazie per il tuo acquisto. La tua eSIM per <strong>${country}</strong> è stata attivata con successo ed è pronta all'uso.`,
+    esimInstallBtn: '📱 Installa direttamente sullo smartphone',
+    esimInstallSub: 'Installazione in 1-click & controllo consumi',
+    esimPlanDetails: '📦 Dettagli del piano',
+    esimTariffLabel: 'Piano',
+    esimDataLabel: 'Giga disponibili',
+    esimValidityLabel: 'Validità',
+    esimDays: (days) => `${days} giorni`,
+    esimPaidLabel: 'Pagato',
+    esimQrTitle: '📷 Installazione con QR Code (Consigliato)',
+    esimQrSub: 'Scansiona questo QR code nelle impostazioni dello smartphone<br/>(Impostazioni → Cellulare → Aggiungi eSIM)',
+    esimManualTitle: '⌨️ Attivazione Manuale (Alternativa)',
+    esimManualSub: 'Se il QR code non funziona, inserisci questi dati manualmente:',
+    esimStepsTitle: '📖 Guida all\'Installazione',
+    esimStep1: '<strong>iPhone:</strong> Impostazioni → Cellulare → Aggiungi eSIM → Usa QR Code',
+    esimStep2: '<strong>Android:</strong> Impostazioni → Rete → Schede SIM → Aggiungi eSIM → Scansiona QR Code',
+    esimStep3: 'Seleziona la nuova eSIM per i dati mobili e attiva il "Roaming dati".',
+    esimStep4: 'La durata di validità inizia con il primo consumo di dati.',
+    esimFooterQuestions: 'Domande? Contattaci:',
+    esimFooterRights: 'Tutti i diritti riservati.',
+
+    topUpSubject: (gb) => `✅ Ricarica Riuscita – ${gb} GB aggiunti`,
+    topUpTitle: '✅ Ricarica Riuscita!',
+    topUpSub: 'Il tuo pacchetto dati eSIM è stato ricaricato. I giga aggiuntivi sono subito disponibili.',
+    topUpAutoCredited: 'Non devi fare nulla: i giga sono stati accreditati automaticamente sulla tua eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Ricevuto! +${amount} € accreditati`,
+    cashbackEarnedTitle: '💰 eSIM Cash Accreditato!',
+    cashbackEarnedSub: 'Grazie per il tuo acquisto! Abbiamo appena accreditato del nuovo <strong>eSIM Cash</strong> sul tuo account.',
+    cashbackEarnedValLabel: 'Credito Ricevuto',
+    cashbackNewBalanceLabel: 'Nuovo Saldo Totale',
+    cashbackCurrentRankLabel: 'Livello Attuale',
+    cashbackRedeemHint: 'Puoi usare il tuo credito come sconto immediato al prossimo acquisto.',
+
+    guestMilestoneSubject: '🎁 Il tuo credito eSIM Cash ti sta aspettando',
+    guestMilestoneTitle: '🎁 Il tuo Credito ti Aspetta!',
+    guestMilestoneSub: 'Hai acquistato come ospite sul nostro sito. Lo sapevi? Hai già accumulato il seguente saldo <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Saldo Disponibile',
+    guestMilestoneText: 'Per sbloccare e utilizzare questo credito nel tuo prossimo acquisto, registrati semplicemente con questo indirizzo email. Il saldo verrà collegato automaticamente al tuo nuovo account!',
+    guestMilestoneBtn: 'Registrati Gratis Ora',
+  },
+
+  nl: {
+    greeting: (name) => name ? `Hallo ${name},` : 'Hallo,',
+    checkoutSubject: (invoiceId) => `📋 Betalingsverzoek voor je eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Betalingsverzoek voor je eSIM',
+    checkoutSub: 'We hebben een nieuw crypto-betalingsverzoek aangemaakt voor je eSIM-bestelling.',
+    invoiceIdLabel: 'Factuur-ID:',
+    paymentMethodLabel: 'Betaalmethode:',
+    amountLabel: 'Bedrag (EUR):',
+    validUntilLabel: 'Geldig tot:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Nu Betalen (${amount} €)`,
+    checkoutInstruction: 'Rond je betaling af via de onderstaande directe link:',
+    checkoutIgnoreText: 'Als je deze bestelling niet hebt geplaatst, kun je deze e-mail negeren.',
+
+    esimSubject: (country) => `📱 Je eSIM voor ${country} is klaar`,
+    esimTitle: '📱 Je eSIM is Klaar!',
+    esimOrderBadge: (orderId) => `Bestelling #${orderId}`,
+    esimThankYou: (country) => `Bedankt voor je aankoop. Je eSIM voor <strong>${country}</strong> is succesvol geactiveerd en klaar voor gebruik.`,
+    esimInstallBtn: '📱 Direct op je telefoon installeren',
+    esimInstallSub: 'Met 1-klik installatie & databundel-checker',
+    esimPlanDetails: '📦 Bundeldetails',
+    esimTariffLabel: 'Bundel',
+    esimDataLabel: 'Datavolume',
+    esimValidityLabel: 'Geldigheid',
+    esimDays: (days) => `${days} dagen`,
+    esimPaidLabel: 'Betaald',
+    esimQrTitle: '📷 QR-code Installatie (Aanbevolen)',
+    esimQrSub: 'Scan deze QR-code in de instellingen van je smartphone<br/>(Instellingen → Mobiel netwerk → eSIM toevoegen)',
+    esimManualTitle: '⌨️ Handmatige Activatie (Alternatief)',
+    esimManualSub: 'Als de QR-code niet werkt, kun je de gegevens handmatig invoeren:',
+    esimStepsTitle: '📖 Installatiehandleiding',
+    esimStep1: '<strong>iPhone:</strong> Instellingen → Mobiel netwerk → eSIM toevoegen → Gebruik QR-code',
+    esimStep2: '<strong>Android:</strong> Instellingen → Netwerk → SIM-kaarten → eSIM toevoegen → Scan QR-code',
+    esimStep3: 'Selecteer de nieuwe eSIM voor mobiele data en schakel "Dataroaming" in.',
+    esimStep4: 'De geldigheidsduur gaat in bij het eerste datagebruik.',
+    esimFooterQuestions: 'Vragen? Neem contact met ons op:',
+    esimFooterRights: 'Alle rechten voorbehouden.',
+
+    topUpSubject: (gb) => `✅ Opwaardering Geslaagd – ${gb} GB toegevoegd`,
+    topUpTitle: '✅ Opwaardering Geslaagd!',
+    topUpSub: 'Je eSIM-databundel is opgewaardeerd. De extra data is direct beschikbaar.',
+    topUpAutoCredited: 'Je hoeft niets te doen – de data is automatisch aan je eSIM toegevoegd.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Ontvangen! +${amount} € bijgeschreven`,
+    cashbackEarnedTitle: '💰 eSIM Cash Bijgeschreven!',
+    cashbackEarnedSub: 'Bedankt voor je aankoop! We hebben zojuist nieuw <strong>eSIM Cash</strong> op je account bijgeschreven.',
+    cashbackEarnedValLabel: 'Ontvangen Winst',
+    cashbackNewBalanceLabel: 'Nieuw Totaalsaldo',
+    cashbackCurrentRankLabel: 'Huidige Status',
+    cashbackRedeemHint: 'Je kunt je saldo eenvoudig als directe korting gebruiken bij je volgende bestelling.',
+
+    guestMilestoneSubject: '🎁 Je eSIM Cash wisselgeld staat voor je klaar',
+    guestMilestoneTitle: '🎁 Je Wachtende Winst!',
+    guestMilestoneSub: 'Je hebt als gast gekocht op onze site. Wist je dat? Je hebt het volgende <strong>eSIM Cash</strong>-saldo opgebouwd:',
+    guestMilestoneValLabel: 'Beschikbaar Saldo',
+    guestMilestoneText: 'Registreer je met dit e-mailadres om je saldo bij je volgende bestelling in te wisselen. Het saldo wordt automatisch gekoppeld!',
+    guestMilestoneBtn: 'Nu Gratis Registreren',
+  },
+
+  pl: {
+    greeting: (name) => name ? `Cześć ${name},` : 'Cześć,',
+    checkoutSubject: (invoiceId) => `📋 Wezwanie do zapłaty za kartę eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Wezwanie do Zapłaty za eSIM',
+    checkoutSub: 'Utworzyliśmy nowe płatności krypto dla Twojego zamówienia eSIM.',
+    invoiceIdLabel: 'Identyfikator faktury:',
+    paymentMethodLabel: 'Metoda płatności:',
+    amountLabel: 'Kwota (EUR):',
+    validUntilLabel: 'Ważne do:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Zapłać Teraz (${amount} €)`,
+    checkoutInstruction: 'Dokonaj płatności korzystając z bezpośredniego linku poniżej:',
+    checkoutIgnoreText: 'Jeśli to nie Ty składałeś zamówienie, możesz zignorować tę wiadomość.',
+
+    esimSubject: (country) => `📱 Twoja karta eSIM dla ${country} jest gotowa`,
+    esimTitle: '📱 Twoja eSIM jest Gotowa!',
+    esimOrderBadge: (orderId) => `Zamówienie #${orderId}`,
+    esimThankYou: (country) => `Dziękujemy za zakup. Twoja karta eSIM dla <strong>${country}</strong> została pomyślnie aktywowana i jest gotowa do użycia.`,
+    esimInstallBtn: '📱 Zainstaluj bezpośrednio na telefonie',
+    esimInstallSub: 'Instalacja 1-kliknięciem i kontrola zużycia danych',
+    esimPlanDetails: '📦 Szczegóły pakietu',
+    esimTariffLabel: 'Pakiet',
+    esimDataLabel: 'Pakiet danych',
+    esimValidityLabel: 'Waźność',
+    esimDays: (days) => `${days} dni`,
+    esimPaidLabel: 'Opłacono',
+    esimQrTitle: '📷 Instalacja kodu QR (Zalecane)',
+    esimQrSub: 'Zeskanuj ten kod QR w ustawieniach smartfona<br/>(Ustawienia → Sieć komórkowa → Dodaj eSIM)',
+    esimManualTitle: '⌨️ Ręczna Aktywacja (Alternatywa)',
+    esimManualSub: 'Jeśli kod QR nie działa, wprowadź dane ręcznie:',
+    esimStepsTitle: '📖 Instrukcja Instalacji',
+    esimStep1: '<strong>iPhone:</strong> Ustawienia → Sieć komórkowa → Dodaj eSIM → Użyj kodu QR',
+    esimStep2: '<strong>Android:</strong> Ustawienia → Sieć → Karty SIM → Dodaj eSIM → Zeskanuj kod QR',
+    esimStep3: 'Wybierz nową eSIM do transmisji danych i włącz „Roaming danych”.',
+    esimStep4: 'Okres ważności rozpoczyna się z pierwszym użyciem danych.',
+    esimFooterQuestions: 'Pytania? Napisz do nas:',
+    esimFooterRights: 'Wszelkie prawa zastrzeżone.',
+
+    topUpSubject: (gb) => `✅ Doładowanie Udane – doładowano ${gb} GB`,
+    topUpTitle: '✅ Doładowanie Udane!',
+    topUpSub: 'Twój pakiet danych eSIM został doładowany. Dodatkowe dane są dostępne natychmiast.',
+    topUpAutoCredited: 'Nie musisz nic robić – dane zostały automatycznie przypisane do Twojej eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 Otrzymano eSIM Cash! +${amount} € przyznano`,
+    cashbackEarnedTitle: '💰 eSIM Cash Przyznane!',
+    cashbackEarnedSub: 'Dziękujemy za zakup! Właśnie przyznaliśmy nowe <strong>eSIM Cash</strong> do Twojego konta.',
+    cashbackEarnedValLabel: 'Otrzymane Środki',
+    cashbackNewBalanceLabel: 'Nowe Łączne Saldo',
+    cashbackCurrentRankLabel: 'Obecny Poziom',
+    cashbackRedeemHint: 'Możesz wykorzystać środki jako natychmiastowy rabat przy następnych zakupach.',
+
+    guestMilestoneSubject: '🎁 Twoje środki eSIM Cash czekają na Ciebie',
+    guestMilestoneTitle: '🎁 Twoje Środki Czekają!',
+    guestMilestoneSub: 'Kupiłeś jako gość na naszej stronie. Czy wiesz, że zgromadziłeś już następujące środki <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Dostępne Środki',
+    guestMilestoneText: 'Aby odblokować i wykorzystać te środki przy kolejnym zamówieniu, zarejestruj się używając tego adresu e-mail. Środki zostaną połączone automatycznie!',
+    guestMilestoneBtn: 'Zarejestruj się Za Darmo',
+  },
+
+  pt: {
+    greeting: (name) => name ? `Olá ${name},` : 'Olá,',
+    checkoutSubject: (invoiceId) => `📋 Pedido de pagamento para o seu eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Pedido de Pagamento para o seu eSIM',
+    checkoutSub: 'Criamos um novo pedido de pagamento em criptomoeda para a sua encomenda eSIM.',
+    invoiceIdLabel: 'ID da Fatura:',
+    paymentMethodLabel: 'Método de pagamento:',
+    amountLabel: 'Valor (EUR):',
+    validUntilLabel: 'Válido até:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Pagar Agora (${amount} €)`,
+    checkoutInstruction: 'Por favor, conclua o pagamento através do link direto abaixo:',
+    checkoutIgnoreText: 'Se não realizou esta encomenda, pode ignorar este e-mail.',
+
+    esimSubject: (country) => `📱 O seu eSIM para ${country} está pronto`,
+    esimTitle: '📱 O seu eSIM está Pronto!',
+    esimOrderBadge: (orderId) => `Encomenda #${orderId}`,
+    esimThankYou: (country) => `Obrigado pela sua compra. O seu eSIM para <strong>${country}</strong> foi ativado com sucesso e está pronto a usar.`,
+    esimInstallBtn: '📱 Instalar diretamente no telemóvel',
+    esimInstallSub: 'Instalação em 1 clique e controlo de dados',
+    esimPlanDetails: '📦 Detalhes do plano',
+    esimTariffLabel: 'Plano',
+    esimDataLabel: 'Volume de dados',
+    esimValidityLabel: 'Validade',
+    esimDays: (days) => `${days} dias`,
+    esimPaidLabel: 'Pago',
+    esimQrTitle: '📷 Instalação por Código QR (Recomendado)',
+    esimQrSub: 'Digitalize este código QR nas definições do seu smartphone<br/>(Definições → Rede Móvel → Adicionar eSIM)',
+    esimManualTitle: '⌨️ Ativação Manual (Alternativa)',
+    esimManualSub: 'Se o código QR não funcionar, introduza os dados manualmente:',
+    esimStepsTitle: '📖 Guia de Instalação',
+    esimStep1: '<strong>iPhone:</strong> Definições → Rede Móvel → Adicionar eSIM → Usar Código QR',
+    esimStep2: '<strong>Android:</strong> Definições → Rede → Cartões SIM → Adicionar eSIM → Digitalizar Código QR',
+    esimStep3: 'Selecione o novo eSIM para dados móveis e ative o "Roaming de Dados".',
+    esimStep4: 'O período de validade começa com a primeira utilização de dados.',
+    esimFooterQuestions: 'Perguntas? Contacte-nos:',
+    esimFooterRights: 'Todos os direitos reservados.',
+
+    topUpSubject: (gb) => `✅ Carregamento Bem-Sucedido – ${gb} GB adicionados`,
+    topUpTitle: '✅ Carregamento Bem-Sucedido!',
+    topUpSub: 'O seu pacote de dados eSIM foi carregado. Os dados adicionais estão disponíveis imediatamente.',
+    topUpAutoCredited: 'Não precisa de fazer nada – os dados foram creditados automaticamente no seu eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Recebido! +${amount} € creditados`,
+    cashbackEarnedTitle: '💰 eSIM Cash Creditado!',
+    cashbackEarnedSub: 'Obrigado pela sua compra! Creditamos novo <strong>eSIM Cash</strong> na sua conta.',
+    cashbackEarnedValLabel: 'Recompensa Recebida',
+    cashbackNewBalanceLabel: 'Novo Saldo Total',
+    cashbackCurrentRankLabel: 'Nível Atual',
+    cashbackRedeemHint: 'Pode utilizar o seu saldo como desconto imediato na sua próxima compra.',
+
+    guestMilestoneSubject: '🎁 As suas recompensas eSIM Cash estão à sua espera',
+    guestMilestoneTitle: '🎁 As suas Recompensas Esperam por Si!',
+    guestMilestoneSub: 'Comprou como convidado no nosso site. Sabia que já acumulou o seguinte saldo de <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Saldo Disponível',
+    guestMilestoneText: 'Para desbloquear e utilizar este saldo na sua próxima encomenda, basta registar-se com este endereço de e-mail. O saldo será associado automaticamente!',
+    guestMilestoneBtn: 'Registrar-me Grátis Agora',
+  },
+
+  tr: {
+    greeting: (name) => name ? `Merhaba ${name},` : 'Merhaba,',
+    checkoutSubject: (invoiceId) => `📋 eSIM siparişiniz için ödeme talebi (ID: ${invoiceId})`,
+    checkoutTitle: '📋 eSIM Siparişiniz İçin Ödeme Talebi',
+    checkoutSub: 'eSIM siparişiniz için yeni bir kripto ödeme talebi oluşturduk.',
+    invoiceIdLabel: 'Fatura ID:',
+    paymentMethodLabel: 'Ödeme Yöntemi:',
+    amountLabel: 'Tutar (EUR):',
+    validUntilLabel: 'Son Geçerlilik:',
+    validMinutes: (mins) => `(${mins} dk)`,
+    checkoutCta: (amount) => `Şimdi Öde (${amount} €)`,
+    checkoutInstruction: 'Lütfen ödemenizi aşağıdaki direkt bağlantı üzerinden tamamlayın:',
+    checkoutIgnoreText: 'Bu siparişi siz vermediyseniz bu e-postayı güvenle yok sayabilirsiniz.',
+
+    esimSubject: (country) => `📱 ${country} için eSIM\'iniz hazır`,
+    esimTitle: '📱 eSIM\'iniz Hazır!',
+    esimOrderBadge: (orderId) => `Sipariş #${orderId}`,
+    esimThankYou: (country) => `Alışverişiniz için teşekkür ederiz. <strong>${country}</strong> için eSIM\'iniz başarıyla aktifleştirildi ve kullanıma hazır.`,
+    esimInstallBtn: '📱 Doğrudan telefona yükle',
+    esimInstallSub: '1 tıkla kurulum & veri kullanımı kontrolü',
+    esimPlanDetails: '📦 Paket Detayları',
+    esimTariffLabel: 'Paket',
+    esimDataLabel: 'Veri Miktarı',
+    esimValidityLabel: 'Geçerlilik',
+    esimDays: (days) => `${days} gün`,
+    esimPaidLabel: 'Ödendi',
+    esimQrTitle: '📷 QR Kodu ile Kurulum (Önerilen)',
+    esimQrSub: 'Bu QR kodunu akıllı telefonunuzun ayarlarından taratın<br/>(Ayarlar → Hücresel / Mobil → eSIM Ekle)',
+    esimManualTitle: '⌨️ Manuel Aktifleştirme (Alternatif)',
+    esimManualSub: 'QR kodu çalışmazsa, bilgileri manuel olarak girebilirsiniz:',
+    esimStepsTitle: '📖 Kurulum Kılavuzu',
+    esimStep1: '<strong>iPhone:</strong> Ayarlar → Hücresel → eSIM Ekle → QR Kodu Kullan',
+    esimStep2: '<strong>Android:</strong> Ayarlar → Ağ ve İnternet → SIM Kartlar → eSIM Ekle → QR Kodu Tara',
+    esimStep3: 'Mobil veri için yeni eSIM\'i seçin ve "Veri Dolaşımı"nı açın.',
+    esimStep4: 'Geçerlilik süresi ilk veri kullanımıyla başlar.',
+    esimFooterQuestions: 'Sorularınız mı var? Bize ulaşın:',
+    esimFooterRights: 'Tüm hakları saklıdır.',
+
+    topUpSubject: (gb) => `✅ Yükleme Başarılı – ${gb} GB Eklendi`,
+    topUpTitle: '✅ Yükleme Başarılı!',
+    topUpSub: 'eSIM veri paketiniz başarıyla yüklendi. Ek verileriniz hemen kullanılabilir.',
+    topUpAutoCredited: 'Başka bir işlem yapmanıza gerek yok – veriler otomatik olarak eSIM\'inize tanımlandı.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Kazandınız! +${amount} € yüklendi`,
+    cashbackEarnedTitle: '💰 eSIM Cash Yüklendi!',
+    cashbackEarnedSub: 'Alışverişiniz için teşekkürler! Hesabınıza yeni <strong>eSIM Cash</strong> bakiyesi tanımladık.',
+    cashbackEarnedValLabel: 'Kazanılan Bakiye',
+    cashbackNewBalanceLabel: 'Yeni Toplam Bakiye',
+    cashbackCurrentRankLabel: 'Mevcut Seviye',
+    cashbackRedeemHint: 'Bakiyenizi bir sonraki alışverişinizde anında indirim olarak kullanabilirsiniz.',
+
+    guestMilestoneSubject: '🎁 eSIM Cash bakiyeniz sizi bekliyor',
+    guestMilestoneTitle: '🎁 Bakiyeniz Sizi Bekliyor!',
+    guestMilestoneSub: 'Sitemizden misafir olarak alışveriş yaptınız. Biliyor muydunuz? Şimdiden şu kadar <strong>eSIM Cash</strong> bakiyesi biriktirdiniz:',
+    guestMilestoneValLabel: 'Kullanılabilir Bakiye',
+    guestMilestoneText: 'Bu bakiyeyi bir sonraki siparişinizde kullanmak için bu e-posta adresiyle ücretsiz kaydolmanız yeterlidir. Bakiye hesabınıza otomatik olarak tanımlanacaktır!',
+    guestMilestoneBtn: 'Şimdi Ücretsiz Kaydol',
+  },
+
+  sv: {
+    greeting: (name) => name ? `Hej ${name},` : 'Hej,',
+    checkoutSubject: (invoiceId) => `📋 Betalningsbegäran för ditt eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Betalningsbegäran för ditt eSIM',
+    checkoutSub: 'Vi har skapat en ny kryptobetalningsbegäran för din eSIM-beställning.',
+    invoiceIdLabel: 'Faktura-ID:',
+    paymentMethodLabel: 'Betalningsmetod:',
+    amountLabel: 'Belopp (EUR):',
+    validUntilLabel: 'Giltigt till:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Betala Nu (${amount} €)`,
+    checkoutInstruction: 'Vänligen slutför din betalning via direktlänken nedan:',
+    checkoutIgnoreText: 'Om du inte har gjort denna beställning kan du ignorera detta e-postmeddelande.',
+
+    esimSubject: (country) => `📱 Ditt eSIM för ${country} är redo`,
+    esimTitle: '📱 Ditt eSIM är Redo!',
+    esimOrderBadge: (orderId) => `Beställning #${orderId}`,
+    esimThankYou: (country) => `Tack för ditt köp. Ditt eSIM för <strong>${country}</strong> har aktiverats och är redo att användas.`,
+    esimInstallBtn: '📱 Installera direkt på mobilen',
+    esimInstallSub: 'Med 1-klicksinstallation & dataförbrukningskoll',
+    esimPlanDetails: '📦 Detaljer för surfplanskod',
+    esimTariffLabel: 'Surfplan',
+    esimDataLabel: 'Datamängd',
+    esimValidityLabel: 'Giltighet',
+    esimDays: (days) => `${days} dagar`,
+    esimPaidLabel: 'Betalt',
+    esimQrTitle: '📷 Installation via QR-kod (Rekommenderas)',
+    esimQrSub: 'Skanna denna QR-kod i din smartphones inställningar<br/>(Inställningar → Mobilnät → Lägg till eSIM)',
+    esimManualTitle: '⌨️ Manuell Aktivering (Alternativ)',
+    esimManualSub: 'Om QR-koden inte fungerar kan du ange uppgifterna manuellt:',
+    esimStepsTitle: '📖 Installationsguide',
+    esimStep1: '<strong>iPhone:</strong> Inställningar → Mobilnät → Lägg till eSIM → Använd QR-kod',
+    esimStep2: '<strong>Android:</strong> Inställningar → Nätverk → SIM-kort → Lägg till eSIM → Skanna QR-kod',
+    esimStep3: 'Välj det nya eSIM-kortet för mobildata och aktivera "Dataroaming".',
+    esimStep4: 'Giltighetstiden börjar vid den första dataanvändningen.',
+    esimFooterQuestions: 'Frågor? Kontakta oss:',
+    esimFooterRights: 'Med ensamrätt.',
+
+    topUpSubject: (gb) => `✅ Påfyllning Lyckades – ${gb} GB tillagt`,
+    topUpTitle: '✅ Påfyllning Lyckades!',
+    topUpSub: 'Ditt eSIM-datapaket har fyllts på. Den extra datan är tillgänglig direkt.',
+    topUpAutoCredited: 'Du behöver inte göra något – datan har godskrivits automatiskt på ditt eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Mottaget! +${amount} € tillgodo`,
+    cashbackEarnedTitle: '💰 eSIM Cash Tillgodoräknat!',
+    cashbackEarnedSub: 'Tack för ditt köp! Vi har just godskrivit nytt <strong>eSIM Cash</strong> på ditt konto.',
+    cashbackEarnedValLabel: 'Mottagen Bonus',
+    cashbackNewBalanceLabel: 'Nytt Totalt Saldo',
+    cashbackCurrentRankLabel: 'Aktuell Status',
+    cashbackRedeemHint: 'Du kan enkelt använda ditt saldo som direkt rabatt vid nästa köp.',
+
+    guestMilestoneSubject: '🎁 Dina eSIM Cash-pengar väntar på dig',
+    guestMilestoneTitle: '🎁 Dina Pengar Väntar!',
+    guestMilestoneSub: 'Du handlade som gäst hos oss. Visste du att du redan har samlat ihop följande <strong>eSIM Cash</strong>-saldo:',
+    guestMilestoneValLabel: 'Tillgängligt Saldo',
+    guestMilestoneText: 'Registrera dig gratis med denna e-postadress för att låsa upp och använda saldot vid nästa beställning!',
+    guestMilestoneBtn: 'Skapa Gratis Konto Nu',
+  },
+
+  da: {
+    greeting: (name) => name ? `Hej ${name},` : 'Hej,',
+    checkoutSubject: (invoiceId) => `📋 Betalingsanmodning for dit eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Betalingsanmodning for dit eSIM',
+    checkoutSub: 'Vi har oprettet en ny krypto-betalingsanmodning for din eSIM-ordre.',
+    invoiceIdLabel: 'Faktura-ID:',
+    paymentMethodLabel: 'Betalingsmetode:',
+    amountLabel: 'Beløb (EUR):',
+    validUntilLabel: 'Gyldig indtil:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Betal Nu (${amount} €)`,
+    checkoutInstruction: 'Gennemfør venligst din betaling via det direkte link nedenfor:',
+    checkoutIgnoreText: 'Hvis du ikke har foretaget denne ordre, kan du ignorere denne e-mail.',
+
+    esimSubject: (country) => `📱 Dit eSIM til ${country} er klar`,
+    esimTitle: '📱 Dit eSIM er Klar!',
+    esimOrderBadge: (orderId) => `Ordre #${orderId}`,
+    esimThankYou: (country) => `Tak for dit køb. Dit eSIM til <strong>${country}</strong> er aktiveret og klar til brug.`,
+    esimInstallBtn: '📱 Installer direkte på telefonen',
+    esimInstallSub: 'Med 1-klik installation & dataforbrugscheck',
+    esimPlanDetails: '📦 Pakkedetaljer',
+    esimTariffLabel: 'Pakke',
+    esimDataLabel: 'Datamængde',
+    esimValidityLabel: 'Gyldighed',
+    esimDays: (days) => `${days} dage`,
+    esimPaidLabel: 'Betalt',
+    esimQrTitle: '📷 QR-kode Installation (Anbefalet)',
+    esimQrSub: 'Scan denne QR-kode i dine smartphone-indstillinger<br/>(Indstillinger → Mobilnetværk → Tilføj eSIM)',
+    esimManualTitle: '⌨️ Manuel Aktivering (Alternativ)',
+    esimManualSub: 'Hvis QR-koden ikke virker, kan du indtaste oplysningerne manuelt:',
+    esimStepsTitle: '📖 Installationsvejledning',
+    esimStep1: '<strong>iPhone:</strong> Indstillinger → Mobilnetværk → Tilføj eSIM → Brug QR-kode',
+    esimStep2: '<strong>Android:</strong> Indstillinger → Netværk → SIM-kort → Tilføj eSIM → Scan QR-kode',
+    esimStep3: 'Vælg det nye eSIM til mobildata og slå "Dataroaming" til.',
+    esimStep4: 'Gyldighedsperioden starter ved den første databrug.',
+    esimFooterQuestions: 'Spørgsmål? Kontakt os:',
+    esimFooterRights: 'Alle rettigheder forbeholdes.',
+
+    topUpSubject: (gb) => `✅ Optankning Lykkedes – ${gb} GB tilføjet`,
+    topUpTitle: '✅ Optankning Lykkedes!',
+    topUpSub: 'Din eSIM-datapakke er blevet tanket op. Den ekstra data er tilgængelig med det samme.',
+    topUpAutoCredited: 'Du behøver ikke gøre mere – datamængden er automatisk indsat på dit eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Modtaget! +${amount} € indsat`,
+    cashbackEarnedTitle: '💰 eSIM Cash Indsat!',
+    cashbackEarnedSub: 'Tak for dit køb! Vi har netop indsat ny <strong>eSIM Cash</strong> på din konto.',
+    cashbackEarnedValLabel: 'Optjent Saldo',
+    cashbackNewBalanceLabel: 'Ny Samlet Saldo',
+    cashbackCurrentRankLabel: 'Nuværende Status',
+    cashbackRedeemHint: 'Du kan nemt anvende din saldo som en direkte rabat ved dit næste køb.',
+
+    guestMilestoneSubject: '🎁 Dine eSIM Cash-penge venter på dig',
+    guestMilestoneTitle: '🎁 Dine Penge Venter!',
+    guestMilestoneSub: 'Du handlede som gæst hos os. Vidste du det? Du har allerede opsparet følgende <strong>eSIM Cash</strong>-saldo:',
+    guestMilestoneValLabel: 'Tilgængelig Saldo',
+    guestMilestoneText: 'Opret en gratis konto med denne e-mailadresse for at låse op og bruge din saldo ved næste ordre!',
+    guestMilestoneBtn: 'Opret Gratis Konto Nu',
+  },
+
+  fi: {
+    greeting: (name) => name ? `Hei ${name},` : 'Hei,',
+    checkoutSubject: (invoiceId) => `📋 Maksupyyntö eSIM-tilauksellesi (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Maksupyyntö eSIM-tilauksellesi',
+    checkoutSub: 'Olemme luoneet uuden kryptomaksupyynnön eSIM-tilauksellesi.',
+    invoiceIdLabel: 'Laskun ID:',
+    paymentMethodLabel: 'Maksutapa:',
+    amountLabel: 'Summa (EUR):',
+    validUntilLabel: 'Voimassa asti:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Maksa Nyt (${amount} €)`,
+    checkoutInstruction: 'Ole hyvä ja suorita maksu alla olevan suoran linkin kautta:',
+    checkoutIgnoreText: 'Jos et ole tehnyt tätä tilausta, voit jättää tämän sähköpostin huomiotta.',
+
+    esimSubject: (country) => `📱 eSIM-korttisi kohteeseen ${country} on valmis`,
+    esimTitle: '📱 eSIM-korttisi on Valmis!',
+    esimOrderBadge: (orderId) => `Tilaus #${orderId}`,
+    esimThankYou: (country) => `Kiitos ostoksestasi. eSIM-korttisi kohteeseen <strong>${country}</strong> on aktivoitu ja valmis käyttöön.`,
+    esimInstallBtn: '📱 Asenna suoraan puhelimeen',
+    esimInstallSub: 'Sisältää 1-klik-asennuksen & datankäytön seurannan',
+    esimPlanDetails: '📦 Paketin tiedot',
+    esimTariffLabel: 'Paketti',
+    esimDataLabel: 'Datamäärä',
+    esimValidityLabel: 'Voimassaolo',
+    esimDays: (days) => `${days} päivää`,
+    esimPaidLabel: 'Maksettu',
+    esimQrTitle: '📷 Asennus QR-koodilla (Suositeltu)',
+    esimQrSub: 'Skannaa tämä QR-koodi älypuhelimesi asetuksista<br/>(Asetukset → Mobiiliverkko → Lisää eSIM)',
+    esimManualTitle: '⌨️ Manuaalinen Aktivointi (Vaihtoehto)',
+    esimManualSub: 'Jos QR-koodi ei toimi, voit syöttää tiedot manuaalisesti:',
+    esimStepsTitle: '📖 Asennusohje',
+    esimStep1: '<strong>iPhone:</strong> Asetukset → Mobiiliverkko → Lisää eSIM → Käytä QR-koodia',
+    esimStep2: '<strong>Android:</strong> Asetukset → Verkko → SIM-kortit → Lisää eSIM → Skannaa QR-koodi',
+    esimStep3: 'Valitse uusi eSIM mobiilidataa varten ja kytke "Dataroaming" päälle.',
+    esimStep4: 'Voimassaoloaika alkaa ensimmäisestä datankäytöstä.',
+    esimFooterQuestions: 'Kysyttävää? Ota yhteyttä:',
+    esimFooterRights: 'Kaikki oikeudet pidätetään.',
+
+    topUpSubject: (gb) => `✅ Lataus Onnistui – ${gb} Gt lisätty`,
+    topUpTitle: '✅ Lataus Onnistui!',
+    topUpSub: 'eSIM-datapettisi on ladattu uudelleen. Lisädata on käytettävissä välittömästi.',
+    topUpAutoCredited: 'Sinun ei tarvitse tehdä mitään – data on lisätty automaattisesti eSIM-kortillesi.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Saatu! +${amount} € lisätty`,
+    cashbackEarnedTitle: '💰 eSIM Cash Lisätty!',
+    cashbackEarnedSub: 'Kiitos ostoksestasi! Olemme juuri lisänneet uutta <strong>eSIM Cash</strong> -saldoa tilillesi.',
+    cashbackEarnedValLabel: 'Saatu Palkkio',
+    cashbackNewBalanceLabel: 'Uusi Kikoonaissaldo',
+    cashbackCurrentRankLabel: 'Nykyinen Taso',
+    cashbackRedeemHint: 'Voit käyttää saldosi välittömänä alennuksena seuraavan ostoksesi yhteydessä.',
+
+    guestMilestoneSubject: '🎁 eSIM Cash -rahaasi odottaa sinua',
+    guestMilestoneTitle: '🎁 Rahaasi Odottaa!',
+    guestMilestoneSub: 'Ostit vierailijana sivustoltamme. Tiesitkö? Olet jo kerännyt seuraavan <strong>eSIM Cash</strong> -saldon:',
+    guestMilestoneValLabel: 'Käytettävissä Oleva Saldo',
+    guestMilestoneText: 'Rekisteröidy ilmaiseksi tällä sähköpostiosoitteella lunastaaksesi saldosi seuraavan tilauksen yhteydessä!',
+    guestMilestoneBtn: 'Luo Ilmainen Tili Nyt',
+  },
+
+  cs: {
+    greeting: (name) => name ? `Ahoj ${name},` : 'Dobrý den,',
+    checkoutSubject: (invoiceId) => `📋 Žádost o platbu za eSIM (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Žádost o Platbu za eSIM',
+    checkoutSub: 'Vytvořili jsme novou žádost o kryptoměnovou platbu pro vaši objednávku eSIM.',
+    invoiceIdLabel: 'ID faktury:',
+    paymentMethodLabel: 'Platební metoda:',
+    amountLabel: 'Částka (EUR):',
+    validUntilLabel: 'Platné do:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Zaplatit Nyní (${amount} €)`,
+    checkoutInstruction: 'Dokončete platbu prostřednictvím přímého odkazu níže:',
+    checkoutIgnoreText: 'Pokud jste tuto objednávku neprováděli, můžete tento e-mail ignorovat.',
+
+    esimSubject: (country) => `📱 Vaše eSIM pro ${country} je připravena`,
+    esimTitle: '📱 Vaše eSIM je Připravena!',
+    esimOrderBadge: (orderId) => `Objednávka #${orderId}`,
+    esimThankYou: (country) => `Děkujeme za nákup. Vaše eSIM pro <strong>${country}</strong> byla úspěšně aktivována a je připravena k použití.`,
+    esimInstallBtn: '📱 Nainstalovat přímo do telefonu',
+    esimInstallSub: 'Instalace 1 kliknutím a kontrola spotřeby dat',
+    esimPlanDetails: '📦 Podrobnosti tarifu',
+    esimTariffLabel: 'Tarif',
+    esimDataLabel: 'Datový limit',
+    esimValidityLabel: 'Platnost',
+    esimDays: (days) => `${days} dní`,
+    esimPaidLabel: 'Zaplaceno',
+    esimQrTitle: '📷 Instalace pomocí QR kódu (Doporučeno)',
+    esimQrSub: 'Naskenujte tento QR kód v nastavení smartphonu<br/>(Nastavení → Mobilní síť → Přidat eSIM)',
+    esimManualTitle: '⌨️ Manuální Aktivace (Alternativa)',
+    esimManualSub: 'Pokud QR kód nefunguje, zadejte údaje ručně:',
+    esimStepsTitle: '📖 Návod k Instalaci',
+    esimStep1: '<strong>iPhone:</strong> Nastavení → Mobilní data → Přidat eSIM → Použít QR kód',
+    esimStep2: '<strong>Android:</strong> Nastavení → Síť → SIM karty → Přidat eSIM → Naskenovat QR kód',
+    esimStep3: 'Vyberte novou eSIM pro mobilní data a zapněte „Datový roaming".',
+    esimStep4: 'Doba platnosti začíná prvním použitím dat.',
+    esimFooterQuestions: 'Máte dotazy? Napište nám:',
+    esimFooterRights: 'Všechna práva vyhrazena.',
+
+    topUpSubject: (gb) => `✅ Dobití Úspěšné – Přidáno ${gb} GB`,
+    topUpTitle: '✅ Dobití Úspěšné!',
+    topUpSub: 'Váš datový balíček eSIM byl úspěšně dobit. Dodatečná data jsou ihned k dispozici.',
+    topUpAutoCredited: 'Nemusíte nic dělat – data byla automaticky připsána na vaši eSIM.',
+
+    cashbackEarnedSubject: (amount) => `💰 Získáno eSIM Cash! +${amount} € připsáno`,
+    cashbackEarnedTitle: '💰 Připsáno eSIM Cash!',
+    cashbackEarnedSub: 'Děkujeme za nákup! Právě jsme na váš účet připsali nové prostředky <strong>eSIM Cash</strong>.',
+    cashbackEarnedValLabel: 'Získaná Odměna',
+    cashbackNewBalanceLabel: 'Nový Celkový Zůstatek',
+    cashbackCurrentRankLabel: 'Aktuální Úroveň',
+    cashbackRedeemHint: 'Zůstatek můžete snadno využít jako okamžitou slevu při dalším nákupu.',
+
+    guestMilestoneSubject: '🎁 Vaše odměny eSIM Cash na vás čekají',
+    guestMilestoneTitle: '🎁 Vaše Odměny Čekají!',
+    guestMilestoneSub: 'Nakoupili jste u nás jako host. Věděli jste to? Již jste nasbírali následující zůstatek <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Dostupný Zůstatek',
+    guestMilestoneText: 'Zaregistrujte se zdarma s touto e-mailovou adresou a uplatněte svůj zůstatek při další objednávce!',
+    guestMilestoneBtn: 'Vytvořit Účet Zdarma',
+  },
+
+  ro: {
+    greeting: (name) => name ? `Bună ${name},` : 'Bună,',
+    checkoutSubject: (invoiceId) => `📋 Solicitare de plată pentru eSIM-ul tău (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Solicitare de Plată pentru eSIM',
+    checkoutSub: 'Am generat o nouă solicitare de plată crypto pentru comanda ta eSIM.',
+    invoiceIdLabel: 'ID Factură:',
+    paymentMethodLabel: 'Metodă de plată:',
+    amountLabel: 'Sumă (EUR):',
+    validUntilLabel: 'Valabil până la:',
+    validMinutes: (mins) => `(${mins} min)`,
+    checkoutCta: (amount) => `Plătește Acum (${amount} €)`,
+    checkoutInstruction: 'Te rugăm să finalizezi plata folosind linkul direct de mai jos:',
+    checkoutIgnoreText: 'Dacă nu ai plasat această comandă, poți ignora acest e-mail.',
+
+    esimSubject: (country) => `📱 eSIM-ul tău pentru ${country} este gata`,
+    esimTitle: '📱 eSIM-ul tău este Gata!',
+    esimOrderBadge: (orderId) => `Comandă #${orderId}`,
+    esimThankYou: (country) => `Îți mulțumim pentru achiziție. eSIM-ul tău pentru <strong>${country}</strong> a fost activat cu succes și este gata de utilizare.`,
+    esimInstallBtn: '📱 Instalează direct pe telefon',
+    esimInstallSub: 'Instalare 1-click & verificare consum date',
+    esimPlanDetails: '📦 Detalii opțiune',
+    esimTariffLabel: 'Opțiune',
+    esimDataLabel: 'Volum date',
+    esimValidityLabel: 'Valabilitate',
+    esimDays: (days) => `${days} zile`,
+    esimPaidLabel: 'Plătit',
+    esimQrTitle: '📷 Instalare prin cod QR (Recomandat)',
+    esimQrSub: 'Scanează acest cod QR din setările telefonului tău<br/>(Setări → Conexiune celulară → Adaugă eSIM)',
+    esimManualTitle: '⌨️ Activare Manuală (Alternativă)',
+    esimManualSub: 'Dacă codul QR nu funcționează, introdu datele manual:',
+    esimStepsTitle: '📖 Ghid de Instalare',
+    esimStep1: '<strong>iPhone:</strong> Setări → Conexiune celulară → Adaugă eSIM → Folosește codul QR',
+    esimStep2: '<strong>Android:</strong> Setări → Rețea → Cartele SIM → Adaugă eSIM → Scanează codul QR',
+    esimStep3: 'Selectează noul eSIM pentru date mobile și activează „Roaming date”.',
+    esimStep4: 'Perioada de valabilitate începe la prima utilizare a datelor.',
+    esimFooterQuestions: 'Întrebări? Contactează-ne:',
+    esimFooterRights: 'Toate drepturile rezervate.',
+
+    topUpSubject: (gb) => `✅ Reîncărcare Reușită – S-au adăugat ${gb} GB`,
+    topUpTitle: '✅ Reîncărcare Reușită!',
+    topUpSub: 'Pachetul tău de date eSIM a fost reîncărcat. Datele suplimentare sunt disponibile imediat.',
+    topUpAutoCredited: 'Nu trebuie să faci nimic – datele au fost creditate automat pe eSIM-ul tău.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Primit! +${amount} € creditați`,
+    cashbackEarnedTitle: '💰 eSIM Cash Creditat!',
+    cashbackEarnedSub: 'Îți mulțumim pentru achiziție! Tocmai am creditat un nou sold <strong>eSIM Cash</strong> în contul tău.',
+    cashbackEarnedValLabel: 'Recompensă Primită',
+    cashbackNewBalanceLabel: 'Noul Sold Total',
+    cashbackCurrentRankLabel: 'Nivel Actual',
+    cashbackRedeemHint: 'Poți folosi soldul ca reducere instantanee la următoarea ta comandă.',
+
+    guestMilestoneSubject: '🎁 Recompensele tale eSIM Cash te așteaptă',
+    guestMilestoneTitle: '🎁 Recompensele Tale te Așteaptă!',
+    guestMilestoneSub: 'Ai cumpărat ca vizitator pe site-ul nostru. Știai? Ai acumulat deja următorul sold <strong>eSIM Cash</strong>:',
+    guestMilestoneValLabel: 'Sold Disponibil',
+    guestMilestoneText: 'Înregistrează-te gratuit cu această adresă de e-mail pentru a debloca și folosi soldul la următoarea comandă!',
+    guestMilestoneBtn: 'Creează Cont Gratuit Acum',
+  },
+
+  hu: {
+    greeting: (name) => name ? `Szia ${name},` : 'Üdvözöljük,',
+    checkoutSubject: (invoiceId) => `📋 Fizetési kérelem az eSIM megrendeléshez (ID: ${invoiceId})`,
+    checkoutTitle: '📋 Fizetési Kérelem az eSIM-edhez',
+    checkoutSub: 'Új kripto fizetési kérelmet hoztunk létre eSIM megrendelésedhez.',
+    invoiceIdLabel: 'Számla azonosító:',
+    paymentMethodLabel: 'Fizetési mód:',
+    amountLabel: 'Összeg (EUR):',
+    validUntilLabel: 'Érvényes:',
+    validMinutes: (mins) => `(${mins} perc)`,
+    checkoutCta: (amount) => `Fizetés Most (${amount} €)`,
+    checkoutInstruction: 'Kérjük, fejezd be a fizetést az alábbi közvetlen hivatkozással:',
+    checkoutIgnoreText: 'Ha nem te adtad le ezt a rendelést, figyelmen kívül hagyhatod ezt az e-mailt.',
+
+    esimSubject: (country) => `📱 Az eSIM-ed a következő országhoz: ${country} elkészült`,
+    esimTitle: '📱 Az eSIM-ed Elkészült!',
+    esimOrderBadge: (orderId) => `Rendelés #${orderId}`,
+    esimThankYou: (country) => `Köszönjük a vásárlást. Az eSIM-ed a következő országhoz: <strong>${country}</strong> sikeresen aktiválásra került, és használatra kész.`,
+    esimInstallBtn: '📱 Telepítés közvetlenül a telefonra',
+    esimInstallSub: '1-kattintásos telepítés és adatfogyasztás ellenőrzés',
+    esimPlanDetails: '📦 Csomag részletei',
+    esimTariffLabel: 'Csomag',
+    esimDataLabel: 'Adatmennyiség',
+    esimValidityLabel: 'Érvényesség',
+    esimDays: (days) => `${days} nap`,
+    esimPaidLabel: 'Kifizetve',
+    esimQrTitle: '📷 Telepítés QR-kóddal (Ajánlott)',
+    esimQrSub: 'Olvasd be ezt a QR-kódot a telefonod beállításaiban<br/>(Beállítások → Mobilhálózat → eSIM hozzáadása)',
+    esimManualTitle: '⌨️ Kézi Aktiválás (Alternatíva)',
+    esimManualSub: 'Ha a QR-kód nem működik, adja meg az adatokat kézzel:',
+    esimStepsTitle: '📖 Telepítési Útmutató',
+    esimStep1: '<strong>iPhone:</strong> Beállítások → Mobilhálózat → eSIM hozzáadása → QR-kód használata',
+    esimStep2: '<strong>Android:</strong> Beállítások → Hálózat → SIM-kártyák → eSIM hozzáadása → QR-kód beolvasása',
+    esimStep3: 'Válaszd ki az új eSIM-et mobiladat-forgalomhoz, és kapcsold be az "Adatroaming" opciót.',
+    esimStep4: 'Az érvényességi idő az első adatforgalommal kezdődik.',
+    esimFooterQuestions: 'Kérdésed van? Írj nekünk:',
+    esimFooterRights: 'Minden jog fenntartva.',
+
+    topUpSubject: (gb) => `✅ Sikeres Feltöltés – ${gb} GB hozzáadva`,
+    topUpTitle: '✅ Sikeres Feltöltés!',
+    topUpSub: 'Az eSIM adatcsomagod sikeresen feltöltésre került. A plusz adategyenleg azonnal elérhető.',
+    topUpAutoCredited: 'Nincs más teendőd – az adatmennyiség automatikusan jóváírásra került az eSIM-eden.',
+
+    cashbackEarnedSubject: (amount) => `💰 eSIM Cash Kapva! +${amount} € jóváírva`,
+    cashbackEarnedTitle: '💰 eSIM Cash Jóváírva!',
+    cashbackEarnedSub: 'Köszönjük a vásárlást! Új <strong>eSIM Cash</strong> egyenleget írtunk jóvá a fiókodban.',
+    cashbackEarnedValLabel: 'Kapott Jutalmazás',
+    cashbackNewBalanceLabel: 'Új Teljes Egyenleg',
+    cashbackCurrentRankLabel: 'Jelenlegi Szint',
+    cashbackRedeemHint: 'Az egyenlegedet azonnali kedvezményként használhatod fel a következő vásárlásodnál.',
+
+    guestMilestoneSubject: '🎁 Az eSIM Cash egyenleged rád vár',
+    guestMilestoneTitle: '🎁 Az Egyenleged Rád Vár!',
+    guestMilestoneSub: 'Vendégként vásároltál nálunk. Tudtad? Már a következő <strong>eSIM Cash</strong> egyenleget gyűjtötted össze:',
+    guestMilestoneValLabel: 'Elérhető Egyenleg',
+    guestMilestoneText: 'Regisztrálj ingyenesen ezzel az e-mail címmel, hogy beváltasd egyenleged a következő rendelésednél!',
+    guestMilestoneBtn: 'Ingyenes Fiók Létrehozása',
+  },
+};
+
+export function getEmailTranslations(locale?: string | null): EmailDictionary {
+  const normLoc = normalizeEmailLocale(locale);
+  return EMAIL_DICTS[normLoc] || EMAIL_DICTS.de;
+}

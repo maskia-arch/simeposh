@@ -44,28 +44,37 @@ export async function POST(req: Request) {
 
     const verificationLink = `${siteUrl}/api/auth/verify?token=${token}`;
 
+    // Query user's stored locale if available
+    const userDbRes = await query('SELECT locale FROM public.users WHERE id = $1', [userId]);
+    const userLocale = userDbRes.rows[0]?.locale || 'de';
+    const isEn = userLocale.startsWith('en');
+
     // Send email using custom SMTP mailer
     await sendGenericEmail({
       to: email,
-      subject: '🔑 Bestätige dein PureSim E-Mail-Konto',
+      subject: isEn ? '🔑 Confirm your PureSim Email Account' : '🔑 Bestätige dein PureSim E-Mail-Konto',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-          <h2 style="color: #1d4ed8; font-size: 20px;">Hallo,</h2>
+          <h2 style="color: #1d4ed8; font-size: 20px;">${isEn ? 'Hello,' : 'Hallo,'}</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.5;">
-            vielen Dank für dein Vertrauen in <strong>PureSim</strong>. Bitte bestätige deine E-Mail-Adresse, um alle Funktionen deines Kontos uneingeschränkt freizuschalten.
+            ${isEn 
+              ? 'Thank you for choosing <strong>PureSim</strong>. Please confirm your email address to unlock all account features.' 
+              : 'vielen Dank für dein Vertrauen in <strong>PureSim</strong>. Bitte bestätige deine E-Mail-Adresse, um alle Funktionen deines Kontos uneingeschränkt freizuschalten.'}
           </p>
           <div style="margin: 30px 0; text-align: center;">
             <a href="${verificationLink}" style="background-color: #1d4ed8; color: white; padding: 12px 24px; font-weight: bold; border-radius: 8px; text-decoration: none; display: inline-block;">
-              E-Mail-Adresse bestätigen
+              ${isEn ? 'Confirm Email Address' : 'E-Mail-Adresse bestätigen'}
             </a>
           </div>
           <p style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
-            Dieser Link ist für die nächsten 24 Stunden gültig. Falls der Button oben nicht funktioniert, kopiere diesen Link in deinen Browser:<br />
+            ${isEn
+              ? 'This link is valid for the next 24 hours. If the button above does not work, copy this link into your browser:'
+              : 'Dieser Link ist für die nächsten 24 Stunden gültig. Falls der Button oben nicht funktioniert, kopiere diesen Link in deinen Browser:'}<br />
             <a href="${verificationLink}" style="color: #0ea5e9;">${verificationLink}</a>
           </p>
           <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 30px 0;" />
           <p style="font-size: 11px; color: #94a3b8;">
-            Dies ist eine automatische Benachrichtigung. Bitte antworte nicht direkt auf diese E-Mail.
+            ${isEn ? 'This is an automated notification. Please do not reply directly to this email.' : 'Dies ist eine automatische Benachrichtigung. Bitte antworte nicht direkt auf diese E-Mail.'}
           </p>
         </div>
       `,

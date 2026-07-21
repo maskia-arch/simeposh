@@ -50,23 +50,29 @@ export async function GET(request: Request) {
     console.error('[order/status] session lookup failed:', err);
   }
 
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net').replace(/\/$/, '');
+  const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const orders = data.map((o: any) => ({
-    id:             o.id,
-    status:         o.status,
-    amountEur:      o.amount_eur,
-    countryName:    o.tariffs?.country_name ?? 'eSIM',
-    flag:           o.tariffs?.flag_emoji ?? null,
-    dataGb:         o.tariffs?.data_gb ?? null,
-    validityDays:   o.period_num ?? o.tariffs?.validity_days ?? 0,
-    iccid:          o.iccid,
-    shortUrl:       o.short_url,
-    smdpAddress:    o.smdp_address,
-    activationCode: o.activation_code,
-    qrCodeUrl:      o.qr_code_url,
-    esimStatus:     o.esim_status,
-    overviewUrl:    o.iccid ? `https://esim.puresim.net/${txId}/${o.iccid}` : null,
-  }));
+  const orders = data.map((o: any) => {
+    const finalToken = txId || ref || o.id;
+    return {
+      id:             o.id,
+      status:         o.status,
+      amountEur:      o.amount_eur,
+      countryName:    o.tariffs?.country_name ?? 'eSIM',
+      flag:           o.tariffs?.flag_emoji ?? null,
+      dataGb:         o.tariffs?.data_gb ?? null,
+      validityDays:   o.period_num ?? o.tariffs?.validity_days ?? 0,
+      iccid:          o.iccid,
+      shortUrl:       o.short_url,
+      smdpAddress:    o.smdp_address,
+      activationCode: o.activation_code,
+      qrCodeUrl:      o.qr_code_url,
+      esimStatus:     o.esim_status,
+      overviewUrl:    o.iccid ? (isLocal ? `${appUrl}/esim-overview/${finalToken}/${o.iccid}` : `https://esim.puresim.net/${finalToken}/${o.iccid}`) : null,
+    };
+  });
 
   const allDone = orders.every((o) => o.status === 'completed' || o.status === 'failed');
   const totalPaid = orders.reduce((s, o) => s + (o.amountEur ?? 0), 0);

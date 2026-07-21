@@ -23,7 +23,7 @@ interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIcci
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { email?: string; coin?: string; items?: ReqItem[]; newsletterConsent?: boolean };
+    const body = await request.json() as { email?: string; coin?: string; items?: ReqItem[]; newsletterConsent?: boolean; locale?: string };
     const email = body.email?.trim();
     const coin  = body.coin?.trim().toUpperCase();
     const items = Array.isArray(body.items) ? body.items : [];
@@ -189,6 +189,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ ref });
     } else {
+      const cookieStore = await cookies();
+      const cookieLocale = cookieStore.get('locale')?.value;
+      const customerLocale = body.locale || cookieLocale || request.headers.get('accept-language')?.slice(0, 2) || 'de';
+
       // Standard Crypto Checkout
       const orderRows: Array<Record<string, unknown>> = [];
       for (const line of lines) {
@@ -211,7 +215,8 @@ export async function POST(request: Request) {
             amount_eur: unit, usd_eur_rate: t.usd_eur_rate, period_num: periodNum,
             top_up_iccid: line.topUpIccid, checkout_ref: ref,
             referred_by_code: referredBy,
-            cashback_applied_eur: 0.00 // no balance discount
+            cashback_applied_eur: 0.00, // no balance discount
+            locale: customerLocale,
           });
         }
       }
@@ -229,18 +234,20 @@ export async function POST(request: Request) {
       const orderIds = inserted.map((o) => o.id);
 
       const session = await createCryptoSession({
-        orderIds, email, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin,
+        orderIds, email, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale,
       });
 
-      // Save newsletter consent if checked
-      if (body.newsletterConsent && email) {
+      // Save newsletter consent & locale if checked
+      if (email) {
         try {
+          const updateObj: Record<string, unknown> = { locale: customerLocale };
+          if (body.newsletterConsent) updateObj.newsletter_consent = true;
           await service
             .from('users')
-            .update({ newsletter_consent: true } as any)
+            .update(updateObj as any)
             .eq('email', email.trim().toLowerCase());
         } catch (dbErr) {
-          console.error('[checkout] newsletter update failed:', dbErr);
+          console.error('[checkout] user update failed:', dbErr);
         }
       }
 
@@ -256,6 +263,8 @@ export async function POST(request: Request) {
           amountEur: session.amountEur,
           expiresAt: session.expiresAt,
           checkoutLink,
+          locale: customerLocale,
+          durationMins: session.checkoutDurationMins || 30,
         });
       } catch (mailErr) {
         console.error('[checkout] failed to send checkout email:', mailErr);
