@@ -126,10 +126,13 @@ export function ClientPage({
             <div className="flex-1 min-w-0">
               <p className="text-lg font-bold text-white truncate">{countryName}</p>
               <p className="text-xs text-slate-400 mt-0.5">
-                {dataGb != null ? `${dataGb} GB` : t('card_unlimited')} · {validityDays} {t('cfg_days')}
+                {dataGb != null ? formatGb(dataGb) : t('card_unlimited')} · {validityDays} {t('cfg_days')}
+              </p>
+              <p className="text-[11px] font-medium text-sky-400 mt-1 flex items-center gap-1">
+                <span>⌛</span> 180 Tage Zeit zur Installation ab Kaufdatum
               </p>
             </div>
-            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" title="Active & Ready" />
+            <div className="h-2.5 w-2.5 rounded-full bg-sky-400 animate-pulse shrink-0" title="Bereit zur Installation" />
           </div>
         </div>
 
@@ -267,12 +270,14 @@ export function ClientPage({
             <div className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-4 space-y-3 animate-fadeIn text-xs">
               <div className="flex items-center justify-between text-slate-400">
                 <span>{t('esim_status_label' as any) || 'Network Status:'}</span>
-                <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${
+                <span className={`font-bold px-2.5 py-0.5 rounded text-[10px] uppercase ${
                   usage.data.status === 'IN_USE' || usage.data.status === 'ACTIVE'
-                    ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-450 border border-amber-500/20'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
                 }`}>
-                  {usage.data.status === 'IN_USE' || usage.data.status === 'ACTIVE' ? (t('esim_active' as any) || 'Active') : (t('esim_ready' as any) || 'Ready for Installation')}
+                  {usage.data.status === 'IN_USE' || usage.data.status === 'ACTIVE'
+                    ? (t('life_in_use' as any) || 'Aktiv')
+                    : (t('life_new' as any) || 'Bereit zur Installation')}
                 </span>
               </div>
 

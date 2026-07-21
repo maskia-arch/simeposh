@@ -83,6 +83,23 @@ export default async function EsimOverviewPage({ params }: PageProps) {
     }
   }
 
+  // 4. Look up via ICCID directly (resilient fallback for completed eSIMs)
+  if (!matchingOrder) {
+    try {
+      const { data: orders } = await db
+        .from('orders')
+        .select('*')
+        .eq('iccid', cleanIccid)
+        .eq('status', 'completed');
+
+      if (orders && orders.length > 0) {
+        matchingOrder = orders[0];
+      }
+    } catch (err) {
+      console.error('[EsimOverviewPage] Direct ICCID lookup error:', err);
+    }
+  }
+
   // Anti-tampering & Security Check: If order is not found or not completed, deny access (404)
   if (!matchingOrder || matchingOrder.status !== 'completed') {
     return notFound();

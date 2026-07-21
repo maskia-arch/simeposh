@@ -91,8 +91,14 @@ export async function middleware(request: NextRequest) {
 
   // Dynamic subdomain rewrite for esim.puresim.com / esim.puresim.net
   if (cleanHost.startsWith('esim.')) {
-    // Avoid rewriting static assets or API calls
-    if (pathname !== '/' && !pathname.includes('.') && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+    // Avoid rewriting static assets, API calls, or already rewritten esim-overview paths
+    if (
+      pathname !== '/' &&
+      !pathname.includes('.') &&
+      !pathname.startsWith('/api') &&
+      !pathname.startsWith('/_next') &&
+      !pathname.startsWith('/esim-overview')
+    ) {
       return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
     }
   }

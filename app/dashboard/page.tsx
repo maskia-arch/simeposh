@@ -19,10 +19,10 @@ export const dynamic = 'force-dynamic';
 const STATUS_REFRESH_MS = 10 * 60 * 1000; // refresh esim status at most every 10 min
 
 const LIFECYCLE_META: Record<EsimLifecycle, { key: TranslationKeys | null; cls: string }> = {
-  new:     { key: 'life_new',    cls: 'bg-sky-100 text-sky-700' },
-  in_use:  { key: 'life_in_use', cls: 'bg-green-100 text-green-700' },
+  new:     { key: 'life_new',    cls: 'bg-sky-50 text-sky-700 border border-sky-200' },
+  in_use:  { key: 'life_in_use', cls: 'bg-emerald-100 text-emerald-800 border border-emerald-200' },
   used:    { key: 'life_used',   cls: 'bg-slate-200 text-slate-600' },
-  unknown: { key: null,          cls: 'bg-slate-100 text-slate-400' },
+  unknown: { key: 'life_new',    cls: 'bg-sky-50 text-sky-700 border border-sky-200' },
 };
 
 interface DashboardPageProps {

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const service = createServiceClient();
   const { data, error } = await service
     .from('orders')
-    .select('id, status, amount_eur, period_num, iccid, short_url, smdp_address, activation_code, qr_code_url, esim_status, created_at, tariffs(country_name, flag_emoji, data_gb, validity_days)')
+    .select('id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, tariffs(country_name, flag_emoji, data_gb, validity_days)')
     .eq('checkout_ref', ref)
     .order('created_at', { ascending: true });
 
@@ -67,7 +67,8 @@ export async function GET(request: Request) {
       dataGb:         o.tariffs?.data_gb ?? null,
       validityDays:   o.period_num ?? o.tariffs?.validity_days ?? 0,
       iccid:          o.iccid,
-      shortUrl:       o.short_url,
+      apn:            o.apn || 'internet',
+      shortUrl:       null,
       smdpAddress:    o.smdp_address,
       activationCode: o.activation_code,
       qrCodeUrl:      o.qr_code_url,
