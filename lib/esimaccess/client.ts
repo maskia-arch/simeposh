@@ -479,47 +479,85 @@ export async function allocateEsim(
     throw new Error(`esimaccess order failed (${orderRes.errorCode}) for ${packageCode}`);
   }
 
-  // Some versions return eSIM immediately
-  const esimList = orderRes.obj?.esimList;
-  if (esimList && esimList.length > 0 && esimList[0].iccid) {
-    return { success: true, errorCode: '0', obj: esimList[0] };
+  // Helper to standardise and parse eSIM allocation result
+  function formatEsimResult(esim: any): EsimAccessAllocateResponse {
+    const iccid = esim.iccid;
+    let lpaCode = esim.lpaCode || esim.ac || esim.lpa || '';
+    let smdpAddress = esim.smdpAddress || esim.smdp_address || '';
+    let matchingId = esim.matchingId || esim.matching_id || esim.activationCode || '';
+
+    // Auto-extract smdpAddress and matchingId from LPA code string if needed
+    if ((!smdpAddress || !matchingId) && lpaCode && lpaCode.startsWith('LPA:1$')) {
+      const parts = lpaCode.split('$');
+      if (!smdpAddress && parts[1]) smdpAddress = parts[1];
+      if (!matchingId && parts[2]) matchingId = parts[2];
+    }
+
+    // Auto-reconstruct lpaCode if smdpAddress and matchingId are present
+    if (!lpaCode && smdpAddress && matchingId) {
+      lpaCode = `LPA:1$${smdpAddress}$${matchingId}`;
+    }
+
+    return {
+      success: true,
+      errorCode: '0',
+      obj: {
+        iccid,
+        lpaCode,
+        smdpAddress,
+        matchingId,
+        qrCodeUrl: esim.qrCodeUrl || esim.qr_code_url || '',
+        apn: esim.apn || 'internet',
+        msisdn: esim.msisdn || '',
+        shortUrl: esim.shortUrl || esim.short_url,
+      }
+    };
   }
 
-  // Fallback: query by orderNo (retry up to 6 times with a 2.5s delay to allow esimaccess time to provision the profile)
+  // Some versions return eSIM immediately in orderRes
+  const rawOrderObj = orderRes.obj as any;
+  const initialEsim =
+    rawOrderObj?.esimList?.[0] ||
+    rawOrderObj?.records?.[0] ||
+    rawOrderObj?.list?.[0] ||
+    rawOrderObj?.data?.[0];
+
+  if (initialEsim && initialEsim.iccid) {
+    return formatEsimResult(initialEsim);
+  }
+
+  // Fallback: query by orderNo & transactionId (retry up to 12 times with a 2.5s delay = 30s total)
   let esim: any = null;
-  const maxRetries = 6;
+  const maxRetries = 12;
   const delayMs = 2500;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[esimaccess] Querying order ${orderRes.obj.orderNo} (attempt ${attempt}/${maxRetries})...`);
-      const queryRes = await esimRequest<{
-        success:   boolean;
-        errorCode: string;
-        obj: {
-          esimList?: Array<{
-            iccid: string; lpaCode: string; smdpAddress: string;
-            matchingId: string; qrCodeUrl: string; apn: string; msisdn: string;
-            shortUrl?: string; ac?: string;
-          }>;
-          iccid?: string; lpaCode?: string; smdpAddress?: string;
-          matchingId?: string; qrCodeUrl?: string; apn?: string; msisdn?: string;
-          shortUrl?: string;
-        };
-      }>('/esim/query', { 
-        orderNo: orderRes.obj.orderNo,
-        orderno: orderRes.obj.orderNo 
+      console.log(`[esimaccess] Querying order ${orderRes.obj?.orderNo} (attempt ${attempt}/${maxRetries})...`);
+      const queryRes = await esimRequest<any>('/esim/query', { 
+        orderNo: orderRes.obj?.orderNo,
+        orderno: orderRes.obj?.orderNo,
+        transactionId: orderRef,
+        pager: { pageNum: 1, pageSize: 20 }
       });
 
-      if (queryRes.success && queryRes.obj) {
-        const found = queryRes.obj.esimList?.[0] || queryRes.obj;
+      if (queryRes && queryRes.success && queryRes.obj) {
+        const rawObj = queryRes.obj;
+        const found =
+          rawObj?.esimList?.[0] ||
+          rawObj?.records?.[0] ||
+          rawObj?.list?.[0] ||
+          rawObj?.data?.[0] ||
+          (Array.isArray(rawObj) ? rawObj[0] : null) ||
+          (rawObj.iccid ? rawObj : null);
+
         if (found && found.iccid) {
           esim = found;
           break; // Found the profile!
         }
       }
       
-      console.log(`[esimaccess] Profile not ready yet for order ${orderRes.obj.orderNo}. ErrorCode: ${queryRes.errorCode || 'none'}`);
+      console.log(`[esimaccess] Profile not ready yet for order ${orderRes.obj?.orderNo}. Response:`, JSON.stringify(queryRes));
     } catch (err) {
       console.warn(`[esimaccess] Query attempt ${attempt} failed:`, (err as Error).message);
     }
@@ -533,20 +571,7 @@ export async function allocateEsim(
     throw new Error(`esimaccess query returned no eSIM profiles after ${maxRetries} attempts`);
   }
 
-  return {
-    success: true,
-    errorCode: '0',
-    obj: {
-      iccid: esim.iccid,
-      lpaCode: esim.lpaCode || '',
-      smdpAddress: esim.smdpAddress || '',
-      matchingId: esim.matchingId || '',
-      qrCodeUrl: esim.qrCodeUrl || '',
-      apn: esim.apn || '',
-      msisdn: esim.msisdn || '',
-      shortUrl: esim.shortUrl,
-    }
-  };
+  return formatEsimResult(esim);
 }
 
 // ── Top-Up ───────────────────────────────────────────────────
