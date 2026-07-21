@@ -31,16 +31,30 @@ export default async function EsimOverviewPage({ params }: PageProps) {
       .eq('id', cleanInvoiceId)
       .maybeSingle();
 
-    if (session && Array.isArray(session.order_ids) && session.order_ids.length > 0) {
-      const { data: orders } = await db
-        .from('orders')
-        .select('*')
-        .in('id', session.order_ids)
-        .eq('iccid', cleanIccid)
-        .eq('status', 'completed');
+    if (session && session.order_ids) {
+      let orderIds: string[] = [];
+      if (Array.isArray(session.order_ids)) {
+        orderIds = session.order_ids;
+      } else if (typeof session.order_ids === 'string') {
+        try {
+          const parsed = JSON.parse(session.order_ids);
+          orderIds = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          orderIds = [session.order_ids];
+        }
+      }
 
-      if (orders && orders.length > 0) {
-        matchingOrder = orders[0];
+      if (orderIds.length > 0) {
+        const { data: orders } = await db
+          .from('orders')
+          .select('*')
+          .in('id', orderIds)
+          .eq('iccid', cleanIccid)
+          .eq('status', 'completed');
+
+        if (orders && orders.length > 0) {
+          matchingOrder = orders[0];
+        }
       }
     }
   } catch (err) {
