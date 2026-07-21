@@ -80,8 +80,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Dynamic subdomain rewrite for esim.puresim.net
-  if (host.includes('esim.puresim.net')) {
+  const cleanHost = host.toLowerCase().split(':')[0];
+
+  // ── 301 Permanent Redirect www.puresim.com (or www.*) to root domain ──
+  if (cleanHost.startsWith('www.')) {
+    const canonicalHost = cleanHost.replace(/^www\./, '');
+    const redirectUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${canonicalHost}`);
+    return NextResponse.redirect(redirectUrl, 301);
+  }
+
+  // Dynamic subdomain rewrite for esim.puresim.com / esim.puresim.net
+  if (cleanHost.startsWith('esim.')) {
     // Avoid rewriting static assets or API calls
     if (pathname !== '/' && !pathname.includes('.') && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
       return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
