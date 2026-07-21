@@ -15,7 +15,7 @@ export function getPool(): Pool {
       connectionString,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 10000,
     });
   }
   return pool;
@@ -44,7 +44,6 @@ async function runMigrations() {
   // 2. Read migration files
   const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
   if (!fs.existsSync(migrationsDir)) {
-    console.warn(`[Migrations] Directory ${migrationsDir} not found. Skipping auto-migrations.`);
     return;
   }
 
@@ -53,48 +52,56 @@ async function runMigrations() {
     .sort();
 
   for (const file of files) {
-    // Check if migration has already run
-    const { rows } = await p.query(
-      'SELECT 1 FROM public.schema_migrations WHERE version = $1',
-      [file]
-    );
+    try {
+      const { rows } = await p.query(
+        'SELECT 1 FROM public.schema_migrations WHERE version = $1',
+        [file]
+      );
 
-    if (rows.length === 0) {
-      console.log(`[Migrations] Running migration: ${file}...`);
-      const filePath = path.join(migrationsDir, file);
-      const sql = fs.readFileSync(filePath, 'utf8');
-      
-      const client = await p.connect();
-      try {
-        await client.query('BEGIN');
-        await client.query(sql);
-        await client.query(
-          'INSERT INTO public.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING',
-          [file]
-        );
-        await client.query('COMMIT');
-        console.log(`[Migrations] Migration ${file} completed successfully.`);
-      } catch (err: any) {
-        await client.query('ROLLBACK');
-        console.error(`[Migrations] Migration ${file} failed:`, err.message);
-        throw err;
-      } finally {
-        client.release();
+      if (rows.length === 0) {
+        console.log(`[Migrations] Running migration: ${file}...`);
+        const filePath = path.join(migrationsDir, file);
+        const sql = fs.readFileSync(filePath, 'utf8');
+        
+        const client = await p.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(sql);
+          await client.query(
+            'INSERT INTO public.schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING',
+            [file]
+          );
+          await client.query('COMMIT');
+          console.log(`[Migrations] Migration ${file} completed successfully.`);
+        } catch (err: any) {
+          await client.query('ROLLBACK');
+          console.error(`[Migrations] Migration ${file} failed:`, err.message);
+        } finally {
+          client.release();
+        }
       }
+    } catch (err: any) {
+      console.error(`[Migrations] Error checking status for ${file}:`, err.message);
     }
   }
 }
 
 export function ensureMigrations(): Promise<void> {
   if (!migrationsRun) {
-    migrationsRun = runMigrations();
+    migrationsRun = runMigrations().catch((err) => {
+      console.error('[Migrations] Auto-migration unexpected failure:', err);
+    });
   }
   return migrationsRun;
 }
 
 export async function query(text: string, params?: any[]): Promise<any> {
-  // Auto-run migrations on startup/first query
-  await ensureMigrations();
+  // Auto-run migrations on startup/first query (failsafe)
+  try {
+    await ensureMigrations();
+  } catch (err) {
+    console.error('[SQL Error] Migration initialization failed, continuing query:', err);
+  }
 
   const start = Date.now();
   try {
