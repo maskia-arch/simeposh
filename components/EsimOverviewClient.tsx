@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { CountryFlag } from '@/components/CountryFlag';
 
 interface ClientPageProps {
   iccid: string;
@@ -102,7 +103,7 @@ export function ClientPage({
   return (
     <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100 font-sans px-4 py-8 md:py-14 antialiased">
       {/* Top Navigation Bar with Official Shop Logo & Language Switcher */}
-      <div className="max-w-xl mx-auto flex items-center justify-between mb-10 pb-4 border-b border-slate-800/80">
+      <div className="max-w-xl mx-auto flex items-center justify-between mb-10 pb-4 border-b border-slate-800/80 relative z-50">
         <Link href="https://puresim.net" className="flex items-center gap-2.5 font-bold text-lg shrink-0 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
@@ -113,8 +114,8 @@ export function ClientPage({
         </Link>
 
         {/* Multi-language selector dropdown */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1 shadow-lg backdrop-blur-md">
-          <LanguageSwitcher />
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-1.5 py-0.5 shadow-lg backdrop-blur-md">
+          <LanguageSwitcher variant="dark" />
         </div>
       </div>
 
@@ -165,7 +166,7 @@ export function ClientPage({
                         : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
                     }`}
                   >
-                    <span>{s.flag ?? '🌐'}</span>
+                    <CountryFlag countryCode={s.flag || s.countryName} countryName={s.countryName} size={20} className="shrink-0" />
                     <span>eSIM #{idx + 1}: {s.countryName}</span>
                     {isCurrent && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-extrabold">Aktiv</span>}
                   </Link>
@@ -178,8 +179,8 @@ export function ClientPage({
         {/* eSIM Plan Summary Card */}
         <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-2xl backdrop-blur-md relative overflow-hidden">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-3xl shadow-inner shrink-0">
-              {flag ?? '🌐'}
+            <div className="h-14 w-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center shadow-inner shrink-0 overflow-hidden">
+              <CountryFlag countryCode={flag || countryName} countryName={countryName} size={48} className="rounded-xl shadow-md" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xl font-extrabold text-white truncate">{countryName}</p>
@@ -263,7 +264,7 @@ export function ClientPage({
 
           <div className="pt-3 border-t border-slate-800/80 w-full">
             <Link
-              href="https://puresim.net/blog/esim-aktivieren-schritt-fuer-schritt-anleitung"
+              href="https://puresim.net/blog/puresim-esim-aktivieren-schritt-fuer-schritt-anleitung-ios-android"
               target="_blank"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-400 hover:text-brand-300 transition-colors"
             >
@@ -461,6 +462,24 @@ export function ClientPage({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Support Ticket Section */}
+      <div className="rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-950/40 via-indigo-950/40 to-slate-900 p-5 text-center mt-8">
+        <p className="font-semibold text-slate-200 text-sm">Brauchst du Hilfe bei der Aktivierung dieser eSIM?</p>
+        <p className="text-xs text-slate-400 mt-1 mb-3">Unser Support-Team hilft dir persönlich bei allen Fragen zur Installation weiter.</p>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              window.dispatchEvent(new CustomEvent('open-ticket-modal', { detail: { iccid, subject: `Hilfe bei eSIM Aktivierung (${iccid})`, category: 'activation' } }));
+            } catch {}
+            window.location.href = `/dashboard?tab=tickets`;
+          }}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-brand-500 transition-all cursor-pointer"
+        >
+          <span>🎫</span> Support-Ticket zu dieser eSIM öffnen
+        </button>
       </div>
 
       {/* Footer Branding */}

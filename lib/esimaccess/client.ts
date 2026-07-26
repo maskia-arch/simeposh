@@ -604,8 +604,98 @@ export async function applyTopUp(
 
 // ── eSIM Status ───────────────────────────────────────────────
 
-export async function getEsimStatus(iccid: string): Promise<EsimStatusResponse> {
-  return esimRequest<EsimStatusResponse>('/esim/query', { iccid });
+export interface NormalizedEsimStatus {
+  status: string;
+  dataRemaining: number;
+  dataTotal: number;
+  expiredTime: string;
+}
+
+export async function getEsimStatus(iccid: string): Promise<{
+  success: boolean;
+  errorCode?: string | null;
+  obj: NormalizedEsimStatus;
+}> {
+  try {
+    const res = await esimRequest<any>('/esim/query', { iccid });
+
+    if (!res || res.success === false) {
+      return {
+        success: false,
+        errorCode: res?.errorCode ?? 'QUERY_FAILED',
+        obj: {
+          status: 'NOT_ACTIVATED',
+          dataRemaining: 0,
+          dataTotal: 0,
+          expiredTime: '',
+        },
+      };
+    }
+
+    const obj = res.obj ?? {};
+    const esimItem = Array.isArray(obj)
+      ? obj[0]
+      : (obj.esimList?.[0] || obj.records?.[0] || obj.list?.[0] || obj);
+
+    const rawStatus =
+      esimItem?.status ||
+      esimItem?.esimStatus ||
+      esimItem?.smdpStatus ||
+      obj.status ||
+      obj.esimStatus ||
+      'NOT_ACTIVATED';
+
+    const rawTotal = Number(
+      esimItem?.totalVolume ??
+      esimItem?.dataTotal ??
+      esimItem?.volume ??
+      esimItem?.initialVolume ??
+      obj.totalVolume ??
+      obj.dataTotal ??
+      obj.volume ??
+      0
+    );
+
+    const rawRemaining = Number(
+      esimItem?.remainVolume ??
+      esimItem?.dataRemaining ??
+      esimItem?.remainData ??
+      obj.remainVolume ??
+      obj.dataRemaining ??
+      rawTotal
+    );
+
+    const expiredTime =
+      esimItem?.expiredTime ||
+      esimItem?.expiryTime ||
+      esimItem?.expirationDate ||
+      obj.expiredTime ||
+      obj.expiryTime ||
+      '';
+
+    return {
+      success: true,
+      errorCode: null,
+      obj: {
+        status: String(rawStatus),
+        dataRemaining: isNaN(rawRemaining) ? 0 : rawRemaining,
+        dataTotal: isNaN(rawTotal) ? 0 : rawTotal,
+        expiredTime: String(expiredTime || ''),
+      },
+    };
+  } catch (err: any) {
+    console.error('[esimaccess] getEsimStatus failed for ICCID:', iccid, err);
+    return {
+      success: false,
+      errorCode: err.message,
+      obj: {
+        status: 'NOT_ACTIVATED',
+        dataRemaining: 0,
+        dataTotal: 0,
+        expiredTime: '',
+      },
+    };
+  }
 }
 
 /** Normalised lifecycle state shown to customers. */

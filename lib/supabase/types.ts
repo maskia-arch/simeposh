@@ -630,6 +630,86 @@ export interface Database {
         Relationships: [];
       };
 
+      // ── support_tickets ───────────────────────────────────────────
+      support_tickets: {
+        Row: {
+          id:             string;
+          ticket_number:  string;
+          user_id:        string | null;
+          customer_email: string;
+          customer_name:  string | null;
+          subject:        string;
+          category:       string;
+          status:         string;
+          priority:       string;
+          invoice_id:     string | null;
+          iccid:          string | null;
+          order_id:       string | null;
+          created_at:     string;
+          updated_at:     string;
+        };
+        Insert: {
+          id?:            string;
+          ticket_number?: string;
+          user_id?:       string | null;
+          customer_email: string;
+          customer_name?: string | null;
+          subject:        string;
+          category?:      string;
+          status?:        string;
+          priority?:      string;
+          invoice_id?:    string | null;
+          iccid?:         string | null;
+          order_id?:      string | null;
+          created_at?:    string;
+          updated_at?:    string;
+        };
+        Update: {
+          customer_email?: string;
+          customer_name?:  string | null;
+          subject?:        string;
+          category?:       string;
+          status?:         string;
+          priority?:       string;
+          invoice_id?:     string | null;
+          iccid?:          string | null;
+          updated_at?:     string;
+        };
+        Relationships: [];
+      };
+
+      // ── ticket_messages ───────────────────────────────────────────
+      ticket_messages: {
+        Row: {
+          id:               string;
+          ticket_id:        string;
+          sender_type:      string;
+          sender_email:     string;
+          sender_name:      string | null;
+          message:          string;
+          is_internal_note: boolean;
+          attachments:      any;
+          created_at:       string;
+        };
+        Insert: {
+          id?:               string;
+          ticket_id:         string;
+          sender_type?:      string;
+          sender_email:      string;
+          sender_name?:      string | null;
+          message:           string;
+          is_internal_note?: boolean;
+          attachments?:      any;
+          created_at?:       string;
+        };
+        Update: {
+          message?:          string;
+          is_internal_note?: boolean;
+          attachments?:      any;
+        };
+        Relationships: [];
+      };
+
     };
     Views: {
       [_ in never]: never;

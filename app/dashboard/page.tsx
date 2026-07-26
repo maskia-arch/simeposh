@@ -10,6 +10,7 @@ import { getServerT, getServerLocale, type ServerT } from '@/lib/i18n/server';
 import type { TranslationKeys } from '@/lib/i18n/translations/en';
 import { resolveEsimCashAccount } from '@/lib/cashback';
 import EsimCashDashboard from '@/components/EsimCashDashboard';
+import { CustomerTicketsDashboard } from '@/components/CustomerTicketsDashboard';
 import { PendingOrderActions } from '@/components/PendingOrderActions';
 import { AccountSettings } from '@/components/AccountSettings';
 import { getEsimOverviewUrl } from '@/lib/url';
@@ -102,7 +103,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const pending   = orderList.filter((o) => ['pending', 'paid', 'provisioning'].includes(o.status));
 
   const tabParam = searchParams?.tab;
-  const activeTab = tabParam === 'cash' ? 'cash' : tabParam === 'settings' ? 'settings' : 'esims';
+  const activeTab = tabParam === 'cash' ? 'cash' : tabParam === 'tickets' ? 'tickets' : tabParam === 'settings' ? 'settings' : 'esims';
 
   // Resolve user profile row from database
   let profile = null;
@@ -179,6 +180,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           >
             <span>📶</span>
             <span>{t('dash_my_esims')}</span>
+          </Link>
+          <Link
+            href="/dashboard?tab=tickets"
+            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'tickets'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <span>🎫</span>
+            <span>Tickets</span>
           </Link>
           <Link
             href="/dashboard?tab=cash"
@@ -258,6 +270,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             )}
           </div>
         </>
+      )}
+
+      {activeTab === 'tickets' && user.email && (
+        <CustomerTicketsDashboard userEmail={user.email} />
       )}
 
       {activeTab === 'cash' && cashAccount && (

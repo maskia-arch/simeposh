@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { EsimDelivery, type DeliveredEsim } from '@/components/EsimDelivery';
+import { CountryFlag } from '@/components/CountryFlag';
 import { formatEur } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
 
@@ -118,7 +119,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
                   : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
               }`}
             >
-              <span>{o.flag ?? '🌐'}</span>
+              <CountryFlag countryCode={o.flag || o.countryName} countryName={o.countryName} size={18} className="shrink-0" />
               <span>#{idx + 1} {o.countryName}</span>
             </button>
           ))}
@@ -163,7 +164,29 @@ export function OrderView({ orderRef }: { orderRef: string }) {
         ))}
       </div>
 
-      <div className="mt-10 flex flex-wrap justify-center gap-3">
+      <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-center">
+        <p className="text-xs text-slate-600 font-medium mb-2">Fragen oder Probleme zu dieser Bestellung?</p>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              window.dispatchEvent(new CustomEvent('open-ticket-modal', {
+                detail: {
+                  invoiceId: orderRef,
+                  subject: `Frage zu Bestellung / Ref: ${orderRef}`,
+                  category: 'general',
+                }
+              }));
+            } catch {}
+            window.location.href = `/dashboard?tab=tickets`;
+          }}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-xs"
+        >
+          <span>🎫</span> Support-Ticket zu dieser Bestellung öffnen
+        </button>
+      </div>
+
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link href="/dashboard" className="rounded-2xl bg-brand-600 px-6 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all active:scale-95">
           {t('op_to_orders')}
         </Link>

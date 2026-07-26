@@ -98,7 +98,7 @@ export function buildTopUpHtml(data: TopUpConfirmedData): string {
       <p style="font-size:13px;color:#6b7280;">${t.topUpAutoCredited}</p>
     </div>
     <div class="footer">
-      <p>${t.esimFooterQuestions} <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
+      <p>${t.esimFooterQuestions} <a href="${appUrl}/dashboard?tab=tickets" target="_blank" style="color:#059669; font-weight:bold; text-decoration:underline;">Support-Ticket öffnen</a></p>
       <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim</p>
     </div>
   </div>

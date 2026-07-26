@@ -22,6 +22,13 @@ import {
   type CashbackEarnedData,
   type GuestMilestoneData,
 } from './templates/cashback-notifications';
+import {
+  buildTicketCreatedCustomerHtml,
+  buildTicketCreatedAdminHtml,
+  buildTicketAnsweredCustomerHtml,
+  type TicketCreatedData,
+  type TicketAnsweredData,
+} from './templates/ticket-notifications';
 
 function createTransporter() {
   const host   = process.env.SMTP_HOST;
@@ -290,3 +297,32 @@ ${t.checkoutIgnoreText}
     text,
   });
 }
+
+export async function sendTicketCreatedEmail(data: TicketCreatedData): Promise<void> {
+  await sendMailThroughTransporter({
+    to:      data.customerEmail,
+    subject: `[PureSim] Support-Ticket empfangen: ${data.ticketNumber}`,
+    html:    buildTicketCreatedCustomerHtml(data),
+    text:    `Hallo ${data.customerName || 'Kunde'},\n\nwir haben deine Anfrage (${data.ticketNumber}: ${data.subject}) erhalten.\nDu kannst dein Ticket im Dashboard verfolgen:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+  });
+}
+
+export async function sendTicketAdminAlertEmail(data: TicketCreatedData): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com';
+  await sendMailThroughTransporter({
+    to:      adminEmail,
+    subject: `🚨 [Admin Alert] Neues Support-Ticket ${data.ticketNumber} von ${data.customerEmail}`,
+    html:    buildTicketCreatedAdminHtml(data),
+    text:    `Neues Ticket ${data.ticketNumber} von ${data.customerEmail}.\nBetreff: ${data.subject}\nNachricht:\n${data.description}`,
+  });
+}
+
+export async function sendTicketAnsweredEmail(data: TicketAnsweredData): Promise<void> {
+  await sendMailThroughTransporter({
+    to:      data.customerEmail,
+    subject: `[PureSim] Antwort auf Support-Ticket ${data.ticketNumber}`,
+    html:    buildTicketAnsweredCustomerHtml(data),
+    text:    `Hallo ${data.customerName || 'Kunde'},\n\nes gibt eine neue Antwort auf dein Ticket ${data.ticketNumber}:\n\n${data.replyMessage}\n\nAntworten kannst du im Dashboard:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+  });
+}
+

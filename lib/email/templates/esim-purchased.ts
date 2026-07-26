@@ -179,7 +179,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
 
     </div>
     <div class="footer">
-      <p>${t.esimFooterQuestions} <a href="mailto:${process.env.SMTP_FROM_ADDRESS}">${process.env.SMTP_FROM_ADDRESS}</a></p>
+      <p>${t.esimFooterQuestions} <a href="${appUrl}/dashboard?tab=tickets" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Support-Ticket öffnen</a></p>
       <p style="margin-top:8px;color:#cbd5e1">© ${new Date().getFullYear()} PureSim. ${t.esimFooterRights}</p>
     </div>
   </div>

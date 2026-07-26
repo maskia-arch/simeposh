@@ -8,6 +8,7 @@ import { LanguageProvider } from '@/components/LanguageProvider';
 import { CartProvider } from '@/components/CartProvider';
 import { CartDrawer } from '@/components/CartDrawer';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
+import { TicketProvider } from '@/components/TicketContext';
 import { detectLocale, countryFromHeaders, isSupportedLocale } from '@/lib/i18n/detect';
 import type { LocaleCode } from '@/lib/i18n';
 import { InitialLoaderRemover } from '@/components/InitialLoaderRemover';
@@ -139,10 +140,12 @@ export default async function RootLayout({
         <LanguageProvider initialLocale={locale}>
           <CurrencyProvider>
             <CartProvider>
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-              <CartDrawer />
+              <TicketProvider>
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <CartDrawer />
+              </TicketProvider>
             </CartProvider>
           </CurrencyProvider>
         </LanguageProvider>

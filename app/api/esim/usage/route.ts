@@ -14,14 +14,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'ICCID erforderlich' }, { status: 400 });
     }
 
-    // Security & Anti-tampering Check: Verify that the ICCID exists for a completed order
+    // Security & Anti-tampering Check: Verify that the ICCID exists in our database
     const db = createServiceClient();
-    const { data: order } = await db
+    const { data: orders } = await db
       .from('orders')
-      .select('id, status')
+      .select('id, status, period_num, tariffs(data_gb)')
       .eq('iccid', iccid)
-      .eq('status', 'completed')
-      .maybeSingle();
+      .in('status', ['completed', 'paid', 'provisioning']);
+
+    const order = orders && orders.length > 0 ? (orders[0] as any) : null;
 
     if (!order) {
       return NextResponse.json({ error: 'eSIM nicht gefunden oder ungültig' }, { status: 404 });
@@ -30,15 +31,21 @@ export async function GET(request: Request) {
     console.log('[esim/usage] Querying status for ICCID:', iccid);
     const statusRes = await getEsimStatus(iccid);
 
-    if (!statusRes.success) {
-      console.error('[esim/usage] Provider returned error code:', statusRes.errorCode);
-      return NextResponse.json({ error: 'Statusabfrage derzeit nicht verfügbar' }, { status: 500 });
+    let dataTotal = statusRes.obj.dataTotal;
+    let dataRemaining = statusRes.obj.dataRemaining;
+
+    // Resilient Fallback: If esimaccess API returns 0 dataTotal for a brand-new / unused eSIM,
+    // fallback to tariff data_gb from DB so total and remaining data are correctly displayed to the user.
+    const dbDataGb = order.period_num ? null : (order.tariffs?.data_gb ?? null);
+    if (dataTotal === 0 && dbDataGb && dbDataGb > 0) {
+      dataTotal = dbDataGb * 1_073_741_824;
+      dataRemaining = dataTotal; // Brand new unused eSIM has 100% remaining
     }
 
     return NextResponse.json({
-      status: statusRes.obj.status,
-      dataRemaining: statusRes.obj.dataRemaining,
-      dataTotal: statusRes.obj.dataTotal,
+      status: statusRes.obj.status || 'NOT_ACTIVATED',
+      dataRemaining,
+      dataTotal,
       expiredTime: statusRes.obj.expiredTime,
     });
   } catch (err: any) {

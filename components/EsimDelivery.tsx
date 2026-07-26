@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { useTranslation } from '@/lib/i18n';
 import { formatGb } from '@/lib/utils';
+import { CountryFlag } from '@/components/CountryFlag';
 
 export interface DeliveredEsim {
   id:             string;
@@ -87,7 +88,7 @@ export function EsimDelivery({
       {/* Top Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 min-w-0">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-3xl filter drop-shadow-sm select-none shrink-0">{esim.flag ?? '🌐'}</span>
+          <CountryFlag countryCode={esim.flag || esim.countryName} countryName={esim.countryName} size={36} className="rounded-lg shadow-sm shrink-0" />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-lg font-extrabold text-slate-900 tracking-tight truncate">{esim.countryName}</h3>

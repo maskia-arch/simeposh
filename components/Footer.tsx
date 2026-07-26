@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
+import { useTicket } from '@/components/TicketContext';
 
 export function Footer() {
   const { t } = useTranslation();
+  const { openTicketModal } = useTicket();
   const year  = new Date().getFullYear();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
@@ -91,6 +93,7 @@ export function Footer() {
                   <li><Link href="/topup"     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
                   <li><Link href="/dashboard" className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
                   <li><Link href="/blog"      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
+                  <li><button onClick={() => openTicketModal()} className="hover:text-brand-700 transition-colors text-left">🎫 Support-Ticket öffnen</button></li>
                 </ul>
               </div>
               <div>
