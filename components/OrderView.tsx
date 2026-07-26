@@ -21,6 +21,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   const { t } = useTranslation();
   const [data, setData]   = useState<StatusResp | null>(null);
   const [tries, setTries] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | 'all'>('all');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {
@@ -91,15 +92,61 @@ export function OrderView({ orderRef }: { orderRef: string }) {
         )}
       </div>
 
+      {/* Multi-eSIM Quick Filter Bar for bulk orders */}
+      {completed.length > 1 && (
+        <div className="mb-6 rounded-2xl bg-slate-100/80 border border-slate-200 p-2 flex flex-wrap items-center gap-1.5 shadow-sm">
+          <span className="px-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 shrink-0">
+            📦 Bestellung ({completed.length} eSIMs):
+          </span>
+          <button
+            onClick={() => setSelectedIndex('all')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              selectedIndex === 'all'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
+            }`}
+          >
+            Alle anzeigen ({completed.length})
+          </button>
+          {completed.map((o, idx) => (
+            <button
+              key={o.id}
+              onClick={() => setSelectedIndex(idx)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                selectedIndex === idx
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
+              }`}
+            >
+              <span>{o.flag ?? '🌐'}</span>
+              <span>#{idx + 1} {o.countryName}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Delivered eSIMs */}
       <div className="space-y-6">
-        {completed.map((o) => <EsimDelivery key={o.id} esim={o} />)}
+        {selectedIndex === 'all' ? (
+          completed.map((o, idx) => (
+            <EsimDelivery key={o.id} esim={o} index={idx + 1} totalCount={completed.length} />
+          ))
+        ) : (
+          completed[selectedIndex] && (
+            <EsimDelivery
+              key={completed[selectedIndex].id}
+              esim={completed[selectedIndex]}
+              index={selectedIndex + 1}
+              totalCount={completed.length}
+            />
+          )
+        )}
 
         {provisioning.map((o) => (
           <div key={o.id} className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
             <svg className="h-6 w-6 animate-spin text-brand-600 shrink-0" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <div>
               <p className="font-extrabold text-slate-800">{o.flag ?? '🌐'} {o.countryName}</p>

@@ -382,6 +382,22 @@ const de = {
   "order_code": "Aktivierungscode",
   "order_apn": "APN",
   "order_topup_btn": "eSIM aufladen",
-  "order_new_btn": "Weitere eSIM kaufen"
+  "order_new_btn": "Weitere eSIM kaufen",
+  "esim_install_center": "eSIM Einrichtungszentrum",
+  "esim_ready_title": "Deine PureSim eSIM",
+  "esim_quick_install_title": "1-Klick Automatische Installation",
+  "esim_ios_hint": "Tippe auf den Button, um die eSIM direkt auf deinem iPhone/iPad zu installieren.",
+  "esim_android_hint": "Tippe auf den Button, um die automatische Einrichtung auf deinem Android-Gerät zu starten.",
+  "esim_desktop_hint": "Scanne den QR-Code unten mit der Kamera deines Smartphones oder öffne diesen Link auf deinem Handy.",
+  "esim_auto_activate_btn": "eSIM automatisch installieren",
+  "esim_os_notice": "Hinweis: Öffnet direkt das Mobilfunk-Einrichtungsmenü deines Geräts.",
+  "esim_qr_title": "Installation per QR-Code",
+  "esim_qr_sub": "Scanne diesen QR-Code mit der Kamera des Smartphones, auf dem du die eSIM installieren möchtest.",
+  "esim_detailed_guide": "Schritt-für-Schritt Installationsanleitung",
+  "esim_mgmt_title": "eSIM Verwaltung & Status",
+  "esim_check_usage": "Datenverbrauch prüfen",
+  "esim_status_label": "Netzwerk-Status:",
+  "esim_left": "verbleibend",
+  "esim_manual_desc": "Falls das Scannen des QR-Codes nicht möglich ist, kannst du diese Aktivierungsdaten manuell in den Mobilfunk-Einstellungen deines Smartphones eingeben:"
 } as const;
 export default de;

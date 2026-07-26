@@ -382,7 +382,23 @@ const en = {
   "faq_q5": "How does the eSIM Cash cashback program work?",
   "faq_a5": "You earn up to 15% cashback on every purchase. You can also refer friends to earn extra cashback tickets. Your earned balance can be used directly as a payment method at checkout.",
   "faq_q6": "What payment methods do you support?",
-  "faq_a6": "We accept secure cryptocurrency payments (Litecoin) directly via PureWallet with zero processing fees."
+  "faq_a6": "We accept secure cryptocurrency payments (Litecoin) directly via PureWallet with zero processing fees.",
+  "esim_install_center": "eSIM Installation Center",
+  "esim_ready_title": "Your PureSim eSIM",
+  "esim_quick_install_title": "1-Click Automatic Installation",
+  "esim_ios_hint": "Tap the button to install the eSIM directly on your iPhone/iPad.",
+  "esim_android_hint": "Tap the button to launch automatic eSIM setup on your Android device.",
+  "esim_desktop_hint": "Scan the QR code below with your mobile camera or open this link on your phone.",
+  "esim_auto_activate_btn": "Activate eSIM Automatically",
+  "esim_os_notice": "Note: This opens your device's cellular setup menu directly.",
+  "esim_qr_title": "Installation via QR Code",
+  "esim_qr_sub": "Scan this QR code using the camera of the smartphone where you want to install the eSIM.",
+  "esim_detailed_guide": "Step-by-Step Installation Guide",
+  "esim_mgmt_title": "eSIM Management & Status",
+  "esim_check_usage": "Check Data Usage",
+  "esim_status_label": "Network Status:",
+  "esim_left": "remaining",
+  "esim_manual_desc": "If scanning the QR code is not possible, enter these activation details manually in your smartphone cellular settings:"
 } as const;
 export default en;
 export type TranslationKeys = keyof typeof en;

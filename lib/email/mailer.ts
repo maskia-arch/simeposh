@@ -61,7 +61,7 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
     return;
   }
 
-  const domain = (process.env.SMTP_FROM_ADDRESS?.split('@')[1] || 'puresim.com').toLowerCase();
+  const domain = (process.env.SMTP_FROM_ADDRESS?.split('@')[1] || 'puresim.net').toLowerCase();
   const msgId = `<ps-${Date.now()}-${Math.random().toString(36).substring(2, 9)}@${domain}>`;
 
   const priorityHeaders = {
@@ -81,7 +81,7 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
     try {
       console.log('[mailer] Dispatching High Priority email via Resend HTTP API to:', cleanTo);
       const fromName = process.env.SMTP_FROM_NAME ?? 'PureSim';
-      const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.com';
+      const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
       const cleanFrom = `"${fromName}" <${fromAddr}>`;
 
       const response = await fetch('https://api.resend.com/emails', {
@@ -206,14 +206,27 @@ export async function sendCheckoutNotificationEmail(opts: {
   const normLoc = normalizeEmailLocale(opts.locale);
   const t = getEmailTranslations(normLoc);
   const duration = opts.durationMins && opts.durationMins > 0 ? opts.durationMins : 30;
-
   const { fullString: berlinTimeFormatted } = formatBerlinTime(opts.expiresAt, normLoc);
   const expiryDisplay = `${berlinTimeFormatted} ${t.validMinutes(duration)}`;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net';
+  const logoUrl = `${appUrl}/logo.png`;
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
       <div style="text-align: center; margin-bottom: 20px;">
-        <img src="https://puresim.com/icon.png" width="52" height="52" alt="PureSim" style="display: block; margin: 0 auto 12px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);" />
+        <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px; border-collapse:collapse;">
+          <tr>
+            <td align="center" style="vertical-align:middle; padding-right:8px;">
+              <img src="${logoUrl}" width="44" height="44" alt="PureSim Logo" style="display:block; width:44px; height:44px; object-fit:contain; border:0; outline:none;" />
+            </td>
+            <td align="center" style="vertical-align:middle;">
+              <span style="font-size:24px; font-weight:800; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; letter-spacing:-0.5px; line-height:1.2;">
+                <span style="color:#1d4ed8;">Pur</span><span style="color:#0ea5e9;">eSim</span>
+              </span>
+            </td>
+          </tr>
+        </table>
         <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 20px; font-weight: 800;">${t.checkoutTitle}</h2>
       </div>
       <p style="color: #475569; font-size: 14px; line-height: 1.5;">${t.greeting()}</p>

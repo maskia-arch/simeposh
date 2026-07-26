@@ -147,6 +147,30 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
     }
   }
 
+  // Fetch sibling eSIMs in the same checkout/order to allow easy switching on esim.puresim.net
+  let siblingEsims: { iccid: string; countryName: string; flag: string | null }[] = [];
+  if (matchingOrder.checkout_ref) {
+    try {
+      const { data: siblings } = await db
+        .from('orders')
+        .select('iccid, tariffs(country_name, flag_emoji)')
+        .eq('checkout_ref', matchingOrder.checkout_ref)
+        .in('status', ['completed', 'paid', 'provisioning']);
+
+      if (siblings && siblings.length > 1) {
+        siblingEsims = siblings
+          .filter(s => s.iccid)
+          .map((s: any) => ({
+            iccid: s.iccid,
+            countryName: s.tariffs?.country_name ?? 'eSIM',
+            flag: s.tariffs?.flag_emoji ?? '🌐',
+          }));
+      }
+    } catch (err) {
+      console.error('[EsimOverviewPage] Sibling fetch error:', err);
+    }
+  }
+
   // Server-side generate QR Code as base64 data URL
   const activationString = `LPA:1$${matchingOrder.smdp_address || ''}$${matchingOrder.activation_code || ''}`;
   let qrCodeDataUrl = '';
@@ -171,6 +195,8 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
       flag={flag}
       dataGb={dataGb}
       validityDays={validityDays}
+      token={cleanInvoiceId}
+      siblingEsims={siblingEsims}
     />
   );
 }

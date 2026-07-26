@@ -50,7 +50,15 @@ function CopyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function EsimDelivery({ esim }: { esim: DeliveredEsim }) {
+export function EsimDelivery({
+  esim,
+  index,
+  totalCount,
+}: {
+  esim: DeliveredEsim;
+  index?: number;
+  totalCount?: number;
+}) {
   const { t } = useTranslation();
   const [qr, setQr] = useState<string | null>(null);
   const content = lpaString(esim);
@@ -75,14 +83,21 @@ export function EsimDelivery({ esim }: { esim: DeliveredEsim }) {
   const formattedVolume = formatGb(esim.dataGb, t('card_unlimited'));
 
   return (
-    <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm transition-all min-w-0 w-full overflow-hidden">
+    <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm transition-all min-w-0 w-full overflow-hidden relative">
       {/* Top Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 min-w-0">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-3xl filter drop-shadow-sm select-none shrink-0">{esim.flag ?? '🌐'}</span>
           <div className="min-w-0">
-            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight truncate">{esim.countryName}</h3>
-            <div className="mt-0.5 flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-extrabold text-slate-900 tracking-tight truncate">{esim.countryName}</h3>
+              {index && totalCount && totalCount > 1 && (
+                <span className="rounded-md bg-slate-900 text-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shrink-0 shadow-xs">
+                  eSIM #{index} von {totalCount}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center rounded-md bg-brand-50 border border-brand-200/60 px-2 py-0.5 text-xs font-bold text-brand-700">
                 {formattedVolume}
               </span>

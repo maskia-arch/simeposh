@@ -21,6 +21,9 @@ export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
   const t = getEmailTranslations(normLoc);
   const shortOrderId = data.orderId.split('-')[0].toUpperCase();
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net';
+  const logoUrl = `${appUrl}/logo.png`;
+
   return `<!DOCTYPE html>
 <html lang="${normLoc}">
 <head>
@@ -29,9 +32,9 @@ export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
-    .header { background:linear-gradient(135deg,#2563eb,#3b82f6); padding:40px 32px; text-align:center; }
-    .header h1 { margin:0; color:#fff; font-size:26px; font-weight:700; }
-    .header p { margin:8px 0 0; color:#bfdbfe; font-size:14px; }
+    .header { background:linear-gradient(135deg,#2563eb,#3b82f6); padding:36px 32px; text-align:center; }
+    .header h1 { margin:0; color:#fff; font-size:24px; font-weight:700; }
+    .header p { margin:6px 0 0; color:#bfdbfe; font-size:13px; }
     .body { padding:32px; }
     .stat-card { background:#f0f7ff; border:1px solid #e0f2fe; border-radius:12px; padding:20px; text-align:center; margin-bottom:24px; }
     .stat-val { font-size:32px; font-weight:800; color:#2563eb; margin:4px 0; }
@@ -47,6 +50,19 @@ export function buildCashbackEarnedHtml(data: CashbackEarnedData): string {
 <body>
   <div class="wrapper">
     <div class="header">
+      <!-- PureSim Official Brand Header -->
+      <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px; border-collapse:collapse;">
+        <tr>
+          <td align="center" style="vertical-align:middle; padding-right:8px;">
+            <img src="${logoUrl}" width="44" height="44" alt="PureSim Logo" style="display:block; width:44px; height:44px; object-fit:contain; border:0; outline:none;" />
+          </td>
+          <td align="center" style="vertical-align:middle;">
+            <span style="font-size:24px; font-weight:800; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; letter-spacing:-0.5px; line-height:1.2;">
+              <span style="color:#ffffff;">Pur</span><span style="color:#93c5fd;">eSim</span>
+            </span>
+          </td>
+        </tr>
+      </table>
       <h1>${t.cashbackEarnedTitle}</h1>
       <p>${t.esimOrderBadge(shortOrderId)}</p>
     </div>
@@ -99,7 +115,9 @@ ${t.cashbackRedeemHint}
 export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
   const normLoc = normalizeEmailLocale(data.locale);
   const t = getEmailTranslations(normLoc);
-  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net'}/register`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net';
+  const registerUrl = `${appUrl}/register`;
+  const logoUrl = `${appUrl}/logo.png`;
   
   return `<!DOCTYPE html>
 <html lang="${normLoc}">
@@ -109,9 +127,9 @@ export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
   <style>
     body { margin:0; padding:0; background:#f4f7fb; font-family:'Helvetica Neue',Arial,sans-serif; color:#1a202c; }
     .wrapper { max-width:600px; margin:40px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
-    .header { background:linear-gradient(135deg,#059669,#10b981); padding:40px 32px; text-align:center; }
-    .header h1 { margin:0; color:#fff; font-size:26px; font-weight:700; }
-    .header p { margin:8px 0 0; color:#a7f3d0; font-size:14px; }
+    .header { background:linear-gradient(135deg,#059669,#10b981); padding:36px 32px; text-align:center; }
+    .header h1 { margin:0; color:#fff; font-size:24px; font-weight:700; }
+    .header p { margin:6px 0 0; color:#a7f3d0; font-size:13px; }
     .body { padding:32px; text-align:center; }
     .amount-box { display:inline-block; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:12px; padding:20px 40px; margin:24px 0; }
     .amount-val { font-size:40px; font-weight:800; color:#059669; }
@@ -125,6 +143,19 @@ export function buildGuestMilestoneHtml(data: GuestMilestoneData): string {
 <body>
   <div class="wrapper">
     <div class="header">
+      <!-- PureSim Official Brand Header -->
+      <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px; border-collapse:collapse;">
+        <tr>
+          <td align="center" style="vertical-align:middle; padding-right:8px;">
+            <img src="${logoUrl}" width="44" height="44" alt="PureSim Logo" style="display:block; width:44px; height:44px; object-fit:contain; border:0; outline:none;" />
+          </td>
+          <td align="center" style="vertical-align:middle;">
+            <span style="font-size:24px; font-weight:800; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; letter-spacing:-0.5px; line-height:1.2;">
+              <span style="color:#ffffff;">Pur</span><span style="color:#a7f3d0;">eSim</span>
+            </span>
+          </td>
+        </tr>
+      </table>
       <h1>${t.guestMilestoneTitle}</h1>
     </div>
     <div class="body">
