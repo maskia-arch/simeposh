@@ -86,29 +86,17 @@ export async function POST(request: Request) {
       console.error('[Ticket Create API] Message DB Error:', msgError);
     }
 
-    // 3. Dispatch emails asynchronously (resilient)
-    Promise.allSettled([
-      sendTicketCreatedEmail({
-        ticketNumber: ticket.ticket_number,
-        customerEmail: cleanEmail,
-        customerName: cleanName || undefined,
-        subject: cleanSubject,
-        category: cleanCategory,
-        description: cleanDesc,
-        invoiceId: cleanInvoiceId || undefined,
-        iccid: cleanIccid || undefined,
-      }),
-      sendTicketAdminAlertEmail({
-        ticketNumber: ticket.ticket_number,
-        customerEmail: cleanEmail,
-        customerName: cleanName || undefined,
-        subject: cleanSubject,
-        category: cleanCategory,
-        description: cleanDesc,
-        invoiceId: cleanInvoiceId || undefined,
-        iccid: cleanIccid || undefined,
-      }),
-    ]).catch((err) => console.error('[Ticket Create API] Email error:', err));
+    // 3. Dispatch customer confirmation email asynchronously (no admin alert email)
+    sendTicketCreatedEmail({
+      ticketNumber: ticket.ticket_number,
+      customerEmail: cleanEmail,
+      customerName: cleanName || undefined,
+      subject: cleanSubject,
+      category: cleanCategory,
+      description: cleanDesc,
+      invoiceId: cleanInvoiceId || undefined,
+      iccid: cleanIccid || undefined,
+    }).catch((err) => console.error('[Ticket Create API] Email error:', err));
 
     return NextResponse.json({
       success: true,

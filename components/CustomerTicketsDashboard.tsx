@@ -30,6 +30,18 @@ interface Message {
   created_at: string;
 }
 
+function parseAttachments(raw: any): Array<{ name?: string; type?: string; dataUrl?: string }> {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
 export function CustomerTicketsDashboard({ userEmail }: { userEmail: string }) {
   const { locale } = useTranslation();
   const t = getTicketTranslations(locale);
@@ -38,7 +50,7 @@ export function CustomerTicketsDashboard({ userEmail }: { userEmail: string }) {
     open:           { label: t.statusOpen, cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
     in_progress:    { label: t.statusInProgress, cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
     answered:       { label: t.statusAnswered, cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-    customer_reply: { label: t.statusCustomerReply, cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
+    customer_reply: { label: t.statusOpen, cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
     closed:         { label: t.statusClosed, cls: 'bg-slate-100 text-slate-600 border border-slate-200' },
   };
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -175,6 +187,10 @@ export function CustomerTicketsDashboard({ userEmail }: { userEmail: string }) {
           <p className="text-xs text-slate-500 mt-0.5">
             {t.tabTicketsSub}
           </p>
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-200/80 px-2.5 py-1 text-[11px] font-medium text-blue-900">
+            <span>⏱️</span>
+            <span>{t.responseTimeNotice}</span>
+          </div>
         </div>
         <button
           onClick={() => {
@@ -323,23 +339,42 @@ export function CustomerTicketsDashboard({ userEmail }: { userEmail: string }) {
                         </div>
                         <p className="whitespace-pre-wrap">{m.message}</p>
 
-                        {/* Render attachments if any */}
-                        {Array.isArray(m.attachments) && m.attachments.length > 0 && (
-                          <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex flex-wrap gap-2">
-                            {m.attachments.map((att: any, idx: number) => (
-                              <a
-                                key={idx}
-                                href={att.dataUrl}
-                                download={att.name || 'anhang'}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[10px] font-semibold text-brand-700 shadow-xs border border-slate-200 hover:bg-brand-50"
-                              >
-                                📎 {att.name || 'Anhang'}
-                              </a>
-                            ))}
-                          </div>
-                        )}
+                        {/* Render attachments & image preview */}
+                        {(() => {
+                          const attList = parseAttachments(m.attachments);
+                          if (attList.length === 0) return null;
+                          return (
+                            <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex flex-col gap-2">
+                              {attList.map((att: any, idx: number) => {
+                                const isImg = att.dataUrl?.startsWith('data:image/') || att.type?.startsWith('image/') || (att.name && /\.(png|jpg|jpeg|webp|gif)$/i.test(att.name));
+
+                                return (
+                                  <div key={idx} className="space-y-1">
+                                    {isImg && att.dataUrl && (
+                                      <a href={att.dataUrl} target="_blank" rel="noreferrer" className="block max-w-xs">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={att.dataUrl}
+                                          alt={att.name || 'Screenshot'}
+                                          className="max-h-56 rounded-xl border border-slate-300 object-contain bg-white hover:opacity-95 transition-opacity shadow-xs"
+                                        />
+                                      </a>
+                                    )}
+                                    <a
+                                      href={att.dataUrl || '#'}
+                                      download={att.name || 'anhang'}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-[11px] font-semibold text-brand-700 shadow-xs border border-slate-200 hover:bg-brand-50"
+                                    >
+                                      📎 {att.name || 'Anhang herunterladen'}
+                                    </a>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })

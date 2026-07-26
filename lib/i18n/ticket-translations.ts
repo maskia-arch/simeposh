@@ -42,6 +42,7 @@ export interface TicketDictionary {
   statusAnswered: string;
   statusCustomerReply: string;
   statusClosed: string;
+  responseTimeNotice: string;
 }
 
 const DE: TicketDictionary = {
@@ -84,8 +85,9 @@ const DE: TicketDictionary = {
   statusOpen: 'Offen',
   statusInProgress: 'In Bearbeitung',
   statusAnswered: 'Beantwortet',
-  statusCustomerReply: 'Kundenantwort',
+  statusCustomerReply: 'Offen',
   statusClosed: 'Geschlossen',
+  responseTimeNotice: 'Anfragen werden in der Regel innerhalb von 24 Stunden (Montag bis Freitag) bearbeitet.',
 };
 
 const EN: TicketDictionary = {
@@ -128,8 +130,9 @@ const EN: TicketDictionary = {
   statusOpen: 'Open',
   statusInProgress: 'In Progress',
   statusAnswered: 'Answered',
-  statusCustomerReply: 'Customer Reply',
+  statusCustomerReply: 'Open',
   statusClosed: 'Closed',
+  responseTimeNotice: 'Inquiries are usually processed within 24 hours (Monday to Friday).',
 };
 
 const FR: TicketDictionary = {

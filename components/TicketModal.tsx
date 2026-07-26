@@ -80,27 +80,33 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const fileList = Array.from(files);
-    fileList.forEach((file) => {
-      // Max 5MB per file
+    const newAttachments: Array<{ name: string; size: number; type: string; dataUrl: string }> = [];
+
+    for (const file of fileList) {
       if (file.size > 5 * 1024 * 1024) {
         setError(`Datei "${file.name}" ist zu groß (max. 5 MB).`);
-        return;
+        continue;
       }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setAttachments((prev) => [
-          ...prev,
-          { name: file.name, size: file.size, type: file.type, dataUrl },
-        ]);
-      };
-      reader.readAsDataURL(file);
-    });
+
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        newAttachments.push({ name: file.name, size: file.size, type: file.type, dataUrl });
+      } catch (err) {
+        console.error('File read error:', err);
+      }
+    }
+
+    setAttachments((prev) => [...prev, ...newAttachments]);
   };
 
   const removeAttachment = (index: number) => {
@@ -176,6 +182,12 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
           >
             ✕
           </button>
+        </div>
+
+        {/* Response Time Info Callout */}
+        <div className="mt-3 rounded-xl bg-blue-50/80 border border-blue-200/80 p-3 text-xs text-blue-900 flex items-start gap-2 shadow-2xs">
+          <span className="text-sm leading-none shrink-0 mt-0.5">⏱️</span>
+          <span className="font-medium leading-relaxed">{t.responseTimeNotice}</span>
         </div>
 
         {/* Form Body */}

@@ -92,6 +92,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
 
+    if (ticket.status === 'closed') {
+      return NextResponse.json({ error: 'Dieses Ticket ist geschlossen und kann nicht mehr beantwortet werden.' }, { status: 400 });
+    }
+
     // Validate ownership
     const userEmail = sessionUser?.email?.trim().toLowerCase();
     const reqEmail = email?.trim().toLowerCase();
@@ -124,26 +128,13 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Antwort konnte nicht gespeichert werden' }, { status: 500 });
     }
 
-    // Update ticket status to customer_reply and update timestamp
+    // Update ticket timestamp
     await db
       .from('support_tickets')
       .update({
-        status: 'customer_reply',
         updated_at: new Date().toISOString(),
       })
       .eq('id', ticketId);
-
-    // Notify admin
-    sendTicketAdminAlertEmail({
-      ticketNumber: ticket.ticket_number,
-      customerEmail: ticketOwnerEmail,
-      customerName: senderName,
-      subject: `Re: ${ticket.subject}`,
-      category: ticket.category,
-      description: cleanMsg,
-      invoiceId: ticket.invoice_id || undefined,
-      iccid: ticket.iccid || undefined,
-    }).catch((err) => console.error('[Ticket Reply API] Email notify error:', err));
 
     return NextResponse.json({
       success: true,
