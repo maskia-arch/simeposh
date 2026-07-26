@@ -48,6 +48,7 @@ export function ClientPage({
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
+  const [canTopup, setCanTopup] = useState<boolean>(false);
 
   // Helper function to safely fetch translated text or fall back to default
   const tr = (key: string, defaultText: string) => {
@@ -66,7 +67,21 @@ export function ClientPage({
     } else {
       setDeviceOs('desktop');
     }
-  }, []);
+
+    // Check top-up availability for this ICCID
+    if (iccid) {
+      fetch(`/api/topup/packages?iccid=${encodeURIComponent(iccid)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data.packages) && data.packages.length > 0) {
+            setCanTopup(true);
+          } else {
+            setCanTopup(false);
+          }
+        })
+        .catch(() => setCanTopup(false));
+    }
+  }, [iccid]);
 
   const lpaLink = `LPA:1$${smdpAddress}$${activationCode}`;
 
@@ -285,11 +300,11 @@ export function ClientPage({
             {tr('esim_mgmt_title', 'eSIM Verwaltung & Status')}
           </h2>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={canTopup ? 'grid grid-cols-2 gap-3' : 'w-full'}>
             <button
               onClick={handleCheckUsage}
               disabled={usage.loading}
-              className="flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 py-3 text-xs font-bold text-slate-200 transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+              className="flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 py-3 text-xs font-bold text-slate-200 transition-all disabled:opacity-50 cursor-pointer shadow-sm w-full"
             >
               {usage.loading ? (
                 <>
@@ -310,15 +325,17 @@ export function ClientPage({
               )}
             </button>
 
-            <Link
-              href={`https://puresim.net/topup?iccid=${iccid}`}
-              className="flex items-center justify-center gap-2 rounded-xl bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/40 py-3 text-xs font-bold text-brand-400 transition-all text-center cursor-pointer shadow-sm"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {tr('nav_topup', 'eSIM aufladen')}
-            </Link>
+            {canTopup && (
+              <Link
+                href={`https://puresim.net/topup?iccid=${iccid}`}
+                className="flex items-center justify-center gap-2 rounded-xl bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/40 py-3 text-xs font-bold text-brand-400 transition-all text-center cursor-pointer shadow-sm"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {tr('nav_topup', 'eSIM aufladen')}
+              </Link>
+            )}
           </div>
 
           {/* Usage Results Display */}
@@ -472,9 +489,17 @@ export function ClientPage({
           type="button"
           onClick={() => {
             try {
-              window.dispatchEvent(new CustomEvent('open-ticket-modal', { detail: { iccid, subject: `Hilfe bei eSIM Aktivierung (${iccid})`, category: 'activation' } }));
-            } catch {}
-            window.location.href = `/dashboard?tab=tickets`;
+              window.dispatchEvent(new CustomEvent('open-ticket-modal', {
+                detail: {
+                  iccid,
+                  invoiceId: token || '',
+                  subject: `Hilfe bei eSIM Aktivierung (${countryName} / ICCID: ${iccid})`,
+                  category: 'activation',
+                }
+              }));
+            } catch (err) {
+              console.error('Open ticket error:', err);
+            }
           }}
           className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-brand-500 transition-all cursor-pointer"
         >

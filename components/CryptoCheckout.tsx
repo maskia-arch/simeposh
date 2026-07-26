@@ -538,8 +538,9 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
                       initialEmail: sess?.customerEmail || '',
                     }
                   }));
-                } catch {}
-                window.location.href = `/dashboard?tab=tickets`;
+                } catch (err) {
+                  console.error('Open ticket error:', err);
+                }
               }}
               className="w-full rounded-xl border border-blue-100 bg-blue-50/50 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2"
             >

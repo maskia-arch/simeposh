@@ -66,7 +66,9 @@ export default async function RootLayout({
         </head>
         <body className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
           <LanguageProvider initialLocale={locale}>
-            <main className="min-h-screen flex flex-col">{children}</main>
+            <TicketProvider>
+              <main className="min-h-screen flex flex-col">{children}</main>
+            </TicketProvider>
           </LanguageProvider>
           <InitialLoaderRemover />
         </body>

@@ -70,6 +70,27 @@ export function CustomerTicketsDashboard({ userEmail }: { userEmail: string }) {
 
   useEffect(() => {
     fetchTickets();
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const openModal = urlParams.get('openModal');
+      const iccidParam = urlParams.get('iccid');
+      const invoiceIdParam = urlParams.get('invoiceId');
+      const subjectParam = urlParams.get('subject');
+      const categoryParam = urlParams.get('category');
+
+      if (openModal === 'true' || iccidParam || invoiceIdParam) {
+        window.dispatchEvent(new CustomEvent('open-ticket-modal', {
+          detail: {
+            iccid: iccidParam || undefined,
+            invoiceId: invoiceIdParam || undefined,
+            subject: subjectParam || (iccidParam ? `Hilfe bei eSIM Aktivierung (${iccidParam})` : undefined),
+            category: categoryParam || (iccidParam ? 'activation' : 'general'),
+            initialEmail: userEmail,
+          }
+        }));
+      }
+    } catch {}
   }, [userEmail]);
 
   const selectTicket = async (t: Ticket) => {

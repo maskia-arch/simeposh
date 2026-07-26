@@ -177,8 +177,9 @@ export function OrderView({ orderRef }: { orderRef: string }) {
                   category: 'general',
                 }
               }));
-            } catch {}
-            window.location.href = `/dashboard?tab=tickets`;
+            } catch (err) {
+              console.error('Open ticket error:', err);
+            }
           }}
           className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-xs"
         >
