@@ -5,6 +5,8 @@ import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { formatEur, formatGb } from '@/lib/utils';
 
+import { getEsimOverviewUrl } from '@/lib/url';
+
 export const metadata: Metadata = { title: 'Bestelldetails' };
 export const dynamic = 'force-dynamic';
 
@@ -33,13 +35,7 @@ export default async function OrderDetailPage({
 
   // Construct personal installation URL for esim.puresim.net
   const txId = (order as any).checkout_ref || order.id;
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net').replace(/\/$/, '');
-  const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-  const hostname = isLocal ? 'localhost' : new URL(appUrl).hostname.replace(/^www\./, '');
-  const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);
-  const installUrl = order.iccid
-    ? (isLocal ? `${appUrl}/esim-overview/${txId}/${order.iccid}` : `https://${esimDomain}/${txId}/${order.iccid}`)
-    : null;
+  const installUrl = order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">

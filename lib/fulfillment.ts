@@ -9,6 +9,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { allocateEsim, applyTopUp } from '@/lib/esimaccess/client';
 import { sendEsimEmail, sendTopUpEmail } from '@/lib/email/mailer';
 import { applyOrderCompletionCashback } from './cashback';
+import { getEsimOverviewUrl } from '@/lib/url';
 
 export interface FulfillResult { orderId: string; ok: boolean; error?: string }
 
@@ -49,13 +50,7 @@ export async function fulfillOrder(
     }
 
     const finalToken = txId || o.checkout_ref || orderId;
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.com').replace(/\/$/, '');
-    const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-    const hostname = isLocal ? 'localhost' : new URL(appUrl).hostname.replace(/^www\./, '');
-    const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);
-    const overviewUrl = isLocal
-      ? `${appUrl}/esim-overview/${finalToken}/${o.iccid}`
-      : `https://${esimDomain}/${finalToken}/${o.iccid}`;
+    const overviewUrl = getEsimOverviewUrl(finalToken, o.iccid);
 
     if (o.order_type === 'top_up') {
       await sendTopUpEmail({
@@ -143,13 +138,7 @@ export async function fulfillOrder(
     }
 
     const finalToken = txId || o.checkout_ref || orderId;
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net').replace(/\/$/, '');
-    const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-    const hostname = isLocal ? 'localhost' : new URL(appUrl).hostname.replace(/^www\./, '');
-    const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);
-    const overviewUrl = isLocal
-      ? `${appUrl}/esim-overview/${finalToken}/${esim.iccid}`
-      : `https://${esimDomain}/${finalToken}/${esim.iccid}`;
+    const overviewUrl = getEsimOverviewUrl(finalToken, esim.iccid);
 
     try {
       await sendEsimEmail({

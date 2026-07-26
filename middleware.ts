@@ -111,10 +111,19 @@ export async function middleware(request: NextRequest) {
       ) {
         return NextResponse.redirect(new URL(pathname + request.nextUrl.search, `https://${mainDomain}`), 302);
       }
-      // 3. If path is a 2-segment installation URL (e.g. /[token]/[iccid]), REWRITE to /esim-overview/[token]/[iccid]
+      // 3. If path is an installation URL (e.g. /[token]/[iccid]), REWRITE to /esim-overview/[token]/[iccid]
       else {
         return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
       }
+    }
+  } else {
+    // On main domain (puresim.net), redirect any /esim-overview/... path to esim.puresim.net
+    if (pathname.startsWith('/esim-overview/')) {
+      const esimPath = pathname.replace(/^\/esim-overview/, '');
+      const esimHost = cleanHost.startsWith('www.')
+        ? `esim.${cleanHost.replace(/^www\./, '')}`
+        : `esim.${cleanHost}`;
+      return NextResponse.redirect(new URL(esimPath + request.nextUrl.search, `https://${esimHost}`), 302);
     }
   }
 

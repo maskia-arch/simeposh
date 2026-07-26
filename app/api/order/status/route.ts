@@ -6,6 +6,7 @@
  */
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getEsimOverviewUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,11 +51,6 @@ export async function GET(request: Request) {
     console.error('[order/status] session lookup failed:', err);
   }
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.com').replace(/\/$/, '');
-  const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-  const hostname = isLocal ? 'localhost' : new URL(appUrl).hostname.replace(/^www\./, '');
-  const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orders = data.map((o: any) => {
     const finalToken = txId || ref || o.id;
@@ -73,7 +69,7 @@ export async function GET(request: Request) {
       activationCode: o.activation_code,
       qrCodeUrl:      o.qr_code_url,
       esimStatus:     o.esim_status,
-      overviewUrl:    o.iccid ? (isLocal ? `${appUrl}/esim-overview/${finalToken}/${o.iccid}` : `https://${esimDomain}/${finalToken}/${o.iccid}`) : null,
+      overviewUrl:    o.iccid ? getEsimOverviewUrl(finalToken, o.iccid) : null,
     };
   });
 

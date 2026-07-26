@@ -12,6 +12,7 @@ import { resolveEsimCashAccount } from '@/lib/cashback';
 import EsimCashDashboard from '@/components/EsimCashDashboard';
 import { PendingOrderActions } from '@/components/PendingOrderActions';
 import { AccountSettings } from '@/components/AccountSettings';
+import { getEsimOverviewUrl } from '@/lib/url';
 
 export const metadata: Metadata = { title: 'Mein Bereich' };
 export const dynamic = 'force-dynamic';
@@ -242,11 +243,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 {completed.map((order) => {
                   const session = allSessions.find((s) => s.order_ids?.includes(order.id));
                   const txId = session?.id ?? (order as any).checkout_ref ?? order.id;
-                  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.com').replace(/\/$/, '');
-                  const isLocal = typeof window !== 'undefined' ? window.location.hostname.includes('localhost') : appUrl.includes('localhost');
-                  const hostname = isLocal ? 'localhost' : (typeof window !== 'undefined' ? window.location.hostname.replace(/^www\./, '') : new URL(appUrl).hostname.replace(/^www\./, ''));
-                  const esimDomain = isLocal ? null : (hostname.startsWith('esim.') ? hostname : `esim.${hostname}`);
-                  const overviewUrl = order.iccid ? (isLocal ? `${appUrl}/esim-overview/${txId}/${order.iccid}` : `https://${esimDomain}/${txId}/${order.iccid}`) : null;
+                  const overviewUrl = order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null;
                   return (
                     <OrderRow
                       key={order.id}
