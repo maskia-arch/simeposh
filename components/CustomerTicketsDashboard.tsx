@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { getTicketTranslations } from '@/lib/i18n/ticket-translations';
