@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountryFlag } from '@/components/CountryFlag';
+import { formatGb } from '@/lib/utils';
 
 interface ClientPageProps {
   iccid: string;
@@ -107,8 +108,8 @@ export function ClientPage({
     }
   };
 
-  const formatGb = (bytes: number) => {
-    return (bytes / 1_073_741_824).toFixed(2);
+  const formatBytesToGb = (bytes: number) => {
+    return formatGb(bytes / 1_073_741_824);
   };
 
   const percentUsed = usage.data
@@ -164,7 +165,7 @@ export function ClientPage({
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <span>📦</span>
-                <span>Weitere eSIMs aus dieser Bestellung ({siblingEsims.length} total)</span>
+                <span>{tr('esim_other_esims', `Weitere eSIMs aus dieser Bestellung (${siblingEsims.length} total)`)}</span>
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -183,7 +184,7 @@ export function ClientPage({
                   >
                     <CountryFlag countryCode={s.flag || s.countryName} countryName={s.countryName} size={20} className="shrink-0" />
                     <span>eSIM #{idx + 1}: {s.countryName}</span>
-                    {isCurrent && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-extrabold">Aktiv</span>}
+                    {isCurrent && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-extrabold">{tr('life_in_use', 'Aktiv')}</span>}
                   </Link>
                 );
               })}
@@ -200,10 +201,10 @@ export function ClientPage({
             <div className="flex-1 min-w-0">
               <p className="text-xl font-extrabold text-white truncate">{countryName}</p>
               <p className="text-xs text-slate-300 font-medium mt-0.5">
-                {dataGb != null ? `${dataGb} GB` : tr('card_unlimited', 'Unbegrenzt')} · {validityDays} {tr('cfg_days', 'Tage')}
+                {formatGb(dataGb, tr('card_unlimited', 'Unbegrenzt'))} · {validityDays} {tr('cfg_days', 'Tage')}
               </p>
               <p className="text-[11px] font-medium text-sky-400 mt-1 flex items-center gap-1.5">
-                <span>⌛</span> 180 Tage Zeit zur Installation ab Kaufdatum
+                <span>⌛</span> {tr('esim_install_notice_180', '180 Tage Zeit zur Installation ab Kaufdatum')}
               </p>
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-400 shrink-0">
@@ -365,7 +366,7 @@ export function ClientPage({
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between font-semibold text-slate-200">
                     <span>{tr('card_data', 'Daten')}:</span>
-                    <span>{formatGb(usage.data.dataRemaining)} GB {tr('esim_left', 'verbleibend')} / {formatGb(usage.data.dataTotal)} GB</span>
+                    <span>{formatBytesToGb(usage.data.dataRemaining)} {tr('esim_left', 'verbleibend')} / {formatBytesToGb(usage.data.dataTotal)}</span>
                   </div>
                   <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
                     <div
@@ -483,8 +484,8 @@ export function ClientPage({
 
       {/* Support Ticket Section */}
       <div className="rounded-2xl border border-brand-500/30 bg-gradient-to-r from-brand-950/40 via-indigo-950/40 to-slate-900 p-5 text-center mt-8">
-        <p className="font-semibold text-slate-200 text-sm">Brauchst du Hilfe bei der Aktivierung dieser eSIM?</p>
-        <p className="text-xs text-slate-400 mt-1 mb-3">Unser Support-Team hilft dir persönlich bei allen Fragen zur Installation weiter.</p>
+        <p className="font-semibold text-slate-200 text-sm">{tr('esim_support_title', 'Brauchst du Hilfe bei der Aktivierung dieser eSIM?')}</p>
+        <p className="text-xs text-slate-400 mt-1 mb-3">{tr('esim_support_sub', 'Unser Support-Team hilft dir persönlich bei allen Fragen zur Installation weiter.')}</p>
         <button
           type="button"
           onClick={() => {
@@ -503,7 +504,7 @@ export function ClientPage({
           }}
           className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-brand-500 transition-all cursor-pointer"
         >
-          <span>🎫</span> Support-Ticket zu dieser eSIM öffnen
+          <span>🎫</span> {tr('esim_open_ticket_btn', 'Support-Ticket zu dieser eSIM öffnen')}
         </button>
       </div>
 
@@ -517,8 +518,8 @@ export function ClientPage({
             <span className="text-[#0ea5e9]">eSim</span>
           </span>
         </Link>
-        <p>&copy; {new Date().getFullYear()} PureSim. Alle Rechte vorbehalten.</p>
-        <p className="mt-1 text-[11px] text-slate-600">Verschlüsselte & sichere eSIM-Bereitstellung</p>
+        <p>&copy; {new Date().getFullYear()} PureSim. {tr('footer_copy', 'Alle Rechte vorbehalten.').replace('© {year} PureSim. ', '')}</p>
+        <p className="mt-1 text-[11px] text-slate-600">{tr('esim_secure_notice', 'Verschlüsselte & sichere eSIM-Bereitstellung')}</p>
       </div>
     </main>
   );

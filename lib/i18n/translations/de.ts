@@ -398,6 +398,12 @@ const de = {
   "esim_check_usage": "Datenverbrauch prüfen",
   "esim_status_label": "Netzwerk-Status:",
   "esim_left": "verbleibend",
-  "esim_manual_desc": "Falls das Scannen des QR-Codes nicht möglich ist, kannst du diese Aktivierungsdaten manuell in den Mobilfunk-Einstellungen deines Smartphones eingeben:"
+  "esim_manual_desc": "Falls das Scannen des QR-Codes nicht möglich ist, kannst du diese Aktivierungsdaten manuell in den Mobilfunk-Einstellungen deines Smartphones eingeben:",
+  "esim_other_esims": "Weitere eSIMs aus dieser Bestellung ({count} total)",
+  "esim_install_notice_180": "180 Tage Zeit zur Installation ab Kaufdatum",
+  "esim_support_title": "Brauchst du Hilfe bei der Aktivierung dieser eSIM?",
+  "esim_support_sub": "Unser Support-Team hilft dir persönlich bei allen Fragen zur Installation weiter.",
+  "esim_open_ticket_btn": "Support-Ticket zu dieser eSIM öffnen",
+  "esim_secure_notice": "Verschlüsselte & sichere eSIM-Bereitstellung"
 } as const;
 export default de;

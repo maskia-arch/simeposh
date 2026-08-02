@@ -387,7 +387,14 @@ export const fr = {
   "dash_pending_continue": "Continuer le paiement",
   "dash_pending_cancel": "Annuler la commande",
   "dash_pending_canceling": "Annulation...",
-  "dash_pending_cancel_confirm": "Êtes-vous sûr de vouloir annuler cette commande ?"
+  "dash_pending_cancel_confirm": "Êtes-vous sûr de vouloir annuler cette commande ?",
+  "esim_manual_desc": "Si le scan du QR code n'est pas possible, entrez manuellement ces données d'activation dans les paramètres mobiles de votre smartphone :",
+  "esim_other_esims": "Autres eSIMs de cette commande ({count} au total)",
+  "esim_install_notice_180": "180 jours pour installer à partir de la date d'achat",
+  "esim_support_title": "Besoin d'aide pour activer cette eSIM ?",
+  "esim_support_sub": "Notre équipe support vous aide personnellement pour toutes les questions d'installation.",
+  "esim_open_ticket_btn": "Ouvrir un ticket support pour cette eSIM",
+  "esim_secure_notice": "Provisionnement eSIM chiffré & sécurisé"
 } as const;
 
 export const es = {
@@ -774,7 +781,29 @@ export const es = {
   "dash_pending_continue": "Continuar pago",
   "dash_pending_cancel": "Cancelar pedido",
   "dash_pending_canceling": "Cancelando...",
-  "dash_pending_cancel_confirm": "¿Seguro que quieres cancelar este pedido?"
+  "dash_pending_cancel_confirm": "¿Seguro que quieres cancelar este pedido?",
+  "esim_install_center": "Centro de instalación eSIM",
+  "esim_ready_title": "Tu eSIM de PureSim",
+  "esim_quick_install_title": "Instalación automática con 1 clic",
+  "esim_ios_hint": "Toca el botón para instalar la eSIM directamente en tu iPhone/iPad.",
+  "esim_android_hint": "Toca el botón para iniciar la instalación automática en tu dispositivo Android.",
+  "esim_desktop_hint": "Escanea el código QR con tu smartphone o abre este enlace en tu teléfono.",
+  "esim_auto_activate_btn": "Instalar eSIM automáticamente",
+  "esim_os_notice": "Nota: Abre directamente el menú de configuración de red de tu dispositivo.",
+  "esim_qr_title": "Instalación por código QR",
+  "esim_qr_sub": "Escanea este código QR con la cámara del smartphone donde quieres instalar la eSIM.",
+  "esim_detailed_guide": "Guía de instalación paso a paso",
+  "esim_mgmt_title": "Gestión y estado de la eSIM",
+  "esim_check_usage": "Comprobar uso de datos",
+  "esim_status_label": "Estado de red:",
+  "esim_left": "restante",
+  "esim_manual_desc": "Si no es posible escanear el código QR, introduce manualmente estos datos de activación en los ajustes de red móvil de tu smartphone:",
+  "esim_other_esims": "Otras eSIMs de este pedido ({count} en total)",
+  "esim_install_notice_180": "180 días para instalar desde la fecha de compra",
+  "esim_support_title": "¿Necesitas ayuda para activar esta eSIM?",
+  "esim_support_sub": "Nuestro equipo de soporte te ayudará personalmente con cualquier pregunta sobre instalación.",
+  "esim_open_ticket_btn": "Abrir ticket de soporte para esta eSIM",
+  "esim_secure_notice": "Aprovisionamiento eSIM cifrado y seguro"
 } as const;
 
 export const it = {
@@ -1161,7 +1190,29 @@ export const it = {
   "dash_pending_continue": "Continua il pagamento",
   "dash_pending_cancel": "Annulla l'ordine",
   "dash_pending_canceling": "Annullamento...",
-  "dash_pending_cancel_confirm": "Sei sicuro di voler annullare questo ordine?"
+  "dash_pending_cancel_confirm": "Sei sicuro di voler annullare questo ordine?",
+  "esim_install_center": "Centro di installazione eSIM",
+  "esim_ready_title": "La tua eSIM PureSim",
+  "esim_quick_install_title": "Installazione automatica con 1 clic",
+  "esim_ios_hint": "Tocca il pulsante per installare l'eSIM direttamente sul tuo iPhone/iPad.",
+  "esim_android_hint": "Tocca il pulsante per avviare l'installazione automatica sul tuo dispositivo Android.",
+  "esim_desktop_hint": "Scansiona il codice QR con il tuo smartphone o apri questo link sul telefono.",
+  "esim_auto_activate_btn": "Installa eSIM automaticamente",
+  "esim_os_notice": "Nota: apre direttamente il menu di configurazione rete del dispositivo.",
+  "esim_qr_title": "Installazione tramite QR Code",
+  "esim_qr_sub": "Scansiona questo codice QR con la fotocamera dello smartphone dove vuoi installare la eSIM.",
+  "esim_detailed_guide": "Guida all'installazione passo dopo passo",
+  "esim_mgmt_title": "Gestione e stato eSIM",
+  "esim_check_usage": "Controlla utilizzo dati",
+  "esim_status_label": "Stato di rete:",
+  "esim_left": "rimanenti",
+  "esim_manual_desc": "Se non è possibile scansionare il QR code, inserisci manualmente questi dati di attivazione nelle impostazioni rete mobile del tuo smartphone:",
+  "esim_other_esims": "Altre eSIM di questo ordine ({count} in totale)",
+  "esim_install_notice_180": "180 giorni per installare dalla data di acquisto",
+  "esim_support_title": "Hai bisogno di aiuto per attivare questa eSIM?",
+  "esim_support_sub": "Il nostro team di supporto ti aiuterà personalmente per tutte le domande sull'installazione.",
+  "esim_open_ticket_btn": "Apri un ticket di supporto per questa eSIM",
+  "esim_secure_notice": "Fornitura eSIM crittografata e sicura"
 } as const;
 
 export const nl = {
@@ -1548,7 +1599,29 @@ export const nl = {
   "dash_pending_continue": "Doorgaan met betalen",
   "dash_pending_cancel": "Bestelling annuleren",
   "dash_pending_canceling": "Annuleren...",
-  "dash_pending_cancel_confirm": "Weet je zeker dat je deze bestelling wilt annuleren?"
+  "dash_pending_cancel_confirm": "Weet je zeker dat je deze bestelling wilt annuleren?",
+  "esim_install_center": "eSIM Installatiecentrum",
+  "esim_ready_title": "Jouw PureSim eSIM",
+  "esim_quick_install_title": "Automatische installatie met 1 klik",
+  "esim_ios_hint": "Tik op de knop om de eSIM direct op je iPhone/iPad te installeren.",
+  "esim_android_hint": "Tik op de knop om de automatische installatie op je Android te starten.",
+  "esim_desktop_hint": "Scan de QR-code met je smartphone of open deze link op je telefoon.",
+  "esim_auto_activate_btn": "eSIM automatisch installeren",
+  "esim_os_notice": "Let op: opent het mobiele instellingenmenu van je apparaat.",
+  "esim_qr_title": "Installatie via QR-code",
+  "esim_qr_sub": "Scan deze QR-code met de camera van de smartphone waarop je de eSIM wilt installeren.",
+  "esim_detailed_guide": "Stap-voor-stap installatiehandleiding",
+  "esim_mgmt_title": "eSIM Beheer & Status",
+  "esim_check_usage": "Datagebruik controleren",
+  "esim_status_label": "Netwerkstatus:",
+  "esim_left": "resterend",
+  "esim_manual_desc": "Als scannen van de QR-code niet mogelijk is, voer deze activeringsgegevens handmatig in via de mobiele netwerkinstellingen van je smartphone:",
+  "esim_other_esims": "Andere eSIMs uit deze bestelling ({count} in totaal)",
+  "esim_install_notice_180": "180 dagen om te installeren vanaf aankoopdatum",
+  "esim_support_title": "Hulp nodig bij het activeren van deze eSIM?",
+  "esim_support_sub": "Ons supportteam helpt je persoonlijk bij alle installatievragen.",
+  "esim_open_ticket_btn": "Supportticket openen voor deze eSIM",
+  "esim_secure_notice": "Versleutelde & veilige eSIM-provisioning"
 } as const;
 
 export const pl = {
@@ -1935,7 +2008,29 @@ export const pl = {
   "dash_pending_continue": "Continue Payment",
   "dash_pending_cancel": "Cancel Order",
   "dash_pending_canceling": "Canceling...",
-  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?"
+  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?",
+  "esim_install_center": "Centrum instalacji eSIM",
+  "esim_ready_title": "Twoja eSIM PureSim",
+  "esim_quick_install_title": "Automatyczna instalacja jednym kliknięciem",
+  "esim_ios_hint": "Dotknij przycisku, aby zainstalować eSIM bezpośrednio na swoim iPhone/iPad.",
+  "esim_android_hint": "Dotknij przycisku, aby uruchomić automatyczną instalację na urządzeniu Android.",
+  "esim_desktop_hint": "Zeskanuj kod QR smartfonem lub otwórz ten link na telefonie.",
+  "esim_auto_activate_btn": "Zainstaluj eSIM automatycznie",
+  "esim_os_notice": "Uwaga: otwiera bezpośrednio menu konfiguracji sieci komórkowej.",
+  "esim_qr_title": "Instalacja przez kod QR",
+  "esim_qr_sub": "Zeskanuj ten kod QR aparatem smartfona, na którym chcesz zainstalować eSIM.",
+  "esim_detailed_guide": "Przewodnik instalacji krok po kroku",
+  "esim_mgmt_title": "Zarządzanie i stan eSIM",
+  "esim_check_usage": "Sprawdź zużycie danych",
+  "esim_status_label": "Stan sieci:",
+  "esim_left": "pozostało",
+  "esim_manual_desc": "Jeśli skanowanie kodu QR nie jest możliwe, wprowadź ręcznie te dane aktywacyjne w ustawieniach sieci komórkowej smartfona:",
+  "esim_other_esims": "Inne eSIM z tego zamówienia ({count} łącznie)",
+  "esim_install_notice_180": "180 dni na instalację od daty zakupu",
+  "esim_support_title": "Potrzebujesz pomocy z aktywacją tej eSIM?",
+  "esim_support_sub": "Nasz zespół wsparcia osobiście pomoże Ci z wszelkimi pytaniami dotyczącymi instalacji.",
+  "esim_open_ticket_btn": "Otwórz zgłoszenie dla tej eSIM",
+  "esim_secure_notice": "Zaszyfrowane i bezpieczne dostarczanie eSIM"
 } as const;
 
 export const pt = {
@@ -2322,7 +2417,29 @@ export const pt = {
   "dash_pending_continue": "Continue Payment",
   "dash_pending_cancel": "Cancel Order",
   "dash_pending_canceling": "Canceling...",
-  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?"
+  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?",
+  "esim_install_center": "Central de instalação eSIM",
+  "esim_ready_title": "Seu eSIM PureSim",
+  "esim_quick_install_title": "Instalação automática com 1 clique",
+  "esim_ios_hint": "Toque no botão para instalar o eSIM diretamente no seu iPhone/iPad.",
+  "esim_android_hint": "Toque no botão para iniciar a instalação automática no seu dispositivo Android.",
+  "esim_desktop_hint": "Escaneie o QR code com seu smartphone ou abra este link no telefone.",
+  "esim_auto_activate_btn": "Instalar eSIM automaticamente",
+  "esim_os_notice": "Nota: Abre diretamente o menu de configurações de rede do dispositivo.",
+  "esim_qr_title": "Instalação por QR Code",
+  "esim_qr_sub": "Escaneie este QR code com a câmera do smartphone onde deseja instalar o eSIM.",
+  "esim_detailed_guide": "Guia de instalação passo a passo",
+  "esim_mgmt_title": "Gerenciamento e status eSIM",
+  "esim_check_usage": "Verificar uso de dados",
+  "esim_status_label": "Status de rede:",
+  "esim_left": "restante",
+  "esim_manual_desc": "Se não for possível escanear o QR code, insira manualmente estes dados de ativação nas configurações de rede móvel do seu smartphone:",
+  "esim_other_esims": "Outros eSIMs deste pedido ({count} no total)",
+  "esim_install_notice_180": "180 dias para instalar a partir da data de compra",
+  "esim_support_title": "Precisa de ajuda para ativar este eSIM?",
+  "esim_support_sub": "Nossa equipe de suporte vai te ajudar pessoalmente com todas as dúvidas sobre instalação.",
+  "esim_open_ticket_btn": "Abrir ticket de suporte para este eSIM",
+  "esim_secure_notice": "Provisionamento de eSIM criptografado e seguro"
 } as const;
 
 export const tr = {
@@ -2709,7 +2826,29 @@ export const tr = {
   "dash_pending_continue": "Continue Payment",
   "dash_pending_cancel": "Cancel Order",
   "dash_pending_canceling": "Canceling...",
-  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?"
+  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?",
+  "esim_install_center": "eSIM Kurulum Merkezi",
+  "esim_ready_title": "PureSim eSIM'iniz",
+  "esim_quick_install_title": "1 Tıklamayla Otomatik Kurulum",
+  "esim_ios_hint": "iPhone/iPad'inize doğrudan eSIM kurmak için düğmeye dokunun.",
+  "esim_android_hint": "Android cihazınızda otomatik kurulumu başlatmak için düğmeye dokunun.",
+  "esim_desktop_hint": "Akıllı telefonunuzla QR kodu tarayın veya bu bağlantıyı telefonunuzda açın.",
+  "esim_auto_activate_btn": "eSIM'i Otomatik Kur",
+  "esim_os_notice": "Not: Cihazınızın mobil ayarlar menüsünü doğrudan açar.",
+  "esim_qr_title": "QR Koduyla Kurulum",
+  "esim_qr_sub": "Bu QR kodu, eSIM kurmak istediğiniz akıllı telefonun kamerasıyla tarayın.",
+  "esim_detailed_guide": "Adım Adım Kurulum Rehberi",
+  "esim_mgmt_title": "eSIM Yönetimi & Durumu",
+  "esim_check_usage": "Veri kullanımını kontrol et",
+  "esim_status_label": "Ağ Durumu:",
+  "esim_left": "kalan",
+  "esim_manual_desc": "QR kodu taranamıyorsa, bu aktivasyon verilerini akıllı telefonunuzun mobil ağ ayarlarına manuel olarak girin:",
+  "esim_other_esims": "Bu siparişteki diğer eSIM'ler (toplam {count})",
+  "esim_install_notice_180": "Satın alma tarihinden itibaren kurulum için 180 gün",
+  "esim_support_title": "Bu eSIM'i etkinleştirmede yardıma mı ihtiyacınız var?",
+  "esim_support_sub": "Destek ekibimiz kurulum sorularınızda size kişisel olarak yardımcı olacaktır.",
+  "esim_open_ticket_btn": "Bu eSIM için destek talebi aç",
+  "esim_secure_notice": "Şifreli ve güvenli eSIM sağlama"
 } as const;
 
 export const sv = {
@@ -3096,5 +3235,27 @@ export const sv = {
   "dash_pending_continue": "Continue Payment",
   "dash_pending_cancel": "Cancel Order",
   "dash_pending_canceling": "Canceling...",
-  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?"
+  "dash_pending_cancel_confirm": "Are you sure you want to cancel this order?",
+  "esim_install_center": "eSIM Installationscenter",
+  "esim_ready_title": "Ditt PureSim eSIM",
+  "esim_quick_install_title": "1-klicks automatisk installation",
+  "esim_ios_hint": "Tryck på knappen för att installera eSIM direkt på din iPhone/iPad.",
+  "esim_android_hint": "Tryck på knappen för att starta automatisk installation på din Android-enhet.",
+  "esim_desktop_hint": "Skanna QR-koden med din smartphone eller öppna länken på din telefon.",
+  "esim_auto_activate_btn": "Installera eSIM automatiskt",
+  "esim_os_notice": "OBS: Öppnar direkt enhetens mobilnätsinställningar.",
+  "esim_qr_title": "Installation via QR-kod",
+  "esim_qr_sub": "Skanna denna QR-kod med kameran på den smartphone där du vill installera eSIM.",
+  "esim_detailed_guide": "Steg-för-steg installationsguide",
+  "esim_mgmt_title": "eSIM Hantering & Status",
+  "esim_check_usage": "Kontrollera dataanvändning",
+  "esim_status_label": "Nätverksstatus:",
+  "esim_left": "kvar",
+  "esim_manual_desc": "Om det inte går att skanna QR-koden, ange dessa aktiveringsuppgifter manuellt i din smartphones mobilnätsinställningar:",
+  "esim_other_esims": "Andra eSIM från denna beställning ({count} totalt)",
+  "esim_install_notice_180": "180 dagar att installera från köpdatumet",
+  "esim_support_title": "Behöver du hjälp med att aktivera detta eSIM?",
+  "esim_support_sub": "Vårt supportteam hjälper dig personligen med alla installationsfrågor.",
+  "esim_open_ticket_btn": "Öppna supportärende för detta eSIM",
+  "esim_secure_notice": "Krypterad och säker eSIM-provisionering"
 } as const;

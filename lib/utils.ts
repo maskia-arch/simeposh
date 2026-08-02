@@ -13,39 +13,29 @@ export function formatEur(amount: number): string {
 }
 
 export function formatGb(gb: number | string | null | undefined, unlimitedText = 'Unbegrenzt'): string {
-  if (gb === null || gb === undefined || gb === 0) return unlimitedText;
-  const num = Number(gb);
-  if (isNaN(num)) return unlimitedText;
+  if (gb === null || gb === undefined || gb === 0 || gb === '0') return unlimitedText;
+  const num = typeof gb === 'string' ? parseFloat(gb) : Number(gb);
+  if (isNaN(num) || num <= 0) return unlimitedText;
 
-  // Convert to MB
-  const mb = Math.round(num * 1024);
+  // Round to max 1 decimal place (0.1GB - 50GB)
+  // e.g. 1.000 -> 1 -> "1 GB"
+  // e.g. 1.500 -> 1.5 -> "1.5 GB"
+  // e.g. 50.000 -> 50 -> "50 GB"
+  const rounded = Math.round(num * 10) / 10;
 
-  // If data volume is under 1 GB (0.95 GB), format as MB
-  if (num < 0.95) {
+  if (rounded < 0.95) {
+    const mb = Math.round(num * 1024);
     if (Math.abs(mb - 500) < 60) return '500 MB';
     if (Math.abs(mb - 250) < 35) return '250 MB';
     if (Math.abs(mb - 100) < 20) return '100 MB';
-    return `${mb} MB`;
+    return `${rounded} GB`;
   }
 
-  // Integer GB
-  if (Number.isInteger(num)) {
-    return `${num} GB`;
+  if (Number.isInteger(rounded)) {
+    return `${rounded} GB`;
   }
 
-  // Check decimal vs binary GB
-  if (mb >= 900) {
-    const nearestGbDec = Math.round(mb / 1000);
-    if (Math.abs(mb - nearestGbDec * 1000) < 100) {
-      return `${nearestGbDec} GB`;
-    }
-    const nearestGbBin = Math.round(mb / 1024);
-    if (Math.abs(mb - nearestGbBin * 1024) < 100) {
-      return `${nearestGbBin} GB`;
-    }
-  }
-
-  return num % 1 === 0 ? `${num} GB` : `${num.toFixed(1)} GB`;
+  return `${rounded} GB`;
 }
 
 

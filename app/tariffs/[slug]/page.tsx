@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import TariffDetailPageClient from './TariffDetailPageClient';
 import type { Database } from '@/lib/supabase/types';
 import { displayCountryName } from '@/lib/tariff-display';
+import { formatGb } from '@/lib/utils';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -64,7 +65,7 @@ export async function generateMetadata({
   const dataLabel =
     tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0
       ? 'Unlimited'
-      : `${tariff.data_gb} GB`;
+      : formatGb(tariff.data_gb);
 
   const title = isDe
     ? `eSIM ${country} ${dataLabel} (${tariff.validity_days} Tage) kaufen | PureSim`
