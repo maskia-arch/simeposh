@@ -189,22 +189,31 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
       return `$${paramIdx++}`;
     };
 
+    const sanitizeIdent = (ident: string): string => {
+      const clean = ident.replace(/"/g, '');
+      if (!/^[a-zA-Z0-9_]+$/.test(clean)) {
+        throw new Error(`Invalid SQL identifier: ${ident}`);
+      }
+      return `"${clean}"`;
+    };
+
     const compileWhere = () => {
       const parts: string[] = [];
 
       if (this.whereFilters.length > 0) {
         const clauses = this.whereFilters.map(f => {
+          const colSafe = sanitizeIdent(f.col);
           if (f.op === 'IS NULL' || f.op === 'IS TRUE' || f.op === 'IS FALSE') {
-            return `"${f.col}" ${f.op}`;
+            return `${colSafe} ${f.op}`;
           }
           if (f.op === 'IN') {
             if (!Array.isArray(f.val) || f.val.length === 0) {
               return 'FALSE';
             }
             const placeHolders = f.val.map(v => pushParam(v)).join(', ');
-            return `"${f.col}" IN (${placeHolders})`;
+            return `${colSafe} IN (${placeHolders})`;
           }
-          return `"${f.col}" ${f.op} ${pushParam(f.val)}`;
+          return `${colSafe} ${f.op} ${pushParam(f.val)}`;
         });
         parts.push(...clauses);
       }
@@ -217,9 +226,10 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
             const col = tokens[0];
             const op = tokens[1];
             const val = tokens.slice(2).join('.');
+            const colSafe = sanitizeIdent(col);
             
             if (op === 'is' && val === 'null') {
-              return `"${col}" IS NULL`;
+              return `${colSafe} IS NULL`;
             }
             
             let sqlOp = '=';
@@ -230,7 +240,7 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
             else if (op === 'lt') sqlOp = '<';
             else if (op === 'lte') sqlOp = '<=';
             
-            return `"${col}" ${sqlOp} ${pushParam(val)}`;
+            return `${colSafe} ${sqlOp} ${pushParam(val)}`;
           });
           return `(${parsed.join(' OR ')})`;
         });

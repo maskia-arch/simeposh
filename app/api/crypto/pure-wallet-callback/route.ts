@@ -22,7 +22,10 @@ export async function POST(request: Request) {
       .update(rawBody)
       .digest('hex');
 
-    if (computedSignature !== signatureHeader) {
+    const sigBuffer = Buffer.from(signatureHeader);
+    const compBuffer = Buffer.from(computedSignature);
+
+    if (sigBuffer.length !== compBuffer.length || !crypto.timingSafeEqual(sigBuffer, compBuffer)) {
       console.warn('[pure-wallet Webhook] Invalid signature received');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }

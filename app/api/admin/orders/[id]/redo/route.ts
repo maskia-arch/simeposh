@@ -5,10 +5,20 @@ import { fulfillOrder } from '@/lib/fulfillment';
 export const runtime = 'nodejs';
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const secret = process.env.SHOP_WEBHOOK_SECRET || process.env.CRON_SECRET;
+    if (!secret) {
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    }
+
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const db = createServiceClient();
     const result = await fulfillOrder(db, params.id, { forceResendEmail: true });
     return NextResponse.json(result);
