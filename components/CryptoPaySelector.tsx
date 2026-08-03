@@ -29,7 +29,7 @@ interface CryptoPaySelectorProps {
   user: any;
 }
 
-function WalletIcon({ className = 'h-5 w-5' }: { className?: string }) {
+function WalletIcon({ className = 'h-4 w-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -53,6 +53,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedNewsletter, setAcceptedNewsletter] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [activeTab, setActiveTab]        = useState<'crypto' | 'cash'>('crypto');
 
   useEffect(() => {
     fetch('/api/crypto/coins')
@@ -62,8 +63,10 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
         setCoins(loadedCoins);
         if (!selectedMethod) {
           if (user && balance >= total) {
+            setActiveTab('cash');
             setSelectedMethod('ESIM_CASH');
           } else if (loadedCoins.length > 0) {
+            setActiveTab('crypto');
             const defaultCoin = loadedCoins.find((c) => c.code === 'LTC') || loadedCoins[0];
             setSelectedMethod(defaultCoin.code);
           } else {
@@ -81,12 +84,10 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function handleEsimCashPay() {
     setError('');
-    
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;
     }
-
     if (!user) {
       if (typeof window !== 'undefined') {
         const currentPath = window.location.pathname + window.location.search;
@@ -94,9 +95,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       }
       return;
     }
-
     if (!hasEnoughBalance) return;
-
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       setError('Bitte eine gültige E-Mail-Adresse für die eSIM-Zustellung eingeben.');
       return;
@@ -120,12 +119,10 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function start(coin: string) {
     setError('');
-    
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;
     }
-
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       setError('Bitte eine gültige E-Mail-Adresse für die eSIM-Zustellung eingeben.');
       return;
@@ -158,71 +155,56 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
   const finalTotal = total + fee;
 
   return (
-    <div className="space-y-4">
-      {/* 1. Payment Method Selection Cards */}
-      <div className="space-y-2">
-        <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
-          Zahlungsart wählen
+    <div className="space-y-3">
+      {/* 1. Sleek Compact Segmented Payment Tab Switch */}
+      <div className="space-y-1.5">
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          Zahlungsart
         </label>
+        
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('crypto');
+              if (visibleCoins.length > 0) {
+                const defaultCoin = visibleCoins.find((c) => c.code === 'LTC') || visibleCoins[0];
+                setSelectedMethod(defaultCoin.code);
+              }
+              setError('');
+            }}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === 'crypto'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>🪙 Krypto</span>
+          </button>
 
-        {/* eSIM Cash Card */}
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedMethod('ESIM_CASH');
-            setError('');
-          }}
-          className={`w-full flex items-center gap-3 rounded-2xl border p-3 text-left transition-all cursor-pointer ${
-            selectedMethod === 'ESIM_CASH'
-              ? 'border-brand-500 bg-brand-50/50 ring-2 ring-brand-300 shadow-sm'
-              : !user
-              ? 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300'
-              : hasEnoughBalance
-              ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/70 hover:border-emerald-300'
-              : 'border-slate-200 bg-slate-50 opacity-60'
-          }`}
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shrink-0 shadow-sm">
-            <WalletIcon className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-slate-900">eSIM Cash Guthaben</span>
-              {user && (
-                <span className={`text-xs font-extrabold ${hasEnoughBalance ? 'text-emerald-700' : 'text-amber-600'}`}>
-                  {balance.toFixed(2)} €
-                </span>
-              )}
-            </div>
-            <span className="block text-[10px] text-slate-500 mt-0.5 truncate">
-              {!user
-                ? 'Anmelden, um mit Guthaben zu bezahlen'
-                : hasEnoughBalance
-                ? 'Sofortige Abbuchung ohne Gebühren'
-                : `Unzureichend (${balance.toFixed(2)} € / Benötigt: ${total.toFixed(2)} €)`}
-            </span>
-          </div>
-          {selectedMethod === 'ESIM_CASH' && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white text-[10px] font-bold">✓</span>
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('cash');
+              setSelectedMethod('ESIM_CASH');
+              setError('');
+            }}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === 'cash'
+                ? 'bg-white text-brand-700 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <WalletIcon className="h-3.5 w-3.5 text-brand-600" />
+            <span>eSIM Cash</span>
+          </button>
+        </div>
 
-        {/* Crypto Coins Card & Grid */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 space-y-2.5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-              <span>🪙</span>
-              <span>Krypto-Zahlung</span>
-            </span>
-            <span className="text-[10px] text-slate-400 font-semibold">Instant & Diskret</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5">
+        {/* Tab Content: Crypto Coins Pills */}
+        {activeTab === 'crypto' && (
+          <div className="flex flex-wrap gap-1 pt-0.5">
             {visibleCoins.map((c) => {
               const isSelected = selectedMethod === c.code;
-              const feeText = c.surchargePct > 0
-                ? `+${c.surchargePct}%`
-                : c.surchargeFixedEur > 0 ? `+${c.surchargeFixedEur.toFixed(2)} €` : '0% Gebühr';
               return (
                 <button
                   key={c.code}
@@ -231,85 +213,73 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
                     setSelectedMethod(c.code);
                     setError('');
                   }}
-                  disabled={loading !== null}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer ${
                     isSelected
-                      ? 'border-brand-600 bg-brand-50/70 ring-2 ring-brand-400 shadow-sm font-bold'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 hover:border-slate-300'
+                      ? 'border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-300'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <img
-                    src={COIN_ICON[c.code] ?? '🪙'}
-                    alt={c.code}
-                    className="h-5 w-5 rounded-full object-contain shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="block text-[11px] font-extrabold text-slate-800 leading-tight">{c.code}</span>
-                    <span className={`block text-[9px] font-semibold truncate ${c.surchargePct > 0 || c.surchargeFixedEur > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {feeText}
-                    </span>
-                  </div>
-                  {isSelected && <span className="text-brand-600 text-xs font-bold shrink-0">✓</span>}
+                  <img src={COIN_ICON[c.code] ?? '🪙'} alt={c.code} className="h-3.5 w-3.5 object-contain" />
+                  <span>{c.code}</span>
                 </button>
               );
             })}
           </div>
-        </div>
+        )}
+
+        {/* Tab Content: eSIM Cash Info */}
+        {activeTab === 'cash' && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-2 text-xs">
+            <div className="flex items-center justify-between text-slate-800 font-bold">
+              <span>Dein Guthaben:</span>
+              <span className={hasEnoughBalance ? 'text-emerald-700 font-extrabold' : 'text-amber-600'}>
+                {user ? `${balance.toFixed(2)} €` : 'Nicht eingeloggt'}
+              </span>
+            </div>
+            {!user && (
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                Bitte logge dich ein, um dein eSIM Cash Guthaben zu nutzen.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 2. Legal & Newsletter Consent Checkboxes */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2 text-xs">
-        <div className="flex items-start gap-2.5">
+      {/* 2. Ultra-Compact Legal Checkboxes */}
+      <div className="space-y-1 text-[10px] text-slate-500 pt-0.5">
+        <div className="flex items-center gap-2">
           <input
             id="accept-terms-checkout"
             type="checkbox"
             checked={acceptedTerms}
             onChange={(e) => {
               setAcceptedTerms(e.target.checked);
-              if (e.target.checked && error === t('checkout_agree_error')) {
-                setError('');
-              }
+              if (e.target.checked && error === t('checkout_agree_error')) setError('');
             }}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
+            className="h-3.5 w-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
           />
-          <label htmlFor="accept-terms-checkout" className="text-[11px] text-slate-600 cursor-pointer select-none leading-normal">
+          <label htmlFor="accept-terms-checkout" className="cursor-pointer select-none">
             {t('checkout_agree_prefix')}{' '}
-            <Link href="/agb" target="_blank" className="font-bold text-brand-600 hover:text-brand-800 underline">
+            <Link href="/agb" target="_blank" className="font-bold text-brand-600 hover:underline">
               {t('checkout_agree_link')}
             </Link>
             {' '}{t('checkout_agree_suffix')}
           </label>
         </div>
-
-        <div className="flex items-start gap-2.5 pt-2 border-t border-slate-200/60">
-          <input
-            id="accept-newsletter"
-            type="checkbox"
-            checked={acceptedNewsletter}
-            onChange={(e) => setAcceptedNewsletter(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
-          />
-          <label htmlFor="accept-newsletter" className="text-[11px] text-slate-600 cursor-pointer select-none leading-normal">
-            Exklusive Angebote, Rabatte & eSIM-News per E-Mail erhalten.
-          </label>
-        </div>
       </div>
 
       {error && (
-        <p className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs font-semibold text-red-600">
+        <p className="rounded-lg bg-red-50 border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600">
           {error}
         </p>
       )}
 
-      {/* 3. PINNED STICKY DRAWER FOOTER WITH UNMISSABLE "JETZT BEZAHLEN" CTA */}
-      <div className="sticky -bottom-5 -mx-5 -mb-5 border-t-2 border-slate-200/80 bg-white/95 backdrop-blur-md p-5 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] space-y-3 z-30">
+      {/* 3. Balanced, Perfectly Proportioned Sticky Drawer Footer */}
+      <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-md space-y-2 z-20">
         <div className="flex items-baseline justify-between">
-          <div>
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gesamtsumme</span>
-            {fee > 0 && <span className="text-[10px] text-amber-600 font-semibold block">Inkl. {fee.toFixed(2)} € Gebühr</span>}
-          </div>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gesamtsumme</span>
           <div className="text-right">
-            <span className="text-2xl font-black text-slate-900 tracking-tight">{finalTotal.toFixed(2)} €</span>
+            <span className="text-xl font-extrabold text-slate-900 tabular-nums">{finalTotal.toFixed(2)} €</span>
           </div>
         </div>
 
@@ -325,26 +295,26 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
               setError('Bitte wähle eine Zahlungsart.');
             }
           }}
-          className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-brand-600 via-brand-700 to-indigo-600 px-6 py-4 text-center text-base font-black text-white shadow-xl shadow-brand-500/30 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] py-3 text-center text-xs font-extrabold text-white shadow-md disabled:opacity-50 transition-all cursor-pointer"
         >
           {loading ? (
-            <span className="flex items-center gap-2">
-              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+            <span className="flex items-center gap-1.5">
+              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <span>Wird weitergeleitet…</span>
+              <span>Weiterleitung…</span>
             </span>
           ) : (
-            <span className="flex items-center gap-2">
-              <ShieldCheckIcon className="h-5 w-5 shrink-0 text-white/95" />
+            <span className="flex items-center gap-1.5">
+              <ShieldCheckIcon className="h-4 w-4 shrink-0" />
               <span>Jetzt Bezahlen ({finalTotal.toFixed(2)} €)</span>
             </span>
           )}
         </button>
 
-        <p className="text-center text-[10px] text-slate-400 font-medium">
-          🔒 256-Bit SSL Verschlüsselung · Sofortige QR-Zustellung
+        <p className="text-center text-[9px] text-slate-400 font-medium">
+          🔒 256-Bit SSL · Sofortige QR-Zustellung
         </p>
       </div>
     </div>

@@ -51,7 +51,7 @@ function daysToRaw(days: number): number {
 
 const POPULAR_DESTINATIONS = ['DE', 'EU', 'US', 'JP', 'TH', 'TR', 'CH', 'GB'];
 
-// ── DaySlider Component ─────────────────────────────────────────────────────
+// ── Compact DaySlider Component ─────────────────────────────────────────────
 
 function DaySlider({
   days,
@@ -66,18 +66,18 @@ function DaySlider({
   const presets = [1, 3, 7, 14, 30, 90];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          {t('cfg_duration')}
+        <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+          3. Laufzeit (Tage)
         </label>
-        <span className="text-base font-extrabold text-brand-700 bg-brand-50 border border-brand-200 px-3 py-1 rounded-xl">
+        <span className="text-sm font-extrabold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-lg">
           {days} {days === 1 ? t('cfg_day') : t('cfg_days')}
         </span>
       </div>
 
       {/* Quick Day Presets */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         {presets.map((p) => (
           <button
             key={p}
@@ -85,17 +85,17 @@ function DaySlider({
             onClick={() => onChange(p)}
             className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
               days === p
-                ? 'bg-brand-600 text-white shadow-sm'
+                ? 'bg-brand-600 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {p} {t('cfg_days')}
+            {p}d
           </button>
         ))}
       </div>
 
       {/* Slider */}
-      <div className="pt-2">
+      <div className="pt-1">
         <input
           type="range"
           min={0}
@@ -104,10 +104,10 @@ function DaySlider({
           value={daysToRaw(days)}
           onChange={(e) => onChange(rawToDays(Number(e.target.value)))}
           aria-label={t('cfg_duration')}
-          className="w-full h-2.5 rounded-full appearance-none bg-slate-200 accent-brand-600 cursor-pointer touch-none"
+          className="w-full h-2 rounded-full appearance-none bg-slate-200 accent-brand-600 cursor-pointer touch-none"
         />
 
-        <div className="relative mt-1.5 h-4">
+        <div className="relative mt-1 h-3.5">
           {DAY_MARKS.map((m, i) => {
             const transform = i === 0 ? 'translateX(0)' : i === lastIdx ? 'translateX(-100%)' : 'translateX(-50%)';
             return (
@@ -116,8 +116,8 @@ function DaySlider({
                 type="button"
                 onClick={() => onChange(m)}
                 style={{ left: `${(i / lastIdx) * 100}%`, transform }}
-                className={`absolute top-0 text-[10px] sm:text-xs leading-none transition-colors hover:text-brand-600 ${
-                  days === m ? 'text-brand-600 font-semibold' : 'text-slate-400'
+                className={`absolute top-0 text-[10px] leading-none transition-colors hover:text-brand-600 ${
+                  days === m ? 'text-brand-600 font-extrabold' : 'text-slate-400'
                 }`}
               >
                 {m}d
@@ -128,17 +128,15 @@ function DaySlider({
       </div>
 
       {/* Discount Hint */}
-      <div className="min-h-[22px]">
+      <div className="min-h-[18px]">
         {pct > 0 ? (
-          <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5">
-            <GiftIcon size={14} className="text-emerald-700" />
-            <span>{t('cfg_disc_incl', { pct })}</span>
-            {nextAt && <span className="text-emerald-600 opacity-90"> {t('cfg_disc_next', { days: nextAt, pct: nextPct })}</span>}
+          <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1">
+            <span>🎁 {t('cfg_disc_incl', { pct })}</span>
+            {nextAt && <span className="text-emerald-600 font-normal"> · {t('cfg_disc_next', { days: nextAt, pct: nextPct })}</span>}
           </p>
         ) : nextAt ? (
-          <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5">
-            <InfoIcon size={14} className="text-slate-400" />
-            <span>{t('cfg_disc_hint', { days: nextAt, pct: nextPct })}</span>
+          <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1">
+            <span>💡 {t('cfg_disc_hint', { days: nextAt, pct: nextPct })}</span>
           </p>
         ) : null}
       </div>
@@ -165,7 +163,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
   const { addItem, open }                     = useCart();
   const { t }                                 = useTranslation();
 
-  // ── Step 1: Extract all available countries from DB ───────────────────────
+  // ── Step 1: Extract available countries ──────────────────────────────────
   type CountryEntry = {
     name:   string;
     flag:   string;
@@ -192,7 +190,6 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [tariffs]);
 
-  // Ensure selected country is valid
   useEffect(() => {
     if (countries.length > 0 && (!selectedCountry || !countries.some(c => c.code === selectedCountry))) {
       setSelectedCountry(countries[0].code);
@@ -228,7 +225,6 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
     return scored.map((s) => s.c);
   }, [countries, countrySearch]);
 
-  // Query resolution on mount/change
   useEffect(() => {
     const query = (initialQuery ?? '').trim();
     if (!query) return;
@@ -248,7 +244,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
     }
   }, [initialQuery, countries]);
 
-  // ── Step 2: Strict filtering of AVAILABLE speed tiers for selected country ──
+  // ── Step 2: Available speed tiers ─────────────────────────────────────────
   const availableSpeedTypes = useMemo(() => {
     if (!selectedCountry) return [];
     const countryTariffs = tariffs.filter((t) => t.country_code === selectedCountry);
@@ -260,14 +256,13 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
     return types;
   }, [tariffs, selectedCountry]);
 
-  // Auto-switch tariffType if current is not available
   useEffect(() => {
     if (availableSpeedTypes.length > 0 && !availableSpeedTypes.includes(tariffType)) {
       setTariffType(availableSpeedTypes[0]);
     }
   }, [availableSpeedTypes, tariffType]);
 
-  // ── Step 3: Strict filtering of AVAILABLE packages & daily GB ────────────
+  // ── Step 3: Available GB options ──────────────────────────────────────────
   const availablePackages = useMemo(() => {
     if (!selectedCountry) return [];
     return tariffs.filter(
@@ -285,14 +280,13 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
     return Array.from(set).sort((a, b) => a - b);
   }, [availablePackages]);
 
-  // Auto-select valid GB option
   useEffect(() => {
     if (gbOptions.length > 0 && (selectedGb === null || !gbOptions.includes(selectedGb))) {
       setSelectedGb(gbOptions[0]);
     }
   }, [gbOptions, selectedGb]);
 
-  // ── Step 4: Resolve exact supplier product (best package) ──────────────────
+  // ── Step 4: Price & supplier product resolution ───────────────────────────
   const bestPackage = useMemo<Tariff | null>(() => {
     if (selectedGb === null || availablePackages.length === 0) return null;
     const matching = availablePackages.filter((t) => Number(t.data_gb) === selectedGb);
@@ -316,7 +310,6 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
 
   const discount = getDiscountPct(days);
 
-  // Synthetic tariff for shopping cart
   const syntheticTariff = useMemo((): Tariff | null => {
     if (!finalPrice || selectedGb === null || !selectedCountry || !bestPackage) return null;
     return {
@@ -334,22 +327,20 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
   const ops                 = bestPackage ? getTariffOperators(bestPackage.raw_data as Record<string, unknown> | null, 4) : [];
   const network             = bestNetworkType(ops);
 
-  // ── Render Configurator UI ──────────────────────────────────────────────────
+  // ── Render Unified Configurator Studio ────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* ── Top Header / Search Destination Bar ── */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="space-y-4 max-w-5xl mx-auto">
+      {/* ── Compact Header & Destination Bar ── */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         {!isChangingCountry && selectedCountryData ? (
-          /* Collapsed Selected Destination Chip Header */
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={40} className="shrink-0 rounded-lg shadow-sm" />
+              <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={32} className="shrink-0 rounded-md shadow-xs" />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Reiseziel</p>
-                <h2 className="text-xl font-extrabold text-slate-900 leading-tight flex items-center gap-2">
+                <h2 className="text-base font-extrabold text-slate-900 leading-tight flex items-center gap-2">
                   <span>{selectedCountryData.name}</span>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    {availablePackages.length} Unlimited Tarife verfügbar
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full">
+                    {availablePackages.length} Tarife
                   </span>
                 </h2>
               </div>
@@ -357,24 +348,23 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
             <button
               type="button"
               onClick={() => setIsChangingCountry(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 transition-all cursor-pointer"
             >
               <span>🔍 Zielgebiet ändern</span>
             </button>
           </div>
         ) : (
-          /* Expanded Destination Search & Selector */
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <SearchIcon size={16} className="text-brand-600" />
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <SearchIcon size={14} className="text-brand-600" />
                 <span>Reiseziel auswählen</span>
               </h3>
               {selectedCountryData && (
                 <button
                   type="button"
                   onClick={() => setIsChangingCountry(false)}
-                  className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+                  className="text-xs font-bold text-slate-400 hover:text-slate-600"
                 >
                   Abbrechen ✕
                 </button>
@@ -386,13 +376,12 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
               value={countrySearch}
               onChange={(e) => setCountrySearch(e.target.value)}
               placeholder={t('cfg_search_country')}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
               autoFocus
             />
 
-            {/* Popular Destination Quick Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] font-semibold text-slate-400 mr-1">Beliebt:</span>
+            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+              <span className="text-[10px] font-bold text-slate-400 mr-1">Beliebt:</span>
               {POPULAR_DESTINATIONS.map((code) => {
                 const item = countries.find((c) => c.code === code);
                 if (!item) return null;
@@ -405,21 +394,20 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                       setCountrySearch('');
                       setIsChangingCountry(false);
                     }}
-                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
                       selectedCountry === item.code
                         ? 'border-brand-500 bg-brand-50 text-brand-700 font-bold'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <CountryFlag countryCode={item.code} countryName={item.name} size={16} />
+                    <CountryFlag countryCode={item.code} countryName={item.name} size={14} />
                     <span>{item.name}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Full Country Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1 pt-2 scrollbar-thin">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto pr-1 pt-1 scrollbar-thin">
               {filteredCountries.map((c) => (
                 <button
                   key={c.code}
@@ -429,13 +417,13 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                     setCountrySearch('');
                     setIsChangingCountry(false);
                   }}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-all cursor-pointer ${
                     selectedCountry === c.code
-                      ? 'border-brand-500 bg-brand-50 font-bold text-brand-700 shadow-sm'
+                      ? 'border-brand-500 bg-brand-50 font-bold text-brand-700 shadow-xs'
                       : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50'
                   }`}
                 >
-                  <CountryFlag countryCode={c.code} countryName={c.name} size={20} className="shrink-0" />
+                  <CountryFlag countryCode={c.code} countryName={c.name} size={18} className="shrink-0" />
                   <span className="truncate">{c.name}</span>
                 </button>
               ))}
@@ -444,105 +432,89 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
         )}
       </div>
 
-      {/* ── 2-Column Main Split Layout (Left: Controls | Right: Sticky Live Summary) ── */}
+      {/* ── Main Unified Grid (No Redundancy) ── */}
       {selectedCountryData && (
-        <div className="grid gap-8 lg:grid-cols-12 items-start">
+        <div className="grid gap-6 lg:grid-cols-12 items-start">
 
-          {/* ── LEFT COLUMN: Interactive Configurator Controls (7 Cols) ── */}
-          <div className="lg:col-span-7 space-y-6">
+          {/* ── LEFT COLUMN: Compact Controls (7 Cols) ── */}
+          <div className="lg:col-span-7 space-y-4">
 
-            {/* 1. Speed & Quality Tier (Eco vs Pro) - ONLY AVAILABLE OPTIONS */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            {/* 1. Speed & Quality (Segmented Switch) */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
                 1. Geschwindigkeit & Qualität
               </label>
 
               {availableSpeedTypes.length === 0 ? (
-                <p className="text-xs text-red-500 font-medium">Für dieses Zielgebiet stehen aktuell keine Unlimited-Tarife bereit.</p>
+                <p className="text-xs text-red-500 font-medium">Keine Unlimited-Tarife verfügbar.</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Eco Option */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {availableSpeedTypes.includes('unlimited_eco') && (
                     <button
                       type="button"
                       onClick={() => setTariffType('unlimited_eco')}
-                      className={`rounded-2xl border p-4 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`rounded-xl border p-3 text-left transition-all cursor-pointer flex items-center justify-between ${
                         tariffType === 'unlimited_eco'
-                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-400 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-emerald-300'
+                          ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-300 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-emerald-200'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="flex items-center gap-1.5 font-extrabold text-slate-900 text-sm">
-                            <InfinityIcon size={18} className="text-emerald-600" />
-                            <span>Unlimited Eco</span>
-                          </span>
-                          {tariffType === 'unlimited_eco' && (
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
-                          )}
+                      <div className="flex items-center gap-2.5">
+                        <InfinityIcon size={20} className="text-emerald-600 shrink-0" />
+                        <div>
+                          <span className="block font-extrabold text-slate-900 text-xs">Unlimited Eco</span>
+                          <span className="block text-[10px] text-slate-500">Nach Limit: 512 kbps</span>
                         </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">Highspeed pro Tag, danach 512 kbps unbegrenzt weiter nutzen.</p>
                       </div>
-                      <span className="mt-3 inline-flex text-[10px] font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-md w-fit">
-                        Spartipp · Ideal für Chat & Maps
-                      </span>
+                      {tariffType === 'unlimited_eco' && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
                     </button>
                   )}
 
-                  {/* Pro Option */}
                   {availableSpeedTypes.includes('unlimited_pro') && (
                     <button
                       type="button"
                       onClick={() => setTariffType('unlimited_pro')}
-                      className={`rounded-2xl border p-4 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`rounded-xl border p-3 text-left transition-all cursor-pointer flex items-center justify-between ${
                         tariffType === 'unlimited_pro'
-                          ? 'border-violet-500 bg-violet-50/60 ring-2 ring-violet-400 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-violet-300'
+                          ? 'border-violet-500 bg-violet-50/70 ring-2 ring-violet-300 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-violet-200'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="flex items-center gap-1.5 font-extrabold text-slate-900 text-sm">
-                            <BoltIcon size={18} className="text-violet-600" />
-                            <span>Unlimited Pro</span>
-                          </span>
-                          {tariffType === 'unlimited_pro' && (
-                            <span className="h-2 w-2 rounded-full bg-violet-500 ring-4 ring-violet-100" />
-                          )}
+                      <div className="flex items-center gap-2.5">
+                        <BoltIcon size={20} className="text-violet-600 shrink-0" />
+                        <div>
+                          <span className="block font-extrabold text-slate-900 text-xs">Unlimited Pro</span>
+                          <span className="block text-[10px] text-slate-500">Nach Limit: ≥ 1 Mbps</span>
                         </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">Highspeed pro Tag, danach ≥ 1 Mbps unbegrenzt weiter nutzen.</p>
                       </div>
-                      <span className="mt-3 inline-flex text-[10px] font-bold text-violet-800 bg-violet-100/70 border border-violet-200 px-2 py-0.5 rounded-md w-fit">
-                        Premium · Für Videos & HD Stream
-                      </span>
+                      {tariffType === 'unlimited_pro' && <span className="h-2 w-2 rounded-full bg-violet-500" />}
                     </button>
                   )}
                 </div>
               )}
             </div>
 
-            {/* 2. Daily Data Volume Options - ONLY AVAILABLE GB OPTIONS */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            {/* 2. Daily Data Volume Pills */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                   2. Tägliches Highspeed-Volumen
                 </label>
-                <span className="text-xs text-slate-400">Jeden Tag erneuert</span>
+                <span className="text-[10px] text-slate-400">Jeden Tag erneuert</span>
               </div>
 
               {gbOptions.length === 0 ? (
                 <p className="text-xs text-slate-400">Keine spezifischen Optionen verfügbar.</p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {gbOptions.map((gb) => (
                     <button
                       key={gb}
                       type="button"
                       onClick={() => setSelectedGb(gb)}
-                      className={`rounded-2xl border px-5 py-3 font-extrabold text-sm transition-all cursor-pointer ${
+                      className={`rounded-xl border px-3.5 py-2 font-extrabold text-xs transition-all cursor-pointer ${
                         selectedGb === gb
-                          ? 'border-brand-600 bg-brand-600 text-white shadow-md scale-[1.02]'
+                          ? 'border-brand-600 bg-brand-600 text-white shadow-xs'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50'
                       }`}
                     >
@@ -553,101 +525,75 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
               )}
             </div>
 
-            {/* 3. Duration Controls (Slider + Presets) */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/* 3. Duration Controls */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
               <DaySlider days={days} onChange={setDays} />
             </div>
 
           </div>
 
-          {/* ── RIGHT COLUMN: Sticky Live Summary & Purchase Card (5 Cols) ── */}
-          <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-4">
-            <div className="rounded-3xl border-2 border-brand-200 bg-white p-6 shadow-xl relative overflow-hidden">
+          {/* ── RIGHT COLUMN: High-Converting Crisp Live Price Card (5 Cols) ── */}
+          <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-3">
+            <div className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-brand-500 via-sky-400 to-indigo-500" />
 
-              {/* Decorative Brand Accent Line */}
-              <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-brand-500 via-sky-400 to-indigo-500" />
-
-              <div className="mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Tarif-Zusammenstellung</span>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  Sofort einsatzbereit
-                </span>
-              </div>
-
-              {/* Destination & Specs */}
-              <div className="space-y-3 mb-5">
-                <div className="flex items-center gap-3">
-                  <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={36} className="shrink-0 rounded-md shadow-sm" />
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-lg leading-tight">{selectedCountryData.name}</h4>
-                    <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <span>{tariffType === 'unlimited_eco' ? '♾️ Unlimited Eco' : '⚡ Unlimited Pro'}</span>
-                      <span>·</span>
-                      <span className="font-bold text-slate-700">{selectedGb ? formatGb(selectedGb) : '–'} / Tag</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3 text-xs space-y-1.5">
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span>Gewählte Laufzeit:</span>
-                    <span className="font-bold text-slate-900">{days} {days === 1 ? 'Tag' : 'Tage'}</span>
-                  </div>
-                  {network && (
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Netzwerk-Standard:</span>
-                      <span className="font-bold text-violet-700">{network} Highspeed</span>
-                    </div>
-                  )}
-                  {ops.length > 0 && (
-                    <div className="flex items-center justify-between text-slate-600 pt-1 border-t border-slate-200/60">
-                      <span className="flex items-center gap-1"><NetworkIcon size={12} className="text-slate-400" /> Mobilfunknetz:</span>
-                      <span className="font-medium text-slate-800 truncate max-w-[140px]">{ops.map((o) => o.name).join(' · ')}</span>
-                    </div>
-                  )}
+              {/* Crisp Selected Specs Header */}
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={32} className="shrink-0 rounded-md shadow-xs" />
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-base leading-tight">{selectedCountryData.name}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {tariffType === 'unlimited_eco' ? '♾️ Eco' : '⚡ Pro'} · <span className="font-bold text-slate-700">{selectedGb ? formatGb(selectedGb) : '–'} / Tag</span> · {days} Tage
+                  </p>
                 </div>
               </div>
 
-              {/* Special Features Badges */}
-              {specialFeatures.length > 0 && (
-                <div className="mb-5 space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Enthaltene Merkmale:</span>
-                  <div className="flex flex-wrap gap-1.5">
+              {/* Network Specs & Features Chips */}
+              <div className="py-3 border-b border-slate-100 space-y-2">
+                {ops.length > 0 && (
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span className="flex items-center gap-1"><NetworkIcon size={12} className="text-slate-400" /> Mobilfunknetz:</span>
+                    <span className="font-bold text-slate-800 truncate max-w-[150px]">{ops.map((o) => o.name).join(' · ')}</span>
+                  </div>
+                )}
+
+                {specialFeatures.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
                     {specialFeatures.map((feat) => (
                       <span
                         key={feat.id}
-                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${feat.cls}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${feat.cls}`}
                       >
                         <span>{feat.icon}</span>
                         <span>{t(feat.badgeKey as any)}</span>
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Live Price Display */}
-              <div className="mb-6 pt-4 border-t border-slate-100 flex items-baseline justify-between">
+              {/* Price & Per-Day Rate */}
+              <div className="py-3 flex items-baseline justify-between">
                 <div>
-                  <span className="text-xs text-slate-400 block font-medium">Gesamtpreis</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gesamtpreis</span>
                   {discount > 0 && priceBeforeDiscount !== null && (
-                    <Price eur={priceBeforeDiscount} className="text-sm text-slate-400 line-through block" />
+                    <Price eur={priceBeforeDiscount} className="text-xs text-slate-400 line-through block" />
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-black text-slate-900 tracking-tight">
+                  <p className="text-2xl font-black text-slate-900 tracking-tight">
                     {finalPrice !== null ? <Price eur={finalPrice} /> : '–'}
                   </p>
-                  {discount > 0 && (
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-block mt-0.5">
-                      {t('cfg_disc_label', { pct: Math.round(discount * 100) })}
+                  {finalPrice !== null && (
+                    <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
+                      ({(finalPrice / days).toFixed(2)} € / Tag)
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Action CTAs */}
-              <div className="space-y-2.5">
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -657,7 +603,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                     setTimeout(() => setAdded(false), 1500);
                   }}
                   disabled={!syntheticTariff}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-brand-200 bg-brand-50 py-3.5 text-sm font-bold text-brand-700 hover:bg-brand-100 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 py-3 text-xs font-extrabold text-brand-700 hover:bg-brand-100 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {added ? t('cfg_added') : t('cfg_add_cart')}
                 </button>
@@ -665,7 +611,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                   type="button"
                   onClick={() => syntheticTariff && setCheckoutTariff(syntheticTariff)}
                   disabled={!syntheticTariff}
-                  className="w-full rounded-2xl bg-brand-600 py-4 text-sm font-extrabold text-white shadow-lg hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer text-center"
+                  className="w-full rounded-xl bg-brand-600 py-3.5 text-xs font-black text-white shadow-md hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer text-center"
                 >
                   {t('cfg_buy_now')} {finalPrice !== null ? <> · <Price eur={finalPrice} /></> : ''}
                 </button>
@@ -679,10 +625,10 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
 
       {/* ── Mobile Floating Bottom Sticky Bar ── */}
       {syntheticTariff && finalPrice !== null && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 shadow-2xl flex items-center justify-between gap-4">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 shadow-2xl flex items-center justify-between gap-3">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Gesamt ({days}d)</span>
-            <Price eur={finalPrice} className="text-xl font-extrabold text-slate-900" />
+            <Price eur={finalPrice} className="text-lg font-black text-slate-900" />
           </div>
           <div className="flex gap-2">
             <button
@@ -692,14 +638,14 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                 setAdded(true);
                 setTimeout(() => setAdded(false), 1500);
               }}
-              className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-xs font-bold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700"
             >
               {added ? '✓' : '+ Warenkorb'}
             </button>
             <button
               type="button"
               onClick={() => setCheckoutTariff(syntheticTariff)}
-              className="rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-md"
+              className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-extrabold text-white shadow-xs"
             >
               Jetzt kaufen
             </button>

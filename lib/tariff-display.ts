@@ -195,7 +195,7 @@ export function isNonHkIpTariff(tariff: {
 }
 
 export interface TariffSpecialFeature {
-  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'has_5g' | 'sms_supported';
+  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'has_5g';
   badgeKey: string;
   titleKey: string;
   descKey: string;
@@ -271,18 +271,6 @@ export function getTariffSpecialFeatures(
       descKey: 'feat_topup_desc',
       icon: '🔄',
       cls: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
-    });
-  }
-
-  // 5. SMS Supported
-  if (String(raw.smsStatus ?? '') === '2') {
-    features.push({
-      id: 'sms_supported',
-      badgeKey: 'feat_sms_badge',
-      titleKey: 'feat_sms_title',
-      descKey: 'feat_sms_desc',
-      icon: '💬',
-      cls: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
     });
   }
 

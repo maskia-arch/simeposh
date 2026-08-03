@@ -97,9 +97,9 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           )}
         </div>
 
-        {/* ── Special Feature Badges (Interactive Info Buttons) ── */}
+        {/* ── Special Feature Badges (Compact Horizontal Tag Chips) ── */}
         {features.length > 0 && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <div className="mb-2.5 flex flex-wrap items-center gap-1">
             {features.map((feat) => {
               const isSelected = activeFeature?.id === feat.id;
               return (
@@ -110,16 +110,14 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                     e.stopPropagation();
                     setActiveFeature(isSelected ? null : feat);
                   }}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all cursor-pointer ${feat.cls} ${
-                    isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-sm' : ''
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-all cursor-pointer ${feat.cls} ${
+                    isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-xs' : ''
                   }`}
-                  title={`${t(feat.titleKey as any)} – Klicken für Infos`}
+                  title={`${t(feat.titleKey as any)} – Details anzeigen`}
                 >
                   <span>{feat.icon}</span>
                   <span>{t(feat.badgeKey as any)}</span>
-                  <svg className="h-3 w-3 opacity-75" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <span className="opacity-50 text-[9px]">ⓘ</span>
                 </button>
               );
             })}
@@ -130,10 +128,10 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
         {activeFeature && (
           <div
             onClick={(e) => e.stopPropagation()}
-            className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/90 p-3 text-xs text-indigo-950 animate-in fade-in slide-in-from-top-1 duration-150 relative cursor-default"
+            className="mb-2.5 rounded-xl border border-indigo-200 bg-indigo-50/90 p-2.5 text-xs text-indigo-950 animate-in fade-in slide-in-from-top-1 duration-150 relative cursor-default shadow-xs"
           >
-            <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1.5 mb-1.5">
-              <span className="font-extrabold flex items-center gap-1 text-indigo-900">
+            <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1 mb-1">
+              <span className="font-extrabold flex items-center gap-1 text-indigo-900 text-[11px]">
                 <span>{activeFeature.icon}</span>
                 <span>{t(activeFeature.titleKey as any)}</span>
               </span>
@@ -143,19 +141,19 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                   e.stopPropagation();
                   setActiveFeature(null);
                 }}
-                className="text-indigo-400 hover:text-indigo-700 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors"
+                className="text-indigo-400 hover:text-indigo-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors"
               >
                 ✕
               </button>
             </div>
-            <p className="leading-relaxed text-[11px] font-medium">{t(activeFeature.descKey as any)}</p>
+            <p className="leading-relaxed text-[10px] font-medium">{t(activeFeature.descKey as any)}</p>
             {activeFeature.priceNoteKey && (
-              <p className="mt-1.5 text-[10px] text-indigo-800 bg-indigo-100/70 rounded-md p-1.5 font-semibold leading-tight">
+              <p className="mt-1 text-[9px] text-indigo-800 bg-indigo-100/70 rounded-md p-1 font-semibold leading-tight">
                 💡 {t(activeFeature.priceNoteKey as any)}
               </p>
             )}
             {activeFeature.extra && (
-              <p className="mt-1 text-[10px] font-mono text-indigo-600 font-semibold">{activeFeature.extra}</p>
+              <p className="mt-0.5 text-[9px] font-mono text-indigo-600 font-semibold">{activeFeature.extra}</p>
             )}
           </div>
         )}

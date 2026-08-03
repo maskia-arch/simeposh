@@ -108,20 +108,20 @@ export function CartDrawer() {
         }`}
         aria-hidden={!isOpen}
       >
-        {/* Header */}
-        <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-4 bg-white">
-          <h2 className="flex items-center gap-2.5 text-base font-extrabold text-slate-900">
-            <CustomCartIcon className="h-5 w-5 text-brand-600" />
+        {/* Compact Header */}
+        <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-white">
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+            <CustomCartIcon className="h-4.5 w-4.5 text-brand-600" />
             <span>{t('cart_title')}</span>
             {count > 0 && (
-              <span className="rounded-full bg-brand-100 border border-brand-200 px-2.5 py-0.5 text-xs font-black text-brand-700">
+              <span className="rounded-full bg-brand-100 border border-brand-200 px-2 py-0.5 text-[11px] font-black text-brand-700">
                 {count}
               </span>
             )}
           </h2>
           <button
             onClick={close}
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer text-xs"
             aria-label="Close"
           >
             ✕
@@ -131,43 +131,43 @@ export function CartDrawer() {
         {/* Body Content */}
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-slate-400">
-            <div className="mb-4 rounded-full bg-brand-50 p-5 text-brand-600 shadow-inner ring-1 ring-brand-100">
-              <CustomCartIcon className="h-10 w-10" />
+            <div className="mb-3 rounded-full bg-brand-50 p-4 text-brand-600 shadow-inner ring-1 ring-brand-100">
+              <CustomCartIcon className="h-8 w-8" />
             </div>
-            <p className="text-base font-extrabold text-slate-800">{t('cart_empty_title')}</p>
+            <p className="text-sm font-extrabold text-slate-800">{t('cart_empty_title')}</p>
             <p className="mt-1 text-xs text-slate-500 max-w-xs">{t('cart_empty_sub')}</p>
             <a
               href="/tariffs"
               onClick={close}
-              className="mt-5 rounded-2xl bg-brand-600 px-5 py-3 text-xs font-black text-white hover:bg-brand-700 shadow-md transition-all"
+              className="mt-4 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-black text-white hover:bg-brand-700 shadow-sm transition-all"
             >
               {t('cart_discover')}
             </a>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0 scrollbar-thin">
             {/* Section 1: Item List */}
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Ausgewählte eSIMs</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Ausgewählte eSIMs</span>
                 <button
                   onClick={handleClearConfirm}
-                  className="text-xs font-bold text-slate-400 hover:text-red-600 flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-[11px] font-bold text-slate-400 hover:text-red-600 flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <span>🗑️ Leeren</span>
                 </button>
               </div>
 
-              <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
                 {items.map((i) => {
                   const badge = i.tariffType ? TYPE_BADGE[i.tariffType] : null;
                   const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
                   const isNonHk = isNonHkIpTariff({ name: i.name, package_code: i.packageCode });
                   return (
-                    <div key={i.key} className="flex items-center gap-3 p-3.5 bg-white hover:bg-slate-50/50 transition-colors">
-                      <CountryFlag countryCode={i.countryCode} countryName={i.countryName} size={28} className="shrink-0 rounded-md shadow-sm ring-1 ring-black/5" />
+                    <div key={i.key} className="flex items-center gap-2.5 p-2.5 bg-white">
+                      <CountryFlag countryCode={i.countryCode} countryName={i.countryName} size={24} className="shrink-0 rounded-sm shadow-sm ring-1 ring-black/5" />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-1">
                           <p className="truncate text-xs font-extrabold text-slate-900 flex items-center gap-1">
                             <span>
                               {displayCountryName(
@@ -176,39 +176,39 @@ export function CartDrawer() {
                               )}
                             </span>
                             {isNonHk && (
-                              <span className="shrink-0 text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded-full">
-                                🛡️ Non-HK IP
+                              <span className="shrink-0 text-[8px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1 py-0.2 rounded-full">
+                                🛡️ Non-HK
                               </span>
                             )}
                           </p>
                           <button
                             onClick={() => removeItem(i.key)}
-                            className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                            className="shrink-0 flex items-center justify-center w-4.5 h-4.5 rounded-full bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors cursor-pointer text-[10px]"
                             aria-label={t('cart_clear')}
                           >
                             ✕
                           </button>
                         </div>
 
-                        <p className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                        <p className="text-[10px] text-slate-500 font-medium">
                           {badge && <span className="mr-1">{badge.icon} {badge.label}</span>}
                           · {isUnlimited ? '∞ Unlimited' : formatGb(i.dataGb)} · {i.validityDays}d
                         </p>
-                        
-                        <div className="mt-2 flex items-center justify-between">
-                          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50">
-                            <button
-                              onClick={() => setQuantity(i.key, i.quantity - 1)}
-                              className="px-2 py-0.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors rounded-l-xl cursor-pointer"
-                            >−</button>
-                            <span className="min-w-[1.5rem] text-center text-xs font-extrabold tabular-nums text-slate-800">{i.quantity}</span>
-                            <button
-                              onClick={() => setQuantity(i.key, i.quantity + 1)}
-                              className="px-2 py-0.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors rounded-r-xl cursor-pointer"
-                            >+</button>
-                          </div>
-                          <Price eur={i.priceEur * i.quantity} className="text-sm font-black text-slate-900 tabular-nums" />
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50">
+                          <button
+                            onClick={() => setQuantity(i.key, i.quantity - 1)}
+                            className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:bg-slate-200 transition-colors rounded-l-lg cursor-pointer"
+                          >−</button>
+                          <span className="min-w-[1rem] text-center text-[11px] font-extrabold tabular-nums text-slate-800">{i.quantity}</span>
+                          <button
+                            onClick={() => setQuantity(i.key, i.quantity + 1)}
+                            className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:bg-slate-200 transition-colors rounded-r-lg cursor-pointer"
+                          >+</button>
                         </div>
+                        <Price eur={i.priceEur * i.quantity} className="text-xs font-black text-slate-900 tabular-nums" />
                       </div>
                     </div>
                   );
@@ -216,56 +216,58 @@ export function CartDrawer() {
               </div>
             </div>
 
-            {/* Section 2: Cashback Highlight Banner */}
-            <div className="rounded-2xl p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-xs text-blue-900 flex items-start gap-2.5 shadow-sm">
-              <span className="text-base shrink-0">✨</span>
-              <div className="flex-1">
+            {/* Section 2: Compact Cashback & Delivery Email Row */}
+            <div className="space-y-2">
+              {/* Delivery Email Input */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  E-Mail für QR-Zustellung
+                </label>
                 {user ? (
-                  <p className="font-extrabold text-blue-950">
-                    {t('checkout_cashback_earned' as any, { 
-                      amount: (total * (
-                        (totalSpend >= 1000 ? 0.10 : totalSpend >= 500 ? 0.08 : totalSpend >= 100 ? 0.06 : 0.05) + 
-                        (extraCashbackQueue > 0 ? 0.05 : 0)
-                      )).toFixed(2)
-                    })}
-                  </p>
-                ) : (
-                  <div>
-                    <span className="font-bold block text-blue-950 mb-0.5">{t('checkout_cashback_guest_promo' as any)}</span>
-                    <a
-                      href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
-                      className="font-black text-brand-600 underline hover:text-brand-800 transition-colors"
-                    >
-                      {t('checkout_cashback_guest_link' as any)}
-                    </a>
-                    <span className="text-slate-600"> {t('checkout_cashback_guest_text' as any)}</span>
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5">
+                    <span className="text-xs font-bold text-slate-800 truncate">{user.email}</span>
+                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded-full border border-emerald-200 shrink-0">Eingeloggt</span>
                   </div>
+                ) : (
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="deine@email.de"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all placeholder:text-slate-400"
+                  />
                 )}
+              </div>
+
+              {/* Compact Cashback Note */}
+              <div className="rounded-xl p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-[11px] text-blue-900 flex items-center gap-2">
+                <span className="shrink-0">✨</span>
+                <div className="flex-1 truncate">
+                  {user ? (
+                    <span className="font-bold">
+                      {t('checkout_cashback_earned' as any, { 
+                        amount: (total * (
+                          (totalSpend >= 1000 ? 0.10 : totalSpend >= 500 ? 0.08 : totalSpend >= 100 ? 0.06 : 0.05) + 
+                          (extraCashbackQueue > 0 ? 0.05 : 0)
+                        )).toFixed(2)
+                      })}
+                    </span>
+                  ) : (
+                    <span>
+                      <span className="font-bold">Bis zu 15% Cashback</span> ·{' '}
+                      <a
+                        href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
+                        className="font-bold text-brand-600 underline"
+                      >
+                        Einloggen
+                      </a>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Section 3: Delivery Email Address */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm space-y-1.5">
-              <label className="block text-xs font-extrabold text-slate-700">
-                E-Mail für QR-Zustellung
-              </label>
-              {user ? (
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2">
-                  <span className="text-xs font-bold text-slate-800 truncate">{user.email}</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">Eingeloggt</span>
-                </div>
-              ) : (
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="deine@email.de"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all placeholder:text-slate-400"
-                />
-              )}
-            </div>
-
-            {/* Section 4: Crypto & eSIM Cash Payment Selector (Includes sticky unmissable Bezahlen footer) */}
+            {/* Section 3: High-Density Payment Selector & Sticky Balanced CTA */}
             <CryptoPaySelector
               email={email}
               items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined }))}
