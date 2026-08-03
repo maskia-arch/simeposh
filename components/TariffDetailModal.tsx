@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 
@@ -47,6 +47,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
+  const features     = getTariffSpecialFeatures(tariff);
+  const cleanedTitle = cleanTariffName(tariff.name);
 
   if (showCheckout) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={onClose} />;
@@ -143,7 +145,33 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
           </div>
 
           {/* ── Plan name ── */}
-          <p className="mb-4 text-sm text-slate-600 leading-relaxed">{tariff.name}</p>
+          <p className="mb-4 text-sm text-slate-600 leading-relaxed font-medium">{cleanedTitle}</p>
+
+          {/* ── Special Features Callout Section ── */}
+          {features.length > 0 && (
+            <div className="mb-5 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Besonderheiten & Merkmale</p>
+              <div className="space-y-2">
+                {features.map((feat) => (
+                  <div key={feat.id} className="rounded-2xl border border-indigo-200/80 bg-indigo-50/70 p-3.5 text-xs text-indigo-950">
+                    <div className="flex items-center gap-1.5 font-bold text-indigo-900 mb-1">
+                      <span className="text-sm">{feat.icon}</span>
+                      <span>{t(feat.titleKey as any)}</span>
+                    </div>
+                    <p className="leading-relaxed text-indigo-900/90">{t(feat.descKey as any)}</p>
+                    {feat.priceNoteKey && (
+                      <p className="mt-2 text-[11px] text-indigo-900 font-semibold bg-indigo-100/80 rounded-lg p-2 leading-tight">
+                        💡 {t(feat.priceNoteKey as any)}
+                      </p>
+                    )}
+                    {feat.extra && (
+                      <p className="mt-1 font-mono text-[10px] text-indigo-700 font-semibold">{feat.extra}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Promo label ── */}
           {tariff.label && (

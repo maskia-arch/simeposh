@@ -160,3 +160,132 @@ export function coverageLabel(t: TariffLike, locale = 'en'): string | null {
     'countries';
   return `${codes.length} ${word}`;
 }
+
+/**
+ * Strips technical raw suffixes like "(nonhkip)" or "nonhkip" from package names
+ * so the card title looks clean and professional to customers.
+ */
+export function cleanTariffName(name: string | null | undefined): string {
+  if (!name) return '';
+  return name
+    .replace(/\s*\(\s*non-?hk-?ip\s*\)/gi, '')
+    .replace(/\s+non-?hk-?ip\b/gi, '')
+    .replace(/\s+FUP\d+(?:[km]bps)?/gi, '')
+    .trim();
+}
+
+/**
+ * Checks if a tariff has Non-HK IP routing.
+ */
+export function isNonHkIpTariff(tariff: {
+  name?: string | null;
+  package_code?: string | null;
+  description?: string | null;
+  raw_data?: Record<string, unknown> | null;
+}): boolean {
+  const nameStr = (tariff.name ?? '').toLowerCase();
+  const codeStr = (tariff.package_code ?? '').toLowerCase();
+  const descStr = (tariff.description ?? '').toLowerCase();
+
+  return (
+    nameStr.includes('nonhk') || nameStr.includes('non-hk') ||
+    codeStr.includes('nonhk') || codeStr.includes('non-hk') ||
+    descStr.includes('nonhk') || descStr.includes('non-hk')
+  );
+}
+
+export interface TariffSpecialFeature {
+  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'has_5g' | 'sms_supported';
+  badgeKey: string;
+  titleKey: string;
+  descKey: string;
+  priceNoteKey?: string;
+  icon: string;
+  cls: string;
+  extra?: string;
+}
+
+/**
+ * Extract all active special features for a tariff.
+ */
+export function getTariffSpecialFeatures(
+  tariff: {
+    name?: string | null;
+    package_code?: string | null;
+    description?: string | null;
+    raw_data?: Record<string, unknown> | null;
+    is_top_up_eligible?: boolean | null;
+  },
+): TariffSpecialFeature[] {
+  const features: TariffSpecialFeature[] = [];
+  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
+
+  // 1. Non-HK IP
+  if (isNonHkIpTariff(tariff)) {
+    const ipExp = typeof raw.ipExport === 'string' && raw.ipExport ? raw.ipExport : undefined;
+    features.push({
+      id: 'non_hk_ip',
+      badgeKey: 'feat_non_hk_ip_badge',
+      titleKey: 'feat_non_hk_ip_title',
+      descKey: 'feat_non_hk_ip_desc',
+      priceNoteKey: 'feat_non_hk_ip_price_note',
+      icon: '🛡️',
+      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+      extra: ipExp ? `IP Export: ${ipExp}` : undefined,
+    });
+  }
+
+  // 2. Activation on Arrival (activeType = 2 or default for esimaccess)
+  const activeType = String(raw.activeType ?? '2');
+  if (activeType === '2') {
+    features.push({
+      id: 'activation_on_arrival',
+      badgeKey: 'feat_activation_arrival_badge',
+      titleKey: 'feat_activation_arrival_title',
+      descKey: 'feat_activation_arrival_desc',
+      icon: '📶',
+      cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+    });
+  }
+
+  // 3. 5G Network Ready
+  const ops = getTariffOperators(raw, 10);
+  if (bestNetworkType(ops) === '5G' || String(raw.supportedNetworkTypes ?? '').includes('5G')) {
+    features.push({
+      id: 'has_5g',
+      badgeKey: 'feat_5g_badge',
+      titleKey: 'feat_5g_title',
+      descKey: 'feat_5g_desc',
+      icon: '⚡',
+      cls: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100',
+    });
+  }
+
+  // 4. Top-Up Eligible / Reloadable
+  const topUpType = Number(raw.supportTopUpType ?? 0);
+  if (tariff.is_top_up_eligible || topUpType > 0) {
+    features.push({
+      id: 'topup_eligible',
+      badgeKey: 'feat_topup_badge',
+      titleKey: 'feat_topup_title',
+      descKey: 'feat_topup_desc',
+      icon: '🔄',
+      cls: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+    });
+  }
+
+  // 5. SMS Supported
+  if (String(raw.smsStatus ?? '') === '2') {
+    features.push({
+      id: 'sms_supported',
+      badgeKey: 'feat_sms_badge',
+      titleKey: 'feat_sms_title',
+      descKey: 'feat_sms_desc',
+      icon: '💬',
+      cls: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+    });
+  }
+
+  return features;
+}
+

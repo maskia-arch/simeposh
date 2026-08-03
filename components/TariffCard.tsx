@@ -7,8 +7,8 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
-import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, BoltIcon, NetworkIcon, TagIcon } from '@/components/Icons';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, type TariffSpecialFeature } from '@/lib/tariff-display';
+import { PlaneIcon, InfinityIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -35,12 +35,16 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
   const { t, locale } = useTranslation();
   const { addItem, open } = useCart();
   const [showCountryList, setShowCountryList] = useState(false);
+  const [activeFeature, setActiveFeature] = useState<TariffSpecialFeature | null>(null);
+
   const badge   = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
   const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 3);
   const network = bestNetworkType(ops);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
+  const features     = getTariffSpecialFeatures(tariff);
+  const cleanedTitle = cleanTariffName(tariff.name);
 
   return (
     <div
@@ -92,6 +96,69 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             </span>
           )}
         </div>
+
+        {/* ── Special Feature Badges (Interactive Info Buttons) ── */}
+        {features.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            {features.map((feat) => {
+              const isSelected = activeFeature?.id === feat.id;
+              return (
+                <button
+                  key={feat.id}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveFeature(isSelected ? null : feat);
+                  }}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all cursor-pointer ${feat.cls} ${
+                    isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-sm' : ''
+                  }`}
+                  title={`${t(feat.titleKey as any)} – Klicken für Infos`}
+                >
+                  <span>{feat.icon}</span>
+                  <span>{t(feat.badgeKey as any)}</span>
+                  <svg className="h-3 w-3 opacity-75" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Interactive Expandable Feature Info Accordion Box ── */}
+        {activeFeature && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/90 p-3 text-xs text-indigo-950 animate-in fade-in slide-in-from-top-1 duration-150 relative cursor-default"
+          >
+            <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1.5 mb-1.5">
+              <span className="font-extrabold flex items-center gap-1 text-indigo-900">
+                <span>{activeFeature.icon}</span>
+                <span>{t(activeFeature.titleKey as any)}</span>
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveFeature(null);
+                }}
+                className="text-indigo-400 hover:text-indigo-700 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="leading-relaxed text-[11px] font-medium">{t(activeFeature.descKey as any)}</p>
+            {activeFeature.priceNoteKey && (
+              <p className="mt-1.5 text-[10px] text-indigo-800 bg-indigo-100/70 rounded-md p-1.5 font-semibold leading-tight">
+                💡 {t(activeFeature.priceNoteKey as any)}
+              </p>
+            )}
+            {activeFeature.extra && (
+              <p className="mt-1 text-[10px] font-mono text-indigo-600 font-semibold">{activeFeature.extra}</p>
+            )}
+          </div>
+        )}
 
         {/* ── Promo label ── */}
         {tariff.label && (
