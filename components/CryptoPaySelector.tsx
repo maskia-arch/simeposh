@@ -29,6 +29,14 @@ interface CryptoPaySelectorProps {
   user: any;
 }
 
+function BitcoinIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.038-1.24 15.527.362 9.1 1.962 2.67 8.472-1.24 14.902.362c6.43 1.602 10.34 8.112 8.736 14.542zM15.4 10.222c.28-.936-.572-1.439-1.547-1.774l.317-1.27-1.028-.257-.308 1.237c-.27-.067-.547-.132-.824-.197l.31-1.245-1.028-.256-.317 1.272c-.224-.05-.443-.102-.656-.154l.002-.007-1.417-.354-.274 1.1s.762.175.746.186c.416.104.492.38.479.599l-.48 1.926c.029.007.066.018.107.034l-.11-.027-.673 2.697c-.051.127-.182.317-.477.244.01.015-.747-.187-.747-.187l-.51 1.176 1.338.334c.249.062.493.127.734.189l-.32 1.285 1.028.256.317-1.273c.28.076.553.148.82.217l-.315 1.264 1.028.257.32-1.282c1.755.332 3.075.198 3.63-1.39.448-1.278-.022-2.016-.946-2.497.673-.155 1.18-.598 1.316-1.512zm-2.355 3.3c-.319 1.282-2.476.589-3.173.415l.566-2.27c.698.174 2.932.52 2.607 1.855zm.319-3.32c-.29 1.166-2.087.574-2.668.429l.513-2.057c.581.145 2.45.416 2.155 1.628z" fill="#F7931A"/>
+    </svg>
+  );
+}
+
 function WalletIcon({ className = 'h-4 w-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -143,6 +151,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
   }
 
   const visibleCoins = coins.filter((c) => total >= (c.minOrderEur || 0));
+  const hiddenCoinsCount = coins.length - visibleCoins.length;
   const selectedCoin = visibleCoins.find((c) => c.code === selectedMethod);
   let fee = 0;
   if (selectedCoin) {
@@ -179,7 +188,8 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>🪙 Krypto</span>
+            <BitcoinIcon className="h-4 w-4 shrink-0" />
+            <span>Krypto</span>
           </button>
 
           <button
@@ -200,30 +210,43 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
           </button>
         </div>
 
-        {/* Tab Content: Crypto Coins Pills */}
+        {/* Tab Content: Crypto Coins Pills with Explicit Fee Badges */}
         {activeTab === 'crypto' && (
-          <div className="flex flex-wrap gap-1 pt-0.5">
-            {visibleCoins.map((c) => {
-              const isSelected = selectedMethod === c.code;
-              return (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => {
-                    setSelectedMethod(c.code);
-                    setError('');
-                  }}
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-300'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <img src={COIN_ICON[c.code] ?? '🪙'} alt={c.code} className="h-3.5 w-3.5 object-contain" />
-                  <span>{c.code}</span>
-                </button>
-              );
-            })}
+          <div className="space-y-1 pt-0.5">
+            <div className="flex flex-wrap gap-1">
+              {visibleCoins.map((c) => {
+                const isSelected = selectedMethod === c.code;
+                const coinFee = c.surchargePct > 0
+                  ? `+${c.surchargePct}%`
+                  : c.surchargeFixedEur > 0 ? `+${c.surchargeFixedEur.toFixed(2)} €` : '0%';
+                return (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => {
+                      setSelectedMethod(c.code);
+                      setError('');
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-300'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <img src={COIN_ICON[c.code] ?? 'https://coin-images.coingecko.com/coins/images/2/large/litecoin.png'} alt={c.code} className="h-3.5 w-3.5 object-contain" />
+                    <span>{c.code}</span>
+                    <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${c.surchargePct > 0 || c.surchargeFixedEur > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                      {coinFee}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {hiddenCoinsCount > 0 && (
+              <p className="text-[9px] text-slate-400 font-medium pt-0.5">
+                💡 Weitere Coins (z. B. BTC, ETH) ab 5.00 € Mindestbestellwert verfügbar.
+              </p>
+            )}
           </div>
         )}
 
@@ -274,11 +297,26 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
         </p>
       )}
 
-      {/* 3. Balanced, Perfectly Proportioned Sticky Drawer Footer */}
+      {/* 3. Balanced Sticky Drawer Footer with Explicit Price & Fee Breakdown */}
       <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-md space-y-2 z-20">
-        <div className="flex items-baseline justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gesamtsumme</span>
-          <div className="text-right">
+        <div className="space-y-0.5">
+          <div className="flex items-baseline justify-between text-xs text-slate-500">
+            <span>Zwischensumme</span>
+            <span className="tabular-nums font-semibold">{total.toFixed(2)} €</span>
+          </div>
+          {fee > 0 ? (
+            <div className="flex items-baseline justify-between text-xs text-amber-700 font-semibold">
+              <span>Zahlungsgebühr ({selectedMethod})</span>
+              <span className="tabular-nums">+{fee.toFixed(2)} €</span>
+            </div>
+          ) : (
+            <div className="flex items-baseline justify-between text-[11px] text-emerald-600 font-semibold">
+              <span>Zahlungsgebühr</span>
+              <span>Kostenlos (0,00 €)</span>
+            </div>
+          )}
+          <div className="flex items-baseline justify-between pt-1 border-t border-slate-100">
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Gesamtsumme</span>
             <span className="text-xl font-extrabold text-slate-900 tabular-nums">{finalTotal.toFixed(2)} €</span>
           </div>
         </div>
