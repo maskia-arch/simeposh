@@ -368,6 +368,18 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
           )}
         </div>
 
+        {(sess.coin === 'USDC' || sess.coin === 'USDT') && status !== 'detected' && (
+          <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-xs text-blue-900 leading-relaxed flex items-start gap-2">
+            <span className="text-sm shrink-0">🌐</span>
+            <div>
+              <p className="font-extrabold text-[11px] text-blue-950">NETZWERKHINWEIS:</p>
+              <p className="text-[10px] text-blue-800">
+                Sende <strong>{sess.coin}</strong> ausschließlich über das <strong>Ethereum-Netzwerk (ERC-20)</strong>. Zahlungen über andere Netzwerke gehen verloren.
+              </p>
+            </div>
+          </div>
+        )}
+
         {feeNote && status !== 'detected' && (
           <p className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs font-medium text-amber-800">
             ⚠ {feeNote}

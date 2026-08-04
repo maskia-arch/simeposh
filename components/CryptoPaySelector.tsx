@@ -13,6 +13,17 @@ const COIN_ICON: Record<string, string> = {
   LTC: 'https://coin-images.coingecko.com/coins/images/2/large/litecoin.png',
   ETH: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png',
   SOL: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png',
+  USDC: 'https://coin-images.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
+  USDT: 'https://coin-images.coingecko.com/coins/images/325/large/Tether.png',
+};
+
+const COIN_NETWORK_LABEL: Record<string, string> = {
+  BTC: 'BTC Native',
+  LTC: 'LTC Native',
+  ETH: 'Ethereum',
+  SOL: 'Solana',
+  USDC: 'ETH (ERC-20)',
+  USDT: 'ETH (ERC-20)',
 };
 
 export interface CryptoItem { tariffId: string; quantity: number; days?: number; topUpIccid?: string }
@@ -206,15 +217,19 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
           </button>
         </div>
 
-        {/* Tab Content: Crypto Coins Pills with Explicit Fee Badges */}
+        {/* Tab Content: Crypto Coins Pills with Explicit Fee Badges & Network Labels */}
         {activeTab === 'crypto' && (
-          <div className="space-y-1 pt-0.5">
-            <div className="flex flex-wrap gap-1">
+          <div className="space-y-2 pt-1">
+            <div className="flex flex-wrap gap-1.5">
               {visibleCoins.map((c) => {
                 const isSelected = selectedMethod === c.code;
+                const isErc20 = c.code === 'USDC' || c.code === 'USDT';
+                const iconUrl = COIN_ICON[c.code] ?? 'https://coin-images.coingecko.com/coins/images/2/large/litecoin.png';
+                const netLabel = COIN_NETWORK_LABEL[c.code] || c.code;
                 const coinFee = c.surchargePct > 0
                   ? `+${c.surchargePct}%`
                   : c.surchargeFixedEur > 0 ? `+${c.surchargeFixedEur.toFixed(2)} €` : '0%';
+                
                 return (
                   <button
                     key={c.code}
@@ -223,21 +238,43 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
                       setSelectedMethod(c.code);
                       setError('');
                     }}
-                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-300'
+                        ? isErc20
+                          ? 'border-blue-600 bg-blue-50 text-blue-950 ring-1 ring-blue-400 shadow-xs'
+                          : 'border-brand-600 bg-brand-50 text-brand-900 ring-1 ring-brand-400 shadow-xs'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <img src={COIN_ICON[c.code] ?? 'https://coin-images.coingecko.com/coins/images/2/large/litecoin.png'} alt={c.code} className="h-3.5 w-3.5 object-contain" />
-                    <span>{c.code}</span>
-                    <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${c.surchargePct > 0 || c.surchargeFixedEur > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                    <img src={iconUrl} alt={c.code} className="h-4 w-4 shrink-0 object-contain" />
+                    <div className="flex flex-col items-start leading-none">
+                      <span>{c.code}</span>
+                      <span className={`text-[8px] font-extrabold ${isErc20 ? 'text-blue-600' : 'text-slate-400'}`}>
+                        {netLabel}
+                      </span>
+                    </div>
+                    <span className={`ml-0.5 text-[9px] px-1.5 py-0.5 rounded-md font-semibold ${c.surchargePct > 0 || c.surchargeFixedEur > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                       {coinFee}
                     </span>
                   </button>
                 );
               })}
             </div>
+
+            {selectedCoin && (selectedCoin.code === 'USDC' || selectedCoin.code === 'USDT') && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-3 py-2 text-xs text-blue-900 flex items-start gap-2">
+                <span className="text-sm shrink-0">🌐</span>
+                <div>
+                  <p className="font-extrabold text-[11px] text-blue-950">
+                    Netzwerk: Ethereum (ERC-20 Token)
+                  </p>
+                  <p className="text-[10px] text-blue-800 leading-snug mt-0.5">
+                    {selectedCoin.code} wird ausschließlich im <strong>Ethereum-Netzwerk (ERC-20)</strong> abgewickelt.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {hiddenCoinsCount > 0 && (
               <p className="text-[9px] text-slate-400 font-medium pt-0.5">
                 💡 Weitere Coins (z. B. BTC, ETH) ab 5.00 € Mindestbestellwert verfügbar.
