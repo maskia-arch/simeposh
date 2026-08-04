@@ -93,7 +93,7 @@ export function Footer() {
                   <li><Link href="/topup"     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
                   <li><Link href="/dashboard" className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
                   <li><Link href="/blog"      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
-                  <li><button onClick={() => openTicketModal()} className="hover:text-brand-700 transition-colors text-left">🎫 Support-Ticket öffnen</button></li>
+                  <li><button onClick={() => openTicketModal()} className="hover:text-brand-700 transition-colors text-left">{t('footer_open_ticket')}</button></li>
                 </ul>
               </div>
               <div>

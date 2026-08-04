@@ -113,7 +113,7 @@ export function HomePageClient({
               ))}
             </div>
             <span>
-              {averageRating.toFixed(1)} / 5.0 ({totalCount} {locale === 'de' ? 'Bewertungen' : 'reviews'})
+              {averageRating.toFixed(1)} / 5.0 ({totalCount} {t('hero_reviews_count')})
             </span>
           </Link>
 

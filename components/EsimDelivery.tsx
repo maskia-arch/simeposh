@@ -45,7 +45,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
         }}
         className="shrink-0 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-brand-600 transition-all active:scale-95 cursor-pointer"
       >
-        {copied ? '✓ Kopiert' : t('esim_copy')}
+        {copied ? `✓ ${t('cash_copied')}` : t('esim_copy')}
       </button>
     </div>
   );
@@ -94,7 +94,7 @@ export function EsimDelivery({
               <h3 className="text-lg font-extrabold text-slate-900 tracking-tight truncate">{esim.countryName}</h3>
               {index && totalCount && totalCount > 1 && (
                 <span className="rounded-md bg-slate-900 text-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shrink-0 shadow-xs">
-                  eSIM #{index} von {totalCount}
+                  {t('esim_index_of', { index, totalCount })}
                 </span>
               )}
             </div>
@@ -127,7 +127,7 @@ export function EsimDelivery({
         {/* Center QR Code Display */}
         <div className="flex flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200 p-4 shadow-sm text-center w-full max-w-[280px] mx-auto md:max-w-none">
           <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-            📱 QR-Code Scannen
+            {t('esim_qr_scan_title')}
           </p>
           
           <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-inner inline-block">
@@ -142,7 +142,7 @@ export function EsimDelivery({
               />
             ) : (
               <div className="flex h-[180px] w-[180px] items-center justify-center rounded-xl border border-dashed border-slate-300 text-xs font-medium text-slate-400">
-                Generiere QR-Code...
+                {t('cart_loading')}
               </div>
             )}
           </div>
@@ -155,7 +155,7 @@ export function EsimDelivery({
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            QR-Code als PNG
+            {t('esim_download_qr')}
           </button>
         </div>
 
@@ -167,9 +167,9 @@ export function EsimDelivery({
               <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
                 <div className="min-w-0 flex-1">
                   <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                    📱 Interaktive Einrichungsseite
+                    {t('esim_interactive_page')}
                   </span>
-                  <h4 className="mt-1 text-sm font-bold text-white truncate">Deine persönliche eSIM Installationsseite</h4>
+                  <h4 className="mt-1 text-sm font-bold text-white truncate">{t('esim_personal_page')}</h4>
                 </div>
                 <a
                   href={esim.overviewUrl}
@@ -177,7 +177,7 @@ export function EsimDelivery({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-xl bg-white text-brand-700 hover:bg-slate-100 px-3.5 py-2 text-xs font-extrabold shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
                 >
-                  Öffnen ↗
+                  {t('esim_open')}
                 </a>
               </div>
               
@@ -189,7 +189,7 @@ export function EsimDelivery({
                   }}
                   className="shrink-0 rounded-lg bg-white/20 hover:bg-white/30 px-2.5 py-1 text-xs font-bold text-white transition-colors cursor-pointer"
                 >
-                  Kopieren
+                  {t('cash_copy')}
                 </button>
               </div>
             </div>
@@ -205,7 +205,7 @@ export function EsimDelivery({
                 <svg className="h-4 w-4 text-slate-400 group-open:text-brand-600 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
-                {t('esim_manual')} (Falls QR-Code nicht scannbar)
+                {t('esim_manual')} {t('esim_manual_sub')}
               </span>
               <svg className="h-4 w-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -214,7 +214,7 @@ export function EsimDelivery({
             <div className="space-y-2 px-4 pb-4 pt-1 border-t border-slate-200/60 min-w-0">
               {esim.smdpAddress && <CopyField label={t('esim_smdp')} value={esim.smdpAddress} />}
               {esim.activationCode && <CopyField label={t('esim_code')} value={esim.activationCode} />}
-              <CopyField label="APN (Zugangspunkt)" value={esim.apn || 'internet'} />
+              <CopyField label={t('esim_apn_label')} value={esim.apn || 'internet'} />
             </div>
           </details>
         </div>

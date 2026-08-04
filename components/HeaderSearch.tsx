@@ -121,7 +121,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
         <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 text-slate-800 shadow-xl ring-1 ring-black/5 animate-in fade-in slide-in-from-top-1 duration-100">
           {results.length === 0 ? (
             <p className="px-2 py-4 text-center text-xs text-slate-400">
-              {locale === 'de' ? 'Keine Ziele für' : 'No destinations for'} „{q}"
+              {t('none')} „{q}"
             </p>
           ) : (
             <ul className="space-y-0.5">
@@ -143,7 +143,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
                     <span className="flex-grow truncate text-xs">{label(d)}</span>
                     {d.isRegion && (
                       <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-700">
-                        {locale === 'de' ? 'Region' : 'Region'}
+                        {t('region')}
                       </span>
                     )}
                   </button>

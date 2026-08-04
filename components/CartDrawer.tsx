@@ -29,10 +29,7 @@ export function CartDrawer() {
   const { items, isOpen, close, total, count, setQuantity, removeItem, clear } = useCart();
   
   const handleClearConfirm = () => {
-    const confirmMsg = locale === 'de'
-      ? 'Möchtest du deinen Warenkorb wirklich leeren?'
-      : 'Are you sure you want to empty your cart?';
-    if (window.confirm(confirmMsg)) {
+    if (window.confirm(t('cart_clear_confirm'))) {
       clear();
     }
   };

@@ -24,26 +24,33 @@ const STR: Record<string, Record<string, string>> = {
     en: 'Where do you need an eSIM?', de: 'Wo brauchst du eine eSIM?', fr: 'Où as-tu besoin d’une eSIM ?',
     es: '¿Dónde necesitas una eSIM?', it: 'Dove ti serve una eSIM?', nl: 'Waar heb je een eSIM nodig?',
     pl: 'Gdzie potrzebujesz eSIM?', pt: 'Onde precisas de um eSIM?', tr: 'Nerede eSIM lazım?',
+    sv: 'Var behöver du ett eSIM?', da: 'Hvor har du brug for et eSIM?', fi: 'Missä tarvitset eSIM-kortin?',
+    cs: 'Kde potřebujete eSIM?', ro: 'Unde ai nevoie de un eSIM?', hu: 'Hol van szüksége eSIM-re?',
   },
   btn: {
     en: 'Search', de: 'Suchen', fr: 'Rechercher', es: 'Buscar', it: 'Cerca', nl: 'Zoeken',
-    pl: 'Szukaj', pt: 'Pesquisar', tr: 'Ara',
+    pl: 'Szukaj', pt: 'Pesquisar', tr: 'Ara', sv: 'Sök', da: 'Søg', fi: 'Hae', cs: 'Hledat', ro: 'Caută', hu: 'Keresés',
   },
   popular: {
     en: 'Popular destinations', de: 'Beliebte Ziele', fr: 'Destinations populaires', es: 'Destinos populares',
     it: 'Destinazioni popolari', nl: 'Populaire bestemmingen', pl: 'Popularne kierunki', pt: 'Destinos populares', tr: 'Popüler yerler',
+    sv: 'Populära resmål', da: 'Populære destinationer', fi: 'Suosittuja kohteita', cs: 'Oblíbené destinace', ro: 'Destinații populare', hu: 'Népszerű úti célok',
   },
   regions: {
     en: 'Regional & global eSIMs', de: 'Regionale & globale eSIMs', fr: 'eSIM régionales & mondiales',
     es: 'eSIMs regionales y globales', it: 'eSIM regionali e globali', nl: 'Regionale & wereldwijde eSIMs',
     pl: 'eSIM regionalne i globalne', pt: 'eSIMs regionais e globais', tr: 'Bölgesel ve küresel eSIM’ler',
+    sv: 'Regionala & globala eSIM', da: 'Regionale & globale eSIMer', fi: 'Alueelliset ja globaalit eSIM-kortit',
+    cs: 'Regionální a globální eSIM', ro: 'eSIM-uri regionale și globale', hu: 'Regionális és globális eSIM-ek',
   },
   region: {
     en: 'Region', de: 'Region', fr: 'Région', es: 'Región', it: 'Regione', nl: 'Regio', pl: 'Region', pt: 'Região', tr: 'Bölge',
+    sv: 'Region', da: 'Region', fi: 'Alue', cs: 'Region', ro: 'Regiune', hu: 'Régió',
   },
   none: {
     en: 'No destinations for', de: 'Keine Ziele für', fr: 'Aucune destination pour', es: 'Sin destinos para',
     it: 'Nessuna destinazione per', nl: 'Geen bestemmingen voor', pl: 'Brak kierunków dla', pt: 'Sem destinos para', tr: 'Sonuç yok:',
+    sv: 'Inga resmål för', da: 'Ingen destinationer for', fi: 'Ei kohteita haulle', cs: 'Žádné destinace pro', ro: 'Nicio destinație pentru', hu: 'Nincsenek úti célok a következőhöz:',
   },
 };
 

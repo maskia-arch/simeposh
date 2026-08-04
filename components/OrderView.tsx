@@ -97,7 +97,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
       {completed.length > 1 && (
         <div className="mb-6 rounded-2xl bg-slate-100/80 border border-slate-200 p-2 flex flex-wrap items-center gap-1.5 shadow-sm">
           <span className="px-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 shrink-0">
-            📦 Bestellung ({completed.length} eSIMs):
+            {t('order_bulk_title', { count: completed.length })}
           </span>
           <button
             onClick={() => setSelectedIndex('all')}
@@ -107,7 +107,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
                 : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
             }`}
           >
-            Alle anzeigen ({completed.length})
+            {t('order_show_all', { count: completed.length })}
           </button>
           {completed.map((o, idx) => (
             <button
@@ -165,7 +165,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
       </div>
 
       <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-center">
-        <p className="text-xs text-slate-600 font-medium mb-2">Fragen oder Probleme zu dieser Bestellung?</p>
+        <p className="text-xs text-slate-600 font-medium mb-2">{t('order_support_q')}</p>
         <button
           type="button"
           onClick={() => {
@@ -173,7 +173,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
               window.dispatchEvent(new CustomEvent('open-ticket-modal', {
                 detail: {
                   invoiceId: orderRef,
-                  subject: `Frage zu Bestellung / Ref: ${orderRef}`,
+                  subject: `${t('order_support_q')} / Ref: ${orderRef}`,
                   category: 'general',
                 }
               }));
@@ -183,7 +183,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
           }}
           className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-xs"
         >
-          <span>🎫</span> Support-Ticket zu dieser Bestellung öffnen
+          <span>🎫</span> {t('order_support_btn')}
         </button>
       </div>
 

@@ -112,7 +112,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
     }
     if (!hasEnoughBalance) return;
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      setError('Bitte eine gültige E-Mail-Adresse für die eSIM-Zustellung eingeben.');
+      setError(t('pay_invalid_email'));
       return;
     }
 
@@ -124,10 +124,10 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
          body: JSON.stringify({ email, coin: 'ESIM_CASH', items, newsletterConsent: acceptedNewsletter, locale }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ref) throw new Error(data.error ?? 'Konnte Checkout nicht starten.');
+      if (!res.ok || !data.ref) throw new Error(data.error ?? t('pay_error'));
       window.location.href = `/order?ref=${data.ref}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Konnte Checkout nicht starten.');
+      setError(err instanceof Error ? err.message : t('pay_error'));
       setLoading(null);
     }
   }
@@ -139,7 +139,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       return;
     }
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      setError('Bitte eine gültige E-Mail-Adresse für die eSIM-Zustellung eingeben.');
+      setError(t('pay_invalid_email'));
       return;
     }
     setLoading(coin);
@@ -149,10 +149,10 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
         body: JSON.stringify({ email, coin, items, newsletterConsent: acceptedNewsletter, locale }),
       });
       const data = await res.json();
-      if (!res.ok || !data.sessionId) throw new Error(data.error ?? 'Konnte Checkout nicht starten.');
+      if (!res.ok || !data.sessionId) throw new Error(data.error ?? t('pay_error'));
       window.location.href = `/checkout/crypto/${data.sessionId}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Konnte Checkout nicht starten.');
+      setError(err instanceof Error ? err.message : t('pay_error'));
       setLoading(null);
     }
   }
@@ -266,10 +266,10 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
                 <span className="text-sm shrink-0">🌐</span>
                 <div>
                   <p className="font-extrabold text-[11px] text-blue-950">
-                    Netzwerk: Ethereum (ERC-20 Token)
+                    {t('pay_eth_network_title')}
                   </p>
                   <p className="text-[10px] text-blue-800 leading-snug mt-0.5">
-                    {selectedCoin.code} wird ausschließlich im <strong>Ethereum-Netzwerk (ERC-20)</strong> abgewickelt.
+                    {selectedCoin.code} {t('pay_eth_network_desc')}
                   </p>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
             {hiddenCoinsCount > 0 && (
               <p className="text-[9px] text-slate-400 font-medium pt-0.5">
-                💡 Weitere Coins (z. B. BTC, ETH) ab 5.00 € Mindestbestellwert verfügbar.
+                {t('pay_eth_min_notice')}
               </p>
             )}
           </div>
@@ -287,14 +287,14 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
         {activeTab === 'cash' && (
           <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-2 text-xs">
             <div className="flex items-center justify-between text-slate-800 font-bold">
-              <span>Dein Guthaben:</span>
+              <span>{t('pay_cash_balance_label')}</span>
               <span className={hasEnoughBalance ? 'text-emerald-700 font-extrabold' : 'text-amber-600'}>
-                {user ? `${balance.toFixed(2)} €` : 'Nicht eingeloggt'}
+                {user ? `${balance.toFixed(2)} €` : t('pay_not_logged_in')}
               </span>
             </div>
             {!user && (
               <p className="text-[10px] text-slate-500 mt-0.5">
-                Bitte logge dich ein, um dein eSIM Cash Guthaben zu nutzen.
+                {t('pay_cash_login_hint')}
               </p>
             )}
           </div>
@@ -334,22 +334,22 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-md space-y-2 z-20">
         <div className="space-y-0.5">
           <div className="flex items-baseline justify-between text-xs text-slate-500">
-            <span>Zwischensumme</span>
+            <span>{t('pay_subtotal')}</span>
             <span className="tabular-nums font-semibold">{total.toFixed(2)} €</span>
           </div>
           {fee > 0 ? (
             <div className="flex items-baseline justify-between text-xs text-amber-700 font-semibold">
-              <span>Zahlungsgebühr ({selectedMethod})</span>
+              <span>{t('pay_fee_label')} ({selectedMethod})</span>
               <span className="tabular-nums">+{fee.toFixed(2)} €</span>
             </div>
           ) : (
             <div className="flex items-baseline justify-between text-[11px] text-emerald-600 font-semibold">
-              <span>Zahlungsgebühr</span>
-              <span>Kostenlos (0,00 €)</span>
+              <span>{t('pay_fee_label')}</span>
+              <span>{t('pay_free')}</span>
             </div>
           )}
           <div className="flex items-baseline justify-between pt-1 border-t border-slate-100">
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Gesamtsumme</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">{t('checkout_total')}</span>
             <span className="text-xl font-extrabold text-slate-900 tabular-nums">{finalTotal.toFixed(2)} €</span>
           </div>
         </div>
@@ -363,7 +363,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
             } else if (selectedMethod) {
               start(selectedMethod);
             } else {
-              setError('Bitte wähle eine Zahlungsart.');
+              setError(t('pay_select_method'));
             }
           }}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] py-3 text-center text-xs font-extrabold text-white shadow-md disabled:opacity-50 transition-all cursor-pointer"
@@ -374,18 +374,18 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <span>Weiterleitung…</span>
+              <span>{t('pay_redirecting')}</span>
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
               <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-              <span>Jetzt Bezahlen ({finalTotal.toFixed(2)} €)</span>
+              <span>{t('pay_now')} ({finalTotal.toFixed(2)} €)</span>
             </span>
           )}
         </button>
 
         <p className="text-center text-[9px] text-slate-400 font-medium">
-          🔒 256-Bit SSL · Sofortige QR-Zustellung
+          {t('pay_ssl_notice')}
         </p>
       </div>
     </div>
