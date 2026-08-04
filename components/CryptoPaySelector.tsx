@@ -13,10 +13,6 @@ const COIN_ICON: Record<string, string> = {
   LTC: 'https://coin-images.coingecko.com/coins/images/2/large/litecoin.png',
   ETH: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png',
   SOL: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png',
-  USDT: 'https://coin-images.coingecko.com/coins/images/325/large/Tether.png',
-  USDC: 'https://coin-images.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
-  TON: 'https://coin-images.coingecko.com/coins/images/17980/large/photo_2024-09-10_17.09.00.jpeg',
-  TRX: 'https://coin-images.coingecko.com/coins/images/1094/large/tron-logo.png',
 };
 
 export interface CryptoItem { tariffId: string; quantity: number; days?: number; topUpIccid?: string }
