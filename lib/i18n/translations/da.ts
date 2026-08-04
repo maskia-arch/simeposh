@@ -262,6 +262,7 @@ const da = {
   "tp_reset": "Nulstil søgning",
   "tp_unlimited_empty": "Ingen ubegrænsede planer fundet.",
   "tp_unlimited_empty_sub": "Start en synkronisering.",
+  "det_special_features": "Særlige funktioner & højdepunkter",
   "det_operators": "Mobilnetværk",
   "det_no_number": "Intet telefonnummer inkluderet · kun data-eSIM",
   "det_reloadable": "Genopladelig (Top-Up muligt)",

@@ -262,6 +262,7 @@ const cs = {
   "tp_reset": "Reset search",
   "tp_unlimited_empty": "No unlimited plans found.",
   "tp_unlimited_empty_sub": "Please trigger a sync.",
+  "det_special_features": "Speciální funkce a výhody",
   "det_operators": "Network operators",
   "det_no_number": "No phone number included · data-only eSIM",
   "det_reloadable": "Reloadable (top-up available)",
