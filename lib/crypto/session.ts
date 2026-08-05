@@ -16,6 +16,7 @@ export interface CryptoSession {
   coin:          string;
   walletAddress: string;
   cryptoAmount:  string;   // exact expected amount, fixed decimals
+  paymentMemo?:  string | null;
   amountEur:     number;
   baseEur:       number;
   surchargePct:  number;
@@ -90,7 +91,7 @@ export async function createCryptoSession(opts: {
   const sessionId = sData.id;
 
   // 3. Resolve wallet address and amount. Check pool first, fall back to wallet gateway.
-  let walletRes: { address: string; amount_ltc: number; expires_at: string } | null = null;
+  let walletRes: { address: string; amount_ltc: number; expires_at: string; payment_memo?: string | null } | null = null;
   const poolKey = `crypto_address_pool_${coin.code.toLowerCase()}`;
 
   try {
@@ -118,10 +119,12 @@ export async function createCryptoSession(opts: {
           const rate = await getCoinEurRate(coin.coingecko_id);
           const decimals = coin.decimals || 8;
           const amountLtc = Math.round((amountEur / rate) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+          const memo = coinCode === 'TON' ? `MEMO-${sessionId.slice(-8).toUpperCase()}` : null;
           walletRes = {
             address: entry.address,
             amount_ltc: amountLtc,
             expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
+            payment_memo: memo,
           };
           console.log(`[Session] Rotated address ${entry.address} (index ${entry.index}) from pool for session ${sessionId} (${coin.code})`);
         } else {
@@ -152,7 +155,7 @@ export async function createCryptoSession(opts: {
         throw new Error(errBody.error || `Gateway returned status ${res.status}`);
       }
 
-      walletRes = await res.json() as { address: string; amount_ltc: number; expires_at: string };
+      walletRes = await res.json() as { address: string; amount_ltc: number; expires_at: string; payment_memo?: string | null };
     } catch (err) {
       const fallbackAddress = process.env[`FALLBACK_${coinCode}_ADDRESS` as any] || process.env.FALLBACK_LTC_ADDRESS;
       if (fallbackAddress) {
@@ -164,11 +167,13 @@ export async function createCryptoSession(opts: {
           const randomSatoshis = Math.floor(Math.random() * 900) + 100;
           const amountLtcBase = amountEur / rate;
           const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+          const memo = coinCode === 'TON' ? `MEMO-${sessionId.slice(-8).toUpperCase()}` : null;
 
           walletRes = {
             address: fallbackAddress as string,
             amount_ltc: amountLtc,
             expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
+            payment_memo: memo,
           };
         } catch (rateErr) {
           const fallbackRates: Record<string, number> = { LTC: 75.0, BTC: 60000.0, ETH: 3000.0, SOL: 130.0 };
@@ -177,11 +182,13 @@ export async function createCryptoSession(opts: {
           const randomSatoshis = Math.floor(Math.random() * 900) + 100;
           const amountLtcBase = amountEur / fallbackRate;
           const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+          const memo = coinCode === 'TON' ? `MEMO-${sessionId.slice(-8).toUpperCase()}` : null;
 
           walletRes = {
             address: fallbackAddress as string,
             amount_ltc: amountLtc,
             expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
+            payment_memo: memo,
           };
           console.warn(`[Session] Even rate service failed. Using fallback ${coinCode} rate:`, fallbackRate);
         }
@@ -198,7 +205,7 @@ export async function createCryptoSession(opts: {
     throw new Error('Krypto-Gateway-Fehler: Failed to resolve wallet address');
   }
 
-  // 4. Update the session with derived address, coin rate, and real expiration
+  // 4. Update the session with derived address, coin rate, payment_memo, and real expiration
   const rateEur = amountEur / walletRes.amount_ltc;
 
   const { error: updateErr } = await db
@@ -208,6 +215,7 @@ export async function createCryptoSession(opts: {
       crypto_amount:  walletRes.amount_ltc,
       rate_eur:       rateEur,
       expires_at:     walletRes.expires_at,
+      payment_memo:   walletRes.payment_memo || null,
     } as any)
     .eq('id', sessionId);
 
@@ -219,13 +227,17 @@ export async function createCryptoSession(opts: {
   await queueAddressSync(walletRes.address);
 
   // Build URI scheme
-  const paymentUri = `${coin.uri_scheme}:${walletRes.address}?amount=${walletRes.amount_ltc}`;
+  let paymentUri = `${coin.uri_scheme}:${walletRes.address}?amount=${walletRes.amount_ltc}`;
+  if (walletRes.payment_memo) {
+    paymentUri += `&text=${encodeURIComponent(walletRes.payment_memo)}&memo=${encodeURIComponent(walletRes.payment_memo)}`;
+  }
 
   return {
     id: sessionId,
     coin: coin.code,
     walletAddress: walletRes.address,
     cryptoAmount: String(walletRes.amount_ltc),
+    paymentMemo: walletRes.payment_memo || null,
     amountEur,
     baseEur: roundEur(opts.baseEur),
     surchargePct: Number(coin.surcharge_pct),

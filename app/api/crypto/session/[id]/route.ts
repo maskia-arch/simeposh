@@ -124,6 +124,71 @@ async function checkSolAddress(address: string): Promise<{ received: number; con
   };
 }
 
+async function checkTonAddress(address: string, paymentMemo?: string | null, createdAfter?: Date): Promise<{ received: number; confirmations: number; txid: string | null }> {
+  if (!paymentMemo) {
+    return { received: 0, confirmations: 0, txid: null };
+  }
+
+  try {
+    const url = `https://toncenter.com/api/v2/getTransactions?address=${encodeURIComponent(address)}&limit=40`;
+    const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.ok && Array.isArray(data.result)) {
+        let matchingTxid: string | null = null;
+        let totalReceivedNano = BigInt(0);
+        const expectedMemo = paymentMemo.trim().toLowerCase();
+
+        for (const tx of data.result) {
+          const inMsg = tx.in_msg;
+          if (!inMsg) continue;
+
+          let comment = (inMsg.message || inMsg.msg_data?.text || inMsg.decoded_body?.text || '').trim();
+          if (!comment && inMsg.msg_data?.body) {
+            try {
+              const buf = Buffer.from(inMsg.msg_data.body, 'base64');
+              if (buf.length > 4 && buf.readUInt32BE(0) === 0) {
+                comment = buf.subarray(4).toString('utf8').trim();
+              } else {
+                comment = buf.toString('utf8').trim();
+              }
+            } catch {}
+          }
+
+          if (createdAfter && tx.utime) {
+            const txTimeMs = Number(tx.utime) * 1000;
+            if (txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
+              continue;
+            }
+          }
+
+          const actualMemo = comment.toLowerCase();
+          if (actualMemo === expectedMemo || actualMemo.includes(expectedMemo)) {
+            const value = BigInt(inMsg.value || '0');
+            if (value > BigInt(0)) {
+              totalReceivedNano += value;
+              if (!matchingTxid && tx.transaction_id?.hash) {
+                matchingTxid = tx.transaction_id.hash;
+              }
+            }
+          }
+        }
+
+        const receivedTon = Number(totalReceivedNano) / 1e9;
+        return {
+          received: receivedTon,
+          confirmations: receivedTon > 0 ? 1 : 0,
+          txid: matchingTxid,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn(`[Direct TON Check] Toncenter check failed for ${address}:`, (err as Error).message);
+  }
+
+  return { received: 0, confirmations: 0, txid: null };
+}
+
 /**
  * Helper to sync the session state with pure-wallet gateway or direct blockchain explorers.
  */
@@ -167,6 +232,7 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
       try {
         const coinCode = currentSession.coin.toUpperCase();
         const address = currentSession.wallet_address;
+        const paymentMemo = currentSession.payment_memo;
         // Only count transactions that occurred AFTER this checkout session was created
         const createdAfter = currentSession.created_at ? new Date(currentSession.created_at) : undefined;
         let chainInfo = { received: 0, confirmations: 0, txid: null as string | null };
@@ -177,6 +243,8 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
           chainInfo = await checkEthAddress(address);
         } else if (coinCode === 'SOL') {
           chainInfo = await checkSolAddress(address);
+        } else if (coinCode === 'TON') {
+          chainInfo = await checkTonAddress(address, paymentMemo, createdAfter);
         }
 
         const expectedAmount = Number(currentSession.crypto_amount);
@@ -259,7 +327,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
   const decimalLimit = coin?.decimals ?? 8;
   const amount = Number(s.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
-  const paymentUri = `${coin?.uri_scheme || 'litecoin'}:${s.wallet_address}?amount=${amount}`;
+  let paymentUri = `${coin?.uri_scheme || 'litecoin'}:${s.wallet_address}?amount=${amount}`;
+  if (s.payment_memo) {
+    paymentUri += `&text=${encodeURIComponent(s.payment_memo)}&memo=${encodeURIComponent(s.payment_memo)}`;
+  }
 
   // Resolve checkout_ref
   let ref: string | null = null;
@@ -291,7 +362,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     remainingMs,
     expiresAt:          s.expires_at,
     ref,
-    paymentMemo:        null, // LTC doesn't require memo
+    paymentMemo:        s.payment_memo || null,
     receivedAmount:     Number(s.received_amount || 0),
   });
 }
@@ -363,7 +434,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
     const decimalLimit = coin?.decimals ?? 8;
     const amount = Number(s.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
-    const paymentUri = `${coin?.uri_scheme || 'litecoin'}:${s.wallet_address}?amount=${amount}`;
+    let paymentUri = `${coin?.uri_scheme || 'litecoin'}:${s.wallet_address}?amount=${amount}`;
+    if (s.payment_memo) {
+      paymentUri += `&text=${encodeURIComponent(s.payment_memo)}&memo=${encodeURIComponent(s.payment_memo)}`;
+    }
 
     let ref: string | null = null;
     if (s.order_ids?.length) {
@@ -394,7 +468,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       remainingMs,
       expiresAt:          s.expires_at,
       ref,
-      paymentMemo:        null,
+      paymentMemo:        s.payment_memo || null,
       receivedAmount:     Number(s.received_amount || 0),
     });
   } catch (err) {
