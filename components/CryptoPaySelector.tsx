@@ -279,6 +279,34 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
               </div>
             )}
 
+            {selectedCoin && selectedCoin.code === 'TON' && (
+              <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-2 text-xs text-sky-900 flex items-start gap-2">
+                <span className="text-sm shrink-0">💎</span>
+                <div>
+                  <p className="font-extrabold text-[11px] text-sky-950">
+                    Netzwerk: TON (The Open Network)
+                  </p>
+                  <p className="text-[10px] text-sky-800 leading-snug mt-0.5">
+                    Zahlung erfordert die Eingabe einer persönlichen <strong>Memo-ID / Verwendungszweck</strong> im TON-Netzwerk.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selectedCoin && selectedCoin.code === 'TRX' && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-2 text-xs text-rose-900 flex items-start gap-2">
+                <span className="text-sm shrink-0">🔴</span>
+                <div>
+                  <p className="font-extrabold text-[11px] text-rose-950">
+                    Netzwerk: TRON (TRC-20 Native)
+                  </p>
+                  <p className="text-[10px] text-rose-800 leading-snug mt-0.5">
+                    Abwicklung direkt im TRON-Netzwerk an die angezeigte TRON-Adresse.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {hiddenCoinsCount > 0 && (
               <p className="text-[9px] text-slate-400 font-medium pt-0.5">
                 {t('pay_eth_min_notice')}

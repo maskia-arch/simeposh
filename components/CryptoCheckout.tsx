@@ -133,7 +133,7 @@ const COIN_THEMES: Record<string, CoinTheme> = {
     borderLight: 'border-cyan-200/60',
     textDark: 'text-cyan-955',
     badgeBg: 'bg-cyan-100 text-cyan-800',
-    logo: 'https://coin-images.coingecko.com/coins/images/17980/large/photo_2024-09-10_17.09.00.jpeg',
+    logo: 'https://coin-images.coingecko.com/coins/images/17980/large/ton_symbol.png',
   },
   TRX: {
     primary: '#FF000F',
