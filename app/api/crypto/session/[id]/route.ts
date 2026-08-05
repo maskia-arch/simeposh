@@ -138,6 +138,7 @@ async function checkTonAddress(address: string, paymentMemo?: string | null, cre
         let matchingTxid: string | null = null;
         let totalReceivedNano = BigInt(0);
         const expectedMemo = paymentMemo.trim().toLowerCase();
+        const expectedRawId = expectedMemo.replace(/^memo-?/, '');
 
         for (const tx of data.result) {
           const inMsg = tx.in_msg;
@@ -163,7 +164,8 @@ async function checkTonAddress(address: string, paymentMemo?: string | null, cre
           }
 
           const actualMemo = comment.toLowerCase();
-          if (actualMemo === expectedMemo || actualMemo.includes(expectedMemo)) {
+          const isMatch = actualMemo === expectedMemo || actualMemo.includes(expectedMemo) || (expectedRawId.length >= 6 && actualMemo.includes(expectedRawId));
+          if (isMatch) {
             const value = BigInt(inMsg.value || '0');
             if (value > BigInt(0)) {
               totalReceivedNano += value;

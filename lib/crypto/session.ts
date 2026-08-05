@@ -119,7 +119,7 @@ export async function createCryptoSession(opts: {
           const rate = await getCoinEurRate(coin.coingecko_id);
           const decimals = coin.decimals || 8;
           const amountLtc = Math.round((amountEur / rate) * Math.pow(10, decimals)) / Math.pow(10, decimals);
-          const memo = coinCode === 'TON' ? `MEMO-${sessionId.slice(-8).toUpperCase()}` : null;
+          const memo = coinCode === 'TON' ? sessionId.slice(-8).toUpperCase() : null;
           walletRes = {
             address: entry.address,
             amount_ltc: amountLtc,
@@ -167,7 +167,7 @@ export async function createCryptoSession(opts: {
           const randomSatoshis = Math.floor(Math.random() * 900) + 100;
           const amountLtcBase = amountEur / rate;
           const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
-          const memo = coinCode === 'TON' ? `MEMO-${sessionId.slice(-8).toUpperCase()}` : null;
+          const memo = coinCode === 'TON' ? sessionId.slice(-8).toUpperCase() : null;
 
           walletRes = {
             address: fallbackAddress as string,
@@ -182,7 +182,7 @@ export async function createCryptoSession(opts: {
           const randomSatoshis = Math.floor(Math.random() * 900) + 100;
           const amountLtcBase = amountEur / fallbackRate;
           const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
-          const memo = coinCode === 'TON' ? `MEMO-${sessionId.slice(-8).toUpperCase()}` : null;
+          const memo = coinCode === 'TON' ? sessionId.slice(-8).toUpperCase() : null;
 
           walletRes = {
             address: fallbackAddress as string,
