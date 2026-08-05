@@ -52,9 +52,18 @@ export function ClientPage({
   const [canTopup, setCanTopup] = useState<boolean>(false);
 
   // Helper function to safely fetch translated text or fall back to default
-  const tr = (key: string, defaultText: string) => {
-    const val = t(key as any);
-    if (!val || val === key) return defaultText;
+  const tr = (key: string, defaultText: string, vars?: Record<string, string | number>) => {
+    const val = t(key as any, vars);
+    if (!val || val === key) {
+      if (vars) {
+        let str = defaultText;
+        Object.entries(vars).forEach(([k, v]) => {
+          str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+        });
+        return str;
+      }
+      return defaultText;
+    }
     return val;
   };
 
@@ -165,7 +174,7 @@ export function ClientPage({
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <span>📦</span>
-                <span>{tr('esim_other_esims', `Weitere eSIMs aus dieser Bestellung (${siblingEsims.length} total)`)}</span>
+                <span>{tr('esim_other_esims', `Weitere eSIMs aus dieser Bestellung (${siblingEsims.length} total)`, { count: siblingEsims.length })}</span>
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">

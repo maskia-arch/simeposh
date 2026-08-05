@@ -15,6 +15,8 @@ const COIN_ICON: Record<string, string> = {
   SOL: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png',
   USDC: 'https://coin-images.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
   USDT: 'https://coin-images.coingecko.com/coins/images/325/large/Tether.png',
+  TRX: 'https://coin-images.coingecko.com/coins/images/1094/large/tron-logo.png',
+  TON: 'https://coin-images.coingecko.com/coins/images/17980/large/ton_symbol.png',
 };
 
 const COIN_NETWORK_LABEL: Record<string, string> = {
@@ -24,6 +26,8 @@ const COIN_NETWORK_LABEL: Record<string, string> = {
   SOL: 'Solana',
   USDC: 'ETH (ERC-20)',
   USDT: 'ETH (ERC-20)',
+  TRX: 'TRON (TRC-20)',
+  TON: 'TON (Memo Required)',
 };
 
 export interface CryptoItem { tariffId: string; quantity: number; days?: number; topUpIccid?: string }
