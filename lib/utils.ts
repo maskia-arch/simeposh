@@ -5,6 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Validates if a string is a valid UUID format (8-4-4-4-12 hex) */
+export function isUuid(str: unknown): boolean {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+}
+
 export function formatEur(amount: number | string | null | undefined): string {
   const val = typeof amount === 'number' ? amount : Number(amount || 0);
   if (isNaN(val)) return '0,00 €';

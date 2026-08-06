@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServiceClient } from '@/lib/supabase/server';
 import { fulfillOrders } from '@/lib/fulfillment';
+import { isUuid } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
 
     const payload = JSON.parse(rawBody) as {
       order_id: string;
-      status: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected';
+      status: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' | 'cancelled';
       amount_ltc: number;
       received_amount: number;
       tx_hash: string | null;
@@ -42,6 +43,11 @@ export async function POST(request: Request) {
 
     const { order_id, status, received_amount, tx_hash, paid_at, confirmations } = payload;
     console.log(`[pure-wallet Webhook] Received status update for order ${order_id}: ${status} (received: ${received_amount} LTC, confirmations: ${confirmations ?? 0})`);
+
+    if (!isUuid(order_id)) {
+      console.error(`[pure-wallet Webhook] Invalid UUID format for order_id: ${order_id}`);
+      return NextResponse.json({ error: 'Invalid order_id format' }, { status: 400 });
+    }
 
     const db = createServiceClient();
 
@@ -79,27 +85,39 @@ export async function POST(request: Request) {
     }
 
     // 3. Fulfill orders if transition to 'paid' (only if it wasn't already marked paid)
-    if (status === 'paid' && session.status !== 'paid') {
-      console.log(`[pure-wallet Webhook] Confirming payment for orders: ${session.order_ids.join(', ')}`);
-      
-      const { error: ordersErr } = await db
-        .from('orders')
-        .update({
-          status: 'paid',
-          payment_confirmed_at: new Date().toISOString(),
-        })
-        .in('id', session.order_ids)
-        .neq('status', 'completed');
+    const validOrderIds = (session.order_ids || []).filter(isUuid);
 
-      if (ordersErr) {
-        console.error(`[pure-wallet Webhook] Failed to update orders to paid status:`, ordersErr.message);
-      } else {
-        // Trigger background provisioning & emails
-        fulfillOrders(db, session.order_ids).then((results) => {
-          console.log(`[pure-wallet Webhook] Fulfillment completed:`, JSON.stringify(results));
-        }).catch((err) => {
-          console.error(`[pure-wallet Webhook] Fulfillment error:`, err);
-        });
+    if (status === 'paid' && session.status !== 'paid') {
+      console.log(`[pure-wallet Webhook] Confirming payment for orders: ${validOrderIds.join(', ')}`);
+      
+      if (validOrderIds.length > 0) {
+        const { error: ordersErr } = await db
+          .from('orders')
+          .update({
+            status: 'paid',
+            payment_confirmed_at: new Date().toISOString(),
+          })
+          .in('id', validOrderIds)
+          .neq('status', 'completed');
+
+        if (ordersErr) {
+          console.error(`[pure-wallet Webhook] Failed to update orders to paid status:`, ordersErr.message);
+        } else {
+          // Trigger background provisioning & emails
+          fulfillOrders(db, validOrderIds).then((results) => {
+            console.log(`[pure-wallet Webhook] Fulfillment completed:`, JSON.stringify(results));
+          }).catch((err) => {
+            console.error(`[pure-wallet Webhook] Fulfillment error:`, err);
+          });
+        }
+      }
+    } else if (status === 'expired' || status === 'cancelled') {
+      if (validOrderIds.length > 0) {
+        await db
+          .from('orders')
+          .update({ status: 'expired' })
+          .in('id', validOrderIds)
+          .in('status', ['pending', 'pending_payment']);
       }
     }
 

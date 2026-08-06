@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getEsimOverviewUrl } from '@/lib/url';
+import { isUuid } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
   const service = createServiceClient();
   const { data, error } = await service
     .from('orders')
-    .select('id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, tariffs(country_name, flag_emoji, data_gb, validity_days)')
+    .select('id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, tariffs(country_name, flag_emoji, data_gb, validity_days)')
     .eq('checkout_ref', ref)
     .order('created_at', { ascending: true });
 
@@ -31,20 +32,43 @@ export async function GET(request: Request) {
     return NextResponse.json({ ref, found: false, orders: [] }, { status: 200 });
   }
 
-  // Find corresponding crypto session to use its ID as the secure token (or fallback to ref)
+  // Find corresponding crypto session to check payment status and secure token
   let txId = ref;
+  let paymentStatus: string = 'pending';
+
   try {
-    const orderIds = data.map((o: any) => o.id);
+    const validOrderIds = data.map((o: any) => o.id).filter(isUuid);
     const customerEmail = data[0].customer_email;
     const { data: sessions } = await service
       .from('crypto_sessions')
-      .select('id, order_ids')
+      .select('id, order_ids, status, expires_at')
       .eq('customer_email', customerEmail);
 
     if (sessions) {
-      const session = sessions.find((s) => s.order_ids?.includes(orderIds[0]));
+      const session = sessions.find((s) => {
+        const sOrderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
+        return validOrderIds.some((id: string) => sOrderIds.includes(id));
+      });
       if (session) {
         txId = session.id;
+        const now = Date.now();
+        const expiresMs = session.expires_at ? new Date(session.expires_at).getTime() : 0;
+        const isExpired = session.status === 'pending' && expiresMs > 0 && expiresMs <= now;
+        paymentStatus = isExpired ? 'expired' : session.status;
+
+        // If payment expired/cancelled, update pending orders in DB
+        if ((paymentStatus === 'expired' || paymentStatus === 'cancelled') && validOrderIds.length > 0) {
+          await service
+            .from('orders')
+            .update({ status: 'expired' })
+            .in('id', validOrderIds)
+            .in('status', ['pending', 'pending_payment']);
+
+          // Update in-memory data status
+          data.forEach((o: any) => {
+            if (o.status === 'pending' || o.status === 'pending_payment') o.status = 'expired';
+          });
+        }
       }
     }
   } catch (err) {
@@ -73,8 +97,9 @@ export async function GET(request: Request) {
     };
   });
 
-  const allDone = orders.every((o) => o.status === 'completed' || o.status === 'failed');
-  const totalPaid = orders.reduce((s, o) => s + (o.amountEur ?? 0), 0);
+  const allDone = orders.every((o) => o.status === 'completed' || o.status === 'failed' || o.status === 'expired' || o.status === 'cancelled');
+  const isPaid = orders.some((o) => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
+  const totalPaid = isPaid ? orders.reduce((s, o) => s + (o.amountEur ?? 0), 0) : 0;
 
-  return NextResponse.json({ ref, found: true, allDone, totalPaid, orders });
+  return NextResponse.json({ ref, found: true, allDone, isPaid, paymentStatus, totalPaid, orders });
 }

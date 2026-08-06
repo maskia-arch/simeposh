@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import QRCode from 'qrcode';
 import { ClientPage } from './EsimOverviewClient';
+import { isUuid } from '@/lib/utils';
 
 interface OverviewViewProps {
   params: Promise<{ invoiceId: string; iccid: string }> | { invoiceId: string; iccid: string };
@@ -42,29 +43,31 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
   let matchingOrder: any = null;
 
   // 1. Look up via crypto session (invoiceId == crypto_sessions.id)
-  try {
-    const { data: session } = await db
-      .from('crypto_sessions')
-      .select('order_ids')
-      .eq('id', cleanInvoiceId)
-      .maybeSingle();
+  if (isUuid(cleanInvoiceId)) {
+    try {
+      const { data: session } = await db
+        .from('crypto_sessions')
+        .select('order_ids')
+        .eq('id', cleanInvoiceId)
+        .maybeSingle();
 
-    if (session && session.order_ids) {
-      const orderIds = parseOrderIds(session.order_ids);
-      if (orderIds.length > 0) {
-        const { data: orders } = await db
-          .from('orders')
-          .select('*')
-          .in('id', orderIds)
-          .eq('iccid', cleanIccid);
+      if (session && session.order_ids) {
+        const orderIds = parseOrderIds(session.order_ids).filter(isUuid);
+        if (orderIds.length > 0) {
+          const { data: orders } = await db
+            .from('orders')
+            .select('*')
+            .in('id', orderIds)
+            .eq('iccid', cleanIccid);
 
-        if (orders && orders.length > 0) {
-          matchingOrder = orders.find(o => ['completed', 'paid', 'provisioning'].includes(o.status)) || orders[0];
+          if (orders && orders.length > 0) {
+            matchingOrder = orders.find(o => ['completed', 'paid', 'provisioning'].includes(o.status)) || orders[0];
+          }
         }
       }
+    } catch (err) {
+      console.error('[EsimOverviewPage] Session lookup error:', err);
     }
-  } catch (err) {
-    console.error('[EsimOverviewPage] Session lookup error:', err);
   }
 
   // 2. Look up via checkout_ref
@@ -85,7 +88,7 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
   }
 
   // 3. Look up via order ID directly (invoiceId == orders.id)
-  if (!matchingOrder) {
+  if (!matchingOrder && isUuid(cleanInvoiceId)) {
     try {
       const { data: orders } = await db
         .from('orders')

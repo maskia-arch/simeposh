@@ -12,10 +12,12 @@ interface OrderItem extends DeliveredEsim {
 }
 
 interface StatusResp {
-  found:     boolean;
-  allDone?:  boolean;
-  totalPaid?: number;
-  orders:    OrderItem[];
+  found:          boolean;
+  allDone?:       boolean;
+  isPaid?:        boolean;
+  paymentStatus?: string;
+  totalPaid?:     number;
+  orders:         OrderItem[];
 }
 
 export function OrderView({ orderRef }: { orderRef: string }) {
@@ -44,11 +46,14 @@ export function OrderView({ orderRef }: { orderRef: string }) {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchStatus]);
 
-  const orders     = data?.orders ?? [];
-  const completed  = orders.filter((o) => o.status === 'completed');
-  const provisioning = orders.filter((o) => o.status !== 'completed' && o.status !== 'failed');
-  const failed     = orders.filter((o) => o.status === 'failed');
-  const allDone    = data?.allDone ?? false;
+  const orders       = data?.orders ?? [];
+  const completed    = orders.filter((o) => o.status === 'completed');
+  const provisioning = orders.filter((o) => o.status === 'paid' || o.status === 'provisioning');
+  const failed       = orders.filter((o) => o.status === 'failed');
+  const allDone      = data?.allDone ?? false;
+  const isPaid       = data?.isPaid ?? orders.some(o => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
+  const isExpired    = data?.paymentStatus === 'expired' || data?.paymentStatus === 'cancelled' || (orders.length > 0 && orders.every(o => o.status === 'expired' || o.status === 'cancelled'));
+  const isPending    = !isPaid && !isExpired && orders.some(o => o.status === 'pending' || o.status === 'pending_payment');
 
   // Not found yet (webhook/redirect race) → keep waiting a bit
   if (data && !data.found) {
@@ -69,29 +74,58 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 md:py-16">
       {/* Top Banner */}
-      <div className={`mb-8 rounded-3xl p-6 text-center border shadow-lg transition-all ${
-        allDone && failed.length === 0
-          ? 'bg-gradient-to-b from-emerald-50/80 via-white to-emerald-50/30 border-emerald-200/80 shadow-emerald-500/5'
-          : 'bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5'
-      }`}>
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100">
-          <span className="text-3xl">{allDone && failed.length === 0 ? '✨' : '⏳'}</span>
-        </div>
-        <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
-          {allDone && failed.length === 0
-            ? (completed.length > 1 ? t('op_ready_many', { count: completed.length }) : t('op_ready_one'))
-            : t('op_provisioning_title')}
-        </h1>
-        <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
-          {allDone ? t('op_ready_sub') : t('op_provisioning_sub')}
-        </p>
-        {data?.totalPaid != null && data.totalPaid > 0 && (
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-            <span>{t('op_paid')}:</span>
-            <span className="font-extrabold text-brand-600">{formatEur(data.totalPaid)}</span>
+      {isExpired ? (
+        <div className="mb-8 rounded-3xl p-6 text-center border shadow-lg bg-gradient-to-b from-rose-50/80 via-white to-rose-50/30 border-rose-200/80 shadow-rose-500/5">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-rose-100">
+            <span className="text-3xl">⏱️</span>
           </div>
-        )}
-      </div>
+          <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
+            Zahlungszeit abgelaufen
+          </h1>
+          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed mb-4">
+            Für diese Bestellung wurde innerhalb des Zeitfensters kein Zahlungseingang festgestellt. Es wurde kein Betrag abgebucht.
+          </p>
+          <Link href="/tariffs" className="inline-block rounded-xl bg-brand-600 px-6 py-2.5 text-xs font-extrabold text-white hover:bg-brand-700 transition-colors shadow-sm">
+            Neuen Tarif wählen →
+          </Link>
+        </div>
+      ) : isPending ? (
+        <div className="mb-8 rounded-3xl p-6 text-center border shadow-lg bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100">
+            <span className="text-3xl">⏳</span>
+          </div>
+          <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
+            Warte auf Zahlungseingang...
+          </h1>
+          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+            Deine Bestellung ist eingegangen. Sobald deine Zahlung bestätigt wird, wird deine eSIM automatisch eingerichtet.
+          </p>
+        </div>
+      ) : (
+        <div className={`mb-8 rounded-3xl p-6 text-center border shadow-lg transition-all ${
+          allDone && failed.length === 0
+            ? 'bg-gradient-to-b from-emerald-50/80 via-white to-emerald-50/30 border-emerald-200/80 shadow-emerald-500/5'
+            : 'bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5'
+        }`}>
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100">
+            <span className="text-3xl">{allDone && failed.length === 0 ? '✨' : '⚡'}</span>
+          </div>
+          <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
+            {allDone && failed.length === 0
+              ? (completed.length > 1 ? t('op_ready_many', { count: completed.length }) : t('op_ready_one'))
+              : t('op_provisioning_title')}
+          </h1>
+          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+            {allDone ? t('op_ready_sub') : t('op_provisioning_sub')}
+          </p>
+          {data?.totalPaid != null && data.totalPaid > 0 && (
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              <span>{t('op_paid')}:</span>
+              <span className="font-extrabold text-brand-600">{formatEur(data.totalPaid)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Multi-eSIM Quick Filter Bar for bulk orders */}
       {completed.length > 1 && (
