@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { Price } from '@/components/Price';
+import { getAccountExpirationInfo } from '@/lib/cashback';
 
 export interface EsimCashAccount {
   id: string;
@@ -14,6 +15,7 @@ export interface EsimCashAccount {
   referred_by_code: string | null;
   extra_cashback_queue: number;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface EsimCashTransaction {
@@ -145,6 +147,21 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
               </span>
               <span className="text-xl font-bold text-slate-500">€</span>
             </div>
+            
+            {(() => {
+              const expInfo = getAccountExpirationInfo(account, locale);
+              return (
+                <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
+                  <span>⏳</span>
+                  <span>
+                    {expInfo.isRegistered
+                      ? `Gültigkeit: 730 Tage (verfällt am ${expInfo.expiryDateFormatted})`
+                      : `Gültigkeit: 90 Tage (verfällt am ${expInfo.expiryDateFormatted})`}
+                  </span>
+                </div>
+              );
+            })()}
+
             <p className="text-xs text-slate-500 mt-2">
               {t('cash_balance_desc' as any) || 'Kann beim Checkout als 100% Bezahlmethode ausgewählt werden.'}
             </p>

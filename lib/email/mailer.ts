@@ -19,8 +19,11 @@ import {
   buildCashbackEarnedText,
   buildGuestMilestoneHtml,
   buildGuestMilestoneText,
+  buildGuestExpirationReminderHtml,
+  buildGuestExpirationReminderText,
   type CashbackEarnedData,
   type GuestMilestoneData,
+  type GuestExpirationReminderData,
 } from './templates/cashback-notifications';
 import {
   buildTicketCreatedCustomerHtml,
@@ -323,6 +326,22 @@ export async function sendTicketAnsweredEmail(data: TicketAnsweredData): Promise
     subject: `[PureSim] Antwort auf Support-Ticket ${data.ticketNumber}`,
     html:    buildTicketAnsweredCustomerHtml(data),
     text:    `Hallo ${data.customerName || 'Kunde'},\n\nes gibt eine neue Antwort auf dein Ticket ${data.ticketNumber}:\n\n${data.replyMessage}\n\nAntworten kannst du im Dashboard:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+  });
+}
+
+export async function sendGuestCashReminderEmail(data: GuestExpirationReminderData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const isDe = normLoc === 'de';
+  const formattedBalance = (Number(data.balanceEur) || 0).toFixed(2);
+  const subject = isDe
+    ? `⏰ Dein eSIM Cash Guthaben (${formattedBalance} €) verfällt in Kürze – Jetzt verlängern!`
+    : `⏰ Your eSIM Cash balance (${formattedBalance} €) expires soon – Extend now!`;
+
+  await sendMailThroughTransporter({
+    to:      data.to,
+    subject: subject,
+    html:    buildGuestExpirationReminderHtml(data),
+    text:    buildGuestExpirationReminderText(data),
   });
 }
 

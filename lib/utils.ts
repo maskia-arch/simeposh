@@ -5,11 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatEur(amount: number): string {
+export function formatEur(amount: number | string | null | undefined): string {
+  const val = typeof amount === 'number' ? amount : Number(amount || 0);
+  if (isNaN(val)) return '0,00 €';
   return new Intl.NumberFormat('de-DE', {
     style:    'currency',
     currency: 'EUR',
-  }).format(amount);
+  }).format(val);
 }
 
 export function formatGb(gb: number | string | null | undefined, unlimitedText = 'Unbegrenzt'): string {

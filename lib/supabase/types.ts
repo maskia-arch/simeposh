@@ -449,6 +449,7 @@ export interface Database {
           sent_email_3: boolean;
           sent_email_5: boolean;
           sent_email_10: boolean;
+          last_reminder_sent_at?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -464,6 +465,7 @@ export interface Database {
           sent_email_3?: boolean;
           sent_email_5?: boolean;
           sent_email_10?: boolean;
+          last_reminder_sent_at?: string | null;
         };
         Update: {
           user_id?: string | null;
@@ -475,6 +477,7 @@ export interface Database {
           sent_email_3?: boolean;
           sent_email_5?: boolean;
           sent_email_10?: boolean;
+          last_reminder_sent_at?: string | null;
         };
         Relationships: [];
       };
