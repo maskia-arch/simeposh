@@ -156,23 +156,6 @@ export default async function RootLayout({
         <Script
           src="https://puresimaisupport.autoacts.link/widget.js"
           strategy="afterInteractive"
-          onLoad={() => {
-            if (typeof window !== 'undefined' && (window as any).PureSimSupport) {
-              try {
-                const storedUser = localStorage.getItem('supabase.auth.token') || localStorage.getItem('user');
-                if (storedUser) {
-                  const parsed = JSON.parse(storedUser);
-                  const email = parsed?.user?.email || parsed?.email;
-                  if (email) {
-                    (window as any).PureSimSupport.identify({
-                      email,
-                      name: parsed?.user?.user_metadata?.full_name || parsed?.name
-                    });
-                  }
-                }
-              } catch (_) {}
-            }
-          }}
         />
       </body>
     </html>
