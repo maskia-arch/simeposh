@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { Price } from '@/components/Price';
-import { getAccountExpirationInfo } from '@/lib/cashback';
+import { getAccountExpirationInfo } from '@/lib/cashback-expiration';
 
 export interface EsimCashAccount {
   id: string;
