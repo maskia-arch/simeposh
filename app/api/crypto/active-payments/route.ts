@@ -24,12 +24,20 @@ export async function GET(request: Request) {
 
   try {
     const db = createServiceClient();
+    const url = new URL(request.url);
+    const fetchAll = url.searchParams.get('all') === '1' || true; // Default to full recent history for sync
     
-    // Fetch active sessions from Supabase
-    const { data: sessions, error } = await db
+    let query = db
       .from('crypto_sessions')
-      .select('id, coin, amount_eur, crypto_amount, wallet_address, status, created_at, expires_at, paid_at, confirmations_required, confirmations, tx_hash, received_amount')
-      .in('status', ['pending', 'detected', 'partially_paid']);
+      .select('id, coin, amount_eur, crypto_amount, wallet_address, status, created_at, expires_at, paid_at, confirmations_required, confirmations, tx_hash, received_amount, payment_memo')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (!fetchAll) {
+      query = query.in('status', ['pending', 'detected', 'partially_paid']);
+    }
+
+    const { data: sessions, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -49,6 +57,7 @@ export async function GET(request: Request) {
       created_at: s.created_at,
       expires_at: s.expires_at,
       paid_at: s.paid_at || null,
+      payment_memo: (s as any).payment_memo || null,
     }));
 
     return NextResponse.json({ payments });
