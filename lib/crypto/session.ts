@@ -250,3 +250,48 @@ export async function createCryptoSession(opts: {
     locale: opts.locale || 'de',
   };
 }
+
+/**
+ * Automatically sweeps expired crypto sessions and pending orders,
+ * updating their status to 'expired' in the database.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function sweepExpiredSessions(db: any) {
+  try {
+    const nowIso = new Date().toISOString();
+
+    const { data: expiredSessions } = await db
+      .from('crypto_sessions')
+      .select('id, order_ids')
+      .eq('status', 'pending')
+      .lte('expires_at', nowIso);
+
+    if (expiredSessions && expiredSessions.length > 0) {
+      const expiredSessionIds = expiredSessions.map((s: any) => s.id);
+      const allOrderIds: string[] = [];
+
+      for (const s of expiredSessions) {
+        if (Array.isArray(s.order_ids)) {
+          allOrderIds.push(...s.order_ids);
+        }
+      }
+
+      // Mark sessions as expired
+      await db
+        .from('crypto_sessions')
+        .update({ status: 'expired' })
+        .in('id', expiredSessionIds);
+
+      // Mark corresponding pending orders as expired
+      if (allOrderIds.length > 0) {
+        await db
+          .from('orders')
+          .update({ status: 'expired' })
+          .in('id', allOrderIds)
+          .in('status', ['pending', 'pending_payment']);
+      }
+    }
+  } catch (err) {
+    console.error('[sweepExpiredSessions] Error:', err);
+  }
+}
