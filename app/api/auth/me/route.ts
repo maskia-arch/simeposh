@@ -13,14 +13,28 @@ export async function GET() {
     }
 
     const decoded = await verifyJwt(token);
-    if (!decoded) {
+    if (!decoded || !decoded.id) {
+      cookieStore.delete('session_token');
+      return NextResponse.json({ user: null });
+    }
+
+    // Verify user in database: must exist, not be deleted, and be verified
+    const userRes = await query(
+      'SELECT id, email, full_name, is_verified FROM public.users WHERE id = $1 AND deleted_at IS NULL',
+      [decoded.id]
+    );
+
+    const userRow = userRes.rows[0];
+    if (!userRow || !userRow.is_verified) {
+      // Invalidate session if user account is not verified or no longer exists
+      cookieStore.delete('session_token');
       return NextResponse.json({ user: null });
     }
 
     // Server-side query for the user's eSIM cashback account details
     const cashRes = await query(
       'SELECT total_spend_eur, extra_cashback_queue FROM public.esim_cash_accounts WHERE user_id = $1',
-      [decoded.id]
+      [userRow.id]
     );
 
     let cashbackRate = 5;
@@ -37,11 +51,12 @@ export async function GET() {
     }
 
     const user = {
-      id: decoded.id,
-      email: decoded.email,
+      id: userRow.id,
+      email: userRow.email,
+      is_verified: true,
       cashback_rate: cashbackRate,
       user_metadata: {
-        full_name: decoded.fullName,
+        full_name: userRow.full_name || '',
       },
     };
 

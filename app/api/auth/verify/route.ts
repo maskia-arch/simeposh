@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       // 2. Delete the used verification token
       await query('DELETE FROM public.verification_tokens WHERE id = $1', [tokenRow.id]);
 
-      return NextResponse.redirect(new URL('/dashboard?verified=true', req.url));
+      return NextResponse.redirect(new URL('/login?verified=true', req.url));
     }
   } catch (err: any) {
     console.error('[Verify Email Token Error]', err);

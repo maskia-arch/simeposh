@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const trimmedEmail = email.trim().toLowerCase();
 
     // Query database for the user row
-    const dbRes = await query('SELECT * FROM public.users WHERE email = $1', [trimmedEmail]);
+    const dbRes = await query('SELECT * FROM public.users WHERE email = $1 AND deleted_at IS NULL', [trimmedEmail]);
     const userRow = dbRes.rows[0];
 
     if (!userRow || !userRow.password_hash) {
@@ -26,6 +26,18 @@ export async function POST(request: Request) {
     const isValid = verifyPassword(password, userRow.password_hash);
     if (!isValid) {
       return NextResponse.json({ error: 'Ungültige E-Mail-Adresse oder Passwort' }, { status: 400 });
+    }
+
+    // Check if account is verified
+    if (!userRow.is_verified) {
+      return NextResponse.json(
+        {
+          error: 'email_not_verified',
+          email: userRow.email,
+          message: 'Deine E-Mail-Adresse wurde noch nicht bestätigt. Bitte klicke auf den Link in deiner Aktivierungs-E-Mail.',
+        },
+        { status: 403 }
+      );
     }
 
     // Generate JWT token

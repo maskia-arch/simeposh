@@ -29,8 +29,8 @@ const BLACKLIST_BOT_PATTERNS = [
   /guzzle/i, /go-http-client/i, /okhttp/i, /rest-client/i, /faraday/i, /mechanize/i, /libwww/i, /httpclient/i, /http-client/i,
   // Command line downloaders
   /curl/i, /wget/i,
-  // Aggressive / SEO crawlers that scrape but don't show search results (saving resources)
-  /ahrefsbot/i, /semrushbot/i, /mj12bot/i, /dotbot/i, /petalbot/i, /bytespider/i, /coccocbot/i, /megaindex/i, /blexbot/i, /serpstatbot/i, /ltx71/i, /zoominfobot/i, /amazonbot/i, /claudebot/i, /gptbot/i, /chatgpt-user/i
+  // Aggressive SEO/LLM crawlers that scrape content
+  /ahrefsbot/i, /semrushbot/i, /mj12bot/i, /dotbot/i, /petalbot/i, /bytespider/i, /coccocbot/i, /megaindex/i, /blexbot/i, /serpstatbot/i, /ltx71/i, /zoominfobot/i, /amazonbot/i
 ];
 
 const SUSPICIOUS_PATH_PATTERNS = [
@@ -50,12 +50,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const userAgent = request.headers.get('user-agent') || '';
 
-  // Bypass all bot checks for trusted machine-to-machine integrations (e.g. the wallet)
+  // Public metadata endpoints (robots.txt, sitemap.xml) should never trigger bot warning logs
+  const isPublicMeta = pathname === '/robots.txt' || pathname === '/sitemap.xml' || pathname === '/favicon.ico' || pathname === '/apple-icon.png';
+
+  // Bypass all bot checks for trusted machine-to-machine integrations (e.g. the wallet) and public metadata
   const authHeader = request.headers.get('authorization');
   const webhookSecret = process.env.SHOP_WEBHOOK_SECRET;
   const isTrustedM2M = (webhookSecret && authHeader === `Bearer ${webhookSecret}`) || request.headers.has('x-pure-wallet-signature');
 
-  if (!isTrustedM2M) {
+  if (!isTrustedM2M && !isPublicMeta) {
     // 1. Block suspicious path probes (e.g. php admin portals, env files)
     const isSuspiciousPath = SUSPICIOUS_PATH_PATTERNS.some(p => p.test(pathname));
     if (isSuspiciousPath) {
@@ -161,9 +164,7 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-
-
-  // 2. Redirect unauthenticated users away from protected routes
+  // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
@@ -189,6 +190,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhooks|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

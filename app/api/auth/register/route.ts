@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { query } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
-import { signJwt } from '@/lib/auth/jwt';
-import { cookies } from 'next/headers';
+import { sendVerificationEmailForUser } from '@/lib/email/verification';
 
 export async function POST(request: Request) {
   try {
@@ -29,29 +28,20 @@ export async function POST(request: Request) {
     const userId = crypto.randomUUID();
     const passwordHash = hashPassword(password);
 
-    // Insert user into local DB
+    // Insert user into local DB with is_verified = FALSE
     await query(
-      `INSERT INTO public.users (id, email, password_hash, full_name, created_at, updated_at) 
-       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      `INSERT INTO public.users (id, email, password_hash, full_name, is_verified, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, FALSE, NOW(), NOW())`,
       [userId, trimmedEmail, passwordHash, fullName || '']
     );
 
-    // Sign the user in by generating a JWT
-    const token = await signJwt({
-      id: userId,
-      email: trimmedEmail,
-      fullName: fullName || '',
-    });
-
-    // Set cookie
-    const cookieStore = await cookies();
-    cookieStore.set('session_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+    // Dispatch activation email immediately
+    try {
+      await sendVerificationEmailForUser(userId, trimmedEmail, request);
+    } catch (mailErr) {
+      console.error('[Register Email Dispatch Error]', mailErr);
+      // In case of mail server glitch, cron will retry unverified accounts
+    }
 
     const user = {
       id: userId,
@@ -61,7 +51,7 @@ export async function POST(request: Request) {
       },
     };
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user, requiresVerification: true });
   } catch (err: any) {
     console.error('[Registration Error]', err);
     return NextResponse.json({ error: 'Interner Serverfehler während der Registrierung' }, { status: 500 });
