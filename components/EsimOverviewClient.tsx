@@ -227,9 +227,32 @@ export function ClientPage({
               <p className="text-xs text-slate-300 font-medium mt-0.5">
                 {formatGb(dataGb, tr('card_unlimited', 'Unbegrenzt'))} · {validityDays} {tr('cfg_days', 'Tage')}
               </p>
-              <p className="text-[11px] font-medium text-sky-400 mt-1 flex items-center gap-1.5">
-                <span>⌛</span> {tr('esim_install_notice_180', '180 Tage Zeit zur Installation ab Kaufdatum')}
-              </p>
+              {(() => {
+                const expireMs = usage.data?.expiredTime ? new Date(usage.data.expiredTime).getTime() : 0;
+                const remainingMs = expireMs > 0 ? expireMs - Date.now() : 0;
+                const remDays = Math.max(0, Math.floor(remainingMs / (1000 * 60 * 60 * 24)));
+                const remHours = Math.max(0, Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+
+                if (isInUse && expireMs > 0) {
+                  return (
+                    <p className="text-[11px] font-medium text-emerald-400 mt-1 flex items-center gap-1.5">
+                      <span>⏳</span> {tr('esim_validity_remaining', '{days} Tage {hours} Std. verbleibende Gültigkeit', { days: remDays, hours: remHours })}
+                    </p>
+                  );
+                } else if (isInUse) {
+                  return (
+                    <p className="text-[11px] font-medium text-emerald-400 mt-1 flex items-center gap-1.5">
+                      <span>⏳</span> {tr('esim_validity_remaining', '{days} Tage verbleibende Gültigkeit', { days: validityDays, hours: 0 })}
+                    </p>
+                  );
+                } else {
+                  return (
+                    <p className="text-[11px] font-medium text-sky-400 mt-1 flex items-center gap-1.5">
+                      <span>⌛</span> {tr('esim_install_notice_180', '180 Tage Zeit zur Installation ab Kaufdatum')}
+                    </p>
+                  );
+                }
+              })()}
             </div>
             <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${
               isInUse
@@ -242,38 +265,72 @@ export function ClientPage({
           </div>
         </div>
 
-        {/* Onboarding Troubleshooting Warning Box (> 12 hours in Onboarding & not yet In Use) */}
-        {showOnboardingTroubleshooting && (
-          <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-3 animate-fadeIn">
-            <div className="flex items-center gap-2.5 text-amber-400 font-bold text-sm">
+        {/* Onboarding Setup & Troubleshooting Guidance Box (shown when eSIM is in onboarding / not yet in use) */}
+        {!isInUse && isNotDeleted && (
+          <div className={`rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-3 animate-fadeIn border ${
+            hoursInOnboarding >= 12
+              ? 'bg-amber-950/40 border-amber-500/40'
+              : 'bg-slate-900/80 border-brand-500/30'
+          }`}>
+            <div className={`flex items-center gap-2.5 font-bold text-sm ${
+              hoursInOnboarding >= 12 ? 'text-amber-400' : 'text-brand-400'
+            }`}>
               <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <span>{tr('onboarding_info_title', 'Wichtiger Hinweis zur Verbindung & Aktivierung')}</span>
+              <span>
+                {hoursInOnboarding >= 12
+                  ? tr('onboarding_info_title', 'Wichtiger Hinweis zur Verbindung & Aktivierung')
+                  : tr('onboarding_info_title_setup', 'Wichtige Einrichtungshinweise')}
+              </span>
             </div>
-            <p className="text-xs text-amber-200/90 leading-relaxed">
+            <p className={`text-xs leading-relaxed ${hoursInOnboarding >= 12 ? 'text-amber-200/90' : 'text-slate-300'}`}>
               {tr('onboarding_info_desc', 'Deine eSIM ist noch nicht mit dem Mobilfunknetz verbunden. Bitte überprüfe folgende Einstellungen auf deinem Gerät:')}
             </p>
             <div className="space-y-2 text-xs text-slate-200 pt-1">
-              <div className="flex items-start gap-2.5 bg-amber-950/30 p-3 rounded-xl border border-amber-500/20">
-                <span className="text-amber-400 font-bold">1.</span>
+              <div className={`flex items-start gap-2.5 p-3 rounded-xl border ${
+                hoursInOnboarding >= 12
+                  ? 'bg-amber-950/30 border-amber-500/20'
+                  : 'bg-slate-950/60 border-slate-800'
+              }`}>
+                <span className={hoursInOnboarding >= 12 ? 'text-amber-400 font-bold' : 'text-brand-400 font-bold'}>1.</span>
                 <div>
-                  <strong className="text-amber-300">{tr('onboarding_roaming_title', 'Daten-Roaming aktivieren:')}</strong>{' '}
-                  <span className="text-slate-300">{tr('onboarding_roaming_desc', 'Stelle sicher, dass Daten-Roaming in den Mobilfunk-Einstellungen deines Smartphones für diese eSIM eingeschaltet ist.')}</span>
+                  <strong className={hoursInOnboarding >= 12 ? 'text-amber-300' : 'text-white'}>
+                    {tr('onboarding_roaming_title', 'Daten-Roaming aktivieren:')}
+                  </strong>{' '}
+                  <span className="text-slate-300">
+                    {tr('onboarding_roaming_desc', 'Stelle sicher, dass Daten-Roaming in den Mobilfunk-Einstellungen deines Smartphones für diese eSIM eingeschaltet ist.')}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-start gap-2.5 bg-amber-950/30 p-3 rounded-xl border border-amber-500/20">
-                <span className="text-amber-400 font-bold">2.</span>
+              <div className={`flex items-start gap-2.5 p-3 rounded-xl border ${
+                hoursInOnboarding >= 12
+                  ? 'bg-amber-950/30 border-amber-500/20'
+                  : 'bg-slate-950/60 border-slate-800'
+              }`}>
+                <span className={hoursInOnboarding >= 12 ? 'text-amber-400 font-bold' : 'text-brand-400 font-bold'}>2.</span>
                 <div>
-                  <strong className="text-amber-300">{tr('onboarding_vpn_title', 'VPN deaktivieren:')}</strong>{' '}
-                  <span className="text-slate-300">{tr('onboarding_vpn_desc', 'Falls du eine VPN-App (z. B. NordVPN, Cloudflare WARP) nutzt, schalte diese bitte vorübergehend aus.')}</span>
+                  <strong className={hoursInOnboarding >= 12 ? 'text-amber-300' : 'text-white'}>
+                    {tr('onboarding_vpn_title', 'VPN deaktivieren:')}
+                  </strong>{' '}
+                  <span className="text-slate-300">
+                    {tr('onboarding_vpn_desc', 'Falls du eine VPN-App (z. B. NordVPN, Cloudflare WARP) nutzt, schalte diese bitte vorübergehend aus.')}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-start gap-2.5 bg-amber-950/30 p-3 rounded-xl border border-amber-500/20">
-                <span className="text-amber-400 font-bold">3.</span>
+              <div className={`flex items-start gap-2.5 p-3 rounded-xl border ${
+                hoursInOnboarding >= 12
+                  ? 'bg-amber-950/30 border-amber-500/20'
+                  : 'bg-slate-950/60 border-slate-800'
+              }`}>
+                <span className={hoursInOnboarding >= 12 ? 'text-amber-400 font-bold' : 'text-brand-400 font-bold'}>3.</span>
                 <div>
-                  <strong className="text-amber-300">{tr('onboarding_net_title', 'Manuelle Netzauswahl:')}</strong>{' '}
-                  <span className="text-slate-300">{tr('onboarding_net_desc', 'Falls sich dein Smartphone nicht automatisch verbindet, wähle in den Mobilfunk-Einstellungen manuell den verfügbaren Netzbetreiber aus.')}</span>
+                  <strong className={hoursInOnboarding >= 12 ? 'text-amber-300' : 'text-white'}>
+                    {tr('onboarding_net_title', 'Manuelle Netzauswahl:')}
+                  </strong>{' '}
+                  <span className="text-slate-300">
+                    {tr('onboarding_net_desc', 'Falls sich dein Smartphone nicht automatisch verbindet, wähle in den Mobilfunk-Einstellungen manuell den verfügbaren Netzbetreiber aus.')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -448,20 +505,53 @@ export function ClientPage({
                 </div>
               )}
 
-              {usage.data.expiredTime && (
-                <div className="flex items-center justify-between text-slate-400 pt-2 border-t border-slate-900">
-                  <span>{tr('card_validity', 'Gültigkeit')}:</span>
-                  <span className="font-mono text-slate-200 font-medium">
-                    {new Date(usage.data.expiredTime).toLocaleDateString('de-DE', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-              )}
+              {/* Validity Progress Bar */}
+              {(() => {
+                const expireMs = usage.data?.expiredTime ? new Date(usage.data.expiredTime).getTime() : 0;
+                const remainingMs = expireMs > 0 ? expireMs - Date.now() : 0;
+                const remDays = Math.max(0, Math.floor(remainingMs / (1000 * 60 * 60 * 24)));
+                const remHours = Math.max(0, Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+
+                const totalValidityMs = (validityDays || 30) * 24 * 60 * 60 * 1000;
+                const timePercentRemaining = expireMs > 0
+                  ? Math.max(0, Math.min(100, (remainingMs / totalValidityMs) * 100))
+                  : 100;
+
+                return (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-900">
+                    <div className="flex items-center justify-between font-semibold text-slate-200">
+                      <span>{tr('card_validity', 'Gültigkeit')}:</span>
+                      <span>
+                        {isInUse
+                          ? (expireMs > 0
+                              ? `${tr('esim_validity_remaining_short', '{days} Tage {hours} Std. verbleibend', { days: remDays, hours: remHours })} / ${validityDays} ${tr('cfg_days', 'Tage')}`
+                              : `${validityDays} ${tr('cfg_days', 'Tage')}`)
+                          : `${validityDays} ${tr('cfg_days', 'Tage')} (${tr('esim_after_first_conn', 'ab erster Verbindung')})`}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${isInUse ? timePercentRemaining : 100}%` }}
+                      />
+                    </div>
+                    {usage.data.expiredTime && (
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <span>{tr('card_validity', 'Ablaufdatum')}:</span>
+                        <span className="font-mono text-slate-200 font-medium">
+                          {new Date(usage.data.expiredTime).toLocaleDateString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
