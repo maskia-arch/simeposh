@@ -53,7 +53,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   const allDone      = data?.allDone ?? false;
   const isPaid       = data?.isPaid ?? orders.some(o => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
   const isExpired    = data?.paymentStatus === 'expired' || data?.paymentStatus === 'cancelled' || (orders.length > 0 && orders.every(o => o.status === 'expired' || o.status === 'cancelled'));
-  const isPending    = !isPaid && !isExpired && orders.some(o => o.status === 'pending' || o.status === 'pending_payment');
+  const isPending    = !isPaid && !isExpired && orders.some(o => o.status === 'pending');
 
   // Not found yet (webhook/redirect race) → keep waiting a bit
   if (data && !data.found) {

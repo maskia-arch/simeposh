@@ -210,7 +210,7 @@ export async function POST(request: Request) {
         for (let n = 0; n < line.quantity; n++) {
           orderRows.push({
             user_id: userId, tariff_id: t.id,
-            order_type: isTopUp ? 'top_up' : 'new_esim', status: 'pending_payment',
+            order_type: isTopUp ? 'top_up' : 'new_esim', status: 'pending',
             customer_email: email, customer_name: user?.user_metadata?.full_name ?? null,
             amount_eur: unit, usd_eur_rate: t.usd_eur_rate, period_num: periodNum,
             top_up_iccid: line.topUpIccid, checkout_ref: ref,

@@ -117,7 +117,7 @@ export async function POST(request: Request) {
           .from('orders')
           .update({ status: 'expired' })
           .in('id', validOrderIds)
-          .in('status', ['pending', 'pending_payment']);
+          .in('status', ['pending']);
       }
     }
 

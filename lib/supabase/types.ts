@@ -5,7 +5,7 @@
  *   npx supabase gen types typescript --project-id YOUR_PROJECT_ID > lib/supabase/types.ts
  */
 
-export type OrderStatus    = 'pending' | 'paid' | 'provisioning' | 'completed' | 'failed' | 'refunded';
+export type OrderStatus    = 'pending' | 'paid' | 'provisioning' | 'completed' | 'failed' | 'refunded' | 'expired' | 'cancelled';
 export type OrderType      = 'new_esim' | 'top_up';
 export type TariffType     = 'travel' | 'unlimited_eco' | 'unlimited_pro';
 export type ProposalStatus = 'pending' | 'approved' | 'rejected';

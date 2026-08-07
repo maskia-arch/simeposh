@@ -288,7 +288,7 @@ export async function sweepExpiredSessions(db: any) {
           .from('orders')
           .update({ status: 'expired' })
           .in('id', allOrderIds)
-          .in('status', ['pending', 'pending_payment']);
+          .in('status', ['pending']);
       }
     }
   } catch (err) {

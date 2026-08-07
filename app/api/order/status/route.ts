@@ -62,11 +62,11 @@ export async function GET(request: Request) {
             .from('orders')
             .update({ status: 'expired' })
             .in('id', validOrderIds)
-            .in('status', ['pending', 'pending_payment']);
+            .in('status', ['pending']);
 
           // Update in-memory data status
           data.forEach((o: any) => {
-            if (o.status === 'pending' || o.status === 'pending_payment') o.status = 'expired';
+            if (o.status === 'pending') o.status = 'expired';
           });
         }
       }
