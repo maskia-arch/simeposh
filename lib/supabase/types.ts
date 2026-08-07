@@ -142,6 +142,11 @@ export interface Database {
           checkout_ref:         string | null;
           esim_status:          string | null;
           esim_status_at:       string | null;
+          smdp_status:          string | null;
+          data_remaining_bytes: number | null;
+          data_total_bytes:     number | null;
+          esim_expired_at:      string | null;
+          esim_usage_updated_at:string | null;
           error_message:        string | null;
           referred_by_code:     string | null;
           cashback_earned_eur:  number | null;
@@ -172,6 +177,11 @@ export interface Database {
           checkout_ref?:        string | null;
           esim_status?:         string | null;
           esim_status_at?:      string | null;
+          smdp_status?:          string | null;
+          data_remaining_bytes?: number | null;
+          data_total_bytes?:     number | null;
+          esim_expired_at?:      string | null;
+          esim_usage_updated_at?:string | null;
           error_message?:       string | null;
           referred_by_code?:     string | null;
           cashback_earned_eur?:  number | null;

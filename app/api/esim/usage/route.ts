@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const db = createServiceClient();
     const { data: orders } = await db
       .from('orders')
-      .select('id, status, period_num, tariffs(data_gb)')
+      .select('id, created_at, status, period_num, esim_status, smdp_status, data_remaining_bytes, data_total_bytes, esim_expired_at, esim_usage_updated_at, tariffs(data_gb)')
       .eq('iccid', iccid)
       .in('status', ['completed', 'paid', 'provisioning']);
 
@@ -35,18 +35,45 @@ export async function GET(request: Request) {
     let dataRemaining = statusRes.obj.dataRemaining;
 
     // Resilient Fallback: If esimaccess API returns 0 dataTotal for a brand-new / unused eSIM,
-    // fallback to tariff data_gb from DB so total and remaining data are correctly displayed to the user.
+    // fallback to tariff data_gb from DB so total and remaining data are correctly displayed.
     const dbDataGb = order.period_num ? null : (order.tariffs?.data_gb ?? null);
     if (dataTotal === 0 && dbDataGb && dbDataGb > 0) {
       dataTotal = dbDataGb * 1_073_741_824;
       dataRemaining = dataTotal; // Brand new unused eSIM has 100% remaining
     }
 
+    const nowIso = new Date().toISOString();
+    const esimStatusVal = statusRes.obj.status || statusRes.obj.esimStatus || 'NOT_ACTIVATED';
+    const smdpStatusVal = statusRes.obj.smdpStatus || null;
+    const expiredAtVal = statusRes.obj.expiredTime ? new Date(statusRes.obj.expiredTime).toISOString() : null;
+
+    // Update database cache
+    try {
+      await db
+        .from('orders')
+        .update({
+          esim_status: esimStatusVal,
+          smdp_status: smdpStatusVal,
+          data_remaining_bytes: dataRemaining,
+          data_total_bytes: dataTotal,
+          esim_expired_at: expiredAtVal,
+          esim_usage_updated_at: nowIso,
+        } as any)
+        .eq('id', order.id);
+    } catch (dbErr) {
+      console.error('[esim/usage] Failed to update orders table cache:', dbErr);
+    }
+
     return NextResponse.json({
-      status: statusRes.obj.status || 'NOT_ACTIVATED',
+      status: esimStatusVal,
+      esimStatus: esimStatusVal,
+      smdpStatus: smdpStatusVal,
       dataRemaining,
       dataTotal,
+      dataUsed: statusRes.obj.dataUsed,
       expiredTime: statusRes.obj.expiredTime,
+      usageUpdatedAt: nowIso,
+      createdAt: order.created_at,
     });
   } catch (err: any) {
     console.error('[esim/usage] Error occurred:', err.message);

@@ -40,9 +40,14 @@ export function ClientPage({
     loading: boolean;
     data: {
       status: string;
+      esimStatus?: string;
+      smdpStatus?: string;
       dataRemaining: number;
       dataTotal: number;
+      dataUsed?: number;
       expiredTime: string;
+      usageUpdatedAt?: string;
+      createdAt?: string;
     } | null;
     error: string | null;
   }>({ loading: false, data: null, error: null });
@@ -78,8 +83,10 @@ export function ClientPage({
       setDeviceOs('desktop');
     }
 
-    // Check top-up availability for this ICCID
+    // Check top-up availability & automatically fetch usage for this ICCID
     if (iccid) {
+      handleCheckUsage();
+
       fetch(`/api/topup/packages?iccid=${encodeURIComponent(iccid)}`)
         .then((res) => res.json())
         .then((data) => {
@@ -124,6 +131,14 @@ export function ClientPage({
   const percentUsed = usage.data
     ? Math.max(0, Math.min(100, ((usage.data.dataTotal - usage.data.dataRemaining) / usage.data.dataTotal) * 100))
     : 0;
+
+  const createdAtTime = usage.data?.createdAt ? new Date(usage.data.createdAt).getTime() : 0;
+  const hoursInOnboarding = createdAtTime > 0 ? (Date.now() - createdAtTime) / (1000 * 60 * 60) : 0;
+  const rawEsimStatus = (usage.data?.status || usage.data?.esimStatus || '').toUpperCase();
+  const isInUse = rawEsimStatus === 'IN_USE' || rawEsimStatus === 'ACTIVE';
+  const smdpStatusUpper = (usage.data?.smdpStatus || '').toUpperCase();
+  const isNotDeleted = smdpStatusUpper !== 'DELETED';
+  const showOnboardingTroubleshooting = hoursInOnboarding >= 12 && !isInUse && isNotDeleted;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100 font-sans px-4 py-8 md:py-14 antialiased">
@@ -216,12 +231,54 @@ export function ClientPage({
                 <span>⌛</span> {tr('esim_install_notice_180', '180 Tage Zeit zur Installation ab Kaufdatum')}
               </p>
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-400 shrink-0">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              {tr('life_new', 'Bereit zur Installation')}
+            <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${
+              isInUse
+                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                : 'bg-sky-500/10 border border-sky-500/20 text-sky-400'
+            }`}>
+              <span className={`h-2 w-2 rounded-full ${isInUse ? 'bg-emerald-400 animate-ping' : 'bg-sky-400 animate-pulse'}`} />
+              {isInUse ? tr('life_in_use', 'Aktiv (In Use)') : tr('life_new', 'Bereit zur Installation')}
             </div>
           </div>
         </div>
+
+        {/* Onboarding Troubleshooting Warning Box (> 12 hours in Onboarding & not yet In Use) */}
+        {showOnboardingTroubleshooting && (
+          <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-3 animate-fadeIn">
+            <div className="flex items-center gap-2.5 text-amber-400 font-bold text-sm">
+              <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{tr('onboarding_info_title', 'Wichtiger Hinweis zur Verbindung & Aktivierung')}</span>
+            </div>
+            <p className="text-xs text-amber-200/90 leading-relaxed">
+              {tr('onboarding_info_desc', 'Deine eSIM ist noch nicht mit dem Mobilfunknetz verbunden. Bitte überprüfe folgende Einstellungen auf deinem Gerät:')}
+            </p>
+            <div className="space-y-2 text-xs text-slate-200 pt-1">
+              <div className="flex items-start gap-2.5 bg-amber-950/30 p-3 rounded-xl border border-amber-500/20">
+                <span className="text-amber-400 font-bold">1.</span>
+                <div>
+                  <strong className="text-amber-300">{tr('onboarding_roaming_title', 'Daten-Roaming aktivieren:')}</strong>{' '}
+                  <span className="text-slate-300">{tr('onboarding_roaming_desc', 'Stelle sicher, dass Daten-Roaming in den Mobilfunk-Einstellungen deines Smartphones für diese eSIM eingeschaltet ist.')}</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 bg-amber-950/30 p-3 rounded-xl border border-amber-500/20">
+                <span className="text-amber-400 font-bold">2.</span>
+                <div>
+                  <strong className="text-amber-300">{tr('onboarding_vpn_title', 'VPN deaktivieren:')}</strong>{' '}
+                  <span className="text-slate-300">{tr('onboarding_vpn_desc', 'Falls du eine VPN-App (z. B. NordVPN, Cloudflare WARP) nutzt, schalte diese bitte vorübergehend aus.')}</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 bg-amber-950/30 p-3 rounded-xl border border-amber-500/20">
+                <span className="text-amber-400 font-bold">3.</span>
+                <div>
+                  <strong className="text-amber-300">{tr('onboarding_net_title', 'Manuelle Netzauswahl:')}</strong>{' '}
+                  <span className="text-slate-300">{tr('onboarding_net_desc', 'Falls sich dein Smartphone nicht automatisch verbindet, wähle in den Mobilfunk-Einstellungen manuell den verfügbaren Netzbetreiber aus.')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 1. Quick Installation Button */}
         <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
@@ -360,12 +417,12 @@ export function ClientPage({
               <div className="flex items-center justify-between text-slate-300">
                 <span className="font-semibold">{tr('esim_status_label', 'Netzwerk-Status:')}</span>
                 <span className={`font-bold px-2.5 py-0.5 rounded text-[10px] uppercase ${
-                  usage.data.status === 'IN_USE' || usage.data.status === 'ACTIVE'
+                  isInUse
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
                 }`}>
-                  {usage.data.status === 'IN_USE' || usage.data.status === 'ACTIVE'
-                    ? tr('life_in_use', 'Aktiv')
+                  {isInUse
+                    ? tr('life_in_use', 'Aktiv (In Use)')
                     : tr('life_new', 'Bereit zur Installation')}
                 </span>
               </div>

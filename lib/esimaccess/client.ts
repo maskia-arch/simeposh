@@ -606,8 +606,11 @@ export async function applyTopUp(
 
 export interface NormalizedEsimStatus {
   status: string;
+  esimStatus?: string;
+  smdpStatus?: string;
   dataRemaining: number;
   dataTotal: number;
+  dataUsed: number;
   expiredTime: string;
 }
 
@@ -617,7 +620,10 @@ export async function getEsimStatus(iccid: string): Promise<{
   obj: NormalizedEsimStatus;
 }> {
   try {
-    const res = await esimRequest<any>('/esim/query', { iccid });
+    const res = await esimRequest<any>('/esim/query', {
+      iccid,
+      pager: { pageNum: 1, pageSize: 20 },
+    });
 
     if (!res || res.success === false) {
       return {
@@ -625,8 +631,11 @@ export async function getEsimStatus(iccid: string): Promise<{
         errorCode: res?.errorCode ?? 'QUERY_FAILED',
         obj: {
           status: 'NOT_ACTIVATED',
+          esimStatus: 'NOT_ACTIVATED',
+          smdpStatus: '',
           dataRemaining: 0,
           dataTotal: 0,
+          dataUsed: 0,
           expiredTime: '',
         },
       };
@@ -637,33 +646,34 @@ export async function getEsimStatus(iccid: string): Promise<{
       ? obj[0]
       : (obj.esimList?.[0] || obj.records?.[0] || obj.list?.[0] || obj);
 
-    const rawStatus =
-      esimItem?.status ||
-      esimItem?.esimStatus ||
-      esimItem?.smdpStatus ||
-      obj.status ||
-      obj.esimStatus ||
-      'NOT_ACTIVATED';
+    const esimStatus = esimItem?.esimStatus || esimItem?.status || obj.esimStatus || obj.status || 'NOT_ACTIVATED';
+    const smdpStatus = esimItem?.smdpStatus || esimItem?.smdp_status || obj.smdpStatus || obj.smdp_status || '';
 
     const rawTotal = Number(
       esimItem?.totalVolume ??
       esimItem?.dataTotal ??
+      esimItem?.packageList?.[0]?.totalVolume ??
       esimItem?.volume ??
-      esimItem?.initialVolume ??
       obj.totalVolume ??
-      obj.dataTotal ??
-      obj.volume ??
       0
     );
 
-    const rawRemaining = Number(
-      esimItem?.remainVolume ??
-      esimItem?.dataRemaining ??
-      esimItem?.remainData ??
-      obj.remainVolume ??
-      obj.dataRemaining ??
-      rawTotal
+    const orderUsage = Number(
+      esimItem?.orderUsage ??
+      esimItem?.useVolume ??
+      esimItem?.packageList?.[0]?.useVolume ??
+      0
     );
+
+    let rawRemaining = esimItem?.remainVolume !== undefined && esimItem?.remainVolume !== null
+      ? Number(esimItem.remainVolume)
+      : (esimItem?.packageList?.[0]?.remainVolume !== undefined
+          ? Number(esimItem.packageList[0].remainVolume)
+          : (rawTotal > 0 ? Math.max(0, rawTotal - orderUsage) : 0));
+
+    if (isNaN(rawRemaining)) rawRemaining = 0;
+    const finalTotal = isNaN(rawTotal) ? 0 : rawTotal;
+    const finalUsed = isNaN(orderUsage) ? Math.max(0, finalTotal - rawRemaining) : orderUsage;
 
     const expiredTime =
       esimItem?.expiredTime ||
@@ -677,9 +687,12 @@ export async function getEsimStatus(iccid: string): Promise<{
       success: true,
       errorCode: null,
       obj: {
-        status: String(rawStatus),
-        dataRemaining: isNaN(rawRemaining) ? 0 : rawRemaining,
-        dataTotal: isNaN(rawTotal) ? 0 : rawTotal,
+        status: String(esimStatus),
+        esimStatus: String(esimStatus),
+        smdpStatus: String(smdpStatus),
+        dataRemaining: rawRemaining,
+        dataTotal: finalTotal,
+        dataUsed: finalUsed,
         expiredTime: String(expiredTime || ''),
       },
     };
@@ -690,8 +703,11 @@ export async function getEsimStatus(iccid: string): Promise<{
       errorCode: err.message,
       obj: {
         status: 'NOT_ACTIVATED',
+        esimStatus: 'NOT_ACTIVATED',
+        smdpStatus: '',
         dataRemaining: 0,
         dataTotal: 0,
+        dataUsed: 0,
         expiredTime: '',
       },
     };
@@ -725,7 +741,10 @@ export async function queryEsimLifecycle(iccid: string): Promise<EsimLifecycle> 
         smdpStatus?: string;
         esimList?: Array<{ esimStatus?: string; smdpStatus?: string; status?: string }>;
       } | null;
-    }>('/esim/query', { iccid });
+    }>('/esim/query', {
+      iccid,
+      pager: { pageNum: 1, pageSize: 20 }
+    });
 
     const obj = res.obj;
     const raw =
