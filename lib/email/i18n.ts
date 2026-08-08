@@ -78,10 +78,14 @@ export interface EmailDictionary {
 
   // eSIM delivery email
   esimSubject: (country: string) => string;
+  esimLateSubject?: (country: string) => string;
   esimTitle: string;
   esimOrderBadge: (orderId: string) => string;
   esimThankYou: (country: string) => string;
+  esimLateThankYou?: (country: string) => string;
   esimInstallBtn: string;
+
+
   esimInstallSub: string;
   esimPlanDetails: string;
   esimTariffLabel: string;
@@ -1011,7 +1015,18 @@ export const EMAIL_DICTS: Record<EmailLocale, EmailDictionary> = {
   },
 };
 
-export function getEmailTranslations(locale?: string | null): EmailDictionary {
+export function getEmailTranslations(locale?: string | null): EmailDictionary & {
+  esimLateSubject: (country: string) => string;
+  esimLateThankYou: (country: string) => string;
+} {
   const normLoc = normalizeEmailLocale(locale);
-  return EMAIL_DICTS[normLoc] || EMAIL_DICTS.de;
+  const dict = EMAIL_DICTS[normLoc] || EMAIL_DICTS.de;
+  const deDict = EMAIL_DICTS.de;
+
+  return {
+    ...dict,
+    esimLateSubject: dict.esimLateSubject || deDict.esimLateSubject || dict.esimSubject,
+    esimLateThankYou: dict.esimLateThankYou || deDict.esimLateThankYou || dict.esimThankYou,
+  };
 }
+

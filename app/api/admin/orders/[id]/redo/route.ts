@@ -19,9 +19,18 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {}
+
+    const isLatePayment = body?.isLatePayment ?? true;
+    const forceResendEmail = body?.forceResendEmail ?? true;
+
     const db = createServiceClient();
-    const result = await fulfillOrder(db, params.id, { forceResendEmail: true });
+    const result = await fulfillOrder(db, params.id, { forceResendEmail, isLatePayment });
     return NextResponse.json(result);
+
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
   }

@@ -147,14 +147,16 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
 export async function sendEsimEmail(data: EsimPurchasedData): Promise<void> {
   const normLoc = normalizeEmailLocale(data.locale);
   const t = getEmailTranslations(normLoc);
+  const subject = data.isLatePayment ? t.esimLateSubject(data.countryName) : t.esimSubject(data.countryName);
 
   await sendMailThroughTransporter({
     to:      data.to,
-    subject: t.esimSubject(data.countryName),
+    subject: subject,
     html:    buildEsimPurchasedHtml(data),
     text:    buildEsimPurchasedText(data),
   });
 }
+
 
 // ─── Send Top-Up confirmation ─────────────────────────────────
 

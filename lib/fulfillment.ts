@@ -13,11 +13,16 @@ import { getEsimOverviewUrl } from '@/lib/url';
 
 export interface FulfillResult { orderId: string; ok: boolean; error?: string }
 
+export interface FulfillOptions {
+  forceResendEmail?: boolean;
+  isLatePayment?: boolean;
+}
+
 /** Fulfil a single order by id. Safe to call multiple times (idempotent). */
 export async function fulfillOrder(
   supabase: ReturnType<typeof createServiceClient>,
   orderId:  string,
-  options?: { forceResendEmail?: boolean },
+  options?: FulfillOptions,
 ): Promise<FulfillResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: order, error } = await supabase
@@ -70,6 +75,7 @@ export async function fulfillOrder(
         smdpAddress: o.smdp_address, apn: o.apn ?? 'internet', lpaCode: `LPA:1$${o.smdp_address || ''}$${o.activation_code || ''}`, orderId,
         overviewUrl,
         locale: o.locale ?? undefined,
+        isLatePayment: options?.isLatePayment,
       });
     }
     return { orderId, ok: true };
@@ -150,6 +156,7 @@ export async function fulfillOrder(
         smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
         overviewUrl,
         locale: o.locale ?? undefined,
+        isLatePayment: options?.isLatePayment,
       });
     } catch (emailErr) {
       console.error('[fulfillment] sendEsimEmail dispatch error for order', orderId, emailErr);
@@ -175,8 +182,10 @@ export async function fulfillOrder(
 export async function fulfillOrders(
   supabase: ReturnType<typeof createServiceClient>,
   orderIds: string[],
+  options?: FulfillOptions,
 ): Promise<FulfillResult[]> {
   const out: FulfillResult[] = [];
-  for (const id of orderIds) out.push(await fulfillOrder(supabase, id));
+  for (const id of orderIds) out.push(await fulfillOrder(supabase, id, options));
   return out;
 }
+

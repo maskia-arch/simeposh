@@ -18,11 +18,13 @@ export interface EsimPurchasedData {
   orderId:         string;
   overviewUrl?:    string;
   locale?:         string;
+  isLatePayment?:  boolean;
 }
 
 export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
   const normLoc = normalizeEmailLocale(data.locale);
   const t = getEmailTranslations(normLoc);
+
   const greeting = t.greeting(data.customerName);
   const shortOrderId = data.orderId.split('-')[0].toUpperCase();
   const formattedVolume = formatGb(data.dataGb);
@@ -92,7 +94,8 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
     </div>
     <div class="body">
       <p>${greeting}</p>
-      <p>${t.esimThankYou(data.countryName)}</p>
+      <p>${data.isLatePayment ? t.esimLateThankYou(data.countryName) : t.esimThankYou(data.countryName)}</p>
+
 
       ${data.overviewUrl ? `
       <div style="text-align: center; margin: 24px 0 32px;">
