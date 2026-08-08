@@ -61,7 +61,16 @@ function fromAddress(): string {
   return `"${name}" <${address}>`;
 }
 
-async function sendMailThroughTransporter(mailOptions: { to: string; subject: string; html: string; text?: string }): Promise<void> {
+import { createServiceClient } from '@/lib/supabase/server';
+
+async function sendMailThroughTransporter(mailOptions: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  emailType?: string;
+  metadata?: any;
+}): Promise<void> {
   const host = process.env.SMTP_HOST;
   const pass = process.env.SMTP_PASS;
   const cleanTo = mailOptions.to.trim();
@@ -83,6 +92,8 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
     'X-Auto-Response-Suppress': 'OOF, AutoReply',
     'Message-ID': msgId,
   };
+
+  let sendSuccess = false;
 
   // Use Resend HTTP REST API if using Resend (avoids firewall port blocks)
   const isResend = host?.includes('resend.com') || pass?.startsWith('re_');
@@ -116,31 +127,54 @@ async function sendMailThroughTransporter(mailOptions: { to: string; subject: st
       }
 
       console.log(`[mailer] Resend HTTP email successfully sent to ${cleanTo}`);
-      return;
+      sendSuccess = true;
     } catch (err) {
       console.error('[mailer] Resend HTTP API dispatch failed. Falling back to SMTP:', err);
     }
   }
 
-  // Fallback to Nodemailer SMTP
-  try {
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from:     fromAddress(),
-      to:       cleanTo,
-      subject:  mailOptions.subject,
-      html:     mailOptions.html,
-      text:     mailOptions.text,
-      priority: 'high',
-      headers:  priorityHeaders,
-      messageId: msgId,
-    });
-    console.log(`[mailer] High Priority SMTP email successfully sent to ${cleanTo}`);
-  } catch (smtpErr) {
-    console.error('[mailer] SMTP dispatch failed for recipient:', cleanTo, smtpErr);
-    throw smtpErr;
+  // Fallback to Nodemailer SMTP if Resend didn't send it
+  if (!sendSuccess) {
+    try {
+      const transporter = createTransporter();
+      await transporter.sendMail({
+        from:     fromAddress(),
+        to:       cleanTo,
+        subject:  mailOptions.subject,
+        html:     mailOptions.html,
+        text:     mailOptions.text,
+        priority: 'high',
+        headers:  priorityHeaders,
+        messageId: msgId,
+      });
+      console.log(`[mailer] High Priority SMTP email successfully sent to ${cleanTo}`);
+      sendSuccess = true;
+    } catch (smtpErr) {
+      console.error('[mailer] SMTP dispatch failed for recipient:', cleanTo, smtpErr);
+      throw smtpErr;
+    }
   }
+
+  // Log transcript to sent_emails table for admin audit & inspection
+  try {
+    const db = createServiceClient();
+    await (db.from('sent_emails' as any)).insert({
+      recipient_email: cleanTo.toLowerCase(),
+      subject: mailOptions.subject,
+      email_type: mailOptions.emailType || 'custom',
+      body_html: mailOptions.html,
+      body_text: mailOptions.text || null,
+      metadata: mailOptions.metadata || {},
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+    });
+    console.log(`[mailer] Saved email transcript for ${cleanTo} in sent_emails table`);
+  } catch (logErr: any) {
+    console.error('[mailer] Failed to save sent_emails transcript:', logErr.message);
+  }
+
 }
+
 
 // ─── Send eSIM purchase confirmation ─────────────────────────
 
@@ -150,10 +184,12 @@ export async function sendEsimEmail(data: EsimPurchasedData): Promise<void> {
   const subject = data.isLatePayment ? t.esimLateSubject(data.countryName) : t.esimSubject(data.countryName);
 
   await sendMailThroughTransporter({
-    to:      data.to,
-    subject: subject,
-    html:    buildEsimPurchasedHtml(data),
-    text:    buildEsimPurchasedText(data),
+    to:        data.to,
+    subject:   subject,
+    html:      buildEsimPurchasedHtml(data),
+    text:      buildEsimPurchasedText(data),
+    emailType: data.isLatePayment ? 'verspaetet_lieferung' : 'esim_lieferung',
+    metadata:  { order_id: data.orderId, iccid: data.iccid, country: data.countryName, is_late_payment: data.isLatePayment },
   });
 }
 
@@ -165,10 +201,12 @@ export async function sendTopUpEmail(data: TopUpConfirmedData & { to: string }):
   const t = getEmailTranslations(normLoc);
 
   await sendMailThroughTransporter({
-    to:      data.to,
-    subject: t.topUpSubject(data.dataGb),
-    html:    buildTopUpHtml(data),
-    text:    buildTopUpText(data),
+    to:        data.to,
+    subject:   t.topUpSubject(data.dataGb),
+    html:      buildTopUpHtml(data),
+    text:      buildTopUpText(data),
+    emailType: 'topup_bestaetigung',
+    metadata:  { iccid: data.iccid, data_gb: data.dataGb },
   });
 }
 
@@ -179,12 +217,16 @@ export async function sendCashbackEarnedEmail(data: CashbackEarnedData): Promise
   const t = getEmailTranslations(normLoc);
 
   await sendMailThroughTransporter({
-    to:      data.to,
-    subject: t.cashbackEarnedSubject((Number(data.earnedEur) || 0).toFixed(2)),
-    html:    buildCashbackEarnedHtml(data),
-    text:    buildCashbackEarnedText(data),
+    to:        data.to,
+    subject:   t.cashbackEarnedSubject((Number(data.earnedEur) || 0).toFixed(2)),
+    html:      buildCashbackEarnedHtml(data),
+    text:      buildCashbackEarnedText(data),
+    emailType: 'cashback_gutschrift',
+    metadata:  { earned_eur: data.earnedEur, rank: data.rank, order_id: data.orderId },
   });
+
 }
+
 
 // ─── Send Guest Milestone notification ────────────────────────
 
@@ -296,40 +338,50 @@ ${t.checkoutIgnoreText}
   `.trim();
 
   await sendMailThroughTransporter({
-    to: opts.to,
-    subject: t.checkoutSubject(opts.invoiceId),
+    to:        opts.to,
+    subject:   t.checkoutSubject(opts.invoiceId),
     html,
     text,
+    emailType: 'krypto_checkout',
+    metadata:  { invoice_id: opts.invoiceId, coin: opts.coin, amount_eur: opts.amountEur },
   });
 }
 
 export async function sendTicketCreatedEmail(data: TicketCreatedData): Promise<void> {
   await sendMailThroughTransporter({
-    to:      data.customerEmail,
-    subject: `[PureSim] Support-Ticket empfangen: ${data.ticketNumber}`,
-    html:    buildTicketCreatedCustomerHtml(data),
-    text:    `Hallo ${data.customerName || 'Kunde'},\n\nwir haben deine Anfrage (${data.ticketNumber}: ${data.subject}) erhalten.\nDu kannst dein Ticket im Dashboard verfolgen:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+    to:        data.customerEmail,
+    subject:   `[PureSim] Support-Ticket empfangen: ${data.ticketNumber}`,
+    html:      buildTicketCreatedCustomerHtml(data),
+    text:      `Hallo ${data.customerName || 'Kunde'},\n\nwir haben deine Anfrage (${data.ticketNumber}: ${data.subject}) erhalten.\nDu kannst dein Ticket im Dashboard verfolgen:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+    emailType: 'support_ticket_erstellt',
+    metadata:  { ticket_number: data.ticketNumber, category: data.category },
   });
 }
 
 export async function sendTicketAdminAlertEmail(data: TicketCreatedData): Promise<void> {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com';
   await sendMailThroughTransporter({
-    to:      adminEmail,
-    subject: `🚨 [Admin Alert] Neues Support-Ticket ${data.ticketNumber} von ${data.customerEmail}`,
-    html:    buildTicketCreatedAdminHtml(data),
-    text:    `Neues Ticket ${data.ticketNumber} von ${data.customerEmail}.\nBetreff: ${data.subject}\nNachricht:\n${data.description}`,
+    to:        adminEmail,
+    subject:   `🚨 [Admin Alert] Neues Support-Ticket ${data.ticketNumber} von ${data.customerEmail}`,
+    html:      buildTicketCreatedAdminHtml(data),
+    text:      `Neues Ticket ${data.ticketNumber} von ${data.customerEmail}.\nBetreff: ${data.subject}\nNachricht:\n${data.description}`,
+    emailType: 'admin_ticket_alert',
+    metadata:  { ticket_number: data.ticketNumber },
   });
 }
 
 export async function sendTicketAnsweredEmail(data: TicketAnsweredData): Promise<void> {
   await sendMailThroughTransporter({
-    to:      data.customerEmail,
-    subject: `[PureSim] Antwort auf Support-Ticket ${data.ticketNumber}`,
-    html:    buildTicketAnsweredCustomerHtml(data),
-    text:    `Hallo ${data.customerName || 'Kunde'},\n\nes gibt eine neue Antwort auf dein Ticket ${data.ticketNumber}:\n\n${data.replyMessage}\n\nAntworten kannst du im Dashboard:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+    to:        data.customerEmail,
+    subject:   `[PureSim] Antwort auf Support-Ticket ${data.ticketNumber}`,
+    html:      buildTicketAnsweredCustomerHtml(data),
+    text:      `Hallo ${data.customerName || 'Kunde'},\n\nes gibt eine neue Antwort auf dein Ticket ${data.ticketNumber}:\n\n${data.replyMessage}\n\nAntworten kannst du im Dashboard:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard?tab=tickets`,
+    emailType: 'support_ticket_antwort',
+    metadata:  { ticket_number: data.ticketNumber },
   });
 }
+
+
 
 export async function sendGuestCashReminderEmail(data: GuestExpirationReminderData): Promise<void> {
   const normLoc = normalizeEmailLocale(data.locale);
