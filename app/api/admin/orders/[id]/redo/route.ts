@@ -9,15 +9,23 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const secret = process.env.SHOP_WEBHOOK_SECRET || process.env.CRON_SECRET;
-    if (!secret) {
-      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
-    }
+    const webhookSecret = process.env.SHOP_WEBHOOK_SECRET;
+    const cronSecret = process.env.CRON_SECRET;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${secret}`) {
+    const token = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : '';
+
+    const validTokens = [webhookSecret, cronSecret, serviceKey].filter(Boolean) as string[];
+
+    if (validTokens.length === 0) {
+      return NextResponse.json({ error: 'No authorization secrets configured' }, { status: 500 });
+    }
+
+    if (!token || !validTokens.includes(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
 
     let body: any = {};
     try {
