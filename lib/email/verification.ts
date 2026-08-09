@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { query } from '@/lib/db';
 import { sendGenericEmail } from '@/lib/email/mailer';
+import { getPublicBaseUrl } from '@/lib/url';
 
 export async function sendVerificationEmailForUser(
   userId: string,
@@ -21,30 +22,9 @@ export async function sendVerificationEmailForUser(
     [userId, token, expiresAt]
   );
 
-  let host = 'puresim.net';
-  let protocol = 'https';
-
-  if (req) {
-    const forwardedHost = req.headers.get('x-forwarded-host');
-    const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
-    host = forwardedHost || req.headers.get('host') || 'puresim.net';
-
-    if (
-      host.includes('0.0.0.0') ||
-      host.includes('127.0.0.1') ||
-      (host.includes('localhost') && process.env.NODE_ENV === 'production')
-    ) {
-      host = 'puresim.net';
-    }
-    protocol = forwardedHost
-      ? forwardedProto
-      : host.includes('localhost') || host.includes('127.0.0.1')
-      ? 'http'
-      : 'https';
-  }
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`;
+  const siteUrl = getPublicBaseUrl(req);
   const verificationLink = `${siteUrl}/api/auth/verify?token=${token}`;
+
 
   const isEn = locale ? locale.startsWith('en') : false;
 

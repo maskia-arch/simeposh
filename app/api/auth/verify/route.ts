@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { getPublicBaseUrl } from '@/lib/url';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  const baseUrl = getPublicBaseUrl(req);
+
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get('token');
 
     if (!token) {
-      return NextResponse.redirect(new URL('/dashboard?verified=false&error=missing_token', req.url));
+      return NextResponse.redirect(new URL('/dashboard?verified=false&error=missing_token', baseUrl));
     }
 
     // Query for verification token in database
@@ -21,7 +24,7 @@ export async function GET(req: Request) {
     const tokenRow = tokenRes.rows[0];
 
     if (!tokenRow) {
-      return NextResponse.redirect(new URL('/dashboard?verified=false&error=expired_or_invalid', req.url));
+      return NextResponse.redirect(new URL('/dashboard?verified=false&error=expired_or_invalid', baseUrl));
     }
 
     const userId = tokenRow.user_id;
@@ -42,7 +45,7 @@ export async function GET(req: Request) {
       const cookieStore = await cookies();
       cookieStore.delete('session_token');
 
-      return NextResponse.redirect(new URL('/login?verified=true&emailChanged=true', req.url));
+      return NextResponse.redirect(new URL('/login?verified=true&emailChanged=true', baseUrl));
     } else {
       // ── Standard signup verification flow ──
       // 1. Update verification state to true
@@ -51,10 +54,11 @@ export async function GET(req: Request) {
       // 2. Delete the used verification token
       await query('DELETE FROM public.verification_tokens WHERE id = $1', [tokenRow.id]);
 
-      return NextResponse.redirect(new URL('/login?verified=true', req.url));
+      return NextResponse.redirect(new URL('/login?verified=true', baseUrl));
     }
   } catch (err: any) {
     console.error('[Verify Email Token Error]', err);
-    return NextResponse.redirect(new URL('/dashboard?verified=false&error=server_error', req.url));
+    return NextResponse.redirect(new URL('/dashboard?verified=false&error=server_error', baseUrl));
   }
 }
+

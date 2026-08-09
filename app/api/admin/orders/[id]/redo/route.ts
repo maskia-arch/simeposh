@@ -35,9 +35,13 @@ export async function POST(
     const isLatePayment = body?.isLatePayment ?? true;
     const forceResendEmail = body?.forceResendEmail ?? true;
 
+    const resolvedParams = await Promise.resolve(params);
+    const orderId = resolvedParams.id;
+
     const db = createServiceClient();
-    const result = await fulfillOrder(db, params.id, { forceResendEmail, isLatePayment });
+    const result = await fulfillOrder(db, orderId, { forceResendEmail, isLatePayment });
     return NextResponse.json(result);
+
 
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
