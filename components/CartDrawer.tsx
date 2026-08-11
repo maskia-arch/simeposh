@@ -88,6 +88,12 @@ export function CartDrawer() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user?.email && (!email || email !== user.email)) {
+      setEmail(user.email);
+    }
+  }, [user]);
+
   return (
     <>
       {/* Backdrop */}

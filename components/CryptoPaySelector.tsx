@@ -103,6 +103,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function handleEsimCashPay() {
     setError('');
+    const effectiveEmail = (user?.email || email || '').trim();
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;
@@ -115,7 +116,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       return;
     }
     if (!hasEnoughBalance) return;
-    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (!effectiveEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(effectiveEmail)) {
       setError(t('pay_invalid_email'));
       return;
     }
@@ -125,7 +126,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       const res = await fetch('/api/crypto/checkout', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ email, coin: 'ESIM_CASH', items, newsletterConsent: acceptedNewsletter, locale }),
+         body: JSON.stringify({ email: effectiveEmail, coin: 'ESIM_CASH', items, newsletterConsent: acceptedNewsletter, locale }),
       });
       const data = await res.json();
       if (!res.ok || !data.ref) throw new Error(data.error ?? t('pay_error'));
@@ -138,11 +139,12 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function start(coin: string) {
     setError('');
+    const effectiveEmail = (user?.email || email || '').trim();
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;
     }
-    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (!effectiveEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(effectiveEmail)) {
       setError(t('pay_invalid_email'));
       return;
     }
@@ -150,7 +152,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
     try {
       const res = await fetch('/api/crypto/checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, coin, items, newsletterConsent: acceptedNewsletter, locale }),
+        body: JSON.stringify({ email: effectiveEmail, coin, items, newsletterConsent: acceptedNewsletter, locale }),
       });
       const data = await res.json();
       if (!res.ok || !data.sessionId) throw new Error(data.error ?? t('pay_error'));

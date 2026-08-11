@@ -191,20 +191,30 @@ async function checkTonAddress(address: string, paymentMemo?: string | null, cre
   return { received: 0, confirmations: 0, txid: null };
 }
 
+function getPureWalletUrls(): string[] {
+  const configured = process.env.PURE_WALLET_URL;
+  return Array.from(new Set([
+    configured,
+    'http://127.0.0.1:7777',
+    'http://localhost:7777',
+  ].filter(Boolean) as string[])).map(u => u.replace(/\/$/, ''));
+}
+
 /**
  * Helper to sync the session state with pure-wallet gateway or direct blockchain explorers.
  */
 async function syncSessionWithGateway(id: string, db: any): Promise<any> {
-  const gatewayUrl = process.env.PURE_WALLET_URL || 'http://127.0.0.1:7777';
-  
+  const urls = getPureWalletUrls();
   let gatewayData: any = null;
-  try {
-    const res = await fetch(`${gatewayUrl}/api/v1/payment/status/${id}`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
-    if (res.ok) {
-      gatewayData = await res.json();
-    }
-  } catch (err) {
-    console.warn(`[Session Sync] Gateway offline/error for session ${id}, using direct blockchain check:`, (err as Error).message);
+
+  for (const base of urls) {
+    try {
+      const res = await fetch(`${base}/api/v1/payment/status/${id}`, { cache: 'no-store', signal: AbortSignal.timeout(2000) });
+      if (res.ok) {
+        gatewayData = await res.json();
+        break;
+      }
+    } catch {}
   }
 
   // 1. Fetch current session status

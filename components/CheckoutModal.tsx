@@ -83,6 +83,12 @@ export function CheckoutModal({
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user?.email && (!email || email !== user.email)) {
+      setEmail(user.email);
+    }
+  }, [user]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
