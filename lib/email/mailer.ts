@@ -32,6 +32,11 @@ import {
   type TicketCreatedData,
   type TicketAnsweredData,
 } from './templates/ticket-notifications';
+import {
+  buildUnderpaymentHtml,
+  buildUnderpaymentText,
+  type UnderpaymentData,
+} from './templates/underpayment-notification';
 
 function createTransporter() {
   const host   = process.env.SMTP_HOST;
@@ -398,4 +403,22 @@ export async function sendGuestCashReminderEmail(data: GuestExpirationReminderDa
     text:    buildGuestExpirationReminderText(data),
   });
 }
+
+export async function sendUnderpaymentEmail(data: UnderpaymentData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const isDe = normLoc === 'de';
+  const subject = isDe
+    ? `⚠️ Teilzahlung erhalten: Bestellung ${data.orderId}`
+    : `⚠️ Partial Payment Received: Order ${data.orderId}`;
+
+  await sendMailThroughTransporter({
+    to:        data.to,
+    subject:   subject,
+    html:      buildUnderpaymentHtml(data),
+    text:      buildUnderpaymentText(data),
+    emailType: 'krypto_unterzahlung',
+    metadata:  { order_id: data.orderId, coin: data.coin, received: data.receivedAmount, expected: data.expectedAmount },
+  });
+}
+
 

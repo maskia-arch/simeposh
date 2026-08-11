@@ -502,12 +502,31 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
         )}
 
         {receivedNum > 0 && remainingNum > 0 && status !== 'paid' && status !== 'detected' && (
-          <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs font-semibold text-red-700 leading-relaxed shadow-sm">
-            ⚠ {s('underpayment')
+          <div className="mt-4 rounded-2xl bg-amber-50/80 border border-amber-200 p-4 text-xs font-medium text-amber-900 leading-relaxed shadow-sm space-y-2.5">
+            <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
+              <span>⚠️</span>
+              <span>Teilzahlung / Unterzahlung erkannt</span>
+            </div>
+            <p>
+              {s('underpayment')
                 .replace('{received}', receivedStr)
                 .replace('{expected}', sess.cryptoAmount)
                 .replace('{remaining}', remainingStr)
                 .replaceAll('{coin}', sess.coin)}
+            </p>
+            <div className="rounded-xl bg-white border border-amber-200 p-3 shadow-inner space-y-1 text-[11px]">
+              <div className="flex justify-between text-slate-600 font-semibold">
+                <span>Erhaltener Betrag:</span>
+                <span className="font-mono text-blue-700">{receivedStr} {sess.coin}</span>
+              </div>
+              <div className="flex justify-between text-slate-600 font-semibold">
+                <span>Verbleibender Betrag:</span>
+                <span className="font-mono text-red-600 font-bold">{remainingStr} {sess.coin}</span>
+              </div>
+            </div>
+            <p className="text-[11px] text-amber-700">
+              💡 Bitte sende den verbleibenden Betrag (<strong>{remainingStr} {sess.coin}</strong>) an die oben angezeigte Adresse oder klicke unten auf Support-Ticket.
+            </p>
           </div>
         )}
 

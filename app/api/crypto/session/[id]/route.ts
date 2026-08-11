@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { fulfillOrders } from '@/lib/fulfillment';
+import { sendUnderpaymentEmail } from '@/lib/email/mailer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -232,12 +233,36 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
   let confirmations = currentSession.confirmations || 0;
   let paidAt = currentSession.paid_at;
 
+  // Load coin configuration underpayment tolerance (default 98%)
+  let minPaymentPct = 98;
+  try {
+    const { data: coinRow } = await db
+      .from('crypto_coins')
+      .select('min_payment_pct')
+      .eq('code', currentSession.coin.toUpperCase())
+      .maybeSingle();
+    if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0) {
+      minPaymentPct = coinRow.min_payment_pct;
+    }
+  } catch {}
+
+  const expectedAmount = Number(currentSession.crypto_amount);
+  const requiredThreshold = expectedAmount * (minPaymentPct / 100);
+  const confirmationsRequired = Number(currentSession.confirmations_required || 1);
+
   if (gatewayData) {
     status = gatewayData.status;
     receivedAmount = gatewayData.received_amount;
     txHash = gatewayData.tx_hash;
     confirmations = gatewayData.confirmations;
     paidAt = gatewayData.paid_at || (gatewayData.status === 'paid' ? new Date().toISOString() : null);
+
+    // If gateway returns partially_paid, check if it satisfies min_payment_pct tolerance
+    if (status === 'partially_paid' && expectedAmount > 0 && receivedAmount >= requiredThreshold) {
+      status = confirmations >= confirmationsRequired ? 'paid' : 'detected';
+      paidAt = status === 'paid' ? new Date().toISOString() : null;
+      console.log(`[Session Sync] Overriding gateway partially_paid to ${status} via min_payment_pct (${minPaymentPct}%) tolerance`);
+    }
   } else {
     // Direct Blockchain Explorer check!
     if (currentSession.status === 'pending' || currentSession.status === 'partially_paid' || currentSession.status === 'detected') {
@@ -259,10 +284,7 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
           chainInfo = await checkTonAddress(address, paymentMemo, createdAfter);
         }
 
-        const expectedAmount = Number(currentSession.crypto_amount);
-        const confirmationsRequired = Number(currentSession.confirmations_required || 1);
-
-        if (chainInfo.received >= expectedAmount) {
+        if (chainInfo.received >= requiredThreshold) {
           status = chainInfo.confirmations >= confirmationsRequired ? 'paid' : 'detected';
         } else if (chainInfo.received > 0) {
           status = 'partially_paid';
@@ -275,7 +297,7 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
         confirmations = chainInfo.confirmations;
         paidAt = status === 'paid' ? new Date().toISOString() : null;
 
-        console.log(`[Direct Chain Check] Session ${id} (${coinCode}): status=${status}, received=${receivedAmount}/${expectedAmount}`);
+        console.log(`[Direct Chain Check] Session ${id} (${coinCode}): status=${status}, received=${receivedAmount}/${expectedAmount} (threshold: ${requiredThreshold})`);
       } catch (chainErr) {
         console.error(`[Direct Chain Check] Failed to check blockchain for session ${id}:`, (chainErr as Error).message);
       }
@@ -316,6 +338,29 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
         .neq('status', 'completed');
 
       await fulfillOrders(db, currentSession.order_ids);
+    }
+
+    // Transition to partially_paid: send customer underpayment email alert once
+    if (status === 'partially_paid' && currentSession.status !== 'partially_paid' && receivedAmount > 0 && currentSession.customer_email) {
+      console.log(`[Session Sync] Dispatching underpayment email to ${currentSession.customer_email} for session ${id}`);
+      const coin = currentSession.coin.toUpperCase();
+      const decimalLimit = coin === 'TON' ? 9 : (['SOL', 'USDT', 'USDC', 'TRX'].includes(coin) ? 6 : 8);
+      const remainingNum = Math.max(0, expectedAmount - receivedAmount);
+      const remainingAmount = remainingNum.toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
+
+      sendUnderpaymentEmail({
+        to: currentSession.customer_email,
+        orderId: id,
+        coin,
+        receivedAmount: String(receivedAmount),
+        expectedAmount: String(expectedAmount),
+        remainingAmount,
+        walletAddress: currentSession.wallet_address,
+        paymentMemo: currentSession.payment_memo,
+        locale: currentSession.locale || 'de',
+      }).catch((emailErr) => {
+        console.error('[Session Sync] Failed to send underpayment email:', emailErr);
+      });
     }
   }
 }

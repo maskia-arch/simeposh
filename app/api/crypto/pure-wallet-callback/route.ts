@@ -63,12 +63,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
+    let effectiveStatus: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' | 'cancelled' = status;
+
+    if (status === 'partially_paid' && session.crypto_amount > 0) {
+      let minPaymentPct = 98;
+      try {
+        const { data: coinRow } = await db
+          .from('crypto_coins')
+          .select('min_payment_pct')
+          .eq('code', session.coin.toUpperCase())
+          .maybeSingle();
+        if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0) {
+          minPaymentPct = coinRow.min_payment_pct;
+        }
+      } catch {}
+
+      const expectedAmount = Number(session.crypto_amount);
+      const requiredThreshold = expectedAmount * (minPaymentPct / 100);
+      const reqConfs = Number(session.confirmations_required || 1);
+      const curConfs = confirmations ?? session.confirmations ?? 0;
+
+      if (received_amount >= requiredThreshold) {
+        effectiveStatus = curConfs >= reqConfs ? 'paid' : 'detected';
+        console.log(`[pure-wallet Webhook] Overriding webhook partially_paid to ${effectiveStatus} via min_payment_pct (${minPaymentPct}%) tolerance`);
+      }
+    }
+
     // 2. Update session status
     const updatePayload: Record<string, unknown> = {
-      status,
+      status: effectiveStatus,
       received_amount,
       tx_hash,
-      paid_at: paid_at || (status === 'paid' ? new Date().toISOString() : null),
+      paid_at: paid_at || (effectiveStatus === 'paid' ? new Date().toISOString() : null),
     };
     if (confirmations !== undefined) {
       updatePayload.confirmations = confirmations;
@@ -87,7 +113,7 @@ export async function POST(request: Request) {
     // 3. Fulfill orders if transition to 'paid' (only if it wasn't already marked paid)
     const validOrderIds = (session.order_ids || []).filter(isUuid);
 
-    if (status === 'paid' && session.status !== 'paid') {
+    if (effectiveStatus === 'paid' && session.status !== 'paid') {
       console.log(`[pure-wallet Webhook] Confirming payment for orders: ${validOrderIds.join(', ')}`);
       
       if (validOrderIds.length > 0) {
