@@ -56,6 +56,53 @@ export async function createCryptoSession(opts: {
   const coinCode = coin.code.toUpperCase();
   const db = createServiceClient();
 
+  // Check if an active session with received funds or partially_paid already exists for these orderIds
+  try {
+    const { data: activeExisting } = await db
+      .from('crypto_sessions')
+      .select('*')
+      .in('status', ['pending', 'partially_paid', 'detected'])
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    if (activeExisting && activeExisting.length > 0) {
+      const existing = activeExisting.find((s: any) =>
+        Array.isArray(s.order_ids) && opts.orderIds.some(id => s.order_ids.includes(id))
+      );
+
+      if (existing && (existing.status === 'partially_paid' || Number(existing.received_amount || 0) > 0)) {
+        console.log(`[Session] Reusing existing partially_paid/active session ${existing.id} for order IDs ${opts.orderIds.join(', ')}`);
+        
+        const decimalLimit = coin.decimals || 8;
+        const amount = Number(existing.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
+        let paymentUri = `${coin.uri_scheme}:${existing.wallet_address}?amount=${amount}`;
+        if (existing.payment_memo) {
+          paymentUri += `&text=${encodeURIComponent(existing.payment_memo)}&memo=${encodeURIComponent(existing.payment_memo)}`;
+        }
+
+        return {
+          id: existing.id,
+          coin: existing.coin,
+          walletAddress: existing.wallet_address,
+          cryptoAmount: amount,
+          paymentMemo: existing.payment_memo || null,
+          amountEur: Number(existing.amount_eur),
+          baseEur: Number(existing.base_eur),
+          surchargePct: Number(existing.surcharge_pct),
+          surchargeFixedEur: Number(existing.surcharge_fixed_eur),
+          rateEur: Number(existing.rate_eur),
+          confirmationsRequired: Number(existing.confirmations_required),
+          paymentUri,
+          expiresAt: existing.expires_at,
+          checkoutDurationMins: coin.checkout_duration_mins || 30,
+          locale: opts.locale || existing.locale || 'de',
+        };
+      }
+    }
+  } catch (findErr) {
+    console.warn('[Session] Failed checking existing active session:', (findErr as Error).message);
+  }
+
   // 1. Calculate final EUR price (including surcharge)
   const amountEur = applySurcharge(opts.baseEur, coin);
   const checkoutDurationMins = coin.checkout_duration_mins || 30;

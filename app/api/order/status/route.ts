@@ -49,12 +49,33 @@ export async function GET(request: Request) {
         const sOrderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
         return validOrderIds.some((id: string) => sOrderIds.includes(id));
       });
-      if (session) {
-        txId = session.id;
-        const now = Date.now();
-        const expiresMs = session.expires_at ? new Date(session.expires_at).getTime() : 0;
-        const isExpired = session.status === 'pending' && expiresMs > 0 && expiresMs <= now;
-        paymentStatus = isExpired ? 'expired' : session.status;
+        if (session) {
+          // Trigger instant direct chain check if session is active
+          if (['pending', 'detected', 'partially_paid'].includes(session.status)) {
+            try {
+              const { syncSessionWithGateway } = await import('@/app/api/crypto/session/[id]/route');
+              await syncSessionWithGateway(session.id, service);
+              
+              // Refetch updated session status
+              const { data: updatedS } = await service
+                .from('crypto_sessions')
+                .select('status, expires_at')
+                .eq('id', session.id)
+                .maybeSingle();
+              if (updatedS) {
+                session.status = updatedS.status;
+                session.expires_at = updatedS.expires_at;
+              }
+            } catch (syncErr) {
+              console.warn('[order/status] Instant sync warning:', syncErr);
+            }
+          }
+
+          txId = session.id;
+          const now = Date.now();
+          const expiresMs = session.expires_at ? new Date(session.expires_at).getTime() : 0;
+          const isExpired = session.status === 'pending' && expiresMs > 0 && expiresMs <= now;
+          paymentStatus = isExpired ? 'expired' : session.status;
 
         // If payment expired/cancelled, update pending orders in DB
         if ((paymentStatus === 'expired' || paymentStatus === 'cancelled') && validOrderIds.length > 0) {

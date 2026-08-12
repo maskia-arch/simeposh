@@ -10,7 +10,7 @@ import { sendUnderpaymentEmail } from '@/lib/email/mailer';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date): Promise<{ received: number; confirmations: number; txid: string | null }> {
+async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date, claimedTxHashes?: Set<string>): Promise<{ received: number; confirmations: number; txid: string | null }> {
   const isLtc = coinCode === 'LTC';
   const baseUrl = isLtc ? 'https://litecoinspace.org/api' : 'https://mempool.space/api';
   
@@ -31,6 +31,12 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
   let lastTxid: string | null = null;
 
   for (const tx of txs) {
+    // Skip transactions already claimed by another paid session on this address
+    if (claimedTxHashes && tx.txid && claimedTxHashes.has(tx.txid)) {
+      console.log(`[Direct Chain Check] Skipping transaction ${tx.txid} on ${address} because it was already claimed by a completed session`);
+      continue;
+    }
+
     // Skip transactions confirmed before this checkout session was created
     if (tx.status?.confirmed && tx.status?.block_time && createdAfter) {
       const txTimeMs = tx.status.block_time * 1000;
@@ -204,7 +210,7 @@ function getPureWalletUrls(): string[] {
 /**
  * Helper to sync the session state with pure-wallet gateway or direct blockchain explorers.
  */
-async function syncSessionWithGateway(id: string, db: any): Promise<any> {
+export async function syncSessionWithGateway(id: string, db: any): Promise<any> {
   const urls = getPureWalletUrls();
   let gatewayData: any = null;
 
@@ -274,8 +280,24 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
         const createdAfter = currentSession.created_at ? new Date(currentSession.created_at) : undefined;
         let chainInfo = { received: 0, confirmations: 0, txid: null as string | null };
 
+        // Fetch transaction hashes claimed by OTHER paid sessions on the same address
+        let claimedTxHashes = new Set<string>();
+        try {
+          const { data: paidOnAddr } = await db
+            .from('crypto_sessions')
+            .select('tx_hash')
+            .eq('wallet_address', address)
+            .eq('status', 'paid')
+            .neq('id', id)
+            .not('tx_hash', 'is', null);
+
+          if (paidOnAddr) {
+            claimedTxHashes = new Set(paidOnAddr.map((s: any) => s.tx_hash).filter(Boolean));
+          }
+        } catch {}
+
         if (coinCode === 'LTC' || coinCode === 'BTC') {
-          chainInfo = await checkBtcLtcAddress(address, coinCode, createdAfter);
+          chainInfo = await checkBtcLtcAddress(address, coinCode, createdAfter, claimedTxHashes);
         } else if (coinCode === 'ETH') {
           chainInfo = await checkEthAddress(address);
         } else if (coinCode === 'SOL') {
@@ -365,12 +387,45 @@ async function syncSessionWithGateway(id: string, db: any): Promise<any> {
   }
 }
 
+/**
+ * Sweep and sync all active pending/detected/partially_paid crypto sessions in the background.
+ */
+export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
+  try {
+    const { data: activeSessions } = await db
+      .from('crypto_sessions')
+      .select('id, expires_at')
+      .in('status', ['pending', 'detected', 'partially_paid'])
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!activeSessions || activeSessions.length === 0) return 0;
+
+    const now = Date.now();
+    let count = 0;
+    for (const s of activeSessions) {
+      const expMs = new Date(s.expires_at).getTime();
+      if (now <= expMs + 2 * 60 * 60 * 1000) {
+        await syncSessionWithGateway(s.id, db);
+        count++;
+      }
+    }
+    return count;
+  } catch (err) {
+    console.error('[syncAllActiveCryptoSessions] Error:', err);
+    return 0;
+  }
+}
+
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = createServiceClient();
 
   // 1. Sync local session state with the gateway first
   await syncSessionWithGateway(id, db);
+
+  // Trigger background sweep of active sessions asynchronously
+  syncAllActiveCryptoSessions(db).catch(() => {});
 
   const { data: s, error } = await db
     .from('crypto_sessions')
