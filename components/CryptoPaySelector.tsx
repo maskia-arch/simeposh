@@ -335,37 +335,8 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
         )}
       </div>
 
-      {/* 2. Ultra-Compact Legal Checkboxes */}
-      <div className="space-y-1 text-[10px] text-slate-500 pt-0.5">
-        <div className="flex items-center gap-2">
-          <input
-            id="accept-terms-checkout"
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(e) => {
-              setAcceptedTerms(e.target.checked);
-              if (e.target.checked && error === t('checkout_agree_error')) setError('');
-            }}
-            className="h-3.5 w-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
-          />
-          <label htmlFor="accept-terms-checkout" className="cursor-pointer select-none">
-            {t('checkout_agree_prefix')}{' '}
-            <Link href="/agb" target="_blank" className="font-bold text-brand-600 hover:underline">
-              {t('checkout_agree_link')}
-            </Link>
-            {' '}{t('checkout_agree_suffix')}
-          </label>
-        </div>
-      </div>
-
-      {error && (
-        <p className="rounded-lg bg-red-50 border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600">
-          {error}
-        </p>
-      )}
-
       {/* 3. Balanced Sticky Drawer Footer with Explicit Price & Fee Breakdown */}
-      <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-md space-y-2 z-20">
+      <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-md space-y-2.5 z-20">
         <div className="space-y-0.5">
           <div className="flex items-baseline justify-between text-xs text-slate-500">
             <span>{t('pay_subtotal')}</span>
@@ -387,6 +358,41 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
             <span className="text-xl font-extrabold text-slate-900 tabular-nums">{finalTotal.toFixed(2)} €</span>
           </div>
         </div>
+
+        {/* Prominent, Touch-Friendly Legal Checkbox inside Sticky Container (Guaranteed 100% Visible on Mobile/Brave) */}
+        <div
+          className={`rounded-xl border p-2.5 transition-all ${
+            error === t('checkout_agree_error')
+              ? 'border-red-400 bg-red-50/90 text-red-900 ring-2 ring-red-300 animate-pulse'
+              : 'border-slate-200 bg-slate-50/80 text-slate-700 hover:bg-slate-100/80'
+          }`}
+        >
+          <label htmlFor="accept-terms-checkout" className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              id="accept-terms-checkout"
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (e.target.checked && error === t('checkout_agree_error')) setError('');
+              }}
+              className="mt-0.5 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
+            />
+            <span className="text-[11px] font-medium leading-snug">
+              {t('checkout_agree_prefix')}{' '}
+              <Link href="/agb" target="_blank" className="font-bold text-brand-600 underline hover:text-brand-800">
+                {t('checkout_agree_link')}
+              </Link>
+              {' '}{t('checkout_agree_suffix')}
+            </span>
+          </label>
+        </div>
+
+        {error && (
+          <p className="rounded-lg bg-red-50 border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           type="button"

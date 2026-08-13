@@ -66,19 +66,29 @@ export async function middleware(request: NextRequest) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    // 2. Block requests with empty/missing User-Agent
-    if (!userAgent.trim()) {
-      console.warn(`[Bot Blocked] Empty User-Agent accessing: "${pathname}"`);
-      return new NextResponse('Forbidden', { status: 403 });
-    }
+    // Standard user shop and checkout routes (never block human shoppers for User-Agent quirks or privacy browsers)
+    const isStandardUserRoute =
+      pathname === '/' ||
+      /^\/(cart|checkout|order|tariffs|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(pathname) ||
+      pathname.startsWith('/api/crypto') ||
+      pathname.startsWith('/api/order') ||
+      pathname.startsWith('/api/tariffs');
 
-    // 3. User-Agent checking (whitelist search engines, blacklist known bad/scraper bots)
-    const isWhitelistedBot = WHITELIST_BOT_PATTERNS.some(p => p.test(userAgent));
-    if (!isWhitelistedBot) {
-      const isBlacklistedBot = BLACKLIST_BOT_PATTERNS.some(p => p.test(userAgent));
-      if (isBlacklistedBot) {
-        console.warn(`[Bot Blocked] Bad bot/scraper UA: "${userAgent}" | Path: "${pathname}"`);
+    if (!isStandardUserRoute) {
+      // 2. Block requests with empty/missing User-Agent on non-user routes
+      if (!userAgent.trim()) {
+        console.warn(`[Bot Blocked] Empty User-Agent accessing: "${pathname}"`);
         return new NextResponse('Forbidden', { status: 403 });
+      }
+
+      // 3. User-Agent checking (whitelist search engines, blacklist known bad/scraper bots)
+      const isWhitelistedBot = WHITELIST_BOT_PATTERNS.some(p => p.test(userAgent));
+      if (!isWhitelistedBot) {
+        const isBlacklistedBot = BLACKLIST_BOT_PATTERNS.some(p => p.test(userAgent));
+        if (isBlacklistedBot) {
+          console.warn(`[Bot Blocked] Bad bot/scraper UA: "${userAgent}" | Path: "${pathname}"`);
+          return new NextResponse('Forbidden', { status: 403 });
+        }
       }
     }
   }

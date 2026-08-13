@@ -60,7 +60,7 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
       
       let txConf = 0;
       if (tx.status && tx.status.confirmed && tx.status.block_height) {
-        txConf = Math.max(1, tipHeight - tx.status.block_height + 1);
+        txConf = Math.max(1, tipHeight > 0 ? tipHeight - tx.status.block_height + 1 : 1);
       }
       if (txConf > maxConfirmations) {
         maxConfirmations = txConf;
@@ -346,7 +346,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .update(updatePayload as any)
       .eq('id', id);
 
-    // Transition to paid: trigger order fulfillment
+    // Transition to paid: trigger order fulfillment as soon as 1 on-chain confirmation is reached
     if (status === 'paid' && currentSession.status !== 'paid') {
       console.log(`[Session Sync] Fulfilling orders for paid session: ${currentSession.order_ids.join(', ')}`);
       
