@@ -239,7 +239,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   let confirmations = currentSession.confirmations || 0;
   let paidAt = currentSession.paid_at;
 
-  // Load coin configuration underpayment tolerance (default 98%)
+  // Load coin configuration underpayment tolerance (default 98% = 2% tolerance)
   let minPaymentPct = 98;
   try {
     const { data: coinRow } = await db
@@ -247,7 +247,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .select('min_payment_pct')
       .eq('code', currentSession.coin.toUpperCase())
       .maybeSingle();
-    if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0) {
+    if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct < 100) {
       minPaymentPct = coinRow.min_payment_pct;
     }
   } catch {}
