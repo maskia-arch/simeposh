@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import { useTranslation } from '@/lib/i18n';
 import { formatGb } from '@/lib/utils';
 import { CountryFlag } from '@/components/CountryFlag';
+import { getEsimQuickInstallLink, getRawLpaString, detectDeviceOs, type DeviceOs } from '@/lib/esim-install';
 
 export interface DeliveredEsim {
   id:             string;
@@ -62,7 +63,13 @@ export function EsimDelivery({
 }) {
   const { t } = useTranslation();
   const [qr, setQr] = useState<string | null>(null);
+  const [deviceOs, setDeviceOs] = useState<DeviceOs>('desktop');
+  const [copiedQuick, setCopiedQuick] = useState(false);
   const content = lpaString(esim);
+
+  useEffect(() => {
+    setDeviceOs(detectDeviceOs());
+  }, []);
 
   useEffect(() => {
     if (!content) { setQr(null); return; }
@@ -197,6 +204,30 @@ export function EsimDelivery({
 
           {/* ICCID Field */}
           {esim.iccid && <CopyField label="ICCID (Seriennummer)" value={esim.iccid} />}
+
+          {/* Quick Install Button for Mobile & Desktop */}
+          {esim.smdpAddress && esim.activationCode && (
+            <a
+              href={getEsimQuickInstallLink(esim.smdpAddress, esim.activationCode, deviceOs)}
+              onClick={async (e) => {
+                if (deviceOs === 'desktop') {
+                  e.preventDefault();
+                  const raw = getRawLpaString(esim.smdpAddress!, esim.activationCode!);
+                  try {
+                    await navigator.clipboard.writeText(raw);
+                    setCopiedQuick(true);
+                    setTimeout(() => setCopiedQuick(false), 2000);
+                  } catch { /* ignore */ }
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-[0.99] py-2.5 px-4 text-center text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+            >
+              <svg className="h-4 w-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {copiedQuick ? '✓ Aktivierungscode kopiert!' : t('esim_auto_activate_btn')}
+            </a>
+          )}
 
           {/* Manual Installation Accordion */}
           <details className="group rounded-2xl border border-slate-200 bg-slate-50/50 transition-all min-w-0 w-full">

@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountryFlag } from '@/components/CountryFlag';
 import { formatGb } from '@/lib/utils';
+import { getEsimQuickInstallLink, getRawLpaString } from '@/lib/esim-install';
 
 interface ClientPageProps {
   iccid: string;
@@ -100,7 +101,7 @@ export function ClientPage({
     }
   }, [iccid]);
 
-  const lpaLink = `LPA:1$${smdpAddress}$${activationCode}`;
+  const lpaLink = getEsimQuickInstallLink(smdpAddress, activationCode, deviceOs);
 
   const copyToClipboard = async (text: string, fieldName: string) => {
     try {
@@ -355,17 +356,26 @@ export function ClientPage({
 
           <a
             href={lpaLink}
+            onClick={async (e) => {
+              if (deviceOs === 'desktop') {
+                e.preventDefault();
+                const raw = getRawLpaString(smdpAddress, activationCode);
+                await copyToClipboard(raw, 'lpa_quick');
+              }
+            }}
             className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 active:scale-[0.99] py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-brand-600/25 transition-all duration-200 cursor-pointer"
           >
             <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {tr('esim_auto_activate_btn', 'eSIM automatisch installieren')}
+            {copiedField === 'lpa_quick'
+              ? tr('esim_code_copied', '✓ Aktivierungscode kopiert!')
+              : tr('esim_auto_activate_btn', 'eSIM automatisch installieren')}
           </a>
 
           {deviceOs !== 'desktop' && (
             <p className="text-[11px] text-center text-slate-400 italic">
-              {tr('esim_os_notice', 'Hinweis: Öffnet direkt das Mobilfunk-Einrichtungsmenü deines Geräts.')}
+              {tr('esim_os_notice', 'Hinweis: Öffnet direkt das Mobilfunk-Einrichtungsmenü deines Geräts (iOS ab 17.4 / Android).')}
             </p>
           )}
         </div>

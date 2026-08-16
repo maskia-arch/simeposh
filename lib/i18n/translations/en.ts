@@ -410,6 +410,7 @@ const en = {
   "esim_android_hint": "Tap the button to launch automatic eSIM setup on your Android device.",
   "esim_desktop_hint": "Scan the QR code below with your mobile camera or open this link on your phone.",
   "esim_auto_activate_btn": "Activate eSIM Automatically",
+  "esim_code_copied": "✓ Activation code copied!",
   "esim_os_notice": "Note: This opens your device's cellular setup menu directly.",
   "esim_qr_title": "Installation via QR Code",
   "esim_qr_sub": "Scan this QR code using the camera of the smartphone where you want to install the eSIM.",
