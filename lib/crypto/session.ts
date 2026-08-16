@@ -307,35 +307,60 @@ export async function sweepExpiredSessions(db: any) {
   try {
     const nowIso = new Date().toISOString();
 
-    const { data: expiredSessions } = await db
+    const { data: candidateSessions } = await db
       .from('crypto_sessions')
       .select('id, order_ids')
       .eq('status', 'pending')
       .lte('expires_at', nowIso);
 
-    if (expiredSessions && expiredSessions.length > 0) {
-      const expiredSessionIds = expiredSessions.map((s: any) => s.id);
-      const allOrderIds: string[] = [];
+    if (candidateSessions && candidateSessions.length > 0) {
+      const { syncSessionWithGateway } = await import('@/app/api/crypto/session/[id]/route');
+      const trulyExpiredIds: string[] = [];
+      const trulyExpiredOrderIds: string[] = [];
 
-      for (const s of expiredSessions) {
-        if (Array.isArray(s.order_ids)) {
-          allOrderIds.push(...s.order_ids);
+      for (const s of candidateSessions) {
+        try {
+          // Perform instant blockchain check before declaring expired
+          await syncSessionWithGateway(s.id, db);
+          
+          const { data: updatedS } = await db
+            .from('crypto_sessions')
+            .select('status')
+            .eq('id', s.id)
+            .maybeSingle();
+
+          if (updatedS && updatedS.status === 'pending') {
+            trulyExpiredIds.push(s.id);
+            if (Array.isArray(s.order_ids)) {
+              trulyExpiredOrderIds.push(...s.order_ids);
+            }
+          } else {
+            console.log(`[sweepExpiredSessions] Saved session ${s.id} from expiration! Status updated to ${updatedS?.status}`);
+          }
+        } catch (err) {
+          console.warn(`[sweepExpiredSessions] Sync failed for ${s.id}, marking expired:`, (err as Error).message);
+          trulyExpiredIds.push(s.id);
+          if (Array.isArray(s.order_ids)) {
+            trulyExpiredOrderIds.push(...s.order_ids);
+          }
         }
       }
 
-      // Mark sessions as expired
-      await db
-        .from('crypto_sessions')
-        .update({ status: 'expired' })
-        .in('id', expiredSessionIds);
-
-      // Mark corresponding pending orders as expired
-      if (allOrderIds.length > 0) {
+      if (trulyExpiredIds.length > 0) {
+        // Mark sessions as expired
         await db
-          .from('orders')
+          .from('crypto_sessions')
           .update({ status: 'expired' })
-          .in('id', allOrderIds)
-          .in('status', ['pending']);
+          .in('id', trulyExpiredIds);
+
+        // Mark corresponding pending orders as expired
+        if (trulyExpiredOrderIds.length > 0) {
+          await db
+            .from('orders')
+            .update({ status: 'expired' })
+            .in('id', trulyExpiredOrderIds)
+            .in('status', ['pending']);
+        }
       }
     }
   } catch (err) {
