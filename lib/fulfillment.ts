@@ -102,11 +102,17 @@ export async function fulfillOrder(
     }
 
     // new_esim
-    const periodNum = o.period_num ?? undefined;
+    const periodNum = o.period_num ? Number(o.period_num) : undefined;
     let priceRaw: number | undefined;
-    if (periodNum && o.tariffs.raw_data) {
+    if (periodNum && o.tariffs?.raw_data?.price) {
       const perDayRaw = Number(o.tariffs.raw_data.price);
       if (Number.isFinite(perDayRaw) && perDayRaw > 0) priceRaw = perDayRaw * periodNum;
+    } else if (o.tariffs?.raw_data?.price) {
+      const raw = Number(o.tariffs.raw_data.price);
+      if (Number.isFinite(raw) && raw > 0) priceRaw = raw;
+    } else if (o.tariffs?.ek_price_usd) {
+      const raw = Math.round(Number(o.tariffs.ek_price_usd) * 10000);
+      if (Number.isFinite(raw) && raw > 0) priceRaw = raw;
     }
 
     const esimRes = await allocateEsim(o.tariffs.package_code, orderId, { periodNum, priceRaw });

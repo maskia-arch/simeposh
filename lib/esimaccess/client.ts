@@ -446,19 +446,31 @@ export async function allocateEsim(
 ): Promise<EsimAccessAllocateResponse> {
   const count = opts?.count ?? 1;
 
-  // Build the package line. For day-pass plans esimaccess requires `periodNum`
-  // and a `price` of (per-day price × periodNum). Travel plans accept price 0.
+  // Build the package line. For day-pass/unlimited plans esimaccess requires `periodNum`.
+  // Note: We avoid sending hardcoded price/amount unless explicitly provided and valid (> 0),
+  // as esimaccess applies duration-based tiered discounts (4% to 18%) which causes
+  // strict price checks to fail with error 200005 (Package price error).
   const item: Record<string, unknown> = {
     packageCode,
     count,
-    price: opts?.priceRaw && opts.priceRaw > 0 ? Math.round(opts.priceRaw) : 0,
   };
   if (opts?.periodNum && opts.periodNum > 0) {
     item.periodNum = opts.periodNum;
   }
+  if (opts?.priceRaw && opts.priceRaw > 0) {
+    item.price = Math.round(opts.priceRaw);
+  }
+
+  const orderPayload: Record<string, unknown> = {
+    packageInfoList: [item],
+    transactionId:   orderRef,
+  };
+  if (typeof item.price === 'number') {
+    orderPayload.amount = (item.price as number) * count;
+  }
 
   // Step 1: place order
-  const orderRes = await esimRequest<{
+  let orderRes = await esimRequest<{
     success:   boolean;
     errorCode: string;
     obj: {
@@ -469,11 +481,24 @@ export async function allocateEsim(
         shortUrl?: string; ac?: string;
       }>;
     };
-  }>('/esim/order', {
-    packageInfoList: [item],
-    transactionId:   orderRef,
-    amount:          item.price,   // total amount must match the sum of prices
-  });
+  }>('/esim/order', orderPayload);
+
+  // Resilient fallback: If price validation failed (e.g. 200005 Package price error or 200004),
+  // retry without price/amount constraints so esimaccess automatically applies provider system pricing/discounts.
+  if (!orderRes.success && (orderRes.errorCode === '200005' || orderRes.errorCode === '200004')) {
+    console.warn(`[esimaccess] Order returned ${orderRes.errorCode} for ${packageCode}. Retrying without price/amount constraints...`);
+    const cleanItem: Record<string, unknown> = {
+      packageCode,
+      count,
+    };
+    if (opts?.periodNum && opts.periodNum > 0) {
+      cleanItem.periodNum = opts.periodNum;
+    }
+    orderRes = await esimRequest('/esim/order', {
+      packageInfoList: [cleanItem],
+      transactionId:   orderRef,
+    });
+  }
 
   if (!orderRes.success) {
     throw new Error(`esimaccess order failed (${orderRes.errorCode}) for ${packageCode}`);
