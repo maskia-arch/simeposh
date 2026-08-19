@@ -37,6 +37,11 @@ import {
   buildUnderpaymentText,
   type UnderpaymentData,
 } from './templates/underpayment-notification';
+import {
+  buildFeedbackInviteHtml,
+  buildFeedbackInviteText,
+  type FeedbackInviteData,
+} from './templates/feedback-invite';
 
 function createTransporter() {
   const host   = process.env.SMTP_HOST;
@@ -244,6 +249,29 @@ export async function sendGuestMilestoneEmail(data: GuestMilestoneData): Promise
     subject: t.guestMilestoneSubject,
     html:    buildGuestMilestoneHtml(data),
     text:    buildGuestMilestoneText(data),
+  });
+}
+
+export async function sendFeedbackInviteEmail(data: FeedbackInviteData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const isEn = normLoc === 'en';
+  const shortOrderId = data.orderId.split('-')[0].toUpperCase();
+  const subject = isEn 
+    ? `✨ How was your experience with PureSim? (#${shortOrderId})`
+    : `✨ Wie war deine Erfahrung mit PureSim? (#${shortOrderId})`;
+
+  await sendMailThroughTransporter({
+    to:        data.to,
+    subject:   subject,
+    html:      buildFeedbackInviteHtml(data),
+    text:      buildFeedbackInviteText(data),
+    emailType: 'feedback_einladung',
+    metadata:  { 
+      order_id: data.orderId, 
+      tariff_name: data.tariffName, 
+      country: data.countryName,
+      customer_name: data.customerName,
+    },
   });
 }
 

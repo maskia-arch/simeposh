@@ -76,7 +76,7 @@ export function AccountSettings({ user, profile }: AccountSettingsProps) {
       const res = await fetch('/api/user/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, billing_address: billingAddress, email }),
+        body: JSON.stringify({ name, phone, billing_address: billingAddress, email: email.trim().toLowerCase() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Fehler beim Speichern');

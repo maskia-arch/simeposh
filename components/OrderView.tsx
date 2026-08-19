@@ -6,6 +6,7 @@ import { EsimDelivery, type DeliveredEsim } from '@/components/EsimDelivery';
 import { CountryFlag } from '@/components/CountryFlag';
 import { formatEur } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
+import { CheckoutFeedbackWidget } from '@/components/CheckoutFeedbackWidget';
 
 interface OrderItem extends DeliveredEsim {
   status: string;
@@ -197,6 +198,11 @@ export function OrderView({ orderRef }: { orderRef: string }) {
           </div>
         ))}
       </div>
+
+      {/* Direct In-Checkout / Post-Purchase Feedback Widget */}
+      {isPaid && (
+        <CheckoutFeedbackWidget orderRef={orderRef} className="mt-8" />
+      )}
 
       <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-center">
         <p className="text-xs text-slate-600 font-medium mb-2">{t('order_support_q')}</p>

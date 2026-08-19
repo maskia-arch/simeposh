@@ -103,7 +103,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function handleEsimCashPay() {
     setError('');
-    const effectiveEmail = (user?.email || email || '').trim();
+    const effectiveEmail = (user?.email || email || '').trim().toLowerCase();
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;
@@ -139,7 +139,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function start(coin: string) {
     setError('');
-    const effectiveEmail = (user?.email || email || '').trim();
+    const effectiveEmail = (user?.email || email || '').trim().toLowerCase();
     if (!acceptedTerms) {
       setError(t('checkout_agree_error'));
       return;

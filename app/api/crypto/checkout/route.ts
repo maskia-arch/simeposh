@@ -24,7 +24,7 @@ interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIcci
 export async function POST(request: Request) {
   try {
     const body = await request.json() as { email?: string; coin?: string; items?: ReqItem[]; newsletterConsent?: boolean; locale?: string };
-    const email = body.email?.trim();
+    const email = body.email ? body.email.trim().toLowerCase() : '';
     const coin  = body.coin?.trim().toUpperCase();
     const items = Array.isArray(body.items) ? body.items : [];
 

@@ -18,13 +18,14 @@ export async function resolveCustomer(
 ): Promise<string | null> {
   if (!user) return null;
 
+  const cleanEmail = (user.email ?? email).trim().toLowerCase();
   try {
     await service
       .from('users')
       .upsert(
         {
           id:        user.id,
-          email:     user.email ?? email,
+          email:     cleanEmail,
           full_name: (user.user_metadata?.full_name as string | undefined) ?? null,
         },
         { onConflict: 'id' },

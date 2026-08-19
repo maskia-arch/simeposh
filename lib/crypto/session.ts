@@ -113,7 +113,7 @@ export async function createCryptoSession(opts: {
     .from('crypto_sessions')
     .insert({
       order_ids:              opts.orderIds,
-      customer_email:         opts.email,
+      customer_email:         opts.email.trim().toLowerCase(),
       coin:                   coin.code,
       wallet_address:         'TBD',
       base_eur:               roundEur(opts.baseEur),

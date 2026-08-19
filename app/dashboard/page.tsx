@@ -73,11 +73,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const orderList = orders ?? [];
 
+  const userEmailClean = (user.email || '').trim().toLowerCase();
   // Fetch pending crypto sessions for the user
   const { data: sessions } = await service
     .from('crypto_sessions')
     .select('id, order_ids, status')
-    .eq('customer_email', user.email || '');
+    .eq('customer_email', userEmailClean);
   const activeSessions = sessions?.filter((s) => s.status === 'pending') ?? [];
   const allSessions = sessions ?? [];
 
@@ -117,7 +118,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     profile = profileData;
   } else {
     // If user row is missing, resolve it and re-query
-    const resolvedId = await resolveCustomer(service, user, user.email || '');
+    const resolvedId = await resolveCustomer(service, user, userEmailClean);
     if (resolvedId) {
       const { data: retryData } = await service
         .from('users')

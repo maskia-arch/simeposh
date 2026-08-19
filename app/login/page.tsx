@@ -33,7 +33,8 @@ function LoginForm() {
     setResendSuccess('');
     setResendError('');
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const cleanEmail = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
 
     if (error) {
       const msg = error.message;

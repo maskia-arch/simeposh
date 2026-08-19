@@ -7,15 +7,21 @@ import { useTranslation } from '@/lib/i18n';
 export default function NewReviewPage() {
   const router = useRouter();
   const { locale } = useTranslation();
-  
+  const isDe = locale === 'de';
+
   const [orderId, setOrderId] = useState('');
+  const [orderRef, setOrderRef] = useState('');
   const [verifying, setVerifying] = useState(true);
   const [orderVerified, setOrderVerified] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [customerName, setCustomerName] = useState('');
+  const [tariffName, setTariffName] = useState<string | null>(null);
+  const [countryName, setCountryName] = useState<string | null>(null);
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   // Name type options: 'anon' (Anonymous) or 'alias' (Custom Name)
   const [nameType, setNameType] = useState<'anon' | 'alias'>('anon');
@@ -25,29 +31,54 @@ export default function NewReviewPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const isDe = locale === 'de';
+  const quickTags = isDe ? [
+    '🚀 Schnelle Kaufabwicklung',
+    '📱 Intuitive Website',
+    '🌐 Zuverlässiger Service & Empfang',
+    '🔒 Anonym & Sicher',
+    '⚡ Sofortige Bereitstellung',
+    '💬 Schneller Support'
+  ] : [
+    '🚀 Fast Process',
+    '📱 Intuitive Website',
+    '🌐 Great Service & Network',
+    '🔒 Anonymous & Secure',
+    '⚡ Instant Delivery',
+    '💬 Great Support'
+  ];
 
-  // Verify orderId from URL query param on mount
+  // Verify orderId / ref from URL query param on mount
   useEffect(() => {
     async function verify() {
       const params = new URLSearchParams(window.location.search);
-      const id = params.get('orderId')?.trim();
+      const rawOrderId = params.get('orderId')?.trim();
+      const rawRef = params.get('ref')?.trim();
+      const identifier = rawOrderId || rawRef;
       
-      if (!id) {
+      if (!identifier) {
         setVerifying(false);
         return;
       }
 
       try {
-        const res = await fetch(`/api/feedbacks/verify-order?orderId=${encodeURIComponent(id)}`);
+        const queryParam = rawOrderId ? `orderId=${encodeURIComponent(rawOrderId)}` : `ref=${encodeURIComponent(rawRef || '')}`;
+        const res = await fetch(`/api/feedbacks/verify-order?${queryParam}`);
         const data = await res.json();
         
         if (res.ok && data.success) {
-          setOrderId(id);
-          setCustomerName(data.customerName);
-          setOrderVerified(true);
+          setOrderId(data.orderId || rawOrderId || '');
+          setOrderRef(rawRef || '');
+          setCustomerName(data.customerName || '');
+          setTariffName(data.tariffName || null);
+          setCountryName(data.countryName || null);
+          
+          if (data.alreadySubmitted) {
+            setAlreadySubmitted(true);
+          } else {
+            setOrderVerified(true);
+          }
         } else {
-          setError(data.error || 'Verifizierung fehlgeschlagen.');
+          setError(data.error || (isDe ? 'Verifizierung fehlgeschlagen.' : 'Verification failed.'));
         }
       } catch (err) {
         setError(isDe ? 'Netzwerkfehler bei der Verifizierung.' : 'Network verification error.');
@@ -57,6 +88,12 @@ export default function NewReviewPage() {
     }
     verify();
   }, [isDe]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => 
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,24 +107,31 @@ export default function NewReviewPage() {
       return;
     }
 
+    let fullComment = comment.trim();
+    if (selectedTags.length > 0) {
+      const tagString = selectedTags.join(' • ');
+      fullComment = fullComment ? `${tagString}\n\n${fullComment}` : tagString;
+    }
+
     try {
       const res = await fetch('/api/feedbacks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rating,
-          comment: comment.trim(),
+          comment: fullComment || null,
           displayName,
-          orderId: orderId || null
-        })
+          orderId: orderId || null,
+          ref: orderRef || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Fehler beim Speichern der Bewertung');
+        throw new Error(data.error || (isDe ? 'Fehler beim Speichern der Bewertung' : 'Failed to save review'));
       }
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Ein Fehler ist aufgetreten.');
+      setError(err.message || (isDe ? 'Ein Fehler ist aufgetreten.' : 'An error occurred.'));
     } finally {
       setLoading(false);
     }
@@ -99,37 +143,75 @@ export default function NewReviewPage() {
       <div className="mx-auto max-w-lg px-4 py-20 text-center animate-fade-in">
         <div className="inline-block animate-spin h-8 w-8 rounded-full border-4 border-brand-500 border-t-transparent"></div>
         <p className="mt-4 text-xs font-semibold text-slate-500">
-          {isDe ? 'Einladung wird verifiziert...' : 'Verifying invitation...'}
+          {isDe ? 'Transaktion wird verifiziert...' : 'Verifying transaction...'}
         </p>
       </div>
     );
   }
 
-  // 2. Unverified / Missing Invite Landing Page
+  // 2. Already Submitted State
+  if (alreadySubmitted) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center animate-fade-in">
+        <div className="bg-white border border-slate-150 rounded-3xl p-8 shadow-lg">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-50 border border-emerald-200 mb-6 text-emerald-600 text-3xl font-bold shadow-xs">
+            ✓
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-3 tracking-tight">
+            {isDe ? 'Bewertung bereits abgegeben' : 'Review Already Submitted'}
+          </h2>
+          <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+            {isDe 
+              ? 'Du hast diese Transaktion bereits erfolgreich bewertet. Um die Authentizität unserer Kundenstimmen zu wahren, kann jeder Kauf genau einmal bewertet werden.'
+              : 'You have already submitted a review for this purchase. To maintain authentic feedback, each transaction can be rated once.'}
+          </p>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-8">
+            <span>✓</span> {isDe ? 'Verifizierter Kauf online' : 'Verified Purchase Online'}
+          </div>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push('/reviews')}
+              className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-xs font-bold text-white hover:bg-brand-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
+            >
+              {isDe ? 'Alle Kundenbewertungen ansehen' : 'View all customer reviews'}
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full rounded-xl border border-slate-250 bg-white px-5 py-3.5 text-xs font-bold text-slate-650 hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              {isDe ? 'Zur Startseite' : 'Back to homepage'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Unverified / Missing Invite Landing Page
   if (!orderVerified) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center animate-fade-in">
         <div className="bg-white border border-slate-150 rounded-3xl p-8 shadow-lg">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-red-50 border border-red-200 mb-6 text-red-500 text-3xl font-bold shadow-xs">
-            ⚠️
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-amber-50 border border-amber-200 mb-6 text-amber-500 text-3xl font-bold shadow-xs">
+            ⭐
           </div>
           <h2 className="text-xl font-black text-slate-900 mb-3 tracking-tight">
-            {isDe ? 'Bewertung nur mit Einladung' : 'Review by Invitation Only'}
+            {isDe ? 'Verifizierte Kundenbewertungen' : 'Verified Customer Reviews'}
           </h2>
           <p className="text-xs text-slate-500 mb-5 leading-relaxed">
             {isDe 
-              ? 'Um die absolute Vertrauenswürdigkeit und Transparenz unserer Rezensionen zu gewährleisten, können Bewertungen ausschließlich von Kunden mit einer verifizierten, aktiven eSIM abgegeben werden.'
-              : 'To guarantee absolute trust and transparency in our reviews, ratings can only be submitted by verified customers with active eSIMs.'}
+              ? 'Um 100% echte und vertrauenswürdige Bewertungen zu garantieren, ist jede Rezension an eine bestätigte Transaktion gekoppelt.'
+              : 'To guarantee 100% genuine and trustworthy ratings, every review is tied to a confirmed transaction.'}
           </p>
           {error && (
             <div className="mb-6 rounded-xl bg-slate-50 border border-slate-200 p-3 text-[11px] font-semibold text-slate-500">
-              {isDe ? 'Fehlerursache: ' : 'Reason: '} {error}
+              {isDe ? 'Hinweis: ' : 'Notice: '} {error}
             </div>
           )}
           <p className="text-xs text-slate-400 mb-8 leading-relaxed">
             {isDe 
-              ? 'Nachdem du eine eSIM gekauft und aktiviert hast, senden wir dir automatisch einen persönlichen Einladungslink per E-Mail zu.'
-              : 'Once you purchase and activate an eSIM, we will automatically email you a personalized link to leave your review.'}
+              ? 'Nach jedem Kauf kannst du direkt im Checkout oder über deinen persönlichen E-Mail-Link eine Bewertung abgeben.'
+              : 'After each purchase you can leave a review directly in checkout or via your personal invitation link.'}
           </p>
           <div className="flex flex-col gap-3">
             <button
@@ -150,7 +232,7 @@ export default function NewReviewPage() {
     );
   }
 
-  // 3. Success State
+  // 4. Success State
   if (success) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
@@ -159,13 +241,16 @@ export default function NewReviewPage() {
             ✓
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
-            {isDe ? 'Vielen Dank!' : 'Thank you!'}
+            {isDe ? 'Vielen Dank für dein Feedback!' : 'Thank you for your feedback!'}
           </h2>
-          <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+          <p className="text-sm text-slate-500 mb-6 leading-relaxed">
             {isDe 
-              ? 'Deine Bewertung wurde erfolgreich übermittelt und ist nun öffentlich im Review-Bereich zu sehen.' 
-              : 'Your review has been successfully submitted and is now publicly visible in the reviews section.'}
+              ? 'Deine Bewertung wurde erfolgreich übermittelt und ist nun als verifizierter Kauf in unserem Review-Bereich veröffentlicht.' 
+              : 'Your review has been successfully submitted and is now published as a verified purchase in our reviews section.'}
           </p>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-8">
+            <span>✓</span> {isDe ? 'Auszeichnung: Verifizierter Kauf' : 'Badge: Verified Purchase'}
+          </div>
           <button
             onClick={() => router.push('/reviews')}
             className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-xs font-bold text-white hover:bg-brand-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
@@ -177,32 +262,29 @@ export default function NewReviewPage() {
     );
   }
 
-  // 4. Form State (Verified Order)
+  // 5. Form State (Verified Order)
   return (
     <div className="mx-auto max-w-lg px-4 py-12">
       <div className="bg-white border border-slate-150 rounded-3xl p-6 md:p-8 shadow-lg">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
+            ✓ {isDe ? 'Verifizierter Kauf' : 'Verified Purchase'}
+          </span>
+          {countryName && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-650">
+              {countryName}
+            </span>
+          )}
+        </div>
+
         <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-2">
-          {isDe ? `Hallo ${customerName}! 👋` : `Hello ${customerName}! 👋`}
+          {customerName && customerName !== 'Kunde' ? `${isDe ? 'Hallo' : 'Hello'} ${customerName}! 👋` : (isDe ? 'Deine Erfahrung mit PureSim' : 'Your experience with PureSim')}
         </h1>
         <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-          {isDe 
-            ? 'Teile deine Erfahrung mit PureSim. Deine ehrliche Bewertung hilft anderen Reisenden dabei, die passende eSIM für ihr Abenteuer auszuwählen.' 
-            : 'Share your experience with PureSim. Your honest rating helps other travelers select the perfect eSIM for their adventure.'}
+          {tariffName 
+            ? (isDe ? `Bewerte deinen Kauf von ${tariffName}. Dein Feedback hilft anderen Reisenden!` : `Review your purchase of ${tariffName}. Your feedback helps other travelers!`)
+            : (isDe ? 'Teile deine Erfahrung mit PureSim. Dein ehrliches Feedback hilft anderen Reisenden.' : 'Share your experience with PureSim. Your honest rating helps other travelers.')}
         </p>
-
-        <div className="mb-6 rounded-2xl border border-emerald-150 bg-emerald-50/40 p-4 flex items-start gap-3">
-          <span className="text-emerald-700 text-lg shrink-0 mt-0.5">✓</span>
-          <div>
-            <p className="text-xs font-bold text-emerald-800">
-              {isDe ? 'Verifizierte Bewertung aktiv' : 'Verified Review Active'}
-            </p>
-            <p className="text-[11px] text-emerald-600 mt-0.5 leading-relaxed">
-              {isDe 
-                ? 'Deine Bewertung erhält automatisch das Label „Verifizierter Kauf“ auf unserer Website.' 
-                : 'Your review will automatically get the „Verified Purchase“ label on our website.'}
-            </p>
-          </div>
-        </div>
 
         {error && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 leading-relaxed">
@@ -214,7 +296,7 @@ export default function NewReviewPage() {
           {/* Star Rating selector */}
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
-              {isDe ? 'Bewertung *' : 'Rating *'}
+              {isDe ? 'Gesamtbewertung *' : 'Overall Rating *'}
             </label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((star) => {
@@ -239,9 +321,32 @@ export default function NewReviewPage() {
                 );
               })}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1.5">
-              {isDe ? '5 Sterne ist die höchste Auszeichnung' : '5 stars is the highest award'}
-            </p>
+          </div>
+
+          {/* Quick-Tags */}
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+              {isDe ? 'Was möchtest du hervorheben?' : 'What would you like to highlight?'}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {quickTags.map((tag) => {
+                const active = selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      active
+                        ? 'bg-brand-50 border-brand-400 text-brand-700 shadow-2xs'
+                        : 'bg-slate-50/80 border-slate-200/80 text-slate-650 hover:bg-slate-100 hover:border-slate-300'
+                    }`}
+                  >
+                    {active ? `✓ ${tag}` : `+ ${tag}`}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Comment text */}
@@ -253,8 +358,8 @@ export default function NewReviewPage() {
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 h-32 leading-relaxed transition-all"
-              placeholder={isDe ? 'Beschreibe deine Erfahrung (Verbindung, Aktivierung, Abdeckung)...' : 'Describe your experience (activation, connection, coverage)...'}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 h-28 leading-relaxed transition-all"
+              placeholder={isDe ? 'Beschreibe deine Erfahrung mit dem Service, der Website und der Zahlung...' : 'Describe your experience with the service, website and payment...'}
             />
           </div>
 
@@ -288,7 +393,7 @@ export default function NewReviewPage() {
                 onChange={(e) => setAlias(e.target.value)}
                 maxLength={50}
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50/50 transition-all"
-                placeholder={isDe ? 'z.B. Max M.' : 'e.g. Max M.'}
+                placeholder={isDe ? 'z.B. Max M. oder CryptoTraveler' : 'e.g. Max M. or CryptoTraveler'}
               />
             )}
           </div>
@@ -308,7 +413,7 @@ export default function NewReviewPage() {
                 {isDe ? 'Wird gespeichert...' : 'Submitting review...'}
               </>
             ) : (
-              <>{isDe ? 'Bewertung absenden' : 'Submit Review'}</>
+              <>{isDe ? 'Verifizierte Bewertung absenden ⭐' : 'Submit Verified Review ⭐'}</>
             )}
           </button>
         </form>
