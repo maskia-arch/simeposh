@@ -184,7 +184,10 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
     const params: any[] = [];
     let paramIdx = 1;
 
-    const pushParam = (val: any) => {
+    const pushParam = (val: any, colName?: string) => {
+      if (colName === 'attachments' && typeof val !== 'string' && val !== null) {
+        val = JSON.stringify(val);
+      }
       params.push(val);
       return `$${paramIdx++}`;
     };
@@ -333,7 +336,7 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
         const columns = keys.map(k => `"${k}"`).join(', ');
         
         const valuesClauses = rows.map(row => {
-          const valPlaceholders = keys.map(k => pushParam(row[k])).join(', ');
+          const valPlaceholders = keys.map(k => pushParam(row[k], k)).join(', ');
           return `(${valPlaceholders})`;
         }).join(', ');
 
@@ -352,7 +355,7 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
         const columns = keys.map(k => `"${k}"`).join(', ');
         
         const valuesClauses = rows.map(row => {
-          const valPlaceholders = keys.map(k => pushParam(row[k])).join(', ');
+          const valPlaceholders = keys.map(k => pushParam(row[k], k)).join(', ');
           return `(${valPlaceholders})`;
         }).join(', ');
 
@@ -379,7 +382,7 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
       else if (this.method === 'update') {
         const data = this.valuesToSave;
         const keys = Object.keys(data);
-        const setClauses = keys.map(k => `"${k}" = ${pushParam(data[k])}`).join(', ');
+        const setClauses = keys.map(k => `"${k}" = ${pushParam(data[k], k)}`).join(', ');
 
         sql = `UPDATE "${this.table}" SET ${setClauses}` + compileWhere() + ` RETURNING ${returning}`;
       } 

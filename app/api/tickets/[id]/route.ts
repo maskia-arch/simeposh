@@ -118,7 +118,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         sender_name: senderName,
         message: cleanMsg,
         is_internal_note: false,
-        attachments: Array.isArray(attachments) ? attachments : [],
+        attachments: JSON.stringify(Array.isArray(attachments) ? attachments : []),
       })
       .select('*')
       .single();

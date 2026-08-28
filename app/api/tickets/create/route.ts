@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         sender_name: cleanName,
         message: cleanDesc,
         is_internal_note: false,
-        attachments: Array.isArray(attachments) ? attachments : [],
+        attachments: JSON.stringify(Array.isArray(attachments) ? attachments : []),
       });
 
     if (msgError) {

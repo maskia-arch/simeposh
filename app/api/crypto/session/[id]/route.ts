@@ -475,20 +475,34 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .update(updatePayload as any)
       .eq('id', id);
 
-    // Transition to paid: trigger order fulfillment as soon as 1 on-chain confirmation is reached
-    if (status === 'paid' && currentSession.status !== 'paid') {
-      console.log(`[Session Sync] Fulfilling orders for paid session: ${currentSession.order_ids.join(', ')}`);
-      
-      await db
-        .from('orders')
-        .update({
-          status: 'paid',
-          payment_confirmed_at: new Date().toISOString(),
-        })
-        .in('id', currentSession.order_ids)
-        .neq('status', 'completed');
+    // When session is paid, ensure all associated orders are fulfilled
+    if (status === 'paid') {
+      const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
+      if (orderIds.length > 0) {
+        const { data: ords } = await db
+          .from('orders')
+          .select('id, status')
+          .in('id', orderIds);
 
-      await fulfillOrders(db, currentSession.order_ids);
+        const uncompleted = (ords || []).filter((o: any) => o.status !== 'completed');
+        const uncompletedIds = uncompleted.map((o: any) => o.id);
+
+        if (currentSession.status !== 'paid' || uncompletedIds.length > 0) {
+          console.log(`[Session Sync] Fulfilling orders for paid session: ${orderIds.join(', ')} (uncompleted: ${uncompletedIds.length})`);
+
+          if (uncompletedIds.length > 0) {
+            await db
+              .from('orders')
+              .update({
+                status: 'paid',
+                payment_confirmed_at: new Date().toISOString(),
+              })
+              .in('id', uncompletedIds);
+
+            await fulfillOrders(db, uncompletedIds);
+          }
+        }
+      }
     }
 
     // Transition to partially_paid: send customer underpayment email alert once

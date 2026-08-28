@@ -110,31 +110,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
 
-    // 3. Fulfill orders if transition to 'paid' (only if it wasn't already marked paid)
+    // 3. Fulfill orders if payment is confirmed as paid
     const validOrderIds = (session.order_ids || []).filter(isUuid);
 
-    if (effectiveStatus === 'paid' && session.status !== 'paid') {
-      console.log(`[pure-wallet Webhook] Confirming payment for orders: ${validOrderIds.join(', ')}`);
-      
-      if (validOrderIds.length > 0) {
-        const { error: ordersErr } = await db
-          .from('orders')
-          .update({
-            status: 'paid',
-            payment_confirmed_at: new Date().toISOString(),
-          })
-          .in('id', validOrderIds)
-          .neq('status', 'completed');
+    if (effectiveStatus === 'paid' && validOrderIds.length > 0) {
+      // Check if any orders for this session have not yet reached completed status
+      const { data: currentOrders } = await db
+        .from('orders')
+        .select('id, status')
+        .in('id', validOrderIds);
 
-        if (ordersErr) {
-          console.error(`[pure-wallet Webhook] Failed to update orders to paid status:`, ordersErr.message);
-        } else {
-          // Trigger background provisioning & emails
-          fulfillOrders(db, validOrderIds).then((results) => {
-            console.log(`[pure-wallet Webhook] Fulfillment completed:`, JSON.stringify(results));
-          }).catch((err) => {
-            console.error(`[pure-wallet Webhook] Fulfillment error:`, err);
-          });
+      const uncompletedOrders = (currentOrders || []).filter((o: any) => o.status !== 'completed');
+      const uncompletedIds = uncompletedOrders.map((o: any) => o.id);
+
+      if (session.status !== 'paid' || uncompletedIds.length > 0) {
+        console.log(`[pure-wallet Webhook] Confirming payment & fulfilling orders: ${validOrderIds.join(', ')} (uncompleted: ${uncompletedIds.length})`);
+
+        if (uncompletedIds.length > 0) {
+          const { error: ordersErr } = await db
+            .from('orders')
+            .update({
+              status: 'paid',
+              payment_confirmed_at: new Date().toISOString(),
+            })
+            .in('id', uncompletedIds);
+
+          if (ordersErr) {
+            console.error(`[pure-wallet Webhook] Failed to update orders to paid status:`, ordersErr.message);
+          } else {
+            // Trigger background provisioning & emails
+            fulfillOrders(db, uncompletedIds).then((results) => {
+              console.log(`[pure-wallet Webhook] Fulfillment completed:`, JSON.stringify(results));
+            }).catch((err) => {
+              console.error(`[pure-wallet Webhook] Fulfillment error:`, err);
+            });
+          }
         }
       }
     } else if (status === 'expired' || status === 'cancelled') {
