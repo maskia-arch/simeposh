@@ -475,33 +475,33 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .update(updatePayload as any)
       .eq('id', id);
 
-    // When session is paid, ensure all associated orders are fulfilled
+    // When session is paid, ensure all associated orders are fulfilled (fire-and-forget to avoid blocking the GET/POST handler)
     if (status === 'paid') {
       const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
       if (orderIds.length > 0) {
-        const { data: ords } = await db
-          .from('orders')
-          .select('id, status')
-          .in('id', orderIds);
+        // Query uncompleted orders synchronously (fast DB call), then fulfill async
+        db.from('orders').select('id, status').in('id', orderIds).then(async ({ data: ords }: { data: any[] | null }) => {
+          const uncompleted = (ords || []).filter((o: any) => o.status !== 'completed');
+          const uncompletedIds = uncompleted.map((o: any) => o.id);
 
-        const uncompleted = (ords || []).filter((o: any) => o.status !== 'completed');
-        const uncompletedIds = uncompleted.map((o: any) => o.id);
+          if (currentSession.status !== 'paid' || uncompletedIds.length > 0) {
+            console.log(`[Session Sync] Fulfilling orders for paid session: ${orderIds.join(', ')} (uncompleted: ${uncompletedIds.length})`);
 
-        if (currentSession.status !== 'paid' || uncompletedIds.length > 0) {
-          console.log(`[Session Sync] Fulfilling orders for paid session: ${orderIds.join(', ')} (uncompleted: ${uncompletedIds.length})`);
+            if (uncompletedIds.length > 0) {
+              await db
+                .from('orders')
+                .update({
+                  status: 'paid',
+                  payment_confirmed_at: new Date().toISOString(),
+                })
+                .in('id', uncompletedIds);
 
-          if (uncompletedIds.length > 0) {
-            await db
-              .from('orders')
-              .update({
-                status: 'paid',
-                payment_confirmed_at: new Date().toISOString(),
-              })
-              .in('id', uncompletedIds);
-
-            await fulfillOrders(db, uncompletedIds);
+              await fulfillOrders(db, uncompletedIds);
+            }
           }
-        }
+        }).catch((err: any) => {
+          console.error('[Session Sync] Background fulfillment error:', err);
+        });
       }
     }
 
