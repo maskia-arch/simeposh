@@ -385,24 +385,35 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
     // ── 7. Save price proposals ─────────────────────────────────
     if (proposals.length > 0) {
-      const { data: freshIds } = await db.from('tariffs')
-        .select('id, package_code')
-        .in('package_code', proposals.map(p => p.package_code));
-      const freshMap = new Map((freshIds ?? []).map(t => [t.package_code, t.id]));
       const toInsert = proposals
-        .map(p => ({ ...p, tariff_id: freshMap.get(p.package_code) ?? p.tariff_id }))
+        .map(p => {
+          const prev = existingMap.get(p.package_code);
+          return {
+            ...p,
+            tariff_id: prev?.id ?? p.tariff_id,
+          };
+        })
         .filter(p => p.tariff_id);
-      if (toInsert.length > 0) {
-        // Delete existing pending proposals for these package codes to avoid duplicates
-        const codes = toInsert.map(p => p.package_code);
-        await db.from('tariff_price_proposals')
-          .delete()
-          .eq('status', 'pending')
-          .in('package_code', codes);
 
-        await db.from('tariff_price_proposals').insert(toInsert);
+      if (toInsert.length > 0) {
+        const PROP_BATCH = 200;
+        for (let i = 0; i < toInsert.length; i += PROP_BATCH) {
+          const chunk = toInsert.slice(i, i + PROP_BATCH);
+          const codes = chunk.map(p => p.package_code);
+
+          await db.from('tariff_price_proposals')
+            .delete()
+            .eq('status', 'pending')
+            .in('package_code', codes);
+
+          const { error: propErr } = await db.from('tariff_price_proposals').insert(chunk);
+          if (propErr) {
+            console.error('[sync] Error inserting price proposals batch:', propErr.message);
+          }
+        }
       }
     }
+
 
     // ── 8. Deactivate removed packages (timestamp-based) ────────
     // Instead of a giant "NOT IN (140k items)" URL that exceeds PostgREST limits,
