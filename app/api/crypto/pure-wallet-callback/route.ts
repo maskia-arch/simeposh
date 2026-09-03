@@ -73,7 +73,7 @@ export async function POST(request: Request) {
           .select('min_payment_pct')
           .eq('code', session.coin.toUpperCase())
           .maybeSingle();
-        if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct < 100) {
+        if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct <= 100) {
           minPaymentPct = coinRow.min_payment_pct;
         }
       } catch {}

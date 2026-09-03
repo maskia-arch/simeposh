@@ -369,7 +369,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .select('min_payment_pct')
       .eq('code', currentSession.coin.toUpperCase())
       .maybeSingle();
-    if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct < 100) {
+    if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct <= 100) {
       minPaymentPct = coinRow.min_payment_pct;
     }
   } catch {}
@@ -377,6 +377,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   const expectedAmount = Number(currentSession.crypto_amount);
   const requiredThreshold = expectedAmount * (minPaymentPct / 100);
   const confirmationsRequired = Number(currentSession.confirmations_required || 1);
+  const nowMs = Date.now();
+  const expMs = new Date(currentSession.expires_at).getTime();
 
   if (gatewayData) {
     status = gatewayData.status;
@@ -390,6 +392,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       status = confirmations >= confirmationsRequired ? 'paid' : 'detected';
       paidAt = status === 'paid' ? new Date().toISOString() : null;
       console.log(`[Session Sync] Overriding gateway partially_paid to ${status} via min_payment_pct (${minPaymentPct}%) tolerance`);
+    } else if (status === 'pending' && nowMs > expMs && receivedAmount === 0) {
+      status = 'expired';
     }
   } else {
     // Direct Blockchain Explorer check!
@@ -439,7 +443,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           // Preserve existing detected/partially_paid status if explorer transiently returned 0
           status = currentSession.status;
         } else {
-          status = 'pending';
+          status = nowMs > expMs ? 'expired' : 'pending';
         }
 
         receivedAmount = chainInfo.received;
@@ -503,6 +507,15 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           console.error('[Session Sync] Background fulfillment error:', err);
         });
       }
+    } else if (status === 'expired') {
+      const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
+      if (orderIds.length > 0) {
+        await db
+          .from('orders')
+          .update({ status: 'expired' })
+          .in('id', orderIds)
+          .in('status', ['pending']);
+      }
     }
 
     // Transition to partially_paid: send customer underpayment email alert once
@@ -536,6 +549,9 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
   try {
+    const { sweepExpiredSessions } = await import('@/lib/crypto/session');
+    await sweepExpiredSessions(db);
+
     const { data: activeSessions } = await db
       .from('crypto_sessions')
       .select('id, expires_at, status')

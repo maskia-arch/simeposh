@@ -43,31 +43,22 @@ import {
   type FeedbackInviteData,
 } from './templates/feedback-invite';
 
-function createTransporter() {
+function getSmtpConfig() {
   const host   = process.env.SMTP_HOST;
   const port   = parseInt(process.env.SMTP_PORT ?? '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true';
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
   const user   = process.env.SMTP_USER;
   const pass   = process.env.SMTP_PASS;
 
-  if (!host || !user || !pass) {
-    throw new Error(
-      'Missing SMTP configuration. Set SMTP_HOST, SMTP_USER, and SMTP_PASS.'
-    );
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-    tls: { rejectUnauthorized: false }, // Outdated VM trust store safe fallback
-  });
+  return { host, port, secure, user, pass };
 }
 
 function fromAddress(): string {
   const name    = process.env.SMTP_FROM_NAME    ?? 'PureSim';
-  const address = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? '';
+  let address = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
+  if (!address || address.includes('example.com')) {
+    address = 'noreply@puresim.net';
+  }
   return `"${name}" <${address}>`;
 }
 
@@ -81,14 +72,15 @@ async function sendMailThroughTransporter(mailOptions: {
   emailType?: string;
   metadata?: any;
 }): Promise<void> {
-  const host = process.env.SMTP_HOST;
-  const pass = process.env.SMTP_PASS;
   const cleanTo = mailOptions.to.trim();
 
   if (!cleanTo || !cleanTo.includes('@')) {
     console.error('[mailer] Cannot send email: invalid or empty recipient address:', mailOptions.to);
     return;
   }
+
+  const resendApiKey = process.env.RESEND_API_KEY || (process.env.SMTP_PASS?.startsWith('re_') ? process.env.SMTP_PASS : null);
+  const smtp = getSmtpConfig();
 
   const domain = (process.env.SMTP_FROM_ADDRESS?.split('@')[1] || 'puresim.net').toLowerCase();
   const msgId = `<ps-${Date.now()}-${Math.random().toString(36).substring(2, 9)}@${domain}>`;
@@ -104,21 +96,26 @@ async function sendMailThroughTransporter(mailOptions: {
   };
 
   let sendSuccess = false;
+  let lastError: any = null;
 
-  // Use Resend HTTP REST API if using Resend (avoids firewall port blocks)
-  const isResend = host?.includes('resend.com') || pass?.startsWith('re_');
+  // 1. Primary: Use Resend HTTP REST API if key is available or host is Resend
+  const isResend = Boolean(resendApiKey) || smtp.host?.includes('resend.com');
+  const effectiveResendKey = resendApiKey || smtp.pass;
 
-  if (isResend && pass) {
+  if (isResend && effectiveResendKey) {
     try {
       console.log('[mailer] Dispatching High Priority email via Resend HTTP API to:', cleanTo);
       const fromName = process.env.SMTP_FROM_NAME ?? 'PureSim';
-      const fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
+      let fromAddr = process.env.SMTP_FROM_ADDRESS ?? process.env.SMTP_USER ?? 'noreply@puresim.net';
+      if (!fromAddr || fromAddr.includes('example.com')) {
+        fromAddr = 'noreply@puresim.net';
+      }
       const cleanFrom = `"${fromName}" <${fromAddr}>`;
 
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${pass}`,
+          'Authorization': `Bearer ${effectiveResendKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -131,37 +128,55 @@ async function sendMailThroughTransporter(mailOptions: {
         }),
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        console.log(`[mailer] Resend HTTP email successfully sent to ${cleanTo}`);
+        sendSuccess = true;
+      } else {
         const errText = await response.text();
-        throw new Error(`Resend API returned status ${response.status}: ${errText}`);
+        console.warn(`[mailer] Resend API returned status ${response.status}: ${errText}`);
+        lastError = new Error(`Resend API error (${response.status}): ${errText}`);
       }
-
-      console.log(`[mailer] Resend HTTP email successfully sent to ${cleanTo}`);
-      sendSuccess = true;
     } catch (err) {
-      console.error('[mailer] Resend HTTP API dispatch failed. Falling back to SMTP:', err);
+      console.error('[mailer] Resend HTTP API dispatch failed:', err);
+      lastError = err;
     }
   }
 
-  // Fallback to Nodemailer SMTP if Resend didn't send it
-  if (!sendSuccess) {
-    try {
-      const transporter = createTransporter();
-      await transporter.sendMail({
-        from:     fromAddress(),
-        to:       cleanTo,
-        subject:  mailOptions.subject,
-        html:     mailOptions.html,
-        text:     mailOptions.text,
-        priority: 'high',
-        headers:  priorityHeaders,
-        messageId: msgId,
-      });
-      console.log(`[mailer] High Priority SMTP email successfully sent to ${cleanTo}`);
-      sendSuccess = true;
-    } catch (smtpErr) {
-      console.error('[mailer] SMTP dispatch failed for recipient:', cleanTo, smtpErr);
-      throw smtpErr;
+  // 2. Secondary: Fallback to Nodemailer SMTP
+  if (!sendSuccess && smtp.host && smtp.user && smtp.pass && !smtp.host.includes('example.com')) {
+    const portsToTry = Array.from(new Set([smtp.port, 587, 465, 2525]));
+    for (const port of portsToTry) {
+      if (sendSuccess) break;
+      try {
+        const isSecure = port === 465;
+        const transporter = nodemailer.createTransport({
+          host: smtp.host,
+          port,
+          secure: isSecure,
+          auth: { user: smtp.user, pass: smtp.pass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000,
+        });
+
+        await transporter.sendMail({
+          from:     fromAddress(),
+          to:       cleanTo,
+          subject:  mailOptions.subject,
+          html:     mailOptions.html,
+          text:     mailOptions.text,
+          priority: 'high',
+          headers:  priorityHeaders,
+          messageId: msgId,
+        });
+        console.log(`[mailer] High Priority SMTP email successfully sent to ${cleanTo} via port ${port}`);
+        sendSuccess = true;
+        break;
+      } catch (smtpErr) {
+        console.warn(`[mailer] SMTP dispatch on port ${port} failed for ${cleanTo}:`, (smtpErr as Error).message);
+        lastError = smtpErr;
+      }
     }
   }
 
@@ -174,17 +189,22 @@ async function sendMailThroughTransporter(mailOptions: {
       email_type: mailOptions.emailType || 'custom',
       body_html: mailOptions.html,
       body_text: mailOptions.text || null,
-      metadata: mailOptions.metadata || {},
-      status: 'sent',
+      metadata: {
+        ...(mailOptions.metadata || {}),
+        error: sendSuccess ? null : (lastError instanceof Error ? lastError.message : String(lastError)),
+      },
+      status: sendSuccess ? 'sent' : 'failed',
       sent_at: new Date().toISOString(),
     });
-    console.log(`[mailer] Saved email transcript for ${cleanTo} in sent_emails table`);
+    console.log(`[mailer] Saved email transcript (${sendSuccess ? 'sent' : 'failed'}) for ${cleanTo} in sent_emails`);
   } catch (logErr: any) {
     console.error('[mailer] Failed to save sent_emails transcript:', logErr.message);
   }
 
+  if (!sendSuccess) {
+    throw lastError || new Error(`Failed to deliver email to ${cleanTo}: No working email transport configured`);
+  }
 }
-
 
 // ─── Send eSIM purchase confirmation ─────────────────────────
 

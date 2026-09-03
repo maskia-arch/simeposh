@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { syncAllActiveCryptoSessions } from '@/app/api/crypto/session/[id]/route';
+import { sweepFailedEmailDeliveries } from '@/lib/fulfillment';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,12 @@ export async function GET(request: Request) {
   try {
     const db = createServiceClient();
     const syncedCount = await syncAllActiveCryptoSessions(db);
+    
+    // Auto-retry any undelivered/failed emails for completed orders
+    await sweepFailedEmailDeliveries(db).catch((err) => {
+      console.error('[cron/crypto-watch] sweepFailedEmailDeliveries error:', err);
+    });
+
     return NextResponse.json({ ok: true, synced_count: syncedCount });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

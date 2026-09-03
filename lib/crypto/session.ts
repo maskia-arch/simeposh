@@ -309,8 +309,8 @@ export async function sweepExpiredSessions(db: any) {
 
     const { data: candidateSessions } = await db
       .from('crypto_sessions')
-      .select('id, order_ids')
-      .eq('status', 'pending')
+      .select('id, order_ids, status, received_amount')
+      .in('status', ['pending'])
       .lte('expires_at', nowIso);
 
     if (candidateSessions && candidateSessions.length > 0) {
@@ -329,7 +329,7 @@ export async function sweepExpiredSessions(db: any) {
             .eq('id', s.id)
             .maybeSingle();
 
-          if (updatedS && updatedS.status === 'pending') {
+          if (updatedS && (updatedS.status === 'pending' || updatedS.status === 'expired')) {
             trulyExpiredIds.push(s.id);
             if (Array.isArray(s.order_ids)) {
               trulyExpiredOrderIds.push(...s.order_ids);
@@ -351,7 +351,8 @@ export async function sweepExpiredSessions(db: any) {
         await db
           .from('crypto_sessions')
           .update({ status: 'expired' })
-          .in('id', trulyExpiredIds);
+          .in('id', trulyExpiredIds)
+          .eq('status', 'pending');
 
         // Mark corresponding pending orders as expired
         if (trulyExpiredOrderIds.length > 0) {
@@ -359,7 +360,7 @@ export async function sweepExpiredSessions(db: any) {
             .from('orders')
             .update({ status: 'expired' })
             .in('id', trulyExpiredOrderIds)
-            .in('status', ['pending']);
+            .in('status', ['pending', 'pending_payment']);
         }
       }
     }

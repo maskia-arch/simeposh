@@ -131,7 +131,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
       <div class="section">
         <h2>${t.esimQrTitle}</h2>
         <div class="qr-box">
-          <img src="${data.qrCodeUrl}" alt="eSIM QR-Code" />
+          <img src="${data.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(data.lpaCode)}`}" alt="eSIM QR-Code" style="width:180px;height:180px;border-radius:8px;display:block;margin:0 auto;" />
           <p>${t.esimQrSub}</p>
         </div>
       </div>

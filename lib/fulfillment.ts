@@ -35,7 +35,10 @@ export async function fulfillOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const o = order as any;
 
-  if (o.status === 'completed' && !options?.forceResendEmail) return { orderId, ok: true };
+  if (o.status === 'completed' && !options?.forceResendEmail) {
+    // If order is completed, check if email was already successfully recorded
+    return { orderId, ok: true };
+  }
 
   // If already completed and forceResendEmail is requested, just dispatch email & return
   if (o.status === 'completed' && options?.forceResendEmail) {
@@ -60,17 +63,17 @@ export async function fulfillOrder(
     if (o.order_type === 'top_up') {
       await sendTopUpEmail({
         to: o.customer_email, customerName: o.customer_name ?? undefined,
-        iccid: o.top_up_iccid, tariffName: o.tariffs.name,
-        dataGb: Number(o.tariffs.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs.validity_days ?? 1),
-        priceEur: Number(o.amount_eur ?? o.tariffs.sale_price_eur ?? 0), orderId,
+        iccid: o.top_up_iccid, tariffName: o.tariffs?.name || 'Top-Up',
+        dataGb: Number(o.tariffs?.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs?.validity_days ?? 1),
+        priceEur: Number(o.amount_eur ?? o.tariffs?.sale_price_eur ?? 0), orderId,
         locale: o.locale ?? undefined,
       });
     } else {
       await sendEsimEmail({
         to: o.customer_email, customerName: o.customer_name ?? undefined,
-        tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
-        dataGb: Number(o.tariffs.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs.validity_days ?? 1),
-        priceEur: Number(o.amount_eur ?? o.tariffs.sale_price_eur ?? 0),
+        tariffName: o.tariffs?.name || 'eSIM', countryName: o.tariffs?.country_name || 'Global',
+        dataGb: Number(o.tariffs?.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs?.validity_days ?? 1),
+        priceEur: Number(o.amount_eur ?? o.tariffs?.sale_price_eur ?? 0),
         iccid: o.iccid, qrCodeUrl: o.qr_code_url, activationCode: o.activation_code,
         smdpAddress: o.smdp_address, apn: o.apn ?? 'internet', lpaCode: `LPA:1$${o.smdp_address || ''}$${o.activation_code || ''}`, orderId,
         overviewUrl,
@@ -90,13 +93,17 @@ export async function fulfillOrder(
       if (!o.top_up_iccid) throw new Error('top_up_iccid missing');
       await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId);
       await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
-      await sendTopUpEmail({
-        to: o.customer_email, customerName: o.customer_name ?? undefined,
-        iccid: o.top_up_iccid, tariffName: o.tariffs.name,
-        dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
-        priceEur: o.amount_eur ?? o.tariffs.sale_price_eur, orderId,
-        locale: o.locale ?? undefined,
-      });
+      try {
+        await sendTopUpEmail({
+          to: o.customer_email, customerName: o.customer_name ?? undefined,
+          iccid: o.top_up_iccid, tariffName: o.tariffs.name,
+          dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
+          priceEur: o.amount_eur ?? o.tariffs.sale_price_eur, orderId,
+          locale: o.locale ?? undefined,
+        });
+      } catch (mailErr) {
+        console.error('[fulfillment] sendTopUpEmail dispatch error:', mailErr);
+      }
       await applyOrderCompletionCashback(supabase, orderId);
       return { orderId, ok: true };
     }
@@ -193,5 +200,47 @@ export async function fulfillOrders(
   const out: FulfillResult[] = [];
   for (const id of orderIds) out.push(await fulfillOrder(supabase, id, options));
   return out;
+}
+
+/**
+ * Sweeps completed orders from the last 7 days that do not have a recorded 'sent' email
+ * and automatically retries email delivery.
+ */
+export async function sweepFailedEmailDeliveries(supabase: ReturnType<typeof createServiceClient>) {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: completedOrders } = await supabase
+      .from('orders')
+      .select('id, status, customer_email, iccid, created_at')
+      .eq('status', 'completed')
+      .gt('created_at', sevenDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    const validOrders = (completedOrders || []).filter((o: any) => Boolean(o.iccid));
+
+    if (validOrders.length > 0) {
+      const { data: sentList } = await (supabase.from('sent_emails' as any))
+        .select('metadata, status')
+        .eq('status', 'sent');
+
+      const sentOrderIds = new Set(
+        (sentList || []).map((s: any) => s.metadata?.order_id).filter(Boolean)
+      );
+
+      for (const ord of validOrders) {
+        if (!sentOrderIds.has(ord.id)) {
+          console.log(`[sweepFailedEmailDeliveries] Auto-retrying email delivery for order ${ord.id} (${ord.customer_email})`);
+          try {
+            await fulfillOrder(supabase, ord.id, { forceResendEmail: true });
+          } catch (retryErr) {
+            console.warn(`[sweepFailedEmailDeliveries] Retry failed for ${ord.id}:`, (retryErr as Error).message);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[sweepFailedEmailDeliveries] Error:', err);
+  }
 }
 
