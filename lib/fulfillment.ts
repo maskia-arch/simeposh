@@ -91,7 +91,8 @@ export async function fulfillOrder(
   try {
     if (o.order_type === 'top_up') {
       if (!o.top_up_iccid) throw new Error('top_up_iccid missing');
-      await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId);
+      const periodNum = o.period_num ? Number(o.period_num) : undefined;
+      await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId, { periodNum });
       await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
       try {
         await sendTopUpEmail({

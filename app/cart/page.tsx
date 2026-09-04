@@ -10,11 +10,11 @@ import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { displayCountryName, coverageLabel } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
-import { PlaneIcon, InfinityIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon } from '@/components/Icons';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
   travel:        { icon: <PlaneIcon size={12} className="currentColor" />, label: 'Travel' },
-  unlimited_eco: { icon: <InfinityIcon size={12} className="currentColor" />, label: 'Unlimited Eco' },
+  unlimited_eco: { icon: <EcoIcon size={12} />, label: 'Unlimited Eco' },
   unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, label: 'Unlimited Pro' },
 };
 

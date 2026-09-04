@@ -109,6 +109,10 @@ export interface TopUpPackage {
   locationCode?: string;
   description?: string;
   operatorList?: OperatorInfo[];
+  dataType?:    number;
+  speed?:       number | string;
+  type?:        string;
+  supportTopUpType?: number;
 }
 
 export interface TopUpPackageListResponse {

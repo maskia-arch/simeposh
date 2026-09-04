@@ -10,34 +10,34 @@ import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
 import { useTranslation } from '@/lib/i18n';
 import { useCart } from '@/components/CartProvider';
 import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType } from '@/lib/tariff-display';
-import { InfinityIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon } from '@/components/Icons';
+import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 type TariffType = 'unlimited_eco' | 'unlimited_pro';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function perDayEur(t: Tariff): number {
-  return t.sale_price_eur / t.validity_days;
+export function perDayEur(t: { sale_price_eur: number; validity_days: number }): number {
+  return t.sale_price_eur / (t.validity_days || 1);
 }
 
-function computePrice(baseRate: number, days: number): number {
+export function computePrice(baseRate: number, days: number): number {
   const raw = baseRate * days * (1 - getDiscountPct(days));
   return roundToX9(raw);
 }
 
 // ── Day slider mapping ──────────────────────────────────────────────────────
-const DAY_MARKS = [1, 3, 7, 14, 30, 90, 180, 365];
-const SEG       = 100;
-const SLIDER_MAX = (DAY_MARKS.length - 1) * SEG;
+export const DAY_MARKS = [1, 3, 7, 14, 30, 90, 180, 365];
+export const SEG       = 100;
+export const SLIDER_MAX = (DAY_MARKS.length - 1) * SEG;
 
-function rawToDays(raw: number): number {
+export function rawToDays(raw: number): number {
   const seg  = Math.min(DAY_MARKS.length - 2, Math.max(0, Math.floor(raw / SEG)));
   const frac = (raw - seg * SEG) / SEG;
   return Math.round(DAY_MARKS[seg] + (DAY_MARKS[seg + 1] - DAY_MARKS[seg]) * frac);
 }
 
-function daysToRaw(days: number): number {
+export function daysToRaw(days: number): number {
   if (days <= DAY_MARKS[0]) return 0;
   if (days >= DAY_MARKS[DAY_MARKS.length - 1]) return SLIDER_MAX;
   for (let i = 0; i < DAY_MARKS.length - 1; i++) {
@@ -51,29 +51,79 @@ function daysToRaw(days: number): number {
 
 const POPULAR_DESTINATIONS = ['DE', 'EU', 'US', 'JP', 'TH', 'TR', 'CH', 'GB'];
 
-// ── Compact DaySlider Component ─────────────────────────────────────────────
+// ── Compact DaySlider Component with Numeric Input Field ────────────────────
 
-function DaySlider({
+export function DaySlider({
   days,
   onChange,
+  label,
 }: {
   days: number;
   onChange: (d: number) => void;
+  label?: string;
 }) {
   const { t } = useTranslation();
   const { pct, nextAt, nextPct } = discountLabel(days);
   const lastIdx = DAY_MARKS.length - 1;
   const presets = [1, 3, 7, 14, 30, 90];
 
+  const [inputValue, setInputValue] = useState<string>(String(days));
+
+  useEffect(() => {
+    setInputValue(String(days));
+  }, [days]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    setInputValue(rawVal);
+    const parsed = parseInt(rawVal, 10);
+    if (!isNaN(parsed) && parsed >= 1) {
+      const clamped = Math.min(365, Math.max(1, parsed));
+      onChange(clamped);
+    }
+  };
+
+  const handleInputBlur = () => {
+    const parsed = parseInt(inputValue, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setInputValue(String(days));
+      onChange(days);
+    } else {
+      const clamped = Math.min(365, Math.max(1, parsed));
+      setInputValue(String(clamped));
+      onChange(clamped);
+    }
+  };
+
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-          3. Laufzeit (Tage)
+          {label ?? '3. Laufzeit (Tage)'}
         </label>
-        <span className="text-sm font-extrabold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-lg">
-          {days} {days === 1 ? t('cfg_day') : t('cfg_days')}
-        </span>
+        
+        {/* Interactive Direct Numeric Input */}
+        <div className="flex items-center gap-1 bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1 focus-within:ring-2 focus-within:ring-brand-400 focus-within:border-brand-500 transition-all shadow-2xs">
+          <input
+            type="number"
+            min={1}
+            max={365}
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            aria-label={t('cfg_duration')}
+            title="Tage manuell eingeben"
+            className="w-10 text-center text-sm font-black text-brand-700 bg-transparent border-none outline-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text"
+          />
+          <span className="text-xs font-extrabold text-brand-700 select-none">
+            {days === 1 ? t('cfg_day') : t('cfg_days')}
+          </span>
+        </div>
       </div>
 
       {/* Quick Day Presets */}
@@ -460,7 +510,7 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <InfinityIcon size={20} className="text-emerald-600 shrink-0" />
+                        <EcoIcon size={20} className="shrink-0" />
                         <div>
                           <span className="block font-extrabold text-slate-900 text-xs">Unlimited Eco</span>
                           <span className="block text-[10px] text-slate-500">Nach Limit: 512 kbps</span>
@@ -542,8 +592,12 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                 <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={32} className="shrink-0 rounded-md shadow-xs" />
                 <div>
                   <h4 className="font-extrabold text-slate-900 text-base leading-tight">{selectedCountryData.name}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {tariffType === 'unlimited_eco' ? '♾️ Eco' : '⚡ Pro'} · <span className="font-bold text-slate-700">{selectedGb ? formatGb(selectedGb) : '–'} / Tag</span> · {days} Tage
+                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                    {tariffType === 'unlimited_eco' ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><EcoIcon size={14} /> Eco</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-semibold text-violet-700"><BoltIcon size={14} className="text-violet-600" /> Pro</span>
+                    )} · <span className="font-bold text-slate-700">{selectedGb ? formatGb(selectedGb) : '–'} / Tag</span> · {days} Tage
                   </p>
                 </div>
               </div>

@@ -9,11 +9,12 @@ import { displayCountryName, isNonHkIpTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { createClient } from '@/lib/supabase/client';
+import { EcoIcon } from '@/components/Icons';
 
-const TYPE_BADGE: Record<string, { icon: string; label: string }> = {
-  travel:        { icon: '✈️', label: 'Travel' },
-  unlimited_eco: { icon: '♾️', label: 'Eco' },
-  unlimited_pro: { icon: '⚡', label: 'Pro' },
+const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
+  travel:        { icon: <span>✈️</span>, label: 'Travel' },
+  unlimited_eco: { icon: <EcoIcon size={12} className="inline-block align-middle" />, label: 'Eco' },
+  unlimited_pro: { icon: <span>⚡</span>, label: 'Pro' },
 };
 
 function CustomCartIcon({ className = 'h-5 w-5' }: { className?: string }) {
@@ -193,9 +194,9 @@ export function CartDrawer() {
                           </button>
                         </div>
 
-                        <p className="text-[10px] text-slate-500 font-medium">
-                          {badge && <span className="mr-1">{badge.icon} {badge.label}</span>}
-                          · {isUnlimited ? '∞ Unlimited' : formatGb(i.dataGb)} · {i.validityDays}d
+                        <p className="text-[10px] text-slate-500 font-medium flex items-center flex-wrap gap-1">
+                          {badge && <span className="inline-flex items-center gap-0.5 mr-0.5">{badge.icon} <span>{badge.label}</span></span>}
+                          <span>· {isUnlimited ? '∞ Unlimited' : formatGb(i.dataGb)} · {i.validityDays}d</span>
                         </p>
                       </div>
 

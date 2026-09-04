@@ -116,12 +116,19 @@ export function CheckoutModal({
           <div className="flex justify-between text-sm mb-1">
             <span className="text-slate-600">{t('checkout_data')}</span>
             <span className="font-medium">
-              {isUnlimited ? t('card_unlimited') : formatGb(tariff.data_gb)}
+              {isUnlimited
+                ? tariff.data_gb && tariff.data_gb > 0
+                  ? `${formatGb(tariff.data_gb)} / Tag (24h Reset)`
+                  : t('card_unlimited')
+                : formatGb(tariff.data_gb)}
             </span>
           </div>
           <div className="flex justify-between text-sm mb-1">
             <span className="text-slate-600">{t('checkout_validity')}</span>
-            <span className="font-medium">{tariff.validity_days} {t('checkout_days')}</span>
+            <span className="font-medium">
+              {days || tariff.validity_days} {t('checkout_days')}
+              {orderType === 'top_up' ? ' (Verlängerung)' : ''}
+            </span>
           </div>
           {orderType === 'top_up' && topUpIccid && (
             <div className="flex justify-between text-sm mb-1">
@@ -190,7 +197,7 @@ export function CheckoutModal({
         {/* Crypto payment (no third-party processor) */}
         <CryptoPaySelector
           email={email}
-          items={[{ tariffId: tariff.id, quantity: 1, days, topUpIccid: orderType === 'top_up' ? topUpIccid : undefined }]}
+          items={[{ tariffId: tariff.id, quantity: 1, days: days || (isUnlimited ? tariff.validity_days : undefined), topUpIccid: orderType === 'top_up' ? topUpIccid : undefined }]}
           total={tariff.sale_price_eur}
           balance={balance}
           user={user}

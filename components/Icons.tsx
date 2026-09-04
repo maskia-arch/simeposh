@@ -18,12 +18,40 @@ export const PlaneIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[#
   </svg>
 );
 
-// 3. Infinity / Eco Icon (replaces ♾️)
+// 3. Infinity Icon (genuine infinity symbol ∞)
 export const InfinityIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[#1d4ed8]', ...props }) => (
-  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className={`${className} shrink-0`} {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 0c2.485 0 4.5-2.015 4.5-4.5S18.985 3 16.5 3 12 5.015 12 7.5 9.515 12 7.5 12 3 9.985 3 7.5 5.015 3 7.5 3 12 5.015 12 7.5c0 2.485 2.015 4.5 4.5 4.5s4.5-2.015 4.5-4.5S18.985 12 16.5 12z" />
+  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} className={`${className} shrink-0`} {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18.178 8c5.096 0 5.096 8 0 8-2.67 0-4.678-2.667-6.178-4-1.5 1.333-3.508 4-6.178 4-5.096 0-5.096-8 0-8 2.67 0 4.678 2.667 6.178 4 1.5-1.333 3.508-4 6.178-4z" />
   </svg>
 );
+
+// 3b. Eco Icon for Unlimited Eco (replaces generic/three circles with custom eco badge)
+export const EcoIcon: React.FC<{ size?: number; className?: string; alt?: string }> = ({ size = 20, className = '', alt = 'Unlimited Eco' }) => (
+  <img
+    src="/eco.png"
+    alt={alt}
+    width={size}
+    height={size}
+    style={{ width: size, height: size }}
+    className={`inline-block object-contain shrink-0 rounded-full ${className}`}
+    loading="eager"
+  />
+);
+
+// 3c. TopUp Arrow Icon for eSIM aufladen header
+export const TopUpIcon: React.FC<{ size?: number; className?: string; alt?: string }> = ({ size = 48, className = '', alt = 'eSIM aufladen' }) => (
+  <img
+    src="/topup-arrow.png"
+    alt={alt}
+    width={size}
+    height={size}
+    style={{ width: size, height: size }}
+    className={`inline-block object-contain shrink-0 ${className}`}
+    loading="eager"
+  />
+);
+
+
 
 // 4. Bolt / Pro Icon (replaces ⚡)
 export const BoltIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[#0ea5e9]', ...props }) => (

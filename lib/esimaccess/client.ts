@@ -614,13 +614,21 @@ export async function fetchTopUpPackages(iccid: string): Promise<TopUpPackageLis
 export async function applyTopUp(
   iccid:       string,
   packageCode: string,
-  orderRef:    string
+  orderRef:    string,
+  opts?: {
+    periodNum?: number;
+  }
 ): Promise<TopUpOrderResponse> {
-  const res = await esimRequest<TopUpOrderResponse>('/esim/topup', {
+  const payload: Record<string, unknown> = {
     iccid,
     packageCode,
     transactionId: orderRef,
-  });
+  };
+  if (opts?.periodNum && opts.periodNum > 0) {
+    payload.periodNum = opts.periodNum;
+  }
+
+  const res = await esimRequest<TopUpOrderResponse>('/esim/topup', payload);
   if (!res.success) {
     throw new Error(`esimaccess top-up failed (${res.errorCode}) for ICCID ${iccid}`);
   }

@@ -6,7 +6,7 @@ import { TariffsGrid }          from '@/components/TariffsGrid';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { useTranslation }        from '@/lib/i18n';
 import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
-import { PlaneIcon, InfinityIcon, BoltIcon, SearchIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, SearchIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 type Tab = 'travel' | 'unlimited';
@@ -237,7 +237,7 @@ export function TariffsPageClient({ tariffs, initialQuery = '' }: { tariffs: Tar
           <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-50 to-violet-50 border border-slate-200 px-5 py-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-start gap-3">
-                <span className="text-2xl shrink-0 mt-0.5"><InfinityIcon size={24} className="text-emerald-600" /></span>
+                <span className="text-2xl shrink-0 mt-0.5"><EcoIcon size={24} /></span>
                 <div>
                   <p className="font-semibold text-slate-800">{t('tp_eco_title')}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{t('tp_eco_desc')}</p>

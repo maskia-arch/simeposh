@@ -10,7 +10,7 @@ import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
@@ -25,7 +25,7 @@ const NETWORK_COLORS: Record<string, string> = {
 
 const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
   travel:        { icon: <PlaneIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
-  unlimited_eco: { icon: <InfinityIcon size={14} className="currentColor" />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
+  unlimited_eco: { icon: <EcoIcon size={14} />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
   unlimited_pro: { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
 
@@ -247,12 +247,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <span className="font-semibold">{t('det_no_number')}</span>
             </div>
             <div className="flex items-center gap-2">
-              {isTravel ? (
-                <ShieldIcon size={14} className="text-emerald-600 shrink-0" />
-              ) : (
-                <InfoIcon size={14} className="text-slate-400 shrink-0" />
-              )}
-              <span className="font-semibold">{isTravel ? t('det_reloadable') : t('det_not_reloadable')}</span>
+              <ShieldIcon size={14} className="text-emerald-600 shrink-0" />
+              <span className="font-semibold">{isTravel ? t('det_reloadable') : t('det_reloadable_unlimited')}</span>
             </div>
           </div>
 

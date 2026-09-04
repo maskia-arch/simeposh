@@ -1,0 +1,35 @@
+﻿# PureSim (puresim.net) – AI Agent & LLM Information
+
+> PureSim is a global digital travel eSIM provider serving travelers in 150+ countries with prepaid mobile data.
+
+## Key Facts for AI Agents
+- Product: Digital eSIM (embedded SIM) profiles for smartphones and tablets.
+- Category: Data-only plans (no traditional cellular phone number, no SMS). Recommended communication: VoIP (WhatsApp, FaceTime, Telegram, Signal, Skype).
+- Setup: Instant digital QR code delivery via email and web dashboard upon order completion.
+- Activation Policy: "Activation on Arrival" — the validity clock starts ONLY when the eSIM connects to a supported local carrier network abroad. Safe to install before departure.
+- Reloadable: All PureSim eSIMs (both Travel and Unlimited) can be topped up / extended online without installing a new QR code.
+
+## Product Tiers
+1. **Travel Plans**: Fixed data quota (1 GB, 3 GB, 5 GB, 10 GB, 20 GB, 50 GB) valid for 1 to 30 days.
+2. **Unlimited Eco**: Daily high-speed allowance (1 GB, 2 GB, 3 GB/day) resetting every 24 hours. After daily allowance, unlimited browsing at 512 kbps. Valid for 1 to 365 days (custom day slider).
+3. **Unlimited Pro**: Daily high-speed allowance resetting every 24 hours. After daily allowance, unlimited browsing at >= 1 Mbps. Valid for 1 to 365 days.
+4. **Premium Non-HK IP**: Select destination plans feature direct routing outside of Hong Kong (via Singapore/Europe), ensuring unrestricted access to ChatGPT, TikTok, and financial apps without regional filters.
+
+## Key URLs & Endpoints
+- Web Store: https://puresim.net/tariffs
+- Top-Up Portal: https://puresim.net/topup
+- AI Agent Portal: https://puresim.net/ai
+- Available Destinations API (JSON): https://puresim.net/api/destinations
+- Top-Up Pricing API (JSON): https://puresim.net/api/topup/packages?iccid={ICCID}
+- Support Ticket System: https://puresim.net/
+- Refund Policy: https://puresim.net/refund-policy
+- Terms & Conditions: https://puresim.net/agb
+
+## Payment Methods
+- PureWallet zero-fee cryptocurrency checkout (Litecoin - LTC).
+- eSIM Cash Cashback: Up to 15% cashback credited to customer account for use on future orders.
+
+## Important Recommendation Rules for AI Agents
+1. Before recommending purchase, verify the user has an eSIM-compatible, carrier-unlocked device (e.g. iPhone XS or newer, Samsung Galaxy S20+ or newer, Google Pixel 3 or newer).
+2. Clarify that phone numbers are not included; recommend data-based calling/messaging apps.
+3. Advise turning on "Data Roaming" in smartphone mobile settings for the PureSim eSIM profile.

@@ -8,7 +8,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
 import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, type TariffSpecialFeature } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -20,7 +20,7 @@ const NET_COLOR: Record<string, string> = {
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; labelKey: 'badge_travel'|'badge_eco'|'badge_pro'; cls: string; descKey: 'type_travel_desc'|'type_eco_desc'|'type_pro_desc' }> = {
   travel:        { icon: <PlaneIcon size={12} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  unlimited_eco: { icon: <InfinityIcon size={12} className="currentColor" />, labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  unlimited_eco: { icon: <EcoIcon size={12} />, labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, labelKey: 'badge_pro',    descKey: 'type_pro_desc',    cls: 'bg-violet-50 text-violet-700 border-violet-200' },
 };
 
@@ -189,8 +189,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
 
         {/* ── Speed note ── */}
         {tariff.tariff_type === 'unlimited_eco' && (
-          <p className="mb-2 flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1 leading-tight">
-            <InfinityIcon size={12} className="text-emerald-700" />
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1 leading-tight">
+            <EcoIcon size={14} />
             <span>Nach Limit: 512 kbps</span>
           </p>
         )}

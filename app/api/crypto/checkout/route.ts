@@ -11,6 +11,7 @@ import { cookies } from 'next/headers';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { customUnlimitedPriceEur, clampDays } from '@/lib/quote';
+import { isUuid }                from '@/lib/utils';
 import { resolveCustomer }     from '@/lib/customers';
 import { createCryptoSession } from '@/lib/crypto/session';
 import { getCoin }             from '@/lib/crypto/coins';
@@ -23,28 +24,26 @@ interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIcci
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { email?: string; coin?: string; items?: ReqItem[]; newsletterConsent?: boolean; locale?: string };
-    const email = body.email ? body.email.trim().toLowerCase() : '';
-    const coin  = body.coin?.trim().toUpperCase();
-    const items = Array.isArray(body.items) ? body.items : [];
+    const body = await request.json();
+    const { email, coin, items, referredBy } = body as {
+      email?:      string;
+      coin?:       string;
+      items?:      ReqItem[];
+      referredBy?: string;
+    };
 
-    const cookieStore = cookies();
-    const referredBy = cookieStore.get('referred_by')?.value || null;
-
-    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return NextResponse.json({ error: 'Valid e-mail required' }, { status: 400 });
+    if (!email || !coin || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-    if (!coin)        return NextResponse.json({ error: 'Coin required' }, { status: 400 });
-    if (items.length === 0) return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
 
-    // Normalise lines
+    // Merge identical cart lines
     const merged = new Map<string, { tariffId: string; days: number | null; quantity: number; topUpIccid: string | null }>();
     for (const it of items) {
-      if (!it?.tariffId) continue;
-      const days   = typeof it.days === 'number' ? clampDays(it.days) : null;
+      if (!it.tariffId) continue;
+      const days   = it.days ? clampDays(it.days) : null;
       const iccid  = it.topUpIccid?.trim() || null;
-      const key    = `${it.tariffId}__${days ?? ''}__${iccid ?? ''}`;
-      const q      = Math.min(99, Math.max(1, Math.floor(Number(it.quantity) || 1)));
+      const key    = `${it.tariffId}:${days ?? 0}:${iccid ?? ''}`;
+      const q      = Math.max(1, Math.round(it.quantity || 1));
       const prev   = merged.get(key);
       if (prev) prev.quantity += q; else merged.set(key, { tariffId: it.tariffId, days, quantity: q, topUpIccid: iccid });
     }
@@ -53,11 +52,30 @@ export async function POST(request: Request) {
 
     const service = createServiceClient();
     const ids = Array.from(new Set(lines.map((l) => l.tariffId)));
-    const { data: tariffs } = await service
-      .from('tariffs')
-      .select('id, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active')
-      .in('id', ids);
-    const tMap = new Map((tariffs ?? []).map((t) => [t.id, t]));
+    const uuidIds = ids.filter(isUuid);
+    const codeIds = ids.filter((id) => !isUuid(id));
+
+    const tariffs: any[] = [];
+    if (uuidIds.length > 0) {
+      const { data: byId } = await service
+        .from('tariffs')
+        .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+        .in('id', uuidIds);
+      if (byId) tariffs.push(...byId);
+    }
+    if (codeIds.length > 0) {
+      const { data: byCode } = await service
+        .from('tariffs')
+        .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+        .in('package_code', codeIds);
+      if (byCode) tariffs.push(...byCode);
+    }
+
+    const tMap = new Map<string, any>();
+    for (const t of tariffs) {
+      tMap.set(t.id, t);
+      if (t.package_code) tMap.set(t.package_code, t);
+    }
 
     const userClient = await createClient();
     const { data: { user } } = await userClient.auth.getUser();
@@ -71,7 +89,7 @@ export async function POST(request: Request) {
       if (!t) continue;
       const isTopUp = !!line.topUpIccid;
       if (!isTopUp && !t.is_active) continue;
-      const isUnlimited = !isTopUp && (t.tariff_type?.startsWith('unlimited') ?? false);
+      const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
       let unit = t.sale_price_eur;
       if (isUnlimited && line.days) {
         unit = customUnlimitedPriceEur(t.sale_price_eur, t.validity_days, line.days);
@@ -137,7 +155,7 @@ export async function POST(request: Request) {
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
         if (!isTopUp && !t.is_active) continue;
-        const isUnlimited = !isTopUp && (t.tariff_type?.startsWith('unlimited') ?? false);
+        const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
         let unit = t.sale_price_eur;
         let periodNum: number | null = null;
         if (isUnlimited && line.days) {
@@ -200,7 +218,7 @@ export async function POST(request: Request) {
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
         if (!isTopUp && !t.is_active) continue;
-        const isUnlimited = !isTopUp && (t.tariff_type?.startsWith('unlimited') ?? false);
+        const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
         let unit = t.sale_price_eur;
         let periodNum: number | null = null;
         if (isUnlimited && line.days) {

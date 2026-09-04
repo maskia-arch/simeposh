@@ -341,8 +341,8 @@ function OrderRow({
   const lifecycle = (order.esim_status as EsimLifecycle | null) ?? 'unknown';
   const lifeMeta = LIFECYCLE_META[lifecycle] ?? LIFECYCLE_META.unknown;
   const lifeLabel = lifeMeta.key ? t(lifeMeta.key) : '—';
-  // Reloadable: travel eSIMs that are not yet a top-up order.
-  const canReload = isTravel && order.order_type !== 'top_up' && !!order.iccid;
+  // Reloadable: eSIMs (Travel and Unlimited) that are not yet a top-up order and have an ICCID.
+  const canReload = order.order_type !== 'top_up' && !!order.iccid;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">

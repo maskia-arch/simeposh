@@ -7,7 +7,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        allow: [
+          '/',
+          '/ai',
+          '/llms.txt',
+          '/api/destinations',
+          '/api/topup/packages',
+        ],
         disallow: [
           '/dashboard',
           '/checkout',
