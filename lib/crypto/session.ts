@@ -273,6 +273,32 @@ export async function createCryptoSession(opts: {
   // Queue the address to be synchronized by the wallet gateway
   await queueAddressSync(walletRes.address);
 
+  // Proactively notify pure-wallet gateway if it's currently online
+  try {
+    const gatewayUrls = Array.from(new Set([
+      process.env.PURE_WALLET_URL,
+      'http://127.0.0.1:7777',
+      'http://localhost:7777',
+    ].filter(Boolean) as string[]));
+
+    for (const gw of gatewayUrls) {
+      fetch(`${gw.replace(/\/$/, '')}/api/v1/wallet/notify-active-address`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: sessionId,
+          address: walletRes.address,
+          coin: coin.code,
+          crypto_amount: walletRes.amount_ltc,
+          amount_eur: amountEur,
+          expires_at: walletRes.expires_at,
+          payment_memo: walletRes.payment_memo || null,
+        }),
+        signal: AbortSignal.timeout(1500),
+      }).catch(() => {});
+    }
+  } catch {}
+
   // Build URI scheme
   let paymentUri = `${coin.uri_scheme}:${walletRes.address}?amount=${walletRes.amount_ltc}`;
   if (walletRes.payment_memo) {

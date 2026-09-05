@@ -76,140 +76,177 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
   };
 }
 
-async function checkEthAddress(address: string, coinCode: string = 'ETH'): Promise<{ received: number; confirmations: number; txid: string | null }> {
-  if (coinCode === 'USDT' || coinCode === 'USDC') {
-    const tokenContracts: Record<string, string> = {
-      USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-      USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    };
-    const contract = tokenContracts[coinCode];
+interface ChainCheckResult {
+  received: number;
+  confirmations: number;
+  txid: string | null;
+}
+
+const EVM_FALLBACK_RPCS = [
+  'https://ethereum-rpc.publicnode.com',
+  'https://cloudflare-eth.com',
+  'https://rpc.ankr.com/eth',
+  'https://rpc.flashbots.net',
+  'https://mainnet.gateway.tenderly.co',
+  'https://eth.merkle.io',
+  'https://eth-mainnet.public.blastapi.io',
+  'https://ethereum.blockpi.network/v1/rpc/public',
+];
+
+const POLYGON_FALLBACK_RPCS = [
+  'https://polygon-rpc.com',
+  'https://1rpc.io/matic',
+  'https://polygon-bor-rpc.publicnode.com',
+  'https://rpc.ankr.com/polygon',
+];
+
+const ARBITRUM_FALLBACK_RPCS = [
+  'https://arb1.arbitrum.io/rpc',
+  'https://1rpc.io/arb',
+  'https://arbitrum-one-rpc.publicnode.com',
+];
+
+const BASE_FALLBACK_RPCS = [
+  'https://mainnet.base.org',
+  'https://1rpc.io/base',
+  'https://base-rpc.publicnode.com',
+];
+
+const BSC_FALLBACK_RPCS = [
+  'https://binance.llamarpc.com',
+  'https://bsc-dataseed.binance.org',
+  'https://1rpc.io/bnb',
+];
+
+const SOLANA_FALLBACK_RPCS = [
+  'https://api.mainnet-beta.solana.com',
+  'https://solana-mainnet.rpc.extrnode.com',
+  'https://rpc.ankr.com/solana',
+  'https://1rpc.io/sol',
+];
+
+async function callJsonRpc(urls: string[], method: string, params: any[]): Promise<any> {
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(4000),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.result !== undefined && json.result !== null) {
+          return json.result;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+async function checkEvmTokenBalance(address: string, contractAddress: string, rpcUrls: string[], decimals: number = 6): Promise<number> {
+  try {
     const cleanAddr = address.toLowerCase().replace(/^0x/, '').padStart(64, '0');
     const dataHex = `0x70a08231${cleanAddr}`;
-    
-    const body = {
-      jsonrpc: "2.0",
-      method: "eth_call",
-      params: [{ to: contract, data: dataHex }, "latest"],
-      id: 1
-    };
-    const res = await fetch("https://cloudflare-eth.com", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000)
-    });
-    if (!res.ok) throw new Error(`ETH RPC ERC-20 failed with status ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-
-    const balanceRaw = BigInt(data.result || "0x0");
-    const tokenBalance = Number(balanceRaw) / 1e6; // USDT and USDC on ETH use 6 decimals
-
-    return {
-      received: tokenBalance,
-      confirmations: tokenBalance > 0 ? 1 : 0,
-      txid: tokenBalance > 0 ? `erc20_${coinCode.toLowerCase()}_rpc_check` : null
-    };
-  } else {
-    const body = {
-      jsonrpc: "2.0",
-      method: "eth_getBalance",
-      params: [address, "latest"],
-      id: 1
-    };
-    const res = await fetch("https://cloudflare-eth.com", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000)
-    });
-    if (!res.ok) throw new Error(`ETH RPC failed with status ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-
-    const balanceWei = BigInt(data.result || "0x0");
-    const balanceEth = Number(balanceWei) / 1e18;
-
-    return {
-      received: balanceEth,
-      confirmations: balanceEth > 0 ? 1 : 0,
-      txid: balanceEth > 0 ? "eth_direct_rpc_check" : null
-    };
+    const rawHex = await callJsonRpc(rpcUrls, 'eth_call', [{ to: contractAddress, data: dataHex }, 'latest']);
+    if (!rawHex || rawHex === '0x') return 0;
+    const rawVal = BigInt(rawHex);
+    return Number(rawVal) / Math.pow(10, decimals);
+  } catch {
+    return 0;
   }
 }
 
-async function checkSolAddress(address: string, coinCode: string = 'SOL'): Promise<{ received: number; confirmations: number; txid: string | null }> {
-  if (coinCode === 'USDT' || coinCode === 'USDC') {
+async function checkEthAddress(address: string, coinCode: string = 'ETH'): Promise<ChainCheckResult> {
+  const upperCoin = coinCode.toUpperCase();
+  
+  if (upperCoin === 'USDC') {
+    // Check across major EVM chains: Ethereum, Polygon, Arbitrum, Base, BSC
+    const [ethBal, polyBal, polyBridgedBal, arbBal, baseBal, bscBal] = await Promise.all([
+      checkEvmTokenBalance(address, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', EVM_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', POLYGON_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', POLYGON_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', ARBITRUM_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', BASE_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', BSC_FALLBACK_RPCS, 18),
+    ]);
+
+    const totalUsdc = ethBal + polyBal + polyBridgedBal + arbBal + baseBal + bscBal;
+    return {
+      received: totalUsdc,
+      confirmations: totalUsdc > 0 ? 1 : 0,
+      txid: totalUsdc > 0 ? 'evm_usdc_check' : null,
+    };
+  }
+
+  if (upperCoin === 'USDT') {
+    const [ethBal, polyBal, arbBal, baseBal, bscBal] = await Promise.all([
+      checkEvmTokenBalance(address, '0xdAC17F958D2ee523a2206206994597C13D831ec7', EVM_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', POLYGON_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', ARBITRUM_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', BASE_FALLBACK_RPCS, 6),
+      checkEvmTokenBalance(address, '0x55d398326f99059fF775485246999027B3197955', BSC_FALLBACK_RPCS, 18),
+    ]);
+
+    const totalUsdt = ethBal + polyBal + arbBal + baseBal + bscBal;
+    return {
+      received: totalUsdt,
+      confirmations: totalUsdt > 0 ? 1 : 0,
+      txid: totalUsdt > 0 ? 'evm_usdt_check' : null,
+    };
+  }
+
+  // Native ETH
+  const rawHex = await callJsonRpc(EVM_FALLBACK_RPCS, 'eth_getBalance', [address, 'latest']);
+  const balanceWei = BigInt(rawHex || '0x0');
+  const balanceEth = Number(balanceWei) / 1e18;
+
+  return {
+    received: balanceEth,
+    confirmations: balanceEth > 0 ? 1 : 0,
+    txid: balanceEth > 0 ? 'eth_direct_rpc_check' : null,
+  };
+}
+
+async function checkSolAddress(address: string, coinCode: string = 'SOL'): Promise<ChainCheckResult> {
+  const upperCoin = coinCode.toUpperCase();
+  if (upperCoin === 'USDT' || upperCoin === 'USDC') {
     const mints: Record<string, string> = {
       USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
       USDT: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
     };
-    const mint = mints[coinCode];
-    const body = {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "getTokenAccountsByOwner",
-      params: [address, { mint }, { encoding: "jsonParsed" }]
-    };
-    try {
-      const res = await fetch("https://api.mainnet-beta.solana.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        cache: 'no-store',
-        signal: AbortSignal.timeout(5000)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const accounts = data.result?.value || [];
-        let totalAmount = 0;
-        for (const acc of accounts) {
-          const info = acc.account?.data?.parsed?.info;
-          if (info?.tokenAmount?.uiAmount) {
-            totalAmount += info.tokenAmount.uiAmount;
-          }
+    const mint = mints[upperCoin];
+    const data = await callJsonRpc(SOLANA_FALLBACK_RPCS, 'getTokenAccountsByOwner', [address, { mint }, { encoding: 'jsonParsed' }]);
+    if (data && Array.isArray(data.value)) {
+      let totalAmount = 0;
+      for (const acc of data.value) {
+        const info = acc.account?.data?.parsed?.info;
+        if (info?.tokenAmount?.uiAmount) {
+          totalAmount += Number(info.tokenAmount.uiAmount);
         }
-        return {
-          received: totalAmount,
-          confirmations: totalAmount > 0 ? 1 : 0,
-          txid: totalAmount > 0 ? `sol_spl_${coinCode.toLowerCase()}_check` : null
-        };
       }
-    } catch (solSplErr) {
-      console.warn(`[Direct SOL Check] SPL token check failed for ${address}:`, (solSplErr as Error).message);
+      return {
+        received: totalAmount,
+        confirmations: totalAmount > 0 ? 1 : 0,
+        txid: totalAmount > 0 ? `sol_spl_${upperCoin.toLowerCase()}_check` : null,
+      };
     }
   }
 
-  const body = {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getBalance",
-    params: [address]
-  };
-  const res = await fetch("https://api.mainnet-beta.solana.com", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-    signal: AbortSignal.timeout(5000)
-  });
-  if (!res.ok) throw new Error(`SOL RPC failed with status ${res.status}`);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-
-  const balanceLamports = data.result?.value ?? 0;
+  const data = await callJsonRpc(SOLANA_FALLBACK_RPCS, 'getBalance', [address]);
+  const balanceLamports = typeof data?.value === 'number' ? data.value : 0;
   const balanceSol = balanceLamports / 1e9;
-  
+
   return {
     received: balanceSol,
     confirmations: balanceSol > 0 ? 1 : 0,
-    txid: balanceSol > 0 ? "sol_direct_rpc_check" : null
+    txid: balanceSol > 0 ? 'sol_direct_rpc_check' : null,
   };
 }
 
-async function checkTonAddress(address: string, paymentMemo?: string | null, createdAfter?: Date): Promise<{ received: number; confirmations: number; txid: string | null }> {
+async function checkTonAddress(address: string, paymentMemo?: string | null, createdAfter?: Date): Promise<ChainCheckResult> {
   if (!paymentMemo) {
     return { received: 0, confirmations: 0, txid: null };
   }
@@ -276,47 +313,93 @@ async function checkTonAddress(address: string, paymentMemo?: string | null, cre
   return { received: 0, confirmations: 0, txid: null };
 }
 
-async function checkTrxAddress(address: string, coinCode: string = 'TRX'): Promise<{ received: number; confirmations: number; txid: string | null }> {
-  try {
-    const res = await fetch(`https://api.trongrid.io/v1/accounts/${encodeURIComponent(address)}`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(6000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.data && data.data.length > 0) {
-        const acc = data.data[0];
-        if (coinCode === 'USDT') {
-          // TRC-20 USDT contract address: TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
-          const trc20List = acc.trc20 || [];
-          let usdtRaw = 0;
-          for (const item of trc20List) {
-            if (item.TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t) {
-              usdtRaw = parseFloat(item.TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t);
-              break;
+async function checkTrxAddress(address: string, coinCode: string = 'TRX'): Promise<ChainCheckResult> {
+  const upperCoin = coinCode.toUpperCase();
+  const endpoints = [
+    `https://api.trongrid.io/v1/accounts/${encodeURIComponent(address)}`,
+    `https://api.tronstack.io/v1/accounts/${encodeURIComponent(address)}`,
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.data && data.data.length > 0) {
+          const acc = data.data[0];
+          if (upperCoin === 'USDT' || upperCoin === 'USDC') {
+            const contract = upperCoin === 'USDT'
+              ? 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
+              : 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8';
+            const trc20List = acc.trc20 || [];
+            let tokenRaw = 0;
+            for (const item of trc20List) {
+              if (item[contract]) {
+                tokenRaw = parseFloat(item[contract]);
+                break;
+              }
             }
+            const tokenBalance = tokenRaw / 1e6;
+            return {
+              received: tokenBalance,
+              confirmations: tokenBalance > 0 ? 1 : 0,
+              txid: tokenBalance > 0 ? `trc20_${upperCoin.toLowerCase()}_check` : null,
+            };
+          } else {
+            const trxBalance = (acc.balance || 0) / 1e6;
+            return {
+              received: trxBalance,
+              confirmations: trxBalance > 0 ? 1 : 0,
+              txid: trxBalance > 0 ? 'trx_direct_check' : null,
+            };
           }
-          const usdtBalance = usdtRaw / 1e6;
-          return {
-            received: usdtBalance,
-            confirmations: usdtBalance > 0 ? 1 : 0,
-            txid: usdtBalance > 0 ? 'trc20_usdt_check' : null
-          };
-        } else {
-          // Native TRX (in Sun, 1 TRX = 1e6 Sun)
-          const trxBalance = (acc.balance || 0) / 1e6;
-          return {
-            received: trxBalance,
-            confirmations: trxBalance > 0 ? 1 : 0,
-            txid: trxBalance > 0 ? 'trx_direct_check' : null
-          };
         }
       }
-    }
-  } catch (err) {
-    console.warn(`[Direct TRX Check] Trongrid check failed for ${address}:`, (err as Error).message);
+    } catch {}
   }
   return { received: 0, confirmations: 0, txid: null };
+}
+
+async function checkAddressOnChain(
+  address: string,
+  coinCode: string,
+  paymentMemo?: string | null,
+  createdAfter?: Date,
+  claimedTxHashes?: Set<string>
+): Promise<ChainCheckResult> {
+  const cleanAddr = address.trim();
+  const upperCoin = coinCode.toUpperCase();
+
+  // 1. EVM address (0x...) -> Check Ethereum / Polygon / Arbitrum / Base / BSC
+  if (cleanAddr.startsWith('0x') && cleanAddr.length === 42) {
+    return checkEthAddress(cleanAddr, upperCoin);
+  }
+
+  // 2. TRON address (T...)
+  if (cleanAddr.startsWith('T') && cleanAddr.length === 34) {
+    return checkTrxAddress(cleanAddr, upperCoin);
+  }
+
+  // 3. Solana address (Base58, 32-44 chars without 0x/T)
+  if (cleanAddr.length >= 32 && cleanAddr.length <= 44 && !cleanAddr.startsWith('0x') && (upperCoin === 'SOL' || upperCoin === 'USDC' || upperCoin === 'USDT')) {
+    return checkSolAddress(cleanAddr, upperCoin);
+  }
+
+  // 4. TON address
+  if (upperCoin === 'TON' || cleanAddr.startsWith('EQ') || cleanAddr.startsWith('UQ')) {
+    return checkTonAddress(cleanAddr, paymentMemo, createdAfter);
+  }
+
+  // 5. Bitcoin / Litecoin
+  if (upperCoin === 'BTC' || upperCoin === 'LTC') {
+    return checkBtcLtcAddress(cleanAddr, upperCoin, createdAfter, claimedTxHashes);
+  }
+
+  // Generic fallback
+  if (cleanAddr.startsWith('0x')) {
+    return checkEthAddress(cleanAddr, upperCoin);
+  }
+  return checkSolAddress(cleanAddr, upperCoin);
 }
 
 function getPureWalletUrls(): string[] {
@@ -396,16 +479,15 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       status = 'expired';
     }
   } else {
-    // Direct Blockchain Explorer check!
-    if (currentSession.status === 'pending' || currentSession.status === 'partially_paid' || currentSession.status === 'detected') {
-      try {
-        const coinCode = currentSession.coin.toUpperCase();
-        const address = currentSession.wallet_address;
-        const paymentMemo = currentSession.payment_memo;
-        // Only count transactions that occurred AFTER this checkout session was created
-        const createdAfter = currentSession.created_at ? new Date(currentSession.created_at) : undefined;
-        let chainInfo = { received: 0, confirmations: 0, txid: null as string | null };
+    // Direct Blockchain Multi-RPC Check (Autonomous Mode)
+    // Check pending, partially_paid, detected, AND recently expired sessions (to auto-fulfill late payments!)
+    try {
+      const coinCode = currentSession.coin.toUpperCase();
+      const address = currentSession.wallet_address;
+      const paymentMemo = currentSession.payment_memo;
+      const createdAfter = currentSession.created_at ? new Date(currentSession.created_at) : undefined;
 
+      if (address && address !== 'TBD') {
         // Fetch transaction hashes claimed by OTHER paid sessions on the same address
         let claimedTxHashes = new Set<string>();
         try {
@@ -423,17 +505,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           }
         } catch {}
 
-        if (coinCode === 'LTC' || coinCode === 'BTC') {
-          chainInfo = await checkBtcLtcAddress(address, coinCode, createdAfter, claimedTxHashes);
-        } else if (coinCode === 'ETH' || coinCode === 'USDT' || coinCode === 'USDC') {
-          chainInfo = await checkEthAddress(address, coinCode);
-        } else if (coinCode === 'SOL') {
-          chainInfo = await checkSolAddress(address, coinCode);
-        } else if (coinCode === 'TON') {
-          chainInfo = await checkTonAddress(address, paymentMemo, createdAfter);
-        } else if (coinCode === 'TRX') {
-          chainInfo = await checkTrxAddress(address, coinCode);
-        }
+        const chainInfo = await checkAddressOnChain(address, coinCode, paymentMemo, createdAfter, claimedTxHashes);
 
         if (chainInfo.received >= requiredThreshold) {
           status = chainInfo.confirmations >= confirmationsRequired ? 'paid' : 'detected';
@@ -449,12 +521,12 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
         receivedAmount = chainInfo.received;
         txHash = chainInfo.txid || txHash;
         confirmations = chainInfo.confirmations;
-        paidAt = status === 'paid' ? new Date().toISOString() : null;
+        paidAt = status === 'paid' ? (currentSession.paid_at || new Date().toISOString()) : null;
 
-        console.log(`[Direct Chain Check] Session ${id} (${coinCode}): status=${status}, received=${receivedAmount}/${expectedAmount} (threshold: ${requiredThreshold})`);
-      } catch (chainErr) {
-        console.error(`[Direct Chain Check] Failed to check blockchain for session ${id}:`, (chainErr as Error).message);
+        console.log(`[Direct Chain Check] Session ${id} (${coinCode} on ${address}): status=${status}, received=${receivedAmount}/${expectedAmount} (threshold: ${requiredThreshold})`);
       }
+    } catch (chainErr) {
+      console.error(`[Direct Chain Check] Failed to check blockchain for session ${id}:`, (chainErr as Error).message);
     }
   }
 
@@ -489,7 +561,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           const uncompletedIds = uncompleted.map((o: any) => o.id);
 
           if (currentSession.status !== 'paid' || uncompletedIds.length > 0) {
-            console.log(`[Session Sync] Fulfilling orders for paid session: ${orderIds.join(', ')} (uncompleted: ${uncompletedIds.length})`);
+            const isLate = currentSession.status === 'expired' || nowMs > expMs;
+            console.log(`[Session Sync] Fulfilling orders for paid session: ${orderIds.join(', ')} (uncompleted: ${uncompletedIds.length}, isLate: ${isLate})`);
 
             if (uncompletedIds.length > 0) {
               await db
@@ -500,7 +573,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
                 })
                 .in('id', uncompletedIds);
 
-              await fulfillOrders(db, uncompletedIds);
+              await fulfillOrders(db, uncompletedIds, { isLatePayment: isLate });
             }
           }
         }).catch((err: any) => {
@@ -544,7 +617,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
 }
 
 /**
- * Sweep and sync all active pending/detected/partially_paid crypto sessions in the background.
+ * Sweep and sync all active pending/detected/partially_paid AND recently expired crypto sessions in the background.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
@@ -552,6 +625,7 @@ export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
     const { sweepExpiredSessions } = await import('@/lib/crypto/session');
     await sweepExpiredSessions(db);
 
+    // 1. Fetch active sessions (pending, detected, partially_paid)
     const { data: activeSessions } = await db
       .from('crypto_sessions')
       .select('id, expires_at, status')
@@ -559,18 +633,31 @@ export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (!activeSessions || activeSessions.length === 0) return 0;
+    // 2. ALSO fetch recently expired sessions from the last 72h that may have late on-chain payments!
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: expiredSessions } = await db
+      .from('crypto_sessions')
+      .select('id, expires_at, status')
+      .eq('status', 'expired')
+      .gt('created_at', threeDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(30);
 
-    const now = Date.now();
+    const allCandidateSessions = [
+      ...(activeSessions || []),
+      ...(expiredSessions || []),
+    ];
+
+    if (allCandidateSessions.length === 0) return 0;
+
+    const seenIds = new Set<string>();
     let count = 0;
-    for (const s of activeSessions) {
-      const expMs = new Date(s.expires_at).getTime();
-      // If payment detected or partially_paid, sync indefinitely without time limit!
-      // If pending, sync as long as within expiration window (+2h grace period)
-      if (s.status === 'detected' || s.status === 'partially_paid' || now <= expMs + 2 * 60 * 60 * 1000) {
-        await syncSessionWithGateway(s.id, db);
-        count++;
-      }
+    for (const s of allCandidateSessions) {
+      if (seenIds.has(s.id)) continue;
+      seenIds.add(s.id);
+
+      await syncSessionWithGateway(s.id, db);
+      count++;
     }
     return count;
   } catch (err) {
