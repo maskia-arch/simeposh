@@ -3,6 +3,10 @@ const nextConfig = {
   // Output standalone for Render deployment (efficient Docker-like builds)
   output: 'standalone',
 
+  experimental: {
+    instrumentationHook: true,
+  },
+
   images: {
     remotePatterns: [
       {

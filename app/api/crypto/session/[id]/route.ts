@@ -12,67 +12,103 @@ export const dynamic = 'force-dynamic';
 
 async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date, claimedTxHashes?: Set<string>): Promise<{ received: number; confirmations: number; txid: string | null }> {
   const isLtc = coinCode === 'LTC';
-  const baseUrl = isLtc ? 'https://litecoinspace.org/api' : 'https://mempool.space/api';
-  
-  const txsRes = await fetch(`${baseUrl}/address/${address}/txs`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
-  if (!txsRes.ok) throw new Error(`Explorer returned status ${txsRes.status}`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const txs = await txsRes.json() as any[];
+  const primaryUrls = isLtc
+    ? ['https://litecoinspace.org/api']
+    : ['https://mempool.space/api', 'https://blockstream.info/api'];
 
-  let tipHeight = 0;
+  // 1. Try Primary Mempool/Space Explorers
+  for (const baseUrl of primaryUrls) {
+    try {
+      const txsRes = await fetch(`${baseUrl}/address/${address}/txs`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      if (!txsRes.ok) continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const txs = await txsRes.json() as any[];
+
+      let tipHeight = 0;
+      try {
+        const tipRes = await fetch(`${baseUrl}/blocks/tip/height`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+        if (tipRes.ok) {
+          tipHeight = parseInt((await tipRes.text()).trim(), 10);
+        }
+      } catch {}
+
+      let totalReceivedSat = 0;
+      let maxConfirmations = 0;
+      let lastTxid: string | null = null;
+
+      for (const tx of txs) {
+        if (claimedTxHashes && tx.txid && claimedTxHashes.has(tx.txid)) {
+          continue;
+        }
+
+        if (tx.status?.confirmed && tx.status?.block_time && createdAfter) {
+          const txTimeMs = tx.status.block_time * 1000;
+          if (txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
+            continue;
+          }
+        }
+
+        let txReceived = 0;
+        if (tx.vout) {
+          for (const out of tx.vout) {
+            if (out.scriptpubkey_address === address) {
+              txReceived += out.value;
+            }
+          }
+        }
+
+        if (txReceived > 0) {
+          totalReceivedSat += txReceived;
+          lastTxid = tx.txid;
+          
+          let txConf = 0;
+          if (tx.status && tx.status.confirmed && tx.status.block_height) {
+            txConf = Math.max(1, tipHeight > 0 ? tipHeight - tx.status.block_height + 1 : 1);
+          }
+          if (txConf > maxConfirmations) {
+            maxConfirmations = txConf;
+          }
+        }
+      }
+
+      return {
+        received: totalReceivedSat / 1e8,
+        confirmations: maxConfirmations,
+        txid: lastTxid
+      };
+    } catch {}
+  }
+
+  // 2. Secondary Fallback: BlockCypher API
   try {
-    const tipRes = await fetch(`${baseUrl}/blocks/tip/height`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
-    if (tipRes.ok) {
-      tipHeight = parseInt((await tipRes.text()).trim(), 10);
+    const chainPath = isLtc ? 'ltc/main' : 'btc/main';
+    const cypherRes = await fetch(`https://api.blockcypher.com/v1/${chainPath}/addrs/${address}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+    if (cypherRes.ok) {
+      const data = await cypherRes.json();
+      const totalSat = Number(data.total_received || 0);
+      let latestTxid: string | null = null;
+      let confs = 0;
+
+      if (Array.isArray(data.txrefs) && data.txrefs.length > 0) {
+        const matchingRef = data.txrefs.find((r: any) => !claimedTxHashes || !claimedTxHashes.has(r.tx_hash));
+        if (matchingRef) {
+          latestTxid = matchingRef.tx_hash;
+          confs = Number(matchingRef.confirmations || 1);
+        }
+      }
+
+      return {
+        received: totalSat / 1e8,
+        confirmations: confs || (totalSat > 0 ? 1 : 0),
+        txid: latestTxid,
+      };
     }
   } catch {}
 
-  let totalReceivedSat = 0;
-  let maxConfirmations = 0;
-  let lastTxid: string | null = null;
-
-  for (const tx of txs) {
-    // Skip transactions already claimed by another paid session on this address
-    if (claimedTxHashes && tx.txid && claimedTxHashes.has(tx.txid)) {
-      console.log(`[Direct Chain Check] Skipping transaction ${tx.txid} on ${address} because it was already claimed by a completed session`);
-      continue;
-    }
-
-    // Skip transactions confirmed before this checkout session was created
-    if (tx.status?.confirmed && tx.status?.block_time && createdAfter) {
-      const txTimeMs = tx.status.block_time * 1000;
-      if (txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
-        continue;
-      }
-    }
-
-    let txReceived = 0;
-    if (tx.vout) {
-      for (const out of tx.vout) {
-        if (out.scriptpubkey_address === address) {
-          txReceived += out.value;
-        }
-      }
-    }
-
-    if (txReceived > 0) {
-      totalReceivedSat += txReceived;
-      lastTxid = tx.txid;
-      
-      let txConf = 0;
-      if (tx.status && tx.status.confirmed && tx.status.block_height) {
-        txConf = Math.max(1, tipHeight > 0 ? tipHeight - tx.status.block_height + 1 : 1);
-      }
-      if (txConf > maxConfirmations) {
-        maxConfirmations = txConf;
-      }
-    }
-  }
-
   return {
-    received: totalReceivedSat / 1e8,
-    confirmations: maxConfirmations,
-    txid: lastTxid
+    received: 0,
+    confirmations: 0,
+    txid: null,
   };
 }
 
@@ -120,9 +156,8 @@ const BSC_FALLBACK_RPCS = [
 
 const SOLANA_FALLBACK_RPCS = [
   'https://api.mainnet-beta.solana.com',
-  'https://solana-mainnet.rpc.extrnode.com',
-  'https://rpc.ankr.com/solana',
-  'https://1rpc.io/sol',
+  'https://solana-rpc.publicnode.com',
+  'https://api.tatum.io/v3/blockchain/node/solana-mainnet',
 ];
 
 async function callJsonRpc(urls: string[], method: string, params: any[]): Promise<any> {
