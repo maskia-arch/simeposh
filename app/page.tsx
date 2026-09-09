@@ -196,19 +196,22 @@ async function getBlogPosts(locale: string) {
 
 async function getFeedbackStats() {
   try {
-    const { rows } = await query('SELECT rating FROM public.feedbacks');
+    const { rows } = await query(
+      'SELECT id, rating, comment, display_name, is_verified, source, created_at FROM public.feedbacks ORDER BY created_at DESC'
+    );
     if (!rows || rows.length === 0) {
-      return { averageRating: 5.0, totalCount: 0 };
+      return { averageRating: 5.0, totalCount: 0, recentReviews: [] };
     }
 
     const totalCount = rows.length;
     const sum = rows.reduce((acc: number, item: any) => acc + item.rating, 0);
     const averageRating = parseFloat((sum / totalCount).toFixed(1));
+    const recentReviews = rows.filter((r: any) => r.comment && r.comment.trim().length > 10).slice(0, 3);
 
-    return { averageRating, totalCount };
+    return { averageRating, totalCount, recentReviews };
   } catch (err) {
     console.error('[getFeedbackStats] Error:', err);
-    return { averageRating: 5.0, totalCount: 0 };
+    return { averageRating: 5.0, totalCount: 0, recentReviews: [] };
   }
 }
 
@@ -256,6 +259,7 @@ export default async function HomePage() {
         latestNews={blogData.latestNews}
         averageRating={feedbackStats.averageRating}
         totalCount={feedbackStats.totalCount}
+        recentReviews={feedbackStats.recentReviews}
       />
     </>
   );

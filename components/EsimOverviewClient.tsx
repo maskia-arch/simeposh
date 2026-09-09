@@ -7,8 +7,10 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CountryFlag } from '@/components/CountryFlag';
 import { formatGb } from '@/lib/utils';
 import { getEsimQuickInstallLink, getRawLpaString } from '@/lib/esim-install';
+import { CheckoutFeedbackWidget } from '@/components/CheckoutFeedbackWidget';
 
 interface ClientPageProps {
+  orderId?: string;
   iccid: string;
   smdpAddress: string;
   activationCode: string;
@@ -23,6 +25,7 @@ interface ClientPageProps {
 }
 
 export function ClientPage({
+  orderId,
   iccid,
   smdpAddress,
   activationCode,
@@ -673,6 +676,9 @@ export function ClientPage({
           <span>🎫</span> {tr('esim_open_ticket_btn', 'Support-Ticket zu dieser eSIM öffnen')}
         </button>
       </div>
+
+      {/* Verified Feedback Review Widget */}
+      <CheckoutFeedbackWidget orderId={orderId} orderRef={token} dark className="mt-8" />
 
       {/* Footer Branding */}
       <div className="max-w-xl mx-auto text-center mt-12 pt-6 border-t border-slate-900 text-xs text-slate-500">

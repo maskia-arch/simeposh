@@ -27,6 +27,7 @@ export function HomePageClient({
   latestNews,
   averageRating = 5.0,
   totalCount = 0,
+  recentReviews = [],
 }: {
   popularDestinations: PopularDestination[];
   destinations: Destination[];
@@ -34,6 +35,7 @@ export function HomePageClient({
   latestNews: any[];
   averageRating?: number;
   totalCount?: number;
+  recentReviews?: any[];
 }) {
   const { t, locale } = useTranslation();
 
@@ -231,6 +233,97 @@ export function HomePageClient({
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Customer Reviews Section */}
+      <section className="mx-auto max-w-6xl px-4 py-12 md:py-16 border-t border-slate-100">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-bold mb-3">
+              <span className="text-amber-500">★ ★ ★ ★ ★</span>
+              <span>{averageRating.toFixed(1)} / 5.0</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {locale === 'de' ? 'Was unsere Reisenden sagen' : 'What our customers say'}
+            </h2>
+            <p className="mt-2 text-slate-500 text-xs md:text-sm max-w-xl">
+              {locale === 'de'
+                ? `Echte Erfahrungen verifizierter Käufer. Über ${totalCount} Kunden vertrauen PureSim weltweit.`
+                : `Genuine experiences from verified buyers. Over ${totalCount} travelers trust PureSim worldwide.`}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/reviews"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-brand-600 transition-colors shadow-xs"
+            >
+              <span>{locale === 'de' ? 'Alle Bewertungen ansehen' : 'View all reviews'}</span>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        {recentReviews && recentReviews.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {recentReviews.map((rev) => (
+              <div
+                key={rev.id}
+                className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex gap-0.5 text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg
+                          key={star}
+                          className={`h-4 w-4 ${star <= rev.rating ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`}
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
+                    {rev.is_verified && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
+                        ✓ {locale === 'de' ? 'Verifizierter Kauf' : 'Verified Purchase'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-700 text-xs md:text-sm leading-relaxed line-clamp-4 italic">
+                    "{rev.comment}"
+                  </p>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-bold text-slate-700">{rev.display_name || 'Anonym'}</span>
+                  <span>
+                    {new Date(rev.created_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-8 text-center">
+            <p className="text-slate-500 text-sm">
+              {locale === 'de'
+                ? 'Hervorragende Kundenzufriedenheit – lies alle Rezensionen auf unserer Bewertungsseite.'
+                : 'Excellent customer satisfaction – check out all reviews on our reviews page.'}
+            </p>
+            <Link
+              href="/reviews"
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700"
+            >
+              <span>{locale === 'de' ? 'Zu den Bewertungen →' : 'Read reviews →'}</span>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Blog Teaser Section */}

@@ -189,6 +189,7 @@ export async function EsimOverviewView({ params }: OverviewViewProps) {
 
   return (
     <ClientPage
+      orderId={matchingOrder.id}
       iccid={matchingOrder.iccid ?? ''}
       smdpAddress={matchingOrder.smdp_address ?? ''}
       activationCode={matchingOrder.activation_code ?? ''}

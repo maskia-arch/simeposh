@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { formatEur, formatGb } from '@/lib/utils';
 
 import { getEsimOverviewUrl } from '@/lib/url';
+import { generateFeedbackToken } from '@/lib/feedback/token';
 
 export const metadata: Metadata = { title: 'Bestelldetails' };
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,19 @@ export default async function OrderDetailPage({
   // Construct personal installation URL for esim.puresim.net
   const txId = (order as any).checkout_ref || order.id;
   const installUrl = order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null;
+  const isPaid = ['completed', 'paid', 'provisioning'].includes(order.status) || !!order.payment_confirmed_at || !!order.iccid;
+  let existingFeedback: { id: string; rating: number; created_at: string } | null = null;
+  if (isPaid) {
+    try {
+      const { data: fb } = await (service.from('feedbacks' as any))
+        .select('id, rating, created_at')
+        .eq('order_id', order.id)
+        .maybeSingle();
+      existingFeedback = fb as any;
+    } catch (fbErr) {
+      console.error('[OrderDetailPage] feedback query error:', fbErr);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
@@ -100,6 +114,42 @@ export default async function OrderDetailPage({
           </div>
         </div>
       )}
+
+      {/* Verified Feedback CTA Banner */}
+      {existingFeedback ? (
+        <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-bold text-emerald-800 text-sm flex items-center gap-1.5">
+              <span>✓</span> Du hast diesen Kauf bewertet ({existingFeedback.rating} ★)
+            </p>
+            <p className="text-xs text-emerald-600 mt-0.5">Vielen Dank für dein Feedback zu dieser Bestellung!</p>
+          </div>
+          <Link href="/reviews" className="rounded-xl border border-emerald-300 bg-white px-3.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors shrink-0">
+            Reviews ansehen
+          </Link>
+        </div>
+      ) : isPaid ? (
+        <div className="mb-6 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-50/60 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-950 bg-amber-200/90 border border-amber-300 px-2 py-0.5 rounded-full">
+                🎁 1% eSIM Cash Belohnung
+              </span>
+              <span className="text-amber-500 text-xs">★ ★ ★ ★ ★</span>
+            </div>
+            <p className="font-bold text-slate-800 text-sm">Wie zufrieden bist du mit deiner eSIM?</p>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Teile deine Erfahrung in 1 Minute und erhalte {((Number(order.amount_eur) || 0) * 0.01).toFixed(2).replace('.', ',')} € (1%) direkt als eSIM Cash auf dein Guthabenkonto gutgeschrieben!
+            </p>
+          </div>
+          <Link
+            href={`/reviews/new?orderId=${order.id}&token=${generateFeedbackToken(order.id, order.customer_email)}`}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs px-4 py-2.5 shadow-sm transition-all shrink-0 hover:shadow-md active:scale-95"
+          >
+            <span>⭐</span> Jetzt bewerten (+1% Cash)
+          </Link>
+        </div>
+      ) : null}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">

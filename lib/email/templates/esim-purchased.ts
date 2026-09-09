@@ -1,5 +1,6 @@
 import { getEmailTranslations, normalizeEmailLocale } from '../i18n';
 import { formatGb } from '../../utils';
+import { generateFeedbackToken } from '../../feedback/token';
 
 export interface EsimPurchasedData {
   to:              string;   // recipient email address
@@ -23,6 +24,7 @@ export interface EsimPurchasedData {
 
 export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
   const normLoc = normalizeEmailLocale(data.locale);
+  const isDe = normLoc === 'de';
   const t = getEmailTranslations(normLoc);
 
   const greeting = t.greeting(data.customerName);
@@ -31,6 +33,7 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net';
   const logoUrl = `${appUrl}/logo.png`;
+  const reviewToken = generateFeedbackToken(data.orderId, data.to);
 
   return `<!DOCTYPE html>
 <html lang="${normLoc}">
@@ -180,6 +183,27 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
         </div>
       </div>
 
+      <!-- Verified Feedback Review Invitation -->
+      <div style="background: linear-gradient(135deg, #f8faff 0%, #edf4ff 100%); border: 1px solid #bfdbfe; border-radius: 12px; padding: 22px 20px; text-align: center; margin-top: 24px;">
+        <div style="font-size: 20px; color: #f59e0b; letter-spacing: 2px; margin-bottom: 6px;">★ ★ ★ ★ ★</div>
+        <h3 style="margin: 0 0 6px; font-size: 15px; font-weight: 700; color: #1e3a8a;">
+          ${isDe ? 'Wie zufrieden bist du mit deinem Kauf?' : 'How was your experience with this purchase?'}
+        </h3>
+        <p style="margin: 0 0 8px; font-size: 12px; color: #475569; line-height: 1.5;">
+          ${isDe
+            ? 'Dein ehrliches Feedback hilft anderen Reisenden und verbessert unseren Service.'
+            : 'Your honest feedback helps fellow travelers and improves our service.'}
+        </p>
+        <p style="margin: 0 0 16px; font-size: 12px; font-weight: 700; color: #1e40af;">
+          ${isDe
+            ? '🎁 Als Dankeschön: Erhalte 1% des Kaufbetrags als eSIM Cash auf dein Guthaben gutgeschrieben!'
+            : '🎁 As a thank you: Get 1% of your purchase back as eSIM Cash in your account!'}
+        </p>
+        <a href="${appUrl}/reviews/new?orderId=${encodeURIComponent(data.orderId)}&token=${encodeURIComponent(reviewToken)}" target="_blank" style="background-color: #2563eb; color: #ffffff !important; padding: 11px 24px; font-size: 13px; font-weight: 700; border-radius: 8px; text-decoration: none; display: inline-block; box-shadow: 0 3px 10px rgba(37,99,235,0.25);">
+          ${isDe ? 'Bewerten & 1% eSIM Cash sichern →' : 'Review & Get 1% eSIM Cash →'}
+        </a>
+      </div>
+
     </div>
     <div class="footer">
       <p>${t.esimFooterQuestions} <a href="${appUrl}/dashboard?tab=tickets" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Support-Ticket öffnen</a></p>
@@ -192,7 +216,10 @@ export function buildEsimPurchasedHtml(data: EsimPurchasedData): string {
 
 export function buildEsimPurchasedText(data: EsimPurchasedData): string {
   const normLoc = normalizeEmailLocale(data.locale);
+  const isDe = normLoc === 'de';
   const t = getEmailTranslations(normLoc);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://puresim.net';
+  const reviewToken = generateFeedbackToken(data.orderId, data.to);
 
   return `${t.esimTitle}
 ${t.esimOrderBadge(data.orderId)}
@@ -218,5 +245,9 @@ ${t.esimStepsTitle}:
 2. ${t.esimStep2.replace(/<[^>]+>/g, '')}
 3. ${t.esimStep3}
 4. ${t.esimStep4}
+
+--- ${isDe ? 'Kauf bewerten' : 'Review Purchase'} ---
+${isDe ? 'Wie zufrieden warst du mit deinem Kauf? Jetzt Bewertung abgeben:' : 'How was your experience with PureSim? Leave your review here:'}
+${appUrl}/reviews/new?orderId=${encodeURIComponent(data.orderId)}&token=${encodeURIComponent(reviewToken)}
 `;
 }

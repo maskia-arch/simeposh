@@ -14,6 +14,7 @@ import { CustomerTicketsDashboard } from '@/components/CustomerTicketsDashboard'
 import { PendingOrderActions } from '@/components/PendingOrderActions';
 import { AccountSettings } from '@/components/AccountSettings';
 import { getEsimOverviewUrl } from '@/lib/url';
+import { generateFeedbackToken } from '@/lib/feedback/token';
 
 export const metadata: Metadata = { title: 'Mein Bereich' };
 export const dynamic = 'force-dynamic';
@@ -103,6 +104,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const completed = orderList.filter((o) => o.status === 'completed');
   const pending   = orderList.filter((o) => ['pending', 'paid', 'provisioning'].includes(o.status));
 
+  // Check which completed orders have already been reviewed by the customer
+  let reviewedOrderIds = new Set<string>();
+  const completedIds = completed.map((o) => o.id);
+  if (completedIds.length > 0) {
+    try {
+      const { data: fbData } = await (service.from('feedbacks' as any))
+        .select('order_id')
+        .in('order_id', completedIds);
+      if (fbData) {
+        reviewedOrderIds = new Set((fbData as any[]).map((f: any) => f.order_id));
+      }
+    } catch (err) {
+      console.error('[dashboard] feedbacks fetch error:', err);
+    }
+  }
+
   const tabParam = searchParams?.tab;
   const activeTab = tabParam === 'cash' ? 'cash' : tabParam === 'tickets' ? 'tickets' : tabParam === 'settings' ? 'settings' : 'esims';
 
@@ -168,71 +185,66 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </div>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="mb-8 border-b border-slate-200">
-        <div className="flex gap-6 -mb-px">
-          <Link
-            href="/dashboard"
-            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
-              activeTab === 'esims'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <span>📶</span>
-            <span>{t('dash_my_esims')}</span>
-          </Link>
-          <Link
-            href="/dashboard?tab=tickets"
-            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
-              activeTab === 'tickets'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <span>🎫</span>
-            <span>Tickets</span>
-          </Link>
-          <Link
-            href="/dashboard?tab=cash"
-            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
-              activeTab === 'cash'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <span>💰</span>
-            <span>{t('dash_tab_cash')}</span>
-          </Link>
-          <Link
-            href="/dashboard?tab=settings"
-            className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
-              activeTab === 'settings'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            <span>⚙️</span>
-            <span>{t('dash_tab_settings')}</span>
-          </Link>
-        </div>
+      {/* Tabs */}
+      <div className="flex border-b border-slate-200 mb-6 gap-6">
+        <Link
+          href="/dashboard"
+          className={`pb-3 font-semibold text-sm transition-colors border-b-2 -mb-px ${
+            activeTab === 'esims' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          {t('dash_my_esims')}
+        </Link>
+        <Link
+          href="/dashboard?tab=cash"
+          className={`pb-3 font-semibold text-sm transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+            activeTab === 'cash' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span>💎</span>
+          <span>{t('dash_tab_cash')}</span>
+          {cashAccount && (Number(cashAccount.balance_eur) > 0) && (
+            <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">
+              {formatEur(Number(cashAccount.balance_eur))}
+            </span>
+          )}
+        </Link>
+        <Link
+          href="/dashboard?tab=tickets"
+          className={`pb-3 font-semibold text-sm transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+            activeTab === 'tickets' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span>🎫</span>
+          <span>Support</span>
+        </Link>
+        <Link
+          href="/dashboard?tab=settings"
+          className={`pb-3 font-semibold text-sm transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+            activeTab === 'settings' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <span>⚙️</span>
+          <span>{t('dash_tab_settings')}</span>
+        </Link>
       </div>
 
       {activeTab === 'esims' && (
         <>
-          {/* Pending */}
+          {/* Pending orders / checkouts */}
           {pending.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-8">
               <h2 className="font-semibold text-slate-800 mb-3">{t('dash_pending')}</h2>
               <div className="space-y-3">
                 {pending.map((order) => {
-                  const session = activeSessions.find((s) => s.order_ids?.includes(order.id));
+                  const session = allSessions.find((s) => s.order_ids?.includes(order.id));
                   return (
                     <OrderRow
                       key={order.id}
                       order={order as unknown as OrderType}
                       t={t}
                       sessionId={session?.id}
+                      userEmail={user.email}
                     />
                   );
                 })}
@@ -264,6 +276,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       t={t}
                       showEsim
                       overviewUrl={overviewUrl}
+                      isReviewed={reviewedOrderIds.has(order.id)}
+                      userEmail={user.email}
                     />
                   );
                 })}
@@ -329,12 +343,16 @@ function OrderRow({
   showEsim,
   sessionId,
   overviewUrl,
+  isReviewed,
+  userEmail,
 }: {
   order: OrderType;
   t: ServerT;
   showEsim?: boolean;
   sessionId?: string;
   overviewUrl?: string | null;
+  isReviewed?: boolean;
+  userEmail?: string | null;
 }) {
   const tariff = order.tariffs;
   const isTravel = (tariff?.tariff_type ?? 'travel') === 'travel';
@@ -371,15 +389,34 @@ function OrderRow({
         </div>
       </div>
 
-      {order.iccid && showEsim && (
+      {showEsim && order.status === 'completed' && (
         <div className="border-t border-slate-100 px-4 py-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-xs text-slate-400">ICCID:</span>
-          <span className="text-xs font-mono text-slate-600">{order.iccid}</span>
-          <div className="ml-auto flex items-center gap-3">
+          {order.iccid ? (
+            <>
+              <span className="text-xs text-slate-400">ICCID:</span>
+              <span className="text-xs font-mono text-slate-600">{order.iccid}</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-400">Bestellung: #{order.id.slice(0, 8)}</span>
+          )}
+          <div className="ml-auto flex items-center gap-2.5">
+            {isReviewed ? (
+              <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-700 flex items-center gap-1">
+                <span>✓</span> Bewertet
+              </span>
+            ) : (
+              <Link
+                href={`/reviews/new?orderId=${order.id}&token=${generateFeedbackToken(order.id, userEmail)}`}
+                className="rounded-lg bg-gradient-to-r from-amber-50 to-amber-100/80 border border-amber-300 px-2.5 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs flex items-center gap-1"
+                title="Jetzt bewerten und 1% eSIM Cash Belohnung sichern"
+              >
+                <span>🎁</span> Bewerten (+1% Cash)
+              </Link>
+            )}
             <Link href={`/dashboard/orders/${order.id}`} className="text-xs font-medium text-slate-500 hover:text-brand-700">
               {t('dash_details')}
             </Link>
-            {canReload && (
+            {canReload && order.iccid && (
               <Link
                 href={`/topup?iccid=${encodeURIComponent(order.iccid)}`}
                 className="rounded-lg bg-brand-50 border border-brand-200 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors"

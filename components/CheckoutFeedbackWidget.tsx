@@ -6,10 +6,12 @@ import { useTranslation } from '@/lib/i18n';
 interface CheckoutFeedbackWidgetProps {
   orderRef?: string;
   orderId?: string;
+  token?: string;
   className?: string;
+  dark?: boolean;
 }
 
-export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: CheckoutFeedbackWidgetProps) {
+export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '', dark = false }: CheckoutFeedbackWidgetProps) {
   const { locale } = useTranslation();
   const isDe = locale === 'de';
 
@@ -24,6 +26,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [verifiedOrderId, setVerifiedOrderId] = useState<string | null>(null);
+  const [verifiedToken, setVerifiedToken] = useState<string | null>(token || null);
+  const [cashbackReward, setCashbackReward] = useState<number>(0);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -53,12 +57,22 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
 
     async function checkStatus() {
       try {
-        const param = orderId ? `orderId=${encodeURIComponent(orderId)}` : `ref=${encodeURIComponent(orderRef || '')}`;
-        const res = await fetch(`/api/feedbacks/verify-order?${param}`);
+        const queryParams = new URLSearchParams();
+        if (orderId) queryParams.set('orderId', orderId);
+        if (orderRef) queryParams.set('ref', orderRef);
+        if (token) queryParams.set('token', token);
+
+        const res = await fetch(`/api/feedbacks/verify-order?${queryParams.toString()}`);
         const data = await res.json();
 
         if (res.ok && data.success) {
           setVerifiedOrderId(data.orderId);
+          if (data.cashbackRewardEur) {
+            setCashbackReward(Number(data.cashbackRewardEur));
+          }
+          if (data.verifiedToken) {
+            setVerifiedToken(data.verifiedToken);
+          }
           if (data.alreadySubmitted) {
             setAlreadySubmitted(true);
           }
@@ -71,15 +85,12 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
     }
 
     checkStatus();
-  }, [targetIdentifier, orderId, orderRef]);
+  }, [targetIdentifier, orderId, orderRef, token]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
       const exists = prev.includes(tag);
-      const next = exists ? prev.filter((t) => t !== tag) : [...prev, tag];
-      
-      // Auto-append or update tag text into comment if comment is empty or contains tags
-      return next;
+      return exists ? prev.filter((t) => t !== tag) : [...prev, tag];
     });
   };
 
@@ -114,6 +125,7 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
           displayName,
           orderId: verifiedOrderId || orderId || null,
           ref: orderRef || null,
+          token: verifiedToken || token || null,
         }),
       });
 
@@ -122,6 +134,9 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
         throw new Error(data.error || (isDe ? 'Fehler beim Speichern' : 'Failed to submit'));
       }
 
+      if (data.cashbackEarned) {
+        setCashbackReward(Number(data.cashbackEarned));
+      }
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message || (isDe ? 'Ein Fehler ist aufgetreten.' : 'An error occurred.'));
@@ -137,14 +152,16 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
   // Already submitted state
   if (alreadySubmitted) {
     return (
-      <div className={`rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm text-center ${className}`}>
+      <div className={`rounded-3xl border p-6 md:p-8 shadow-sm text-center ${
+        dark ? 'border-slate-800 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white'
+      } ${className}`}>
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 font-black text-xl border border-emerald-150">
           ✓
         </div>
-        <h3 className="text-base font-black text-slate-800 tracking-tight mb-1">
+        <h3 className={`text-base font-black tracking-tight mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>
           {isDe ? 'Feedback bereits eingereicht' : 'Feedback already submitted'}
         </h3>
-        <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+        <p className={`text-xs max-w-md mx-auto leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
           {isDe 
             ? 'Du hast diese Transaktion bereits erfolgreich bewertet. Deine Rezension ist mit dem Badge „Verifizierter Kauf“ online.' 
             : 'You have already reviewed this transaction. Your rating is published with the "Verified Purchase" badge.'}
@@ -156,40 +173,62 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
   // Submitted success state
   if (submitted) {
     return (
-      <div className={`rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50/70 via-white to-emerald-50/30 p-6 md:p-8 shadow-sm text-center animate-fade-in ${className}`}>
+      <div className={`rounded-3xl border p-6 md:p-8 shadow-sm text-center animate-fade-in ${
+        dark
+          ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-950/40 via-slate-900 to-slate-950 text-white'
+          : 'border-emerald-200 bg-gradient-to-b from-emerald-50/70 via-white to-emerald-50/30'
+      } ${className}`}>
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-white font-black text-2xl shadow-md shadow-emerald-500/20">
           ✓
         </div>
-        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-1.5">
+        <h3 className={`text-xl font-black tracking-tight mb-1.5 ${dark ? 'text-white' : 'text-slate-900'}`}>
           {isDe ? 'Vielen Dank für dein Feedback! ⭐' : 'Thank you for your feedback! ⭐'}
         </h3>
-        <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed mb-4">
+        <p className={`text-xs max-w-md mx-auto leading-relaxed mb-4 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           {isDe 
             ? 'Deine Bewertung wurde erfolgreich übermittelt und ist nun als verifizierter Kauf in unserem Review-Bereich sichtbar.' 
             : 'Your review has been successfully submitted and is now published as a verified purchase in our reviews section.'}
         </p>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/80 border border-emerald-300 text-emerald-800 text-[11px] font-bold">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold mb-3">
           <span>✓</span> {isDe ? 'Verifizierter Kauf aktiviert' : 'Verified Purchase Active'}
         </div>
+        {cashbackReward > 0 && (
+          <div className={`rounded-2xl p-3 text-xs font-bold max-w-sm mx-auto ${
+            dark ? 'bg-amber-950/50 border border-amber-500/40 text-amber-300' : 'bg-amber-50 border border-amber-200 text-amber-900'
+          }`}>
+            🎁 {isDe ? `+${cashbackReward.toFixed(2)} € eSIM Cash gutgeschrieben!` : `+€${cashbackReward.toFixed(2)} eSIM Cash credited!`}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className={`rounded-3xl border border-slate-200/90 bg-white p-6 md:p-8 shadow-sm relative overflow-hidden ${className}`}>
+    <div className={`rounded-3xl border relative overflow-hidden ${
+      dark 
+        ? 'border-slate-800 bg-slate-900/80 backdrop-blur-md shadow-2xl text-slate-200' 
+        : 'border-slate-200/90 bg-white shadow-sm'
+    } p-6 md:p-8 ${className}`}>
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-5 border-b border-slate-100">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-5 border-b ${
+        dark ? 'border-slate-800' : 'border-slate-100'
+      }`}>
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 mb-2">
-            <span>✓</span> {isDe ? 'Verifizierter Kauf berechtigt' : 'Verified Purchase Eligible'}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] font-bold text-emerald-400">
+              <span>✓</span> {isDe ? 'Verifizierter Kauf berechtigt' : 'Verified Purchase Eligible'}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-bold text-amber-400">
+              🎁 {cashbackReward > 0 ? (isDe ? `1% Belohnung: +${cashbackReward.toFixed(2)} €` : `1% Reward: +€${cashbackReward.toFixed(2)}`) : '1% eSIM Cash Belohnung'}
+            </span>
           </div>
-          <h3 className="text-lg font-black text-slate-900 tracking-tight">
+          <h3 className={`text-lg font-black tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
             {isDe ? 'Wie war deine Erfahrung mit PureSim?' : 'How was your experience with PureSim?'}
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             {isDe 
-              ? 'Bewerte unseren Service, den Kaufprozess und die Website in nur 1 Minute.' 
-              : 'Rate our service, checkout process, and website in just 1 minute.'}
+              ? 'Bewerte unseren Service und erhalte automatisch 1% eSIM Cash Guthaben auf dein Konto gutgeschrieben.' 
+              : 'Rate our service and get 1% eSIM Cash automatically credited to your balance.'}
           </p>
         </div>
 
@@ -209,7 +248,7 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
               >
                 <svg
                   className={`h-7 w-7 transition-colors ${
-                    isFilled ? 'text-amber-400 fill-amber-400 filter drop-shadow-xs' : 'text-slate-200 fill-slate-200'
+                    isFilled ? 'text-amber-400 fill-amber-400 filter drop-shadow-xs' : (dark ? 'text-slate-700 fill-slate-700' : 'text-slate-200 fill-slate-200')
                   }`}
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -223,7 +262,7 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
       </div>
 
       {error && (
-        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs font-semibold text-red-800">
+        <div className="mb-5 rounded-2xl border border-red-500/30 bg-red-950/30 p-3.5 text-xs font-semibold text-red-300">
           {error}
         </div>
       )}
@@ -231,7 +270,9 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Quick-Tags */}
         <div>
-          <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
+          <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${
+            dark ? 'text-slate-400' : 'text-slate-400'
+          }`}>
             {isDe ? 'Was hat dir besonders gefallen?' : 'What did you like most?'}
           </label>
           <div className="flex flex-wrap gap-2">
@@ -244,8 +285,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
                   onClick={() => toggleTag(tag)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                     active
-                      ? 'bg-brand-50 border-brand-400 text-brand-700 shadow-2xs'
-                      : 'bg-slate-50/80 border-slate-200/80 text-slate-650 hover:bg-slate-100 hover:border-slate-300'
+                      ? (dark ? 'bg-brand-950/60 border-brand-400 text-brand-300 shadow-2xs' : 'bg-brand-50 border-brand-400 text-brand-700 shadow-2xs')
+                      : (dark ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-50/80 border-slate-200/80 text-slate-650 hover:bg-slate-100 hover:border-slate-300')
                   }`}
                 >
                   {active ? `✓ ${tag}` : `+ ${tag}`}
@@ -257,7 +298,9 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
 
         {/* Comment Textarea */}
         <div>
-          <label htmlFor="checkout-feedback-comment" className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">
+          <label htmlFor="checkout-feedback-comment" className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${
+            dark ? 'text-slate-400' : 'text-slate-400'
+          }`}>
             {isDe ? 'Dein Erfahrungsbericht (Optional)' : 'Your review (Optional)'}
           </label>
           <textarea
@@ -266,7 +309,11 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
             onChange={(e) => setComment(e.target.value)}
             maxLength={1500}
             rows={3}
-            className="w-full rounded-2xl border border-slate-250 bg-slate-50/50 p-3.5 text-xs text-slate-800 outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all placeholder:text-slate-400"
+            className={`w-full rounded-2xl border p-3.5 text-xs outline-none transition-all ${
+              dark
+                ? 'border-slate-700 bg-slate-950/80 text-slate-100 placeholder:text-slate-500 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20'
+                : 'border-slate-250 bg-slate-50/50 text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10'
+            }`}
             placeholder={
               isDe
                 ? 'Wie lief die Zahlung, wie gefällt dir die Website und der Service?...'
@@ -277,7 +324,9 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
 
         {/* Display Name Privacy Toggle */}
         <div>
-          <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
+          <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${
+            dark ? 'text-slate-400' : 'text-slate-400'
+          }`}>
             {isDe ? 'Veröffentlichung' : 'Publication'}
           </label>
           <div className="grid grid-cols-2 gap-2.5">
@@ -286,8 +335,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
               onClick={() => setNameType('anon')}
               className={`rounded-xl px-3.5 py-2.5 text-xs font-bold border transition-all cursor-pointer text-center ${
                 nameType === 'anon'
-                  ? 'bg-brand-50 border-brand-500 text-brand-800 shadow-2xs'
-                  : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50'
+                  ? (dark ? 'bg-brand-950/60 border-brand-500 text-brand-300 shadow-2xs' : 'bg-brand-50 border-brand-500 text-brand-800 shadow-2xs')
+                  : (dark ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50')
               }`}
             >
               👤 {isDe ? 'Anonym posten' : 'Post Anonymously'}
@@ -297,8 +346,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
               onClick={() => setNameType('alias')}
               className={`rounded-xl px-3.5 py-2.5 text-xs font-bold border transition-all cursor-pointer text-center ${
                 nameType === 'alias'
-                  ? 'bg-brand-50 border-brand-500 text-brand-800 shadow-2xs'
-                  : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50'
+                  ? (dark ? 'bg-brand-950/60 border-brand-500 text-brand-300 shadow-2xs' : 'bg-brand-50 border-brand-500 text-brand-800 shadow-2xs')
+                  : (dark ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50')
               }`}
             >
               ✏️ {isDe ? 'Mit Alias / Name' : 'With Alias / Name'}
@@ -313,7 +362,11 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
               onChange={(e) => setAlias(e.target.value)}
               maxLength={40}
               placeholder={isDe ? 'z.B. Alex M. oder CryptoTraveler' : 'e.g. Alex M. or CryptoTraveler'}
-              className="mt-2.5 w-full rounded-xl border border-slate-250 bg-white p-3 text-xs text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all placeholder:text-slate-400"
+              className={`mt-2.5 w-full rounded-xl border p-3 text-xs outline-none transition-all ${
+                dark
+                  ? 'border-slate-700 bg-slate-950/80 text-slate-100 placeholder:text-slate-500 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20'
+                  : 'border-slate-250 bg-white text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10'
+              }`}
             />
           )}
         </div>
@@ -322,7 +375,7 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, className = '' }: Ch
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-xs font-extrabold text-white shadow-md shadow-brand-600/20 hover:bg-brand-700 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-xs font-extrabold text-white shadow-md shadow-brand-600/20 hover:bg-brand-500 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

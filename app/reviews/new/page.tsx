@@ -11,12 +11,14 @@ export default function NewReviewPage() {
 
   const [orderId, setOrderId] = useState('');
   const [orderRef, setOrderRef] = useState('');
+  const [feedbackToken, setFeedbackToken] = useState('');
   const [verifying, setVerifying] = useState(true);
   const [orderVerified, setOrderVerified] = useState(false);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [tariffName, setTariffName] = useState<string | null>(null);
   const [countryName, setCountryName] = useState<string | null>(null);
+  const [cashbackReward, setCashbackReward] = useState<number>(0);
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -53,7 +55,10 @@ export default function NewReviewPage() {
       const params = new URLSearchParams(window.location.search);
       const rawOrderId = params.get('orderId')?.trim();
       const rawRef = params.get('ref')?.trim();
-      const identifier = rawOrderId || rawRef;
+      const rawInvoiceId = params.get('invoiceId')?.trim();
+      const rawIccid = params.get('iccid')?.trim();
+      const rawToken = params.get('token')?.trim();
+      const identifier = rawOrderId || rawRef || rawInvoiceId || rawIccid;
       
       if (!identifier) {
         setVerifying(false);
@@ -61,16 +66,30 @@ export default function NewReviewPage() {
       }
 
       try {
-        const queryParam = rawOrderId ? `orderId=${encodeURIComponent(rawOrderId)}` : `ref=${encodeURIComponent(rawRef || '')}`;
-        const res = await fetch(`/api/feedbacks/verify-order?${queryParam}`);
+        const queryParams = new URLSearchParams();
+        if (rawOrderId) queryParams.set('orderId', rawOrderId);
+        if (rawRef) queryParams.set('ref', rawRef);
+        if (rawInvoiceId) queryParams.set('invoiceId', rawInvoiceId);
+        if (rawIccid) queryParams.set('iccid', rawIccid);
+        if (rawToken) queryParams.set('token', rawToken);
+
+        const res = await fetch(`/api/feedbacks/verify-order?${queryParams.toString()}`);
         const data = await res.json();
         
         if (res.ok && data.success) {
           setOrderId(data.orderId || rawOrderId || '');
-          setOrderRef(rawRef || '');
+          setOrderRef(rawRef || rawInvoiceId || '');
           setCustomerName(data.customerName || '');
           setTariffName(data.tariffName || null);
           setCountryName(data.countryName || null);
+          if (data.cashbackRewardEur) {
+            setCashbackReward(Number(data.cashbackRewardEur));
+          }
+          if (data.verifiedToken) {
+            setFeedbackToken(data.verifiedToken);
+          } else if (rawToken) {
+            setFeedbackToken(rawToken);
+          }
           
           if (data.alreadySubmitted) {
             setAlreadySubmitted(true);
@@ -123,11 +142,15 @@ export default function NewReviewPage() {
           displayName,
           orderId: orderId || null,
           ref: orderRef || null,
+          token: feedbackToken || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || (isDe ? 'Fehler beim Speichern der Bewertung' : 'Failed to save review'));
+      }
+      if (data.cashbackEarned) {
+        setCashbackReward(Number(data.cashbackEarned));
       }
       setSuccess(true);
     } catch (err: any) {
@@ -248,9 +271,23 @@ export default function NewReviewPage() {
               ? 'Deine Bewertung wurde erfolgreich übermittelt und ist nun als verifizierter Kauf in unserem Review-Bereich veröffentlicht.' 
               : 'Your review has been successfully submitted and is now published as a verified purchase in our reviews section.'}
           </p>
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-8">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-4">
             <span>✓</span> {isDe ? 'Auszeichnung: Verifizierter Kauf' : 'Badge: Verified Purchase'}
           </div>
+
+          {cashbackReward > 0 && (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100/50 p-4 text-center">
+              <p className="text-xs font-bold text-amber-900 flex items-center justify-center gap-1.5">
+                <span>🎁</span> {isDe ? `Gutschrift erhalten: +${cashbackReward.toFixed(2)} € eSIM Cash` : `Reward Earned: +€${cashbackReward.toFixed(2)} eSIM Cash`}
+              </p>
+              <p className="text-[11px] text-amber-800 mt-1">
+                {isDe 
+                  ? 'Das Guthaben wurde automatisch deinem Kundenkonto gutgeschrieben und steht für deine nächste Reise bereit.' 
+                  : 'The balance has been automatically credited to your account and is ready for your next trip.'}
+              </p>
+            </div>
+          )}
+
           <button
             onClick={() => router.push('/reviews')}
             className="w-full rounded-xl bg-brand-600 px-5 py-3.5 text-xs font-bold text-white hover:bg-brand-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
@@ -280,11 +317,42 @@ export default function NewReviewPage() {
         <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-2">
           {customerName && customerName !== 'Kunde' ? `${isDe ? 'Hallo' : 'Hello'} ${customerName}! 👋` : (isDe ? 'Deine Erfahrung mit PureSim' : 'Your experience with PureSim')}
         </h1>
-        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+        <p className="text-xs text-slate-500 mb-4 leading-relaxed">
           {tariffName 
             ? (isDe ? `Bewerte deinen Kauf von ${tariffName}. Dein Feedback hilft anderen Reisenden!` : `Review your purchase of ${tariffName}. Your feedback helps other travelers!`)
             : (isDe ? 'Teile deine Erfahrung mit PureSim. Dein ehrliches Feedback hilft anderen Reisenden.' : 'Share your experience with PureSim. Your honest rating helps other travelers.')}
         </p>
+
+        {/* 1% Cashback Incentive Banner */}
+        {cashbackReward > 0 ? (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100/40 p-3.5 flex items-center gap-3 shadow-2xs">
+            <span className="text-2xl shrink-0">🎁</span>
+            <div className="text-left">
+              <strong className="text-amber-950 block text-xs font-bold">
+                {isDe ? `1% eSIM Cash Belohnung: +${cashbackReward.toFixed(2)} € Guthaben` : `1% eSIM Cash Reward: +€${cashbackReward.toFixed(2)} Credit`}
+              </strong>
+              <span className="text-amber-800 text-[11px] leading-snug block mt-0.5">
+                {isDe 
+                  ? 'Wird deinem Kundenkonto nach Abgabe des Feedbacks sofort automatisch gutgeschrieben.' 
+                  : 'Automatically credited to your customer account upon submitting your review.'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100/40 p-3.5 flex items-center gap-3 shadow-2xs">
+            <span className="text-2xl shrink-0">🎁</span>
+            <div className="text-left">
+              <strong className="text-amber-950 block text-xs font-bold">
+                {isDe ? '1% eSIM Cash Belohnung' : '1% eSIM Cash Reward'}
+              </strong>
+              <span className="text-amber-800 text-[11px] leading-snug block mt-0.5">
+                {isDe 
+                  ? 'Als Dankeschön erhältst du 1% des Kaufbetrags als eSIM Cash auf dein Guthaben gutgeschrieben!' 
+                  : 'As a thank you, get 1% of your purchase back as eSIM Cash in your account!'}
+              </span>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 leading-relaxed">

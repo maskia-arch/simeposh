@@ -61,3 +61,21 @@ services:
         sync: false
       - key: CRON_SECRET
         sync: false
+
+  # ── Automated Feedback Invitations (every 3 hours) ───────────
+  - type: cron
+    name: esim-feedback-invite
+    env: node
+    region: frankfurt
+    schedule: "0 */3 * * *"   # Every 3 hours
+    buildCommand: echo "no build needed"
+    startCommand: >
+      curl -s -X GET
+      "${NEXT_PUBLIC_APP_URL}/api/cron/invite-feedbacks"
+      -H "Authorization: Bearer ${CRON_SECRET}"
+    envVars:
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+

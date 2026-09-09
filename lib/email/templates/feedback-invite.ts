@@ -95,8 +95,20 @@ export function buildFeedbackInviteHtml(data: FeedbackInviteData): string {
         </p>
         <p style="font-size:13px; color:#475569; margin:0; line-height:1.5;">
           ${isEn
-            ? 'Rate our service, website speed, and payment process in just 1 minute.'
-            : 'Bewerte unseren Service, die Benutzerfreundlichkeit und die Kaufabwicklung in nur einer Minute.'}
+            ? 'Rate our service, website speed, and connection quality in just 1 minute.'
+            : 'Bewerte unseren Service, die Benutzerfreundlichkeit und die Verbindungsqualität in nur einer Minute.'}
+        </p>
+      </div>
+
+      <!-- 1% eSIM Cash Reward Highlight -->
+      <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde68a; border-radius: 12px; padding: 16px 18px; margin: 18px 0; text-align: center;">
+        <p style="font-size: 14px; font-weight: 800; color: #92400e; margin: 0 0 4px;">
+          🎁 ${isEn ? '1% eSIM Cash Reward for your Feedback' : '1% eSIM Cash Belohnung als Dankeschön'}
+        </p>
+        <p style="font-size: 12px; color: #78350f; margin: 0; line-height: 1.5;">
+          ${isEn 
+            ? 'Leave your verified feedback now and receive <strong>1% of your order total credited to your account</strong> as eSIM Cash – usable on any future purchase or data top-up!' 
+            : 'Gib jetzt deine ehrliche Bewertung ab und erhalte automatisch <strong>1% des Kaufbetrags als eSIM Cash</strong> auf dein Kundenkonto gutgeschrieben – sofort einlösbar für zukünftige eSIMs oder Datenaufladungen!'}
         </p>
       </div>
 
@@ -107,7 +119,7 @@ export function buildFeedbackInviteHtml(data: FeedbackInviteData): string {
       <!-- Call to Action -->
       <div class="cta-container">
         <a href="${data.inviteUrl}" target="_blank" class="cta-button">
-          ${isEn ? 'Leave a Review Now →' : 'Jetzt Bewertung abgeben →'}
+          ${isEn ? 'Review & Collect 1% eSIM Cash →' : 'Jetzt bewerten & 1% eSIM Cash sichern →'}
         </a>
       </div>
 
@@ -178,6 +190,10 @@ ${isEn
 ${isEn
   ? 'Your review is linked to a confirmed transaction and will receive our official "Verified Purchase" badge. You can choose to post anonymously or with your custom alias.'
   : 'Deine Bewertung ist direkt an deinen verifizierten Kauf gekoppelt und erhält das Siegel „Verifizierter Kauf“. Du kannst wählen, ob du anonym oder mit deinem Wunschnamen posten möchtest.'}
+
+${isEn
+  ? '🎁 BONUS: Leave a verified review and get 1% of your order amount back as eSIM Cash in your account!'
+  : '🎁 BONUS: Gib eine verifizierte Bewertung ab und erhalte 1% des Kaufbetrags als eSIM Cash auf dein Guthaben gutgeschrieben!'}
 
 ${isEn ? 'Leave your review here:' : 'Hier deine Bewertung abgeben:'}
 ${data.inviteUrl}
