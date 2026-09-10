@@ -217,16 +217,12 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
     if (!confirm(s('confirm_cancel'))) return;
     setCancelling(true);
     try {
-      const res = await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
-      if (res.ok) {
-        window.location.href = '/cart';
-      } else {
-        alert('Fehler beim Abbrechen.');
-        setCancelling(false);
-      }
+      if (pollRef.current) clearInterval(pollRef.current);
+      await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
     } catch {
-      alert('Fehler beim Abbrechen.');
-      setCancelling(false);
+      /* ignore network errors during cancel */
+    } finally {
+      window.location.href = '/cart';
     }
   };
 
@@ -535,8 +531,8 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
         )}
 
         {/* Action Buttons */}
-        {status !== 'detected' && (
-          <div className="mt-6 space-y-2">
+        <div className="mt-6 space-y-2">
+          {status !== 'detected' && (
             <button
               onClick={handleVerify}
               disabled={verifying || cancelling}
@@ -552,37 +548,37 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
                 s('i_paid_btn')
               )}
             </button>
+          )}
 
-            <button
-              onClick={handleCancel}
-              disabled={verifying || cancelling}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 transition-colors"
-            >
-              {cancelling ? '...' : s('cancel_btn')}
-            </button>
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 transition-colors"
+          >
+            {cancelling ? '...' : s('cancel_btn')}
+          </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  window.dispatchEvent(new CustomEvent('open-ticket-modal', {
-                    detail: {
-                      invoiceId: sess?.id || sessionId,
-                      subject: `Frage / Problem zu Krypto-Zahlung (${sess?.id || sessionId})`,
-                      category: 'payment',
-                      initialEmail: sess?.customerEmail || '',
-                    }
-                  }));
-                } catch (err) {
-                  console.error('Open ticket error:', err);
-                }
-              }}
-              className="w-full rounded-xl border border-blue-100 bg-blue-50/50 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2"
-            >
-              <span>🎫</span> Zahlungsproblem? Support-Ticket öffnen
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                window.dispatchEvent(new CustomEvent('open-ticket-modal', {
+                  detail: {
+                    invoiceId: sess?.id || sessionId,
+                    subject: `Frage / Problem zu Krypto-Zahlung (${sess?.id || sessionId})`,
+                    category: 'payment',
+                    initialEmail: sess?.customerEmail || '',
+                  }
+                }));
+              } catch (err) {
+                console.error('Open ticket error:', err);
+              }
+            }}
+            className="w-full rounded-xl border border-blue-100 bg-blue-50/50 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+          >
+            <span>🎫</span> Zahlungsproblem? Support-Ticket öffnen
+          </button>
+        </div>
 
         {/* Verification Messages */}
         {verifyMsg && (

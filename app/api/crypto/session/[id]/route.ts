@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date, claimedTxHashes?: Set<string>): Promise<{ received: number; confirmations: number; txid: string | null }> {
   const isLtc = coinCode === 'LTC';
+  const minTimestamp = createdAfter ? (createdAfter.getTime() - 5 * 60 * 1000) : (Date.now() - 35 * 60 * 1000);
   const primaryUrls = isLtc
     ? ['https://litecoinspace.org/api']
     : ['https://mempool.space/api', 'https://blockstream.info/api'];
@@ -19,14 +20,14 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
   // 1. Try Primary Mempool/Space Explorers
   for (const baseUrl of primaryUrls) {
     try {
-      const txsRes = await fetch(`${baseUrl}/address/${address}/txs`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      const txsRes = await fetch(`${baseUrl}/address/${address}/txs`, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
       if (!txsRes.ok) continue;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const txs = await txsRes.json() as any[];
 
       let tipHeight = 0;
       try {
-        const tipRes = await fetch(`${baseUrl}/blocks/tip/height`, { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+        const tipRes = await fetch(`${baseUrl}/blocks/tip/height`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
         if (tipRes.ok) {
           tipHeight = parseInt((await tipRes.text()).trim(), 10);
         }
@@ -41,17 +42,23 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
           continue;
         }
 
-        if (tx.status?.confirmed && tx.status?.block_time && createdAfter) {
-          const txTimeMs = tx.status.block_time * 1000;
-          if (txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
+        // Strictly verify transaction was created AFTER the checkout session
+        if (tx.status?.confirmed) {
+          if (tx.status.block_time) {
+            const txTimeMs = tx.status.block_time * 1000;
+            if (txTimeMs < minTimestamp) {
+              continue; // Skip historical confirmed transactions
+            }
+          } else {
+            // Confirmed without block_time? Do not trust blindly
             continue;
           }
         }
 
         let txReceived = 0;
-        if (tx.vout) {
+        if (Array.isArray(tx.vout)) {
           for (const out of tx.vout) {
-            if (out.scriptpubkey_address === address) {
+            if (out.scriptpubkey_address === address && typeof out.value === 'number') {
               txReceived += out.value;
             }
           }
@@ -82,24 +89,49 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
   // 2. Secondary Fallback: BlockCypher API
   try {
     const chainPath = isLtc ? 'ltc/main' : 'btc/main';
-    const cypherRes = await fetch(`https://api.blockcypher.com/v1/${chainPath}/addrs/${address}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+    const cypherRes = await fetch(`https://api.blockcypher.com/v1/${chainPath}/addrs/${address}`, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
     if (cypherRes.ok) {
       const data = await cypherRes.json();
-      const totalSat = Number(data.total_received || 0);
+      let totalReceivedSat = 0;
       let latestTxid: string | null = null;
-      let confs = 0;
+      let maxConfs = 0;
 
-      if (Array.isArray(data.txrefs) && data.txrefs.length > 0) {
-        const matchingRef = data.txrefs.find((r: any) => !claimedTxHashes || !claimedTxHashes.has(r.tx_hash));
-        if (matchingRef) {
-          latestTxid = matchingRef.tx_hash;
-          confs = Number(matchingRef.confirmations || 1);
+      // Combine confirmed txrefs and unconfirmed txrefs if any
+      const allRefs: any[] = [
+        ...(Array.isArray(data.txrefs) ? data.txrefs : []),
+        ...(Array.isArray(data.unconfirmed_txrefs) ? data.unconfirmed_txrefs : []),
+      ];
+
+      for (const ref of allRefs) {
+        // Must be an incoming output to this address (NOT an outgoing spend where tx_output_n === -1)
+        const isIncoming = (ref.tx_output_n !== undefined && ref.tx_output_n >= 0) || ref.tx_input_n === -1;
+        if (!isIncoming || !ref.value || ref.value <= 0) {
+          continue;
+        }
+
+        if (claimedTxHashes && ref.tx_hash && claimedTxHashes.has(ref.tx_hash)) {
+          continue;
+        }
+
+        // Strictly verify confirmed date is AFTER checkout session creation
+        if (ref.confirmed) {
+          const refTime = new Date(ref.confirmed).getTime();
+          if (isNaN(refTime) || refTime < minTimestamp) {
+            continue; // Skip historical transaction
+          }
+        }
+
+        totalReceivedSat += Number(ref.value || 0);
+        latestTxid = ref.tx_hash || latestTxid;
+        const conf = Number(ref.confirmations || (ref.confirmed ? 1 : 0));
+        if (conf > maxConfs) {
+          maxConfs = conf;
         }
       }
 
       return {
-        received: totalSat / 1e8,
-        confirmations: confs || (totalSat > 0 ? 1 : 0),
+        received: totalReceivedSat / 1e8,
+        confirmations: maxConfs,
         txid: latestTxid,
       };
     }
@@ -395,46 +427,51 @@ async function checkTrxAddress(address: string, coinCode: string = 'TRX'): Promi
   return { received: 0, confirmations: 0, txid: null };
 }
 
-async function checkAddressOnChain(
+export async function checkAddressOnChain(
   address: string,
   coinCode: string,
   paymentMemo?: string | null,
   createdAfter?: Date,
-  claimedTxHashes?: Set<string>
+  claimedTxHashes?: Set<string>,
+  initialBalance: number = 0
 ): Promise<ChainCheckResult> {
   const cleanAddr = address.trim();
   const upperCoin = coinCode.toUpperCase();
 
+  let rawRes: ChainCheckResult;
+
   // 1. EVM address (0x...) -> Check Ethereum / Polygon / Arbitrum / Base / BSC
   if (cleanAddr.startsWith('0x') && cleanAddr.length === 42) {
-    return checkEthAddress(cleanAddr, upperCoin);
-  }
-
-  // 2. TRON address (T...)
-  if (cleanAddr.startsWith('T') && cleanAddr.length === 34) {
-    return checkTrxAddress(cleanAddr, upperCoin);
-  }
-
-  // 3. Solana address (Base58, 32-44 chars without 0x/T)
-  if (cleanAddr.length >= 32 && cleanAddr.length <= 44 && !cleanAddr.startsWith('0x') && (upperCoin === 'SOL' || upperCoin === 'USDC' || upperCoin === 'USDT')) {
-    return checkSolAddress(cleanAddr, upperCoin);
-  }
-
-  // 4. TON address
-  if (upperCoin === 'TON' || cleanAddr.startsWith('EQ') || cleanAddr.startsWith('UQ')) {
+    rawRes = await checkEthAddress(cleanAddr, upperCoin);
+  } else if (cleanAddr.startsWith('T') && cleanAddr.length === 34) {
+    // 2. TRON address (T...)
+    rawRes = await checkTrxAddress(cleanAddr, upperCoin);
+  } else if (cleanAddr.length >= 32 && cleanAddr.length <= 44 && !cleanAddr.startsWith('0x') && (upperCoin === 'SOL' || upperCoin === 'USDC' || upperCoin === 'USDT')) {
+    // 3. Solana address (Base58, 32-44 chars without 0x/T)
+    rawRes = await checkSolAddress(cleanAddr, upperCoin);
+  } else if (upperCoin === 'TON' || cleanAddr.startsWith('EQ') || cleanAddr.startsWith('UQ')) {
+    // 4. TON address
     return checkTonAddress(cleanAddr, paymentMemo, createdAfter);
-  }
-
-  // 5. Bitcoin / Litecoin
-  if (upperCoin === 'BTC' || upperCoin === 'LTC') {
+  } else if (upperCoin === 'BTC' || upperCoin === 'LTC') {
+    // 5. Bitcoin / Litecoin
     return checkBtcLtcAddress(cleanAddr, upperCoin, createdAfter, claimedTxHashes);
+  } else if (cleanAddr.startsWith('0x')) {
+    rawRes = await checkEthAddress(cleanAddr, upperCoin);
+  } else {
+    rawRes = await checkSolAddress(cleanAddr, upperCoin);
   }
 
-  // Generic fallback
-  if (cleanAddr.startsWith('0x')) {
-    return checkEthAddress(cleanAddr, upperCoin);
+  // Account-based coins: deduct initial_balance that existed prior to session creation
+  if (initialBalance > 0) {
+    const adjusted = Math.max(0, rawRes.received - initialBalance);
+    return {
+      received: adjusted,
+      confirmations: adjusted > 0 ? rawRes.confirmations : 0,
+      txid: adjusted > 0 ? rawRes.txid : null,
+    };
   }
-  return checkSolAddress(cleanAddr, upperCoin);
+
+  return rawRes;
 }
 
 function getPureWalletUrls(): string[] {
@@ -540,7 +577,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           }
         } catch {}
 
-        const chainInfo = await checkAddressOnChain(address, coinCode, paymentMemo, createdAfter, claimedTxHashes);
+        const initialBalance = Number((currentSession as any).initial_balance || 0);
+        const chainInfo = await checkAddressOnChain(address, coinCode, paymentMemo, createdAfter, claimedTxHashes, initialBalance);
 
         if (chainInfo.received >= requiredThreshold) {
           status = chainInfo.confirmations >= confirmationsRequired ? 'paid' : 'detected';
@@ -588,6 +626,12 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
 
     // When session is paid, ensure all associated orders are fulfilled (fire-and-forget to avoid blocking the GET/POST handler)
     if (status === 'paid') {
+      // ── HARD SECURITY GATE: NEVER FULFILL WITHOUT VERIFIED ON-CHAIN FUNDS ──
+      if (receivedAmount <= 0 || receivedAmount < requiredThreshold) {
+        console.error(`[CRITICAL SECURITY GATE BLOCKED] Session ${id} attempted fulfillment without verified funds: receivedAmount=${receivedAmount}, requiredThreshold=${requiredThreshold}. Aborting fulfillment.`);
+        return;
+      }
+
       const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
       if (orderIds.length > 0) {
         // Query uncompleted orders synchronously (fast DB call), then fulfill async
@@ -786,40 +830,65 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const db = createServiceClient();
 
-    // 1. Fetch the session to get order_ids
+    // 1. Fetch the session
     const { data: s, error: fetchErr } = await db
       .from('crypto_sessions')
-      .select('order_ids')
+      .select('id, status, order_ids, received_amount')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (fetchErr || !s) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      // Idempotent: already removed or cancelled
+      return NextResponse.json({ success: true, alreadyCancelled: true });
     }
 
-    // 2. Delete the associated pending orders
-    if (s.order_ids && s.order_ids.length > 0) {
-      const { error: deleteOrdersErr } = await db
+    // If order was already fulfilled / paid, refuse cancellation
+    if (s.status === 'paid') {
+      return NextResponse.json({ error: 'Zahlung wurde bereits bestätigt. Stornierung nicht möglich.' }, { status: 400 });
+    }
+
+    const orderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
+
+    // 2. Mark pending orders as cancelled (or delete unfulfilled pending orders if safe)
+    if (orderIds.length > 0) {
+      await db
         .from('orders')
-        .delete()
-        .in('id', s.order_ids);
-      if (deleteOrdersErr) {
-        console.error('[crypto/session/cancel] Failed to delete orders:', deleteOrdersErr.message);
+        .update({ status: 'cancelled' })
+        .in('id', orderIds)
+        .in('status', ['pending', 'pending_payment']);
+
+      // Attempt to clean up pure pending orders from DB so cart can recreate cleanly
+      try {
+        await db
+          .from('orders')
+          .delete()
+          .in('id', orderIds)
+          .in('status', ['cancelled', 'pending', 'pending_payment']);
+      } catch (delErr) {
+        console.warn('[crypto/session/cancel] Could not hard-delete orders, left as cancelled:', (delErr as Error).message);
       }
     }
 
-    // 3. Delete the session
-    const { error: deleteSessionErr } = await db
+    // 3. Update session status to cancelled
+    await db
       .from('crypto_sessions')
-      .delete()
+      .update({ status: 'cancelled' })
       .eq('id', id);
 
-    if (deleteSessionErr) {
-      console.error('[crypto/session/cancel] Failed to delete session:', deleteSessionErr.message);
-      return NextResponse.json({ error: 'Failed to delete session' }, { status: 500 });
-    }
+    // 4. Notify pure-wallet gateway if configured / reachable
+    try {
+      const urls = getPureWalletUrls();
+      for (const base of urls) {
+        fetch(`${base}/api/v1/payment/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: id }),
+          signal: AbortSignal.timeout(1500),
+        }).catch(() => {});
+      }
+    } catch {}
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, status: 'cancelled' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[crypto/session/cancel] Error:', msg);

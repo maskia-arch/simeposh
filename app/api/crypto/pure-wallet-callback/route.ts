@@ -65,21 +65,22 @@ export async function POST(request: Request) {
 
     let effectiveStatus: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' | 'cancelled' = status;
 
-    if (status === 'partially_paid' && session.crypto_amount > 0) {
-      let minPaymentPct = 98;
-      try {
-        const { data: coinRow } = await db
-          .from('crypto_coins')
-          .select('min_payment_pct')
-          .eq('code', session.coin.toUpperCase())
-          .maybeSingle();
-        if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct <= 100) {
-          minPaymentPct = coinRow.min_payment_pct;
-        }
-      } catch {}
+    let minPaymentPct = 98;
+    try {
+      const { data: coinRow } = await db
+        .from('crypto_coins')
+        .select('min_payment_pct')
+        .eq('code', session.coin.toUpperCase())
+        .maybeSingle();
+      if (coinRow && typeof coinRow.min_payment_pct === 'number' && coinRow.min_payment_pct > 0 && coinRow.min_payment_pct <= 100) {
+        minPaymentPct = coinRow.min_payment_pct;
+      }
+    } catch {}
 
-      const expectedAmount = Number(session.crypto_amount);
-      const requiredThreshold = expectedAmount * (minPaymentPct / 100);
+    const expectedAmount = Number(session.crypto_amount || 0);
+    const requiredThreshold = expectedAmount * (minPaymentPct / 100);
+
+    if (status === 'partially_paid' && expectedAmount > 0) {
       const reqConfs = Number(session.confirmations_required || 1);
       const curConfs = confirmations ?? session.confirmations ?? 0;
 
@@ -114,6 +115,12 @@ export async function POST(request: Request) {
     const validOrderIds = (session.order_ids || []).filter(isUuid);
 
     if (effectiveStatus === 'paid' && validOrderIds.length > 0) {
+      // ── HARD SECURITY GATE: NEVER FULFILL WITHOUT VERIFIED ON-CHAIN FUNDS ──
+      if (received_amount <= 0 || (expectedAmount > 0 && received_amount < requiredThreshold)) {
+        console.error(`[CRITICAL SECURITY GATE] Blocked webhook fulfillment for session ${order_id}: received_amount (${received_amount}) is <= 0 or below required threshold (${requiredThreshold})`);
+        return NextResponse.json({ error: 'Cannot fulfill order without verified received funds' }, { status: 400 });
+      }
+
       // Check if any orders for this session have not yet reached completed status
       const { data: currentOrders } = await db
         .from('orders')

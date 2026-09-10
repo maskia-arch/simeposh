@@ -84,6 +84,26 @@ export async function fulfillOrder(
     return { orderId, ok: true };
   }
 
+  // ── HARD SECURITY GATE: Check crypto session validity if order is crypto-funded ──
+  try {
+    const { data: cryptoSess } = await (supabase.from('crypto_sessions') as any)
+      .select('id, status, received_amount, crypto_amount')
+      .filter('order_ids', 'cs', `{"${orderId}"}`)
+      .maybeSingle();
+
+    if (cryptoSess) {
+      const rec = Number(cryptoSess.received_amount || 0);
+      const exp = Number(cryptoSess.crypto_amount || 0);
+      // If crypto session exists but has 0 received funds, BLOCK FULFILLMENT!
+      if (rec <= 0 || cryptoSess.status === 'cancelled' || cryptoSess.status === 'expired') {
+        console.error(`[FULFILLMENT CRITICAL SECURITY] Blocked provisioning for order ${orderId}: crypto session ${cryptoSess.id} has 0 received amount (${rec}/${exp}, status=${cryptoSess.status})!`);
+        return { orderId, ok: false, error: 'Cannot fulfill crypto order without verified funds received.' };
+      }
+    }
+  } catch (secErr) {
+    console.warn('[fulfillment] crypto session check notice:', (secErr as Error).message);
+  }
+
   await supabase.from('orders')
     .update({ status: 'provisioning', payment_confirmed_at: o.payment_confirmed_at ?? new Date().toISOString() })
     .eq('id', orderId);

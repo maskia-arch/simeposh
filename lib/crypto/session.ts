@@ -151,10 +151,32 @@ export async function createCryptoSession(opts: {
     if (poolRow?.value) {
       let pool = JSON.parse(poolRow.value) as { next_index: number; addresses: Array<{ address: string; index: number }> };
       if (pool && Array.isArray(pool.addresses) && pool.addresses.length > 0) {
-        const nextIdx = typeof pool.next_index === 'number' ? pool.next_index : 0;
-        const entry = pool.addresses[nextIdx % pool.addresses.length];
+        // Query active addresses currently in use by active sessions
+        const { data: activeSessions } = await db
+          .from('crypto_sessions')
+          .select('wallet_address')
+          .eq('coin', coin.code)
+          .in('status', ['pending', 'detected', 'partially_paid'])
+          .gt('expires_at', new Date().toISOString());
 
-        pool.next_index = (nextIdx + 1) % pool.addresses.length;
+        const activeAddresses = new Set((activeSessions || []).map((s: any) => s.wallet_address).filter(Boolean));
+
+        const nextIdx = typeof pool.next_index === 'number' ? pool.next_index : 0;
+        let entry = pool.addresses[nextIdx % pool.addresses.length];
+
+        // Search for the next available address that is not in active checkout
+        for (let attempt = 0; attempt < pool.addresses.length; attempt++) {
+          const candidate = pool.addresses[(nextIdx + attempt) % pool.addresses.length];
+          if (!activeAddresses.has(candidate.address)) {
+            entry = candidate;
+            pool.next_index = (nextIdx + attempt + 1) % pool.addresses.length;
+            break;
+          }
+        }
+
+        if (!activeAddresses.has(entry.address)) {
+          pool.next_index = (nextIdx + 1) % pool.addresses.length;
+        }
 
         // Save the updated pool back to system_settings
         const { error: saveError } = await db
@@ -252,8 +274,17 @@ export async function createCryptoSession(opts: {
     throw new Error('Krypto-Gateway-Fehler: Failed to resolve wallet address');
   }
 
-  // 4. Update the session with derived address, coin rate, payment_memo, and real expiration
+  // 4. Update the session with derived address, coin rate, payment_memo, real expiration, and initial balance snapshot
   const rateEur = amountEur / walletRes.amount_ltc;
+
+  let initialBalance = 0;
+  if (['ETH', 'SOL', 'USDC', 'USDT', 'TRX'].includes(coinCode)) {
+    try {
+      const { checkAddressOnChain } = await import('@/app/api/crypto/session/[id]/route');
+      const chainInfo = await checkAddressOnChain(walletRes.address, coinCode, walletRes.payment_memo);
+      initialBalance = chainInfo.received || 0;
+    } catch {}
+  }
 
   const { error: updateErr } = await db
     .from('crypto_sessions')
@@ -263,6 +294,7 @@ export async function createCryptoSession(opts: {
       rate_eur:       rateEur,
       expires_at:     walletRes.expires_at,
       payment_memo:   walletRes.payment_memo || null,
+      initial_balance: initialBalance,
     } as any)
     .eq('id', sessionId);
 
