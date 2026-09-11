@@ -619,18 +619,30 @@ export async function applyTopUp(
     periodNum?: number;
   }
 ): Promise<TopUpOrderResponse> {
+  // Ensure the top-up package code format expected by eSIMAccess (e.g. TOPUP_CKH978)
+  let codeToSend = packageCode;
+  if (!codeToSend.startsWith('TOPUP_') && !codeToSend.startsWith('ESIM_')) {
+    codeToSend = `TOPUP_${codeToSend}`;
+  }
+
   const payload: Record<string, unknown> = {
     iccid,
-    packageCode,
+    packageCode: codeToSend,
     transactionId: orderRef,
   };
   if (opts?.periodNum && opts.periodNum > 0) {
     payload.periodNum = opts.periodNum;
   }
 
-  const res = await esimRequest<TopUpOrderResponse>('/esim/topup', payload);
+  let res = await esimRequest<TopUpOrderResponse>('/esim/topup', payload);
+  // Fallback: if sending with TOPUP_ failed with code not found, try raw packageCode
+  if (!res.success && codeToSend !== packageCode) {
+    payload.packageCode = packageCode;
+    res = await esimRequest<TopUpOrderResponse>('/esim/topup', payload);
+  }
+
   if (!res.success) {
-    throw new Error(`esimaccess top-up failed (${res.errorCode}) for ICCID ${iccid}`);
+    throw new Error(`esimaccess top-up failed (${res.errorCode}): ${res.errorMsg || 'unknown'} for ICCID ${iccid}`);
   }
   return res;
 }

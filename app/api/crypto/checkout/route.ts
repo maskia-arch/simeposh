@@ -17,6 +17,8 @@ import { createCryptoSession } from '@/lib/crypto/session';
 import { getCoin }             from '@/lib/crypto/coins';
 import { fulfillOrder }        from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
+import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
+import { calculateSalePrice }  from '@/lib/pricing';
 
 export const runtime = 'nodejs';
 
@@ -64,17 +66,75 @@ export async function POST(request: Request) {
       if (byId) tariffs.push(...byId);
     }
     if (codeIds.length > 0) {
+      const allCodes = Array.from(new Set([
+        ...codeIds,
+        ...codeIds.map((c) => c.replace(/^TOPUP_/, '')),
+        ...codeIds.map((c) => 'TOPUP_' + c.replace(/^TOPUP_/, '')),
+      ]));
       const { data: byCode } = await service
         .from('tariffs')
         .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
-        .in('package_code', codeIds);
+        .in('package_code', allCodes);
       if (byCode) tariffs.push(...byCode);
     }
 
     const tMap = new Map<string, any>();
     for (const t of tariffs) {
       tMap.set(t.id, t);
-      if (t.package_code) tMap.set(t.package_code, t);
+      if (t.package_code) {
+        tMap.set(t.package_code, t);
+        tMap.set(t.package_code.replace(/^TOPUP_/, ''), t);
+        tMap.set(`TOPUP_${t.package_code.replace(/^TOPUP_/, '')}`, t);
+      }
+    }
+
+    // Fallback: If any top-up line is not found yet in tariffs, query eSIMAccess and auto-create
+    for (const line of lines) {
+      if (line.topUpIccid && !tMap.get(line.tariffId)) {
+        try {
+          const res = await fetchTopUpPackages(line.topUpIccid);
+          const pkgs = res.obj?.packageList ?? [];
+          const found = pkgs.find(
+            (p) =>
+              p.packageCode === line.tariffId ||
+              p.packageCode.replace(/^TOPUP_/, '') === line.tariffId.replace(/^TOPUP_/, '')
+          );
+          if (found) {
+            const ekUsd = priceToUsd(found.price);
+            const salePriceEur = calculateSalePrice(ekUsd, 0.92);
+            const { data: created } = await service
+              .from('tariffs')
+              .insert({
+                package_code: found.packageCode,
+                name: found.name,
+                country_code: found.locationCode || 'XX',
+                country_name: found.locationCode || 'Global',
+                flag_emoji: '🌐',
+                data_gb: bytesToGb(getVolumeBytes(found as any)),
+                validity_days: found.duration,
+                ek_price_usd: ekUsd,
+                sale_price_eur: salePriceEur,
+                usd_eur_rate: 0.92,
+                is_active: true,
+                is_top_up_eligible: true,
+                raw_data: found as any,
+              } as any)
+              .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+              .single();
+
+            if (created) {
+              tariffs.push(created);
+              tMap.set(created.id, created);
+              tMap.set(created.package_code, created);
+              tMap.set(created.package_code.replace(/^TOPUP_/, ''), created);
+              tMap.set(`TOPUP_${created.package_code.replace(/^TOPUP_/, '')}`, created);
+              line.tariffId = created.id;
+            }
+          }
+        } catch (err) {
+          console.warn('[checkout] Fallback top-up package creation notice:', err);
+        }
+      }
     }
 
     const userClient = await createClient();

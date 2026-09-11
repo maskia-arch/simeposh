@@ -114,29 +114,71 @@ export async function GET(request: Request) {
       };
     });
 
-    // 5. Enrich with existing DB tariff rows
+    // 5. Enrich with existing DB tariff rows (match both TOPUP_ prefix and base package_code)
     const packageCodes = packages.map((p) => p.package_code);
-    if (packageCodes.length > 0) {
+    const baseCodes = packages.map((p) => p.package_code.replace(/^TOPUP_/, ''));
+    const allLookupCodes = Array.from(new Set([...packageCodes, ...baseCodes]));
+
+    if (allLookupCodes.length > 0) {
       const { data: dbTariffs } = await supabase
         .from('tariffs')
         .select('package_code, id, flag_emoji, country_name, country_code, sale_price_eur, ek_price_usd, tariff_type, speed_kbps, raw_data, data_gb, validity_days')
-        .in('package_code', packageCodes);
+        .in('package_code', allLookupCodes);
 
+      const tariffMap = new Map<string, any>();
       if (dbTariffs) {
-        const tariffMap = new Map(dbTariffs.map((t) => [t.package_code, t]));
-        for (const pkg of packages) {
-          const dbT = tariffMap.get(pkg.package_code);
-          if (dbT) {
-            pkg.id             = dbT.id;
-            pkg.flag_emoji     = dbT.flag_emoji ?? pkg.flag_emoji;
-            pkg.country_name   = dbT.country_name || pkg.country_name;
-            pkg.country_code   = dbT.country_code || pkg.country_code;
-            pkg.sale_price_eur = dbT.sale_price_eur;
-            pkg.ek_price_usd   = dbT.ek_price_usd;
-            pkg.tariff_type    = dbT.tariff_type;
-            if (dbT.speed_kbps) pkg.speed_kbps = dbT.speed_kbps;
-            if (dbT.data_gb !== null && dbT.data_gb !== undefined) pkg.data_gb = dbT.data_gb;
-            pkg.is_unlimited   = dbT.tariff_type.startsWith('unlimited') || dbT.data_gb === 0 || pkg.is_unlimited;
+        for (const t of dbTariffs) {
+          tariffMap.set(t.package_code, t);
+          tariffMap.set(`TOPUP_${t.package_code.replace(/^TOPUP_/, '')}`, t);
+          tariffMap.set(t.package_code.replace(/^TOPUP_/, ''), t);
+        }
+      }
+
+      for (const pkg of packages) {
+        let dbT = tariffMap.get(pkg.package_code) || tariffMap.get(pkg.package_code.replace(/^TOPUP_/, ''));
+        if (dbT) {
+          pkg.id             = dbT.id;
+          pkg.flag_emoji     = dbT.flag_emoji ?? pkg.flag_emoji;
+          pkg.country_name   = dbT.country_name || pkg.country_name;
+          pkg.country_code   = dbT.country_code || pkg.country_code;
+          pkg.sale_price_eur = dbT.sale_price_eur;
+          pkg.ek_price_usd   = dbT.ek_price_usd;
+          pkg.tariff_type    = dbT.tariff_type;
+          if (dbT.speed_kbps) pkg.speed_kbps = dbT.speed_kbps;
+          if (dbT.data_gb !== null && dbT.data_gb !== undefined) pkg.data_gb = dbT.data_gb;
+          pkg.is_unlimited   = dbT.tariff_type?.startsWith('unlimited') || dbT.data_gb === 0 || pkg.is_unlimited;
+        } else {
+          // Auto-create missing top-up tariff in DB so orders.tariff_id has a valid FK UUID
+          try {
+            const { data: created } = await supabase
+              .from('tariffs')
+              .insert({
+                package_code: pkg.package_code,
+                name: pkg.name,
+                country_code: pkg.country_code || 'XX',
+                country_name: pkg.country_name || 'Global',
+                flag_emoji: pkg.flag_emoji || '🌐',
+                data_gb: pkg.data_gb,
+                validity_days: pkg.validity_days,
+                ek_price_usd: pkg.ek_price_usd,
+                sale_price_eur: pkg.sale_price_eur,
+                usd_eur_rate: usdEurRate,
+                is_active: true,
+                is_top_up_eligible: true,
+                tariff_type: pkg.tariff_type,
+                speed_kbps: pkg.speed_kbps,
+                raw_data: pkg.raw_data,
+              } as any)
+              .select('id, package_code, flag_emoji, country_name, country_code, sale_price_eur, ek_price_usd, tariff_type, speed_kbps, raw_data, data_gb, validity_days')
+              .single();
+
+            if (created) {
+              pkg.id = created.id;
+              tariffMap.set(pkg.package_code, created);
+              tariffMap.set(pkg.package_code.replace(/^TOPUP_/, ''), created);
+            }
+          } catch (createErr) {
+            console.warn('[topup/packages] Notice creating tariff entry:', (createErr as Error).message);
           }
         }
       }

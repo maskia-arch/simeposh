@@ -262,8 +262,10 @@ export function getTariffSpecialFeatures(
   }
 
   // 4. Top-Up Eligible / Reloadable
+  // In eSIMAccess API: supportTopUpType 2 or 3 = reloadable, 1 = NOT reloadable
   const topUpType = Number(raw.supportTopUpType ?? 0);
-  if (tariff.is_top_up_eligible || topUpType > 0) {
+  const isReloadable = tariff.is_top_up_eligible === true || topUpType === 2 || topUpType === 3;
+  if (isReloadable) {
     features.push({
       id: 'topup_eligible',
       badgeKey: 'feat_topup_badge',

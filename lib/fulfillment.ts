@@ -113,7 +113,7 @@ export async function fulfillOrder(
       if (!o.top_up_iccid) throw new Error('top_up_iccid missing');
       const periodNum = o.period_num ? Number(o.period_num) : undefined;
       await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId, { periodNum });
-      await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
+      await supabase.from('orders').update({ status: 'completed', iccid: o.top_up_iccid }).eq('id', orderId);
       try {
         await sendTopUpEmail({
           to: o.customer_email, customerName: o.customer_name ?? undefined,

@@ -83,6 +83,7 @@ function isTariffChanged(existing: any, generated: any): boolean {
   if (Math.abs(Number(existing.usd_eur_rate) - Number(generated.usd_eur_rate)) >= 0.0001) return true;
   
   if (existing.is_active !== generated.is_active) return true;
+  if (existing.is_top_up_eligible !== generated.is_top_up_eligible) return true;
   if (existing.tariff_type !== generated.tariff_type) return true;
   if (existing.speed_kbps !== generated.speed_kbps) return true;
 
@@ -268,6 +269,9 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         }
       }
 
+      const topUpType = Number(pkg.supportTopUpType ?? 0);
+      const isTopUpEligible = topUpType === 2 || topUpType === 3;
+
       return {
         package_code:       pkg.packageCode,
         slug,
@@ -283,7 +287,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         sale_price_eur:     salePriceEur,
         usd_eur_rate:       usdEurRate,
         is_active:          true,
-        is_top_up_eligible: false,
+        is_top_up_eligible: isTopUpEligible,
         tariff_type:        tariffType,
         speed_kbps:         speedKbps,
         location_codes:     locationCodes.length > 0 ? locationCodes : null as string[] | null,

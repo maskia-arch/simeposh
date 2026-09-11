@@ -126,6 +126,7 @@ export interface TopUpPackageListResponse {
 export interface TopUpOrderResponse {
   success:   boolean;
   errorCode: string;
+  errorMsg?: string | null;
   obj: { orderNo: string; };
 }
 
