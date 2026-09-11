@@ -21,8 +21,8 @@ async function handleInvite(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const limitParam = parseInt(searchParams.get('limit') || '20', 10);
-    const limit = isNaN(limitParam) || limitParam <= 0 ? 20 : Math.min(limitParam, 30);
+    const limitParam = parseInt(searchParams.get('limit') || '100', 10);
+    const limit = isNaN(limitParam) || limitParam <= 0 ? 100 : Math.min(limitParam, 100);
 
     const result = await processFeedbackInvites(limit);
     return NextResponse.json(result);

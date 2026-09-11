@@ -62,12 +62,12 @@ services:
       - key: CRON_SECRET
         sync: false
 
-  # ── Automated Feedback Invitations (once daily at 11:00 UTC) ──
+  # ── Automated Feedback Invitations (once daily at 10:00 UTC / 12:00 CEST) ──
   - type: cron
     name: esim-feedback-invite
     env: node
     region: frankfurt
-    schedule: "0 11 * * *"    # 11:00 UTC daily (13:00 CEST)
+    schedule: "0 10 * * *"    # 10:00 UTC daily (12:00 CEST)
     buildCommand: echo "no build needed"
     startCommand: >
       curl -s -X GET

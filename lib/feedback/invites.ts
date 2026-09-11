@@ -7,7 +7,7 @@ import { generateFeedbackToken } from './token';
  * Deduplicates by customer email to ensure 1 invitation per customer (latest order).
  * Marks all orders of the customer as review_invited = true upon dispatch.
  */
-export async function processFeedbackInvites(limit: number = 20): Promise<{
+export async function processFeedbackInvites(limit: number = 100): Promise<{
   success: boolean;
   message: string;
   sentCount: number;
@@ -15,12 +15,13 @@ export async function processFeedbackInvites(limit: number = 20): Promise<{
   totalEligible: number;
 }> {
   try {
-    // Query eligible unreviewed orders paid >= 24 hours ago.
-    // Deduplicates by customer email to ensure in any single batch run, a customer receives at most 1 email (for their latest unreviewed order).
-    // Every purchase can be reviewed, even if a customer has reviewed an earlier purchase in the past.
-    // Double-defense: Checks both review_invited = false, feedbacks table, AND sent_emails table to guarantee 0 duplicates.
+    // Query eligible unreviewed purchases completed/paid >= 24 hours ago.
+    // Deduplicates by customer email to ensure in any single batch run (e.g. 12:00 daily),
+    // a customer receives at most 1 invitation (for their oldest unreviewed purchase).
+    // Every verified purchase is invited once across subsequent days.
+    // Double-defense: Checks review_invited = false, feedbacks table, AND sent_emails table to guarantee 0 duplicates.
     const { rows: eligibleOrders } = await query(
-      `WITH latest_unreviewed_orders AS (
+      `WITH candidate_purchases AS (
          SELECT DISTINCT ON (LOWER(o.customer_email))
            o.id,
            o.customer_email,
@@ -45,9 +46,9 @@ export async function processFeedbackInvites(limit: number = 20): Promise<{
            SELECT 1 FROM public.sent_emails s 
            WHERE s.status = 'sent'
              AND (s.email_type = 'feedback_einladung' OR s.subject LIKE '%Erfahrung%' OR s.subject LIKE '%experience%')
-             AND (s.metadata->>'order_id' = o.id::text OR LOWER(s.recipient_email) = LOWER(o.customer_email))
+             AND s.metadata->>'order_id' = o.id::text
          )
-         ORDER BY LOWER(o.customer_email), o.created_at DESC
+         ORDER BY LOWER(o.customer_email), o.created_at ASC
        )
        SELECT 
          lo.id,
@@ -57,7 +58,7 @@ export async function processFeedbackInvites(limit: number = 20): Promise<{
          lo.locale,
          t.name AS tariff_name,
          t.country_name
-       FROM latest_unreviewed_orders lo
+       FROM candidate_purchases lo
        LEFT JOIN public.tariffs t ON t.id = lo.tariff_id
        LIMIT $1`,
       [limit]
@@ -93,16 +94,13 @@ export async function processFeedbackInvites(limit: number = 20): Promise<{
           locale:       order.locale || 'de',
         });
 
-        // Mark this order and any uninvited older backlog orders of this customer as review_invited = true.
-        // Guarantees:
-        // 1. Matches order.id directly so microsecond JS serialization cannot prevent the update.
-        // 2. Older orders are matched using native DB timestamp comparison.
+        // Mark ONLY this specific order as review_invited = true by primary key.
+        // This guarantees no other orders of the customer are prematurely marked.
         await query(
           `UPDATE public.orders 
            SET review_invited = true 
-           WHERE id = $1 
-              OR (LOWER(customer_email) = LOWER($2) AND created_at <= (SELECT created_at FROM public.orders WHERE id = $1))`,
-          [order.id, order.customer_email.trim().toLowerCase()]
+           WHERE id = $1`,
+          [order.id]
         );
 
         sentCount++;
