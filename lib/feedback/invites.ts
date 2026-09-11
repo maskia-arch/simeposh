@@ -7,7 +7,7 @@ import { generateFeedbackToken } from './token';
  * Deduplicates by customer email to ensure 1 invitation per customer (latest order).
  * Marks all orders of the customer as review_invited = true upon dispatch.
  */
-export async function processFeedbackInvites(limit: number = 50): Promise<{
+export async function processFeedbackInvites(limit: number = 20): Promise<{
   success: boolean;
   message: string;
   sentCount: number;
@@ -18,6 +18,7 @@ export async function processFeedbackInvites(limit: number = 50): Promise<{
     // Query eligible unreviewed orders paid >= 24 hours ago.
     // Deduplicates by customer email to ensure in any single batch run, a customer receives at most 1 email (for their latest unreviewed order).
     // Every purchase can be reviewed, even if a customer has reviewed an earlier purchase in the past.
+    // Double-defense: Checks both review_invited = false, feedbacks table, AND sent_emails table to guarantee 0 duplicates.
     const { rows: eligibleOrders } = await query(
       `WITH latest_unreviewed_orders AS (
          SELECT DISTINCT ON (LOWER(o.customer_email))
@@ -39,6 +40,12 @@ export async function processFeedbackInvites(limit: number = 50): Promise<{
          AND TRIM(o.customer_email) != ''
          AND NOT EXISTS (
            SELECT 1 FROM public.feedbacks f WHERE f.order_id = o.id
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM public.sent_emails s 
+           WHERE s.status = 'sent'
+             AND (s.email_type = 'feedback_einladung' OR s.subject LIKE '%Erfahrung%' OR s.subject LIKE '%experience%')
+             AND (s.metadata->>'order_id' = o.id::text OR LOWER(s.recipient_email) = LOWER(o.customer_email))
          )
          ORDER BY LOWER(o.customer_email), o.created_at DESC
        )
@@ -87,21 +94,28 @@ export async function processFeedbackInvites(limit: number = 50): Promise<{
         });
 
         // Mark this order and any uninvited older backlog orders of this customer as review_invited = true.
-        // This guarantees:
-        // 1. Exactly 1 reminder email is sent for this purchase / backlog (no duplicate spam).
-        // 2. Any FUTURE new purchase (created_at > order.created_at) will have review_invited = false
-        //    and will get its own reminder email 24h after purchase if not yet reviewed!
+        // Guarantees:
+        // 1. Matches order.id directly so microsecond JS serialization cannot prevent the update.
+        // 2. Older orders are matched using native DB timestamp comparison.
         await query(
           `UPDATE public.orders 
            SET review_invited = true 
-           WHERE LOWER(customer_email) = LOWER($1) AND created_at <= $2`,
-          [order.customer_email.trim(), order.created_at]
+           WHERE id = $1 
+              OR (LOWER(customer_email) = LOWER($2) AND created_at <= (SELECT created_at FROM public.orders WHERE id = $1))`,
+          [order.id, order.customer_email.trim().toLowerCase()]
         );
 
         sentCount++;
       } catch (emailErr: any) {
-        console.error(`[Feedback Invites] Failed to send email to ${order.customer_email}:`, emailErr.message);
+        const msg = emailErr?.message || String(emailErr);
+        console.error(`[Feedback Invites] Failed to send email to ${order.customer_email}:`, msg);
         failedCount++;
+
+        // If daily limit / rate limit reached from Resend, abort batch immediately to save quota
+        if (msg.includes('429') || msg.includes('limit') || msg.includes('quota') || msg.includes('Too Many Requests')) {
+          console.warn('[Feedback Invites] Daily email quota or rate limit reached. Stopping batch early.');
+          break;
+        }
       }
     }
 

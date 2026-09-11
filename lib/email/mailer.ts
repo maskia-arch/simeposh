@@ -143,7 +143,15 @@ async function sendMailThroughTransporter(mailOptions: {
   }
 
   // 2. Secondary: Fallback to Nodemailer SMTP
-  if (!sendSuccess && smtp.host && smtp.user && smtp.pass && !smtp.host.includes('example.com')) {
+  const isResendQuotaError = isResend && lastError && (
+    String(lastError).includes('429') || 
+    String(lastError).includes('403') || 
+    String(lastError).includes('quota') || 
+    String(lastError).includes('limit') || 
+    String(lastError).includes('Too Many Requests')
+  );
+
+  if (!sendSuccess && !isResendQuotaError && smtp.host && smtp.user && smtp.pass && !smtp.host.includes('example.com')) {
     const portsToTry = Array.from(new Set([smtp.port, 587, 465, 2525]));
     for (const port of portsToTry) {
       if (sendSuccess) break;
@@ -175,7 +183,7 @@ async function sendMailThroughTransporter(mailOptions: {
         break;
       } catch (smtpErr) {
         console.warn(`[mailer] SMTP dispatch on port ${port} failed for ${cleanTo}:`, (smtpErr as Error).message);
-        lastError = smtpErr;
+        lastError = lastError ? new Error(`${lastError.message} | SMTP (${port}): ${(smtpErr as Error).message}`) : smtpErr;
       }
     }
   }
