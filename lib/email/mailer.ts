@@ -42,6 +42,11 @@ import {
   buildFeedbackInviteText,
   type FeedbackInviteData,
 } from './templates/feedback-invite';
+import {
+  buildConsolidatedOrderHtml,
+  buildConsolidatedOrderText,
+  type ConsolidatedOrderData,
+} from './templates/order-consolidated';
 
 function getSmtpConfig() {
   const host   = process.env.SMTP_HOST;
@@ -302,6 +307,69 @@ async function sendMailThroughTransporter(mailOptions: {
 
     throw sendErr;
   }
+}
+
+// ─── Send Consolidated Order confirmation (1 email for all eSIMs & Top-Ups) ───
+
+export async function sendConsolidatedOrderEmail(data: ConsolidatedOrderData): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const isDe = normLoc === 'de';
+  const t = getEmailTranslations(normLoc);
+
+  const newEsims = data.items.filter((i) => i.type === 'new_esim');
+  const topUps = data.items.filter((i) => i.type === 'top_up');
+  const isAllTopUp = data.items.length > 0 && newEsims.length === 0;
+  const isMixed = newEsims.length > 0 && topUps.length > 0;
+  const shortOrderId = (data.orderRef || data.items[0]?.orderId || 'ORDER').split('-')[0].toUpperCase();
+
+  let subject: string;
+  if (isAllTopUp) {
+    if (topUps.length === 1) {
+      subject = t.topUpSubject(topUps[0].dataGb);
+    } else {
+      subject = isDe
+        ? `✅ Top-Up erfolgreich – ${topUps.length} Aufladungen bestätigt`
+        : `✅ Top-Up Successful – ${topUps.length} Recharges Confirmed`;
+    }
+  } else if (isMixed) {
+    subject = isDe
+      ? `✨ Deine Bestellung #${shortOrderId} ist bereit (${newEsims.length} neue eSIM(s), ${topUps.length} Top-Up(s))`
+      : `✨ Your Order #${shortOrderId} is Ready (${newEsims.length} new eSIM(s), ${topUps.length} Top-Up(s))`;
+  } else {
+    // All new eSIMs
+    if (newEsims.length === 1) {
+      subject = data.isLatePayment
+        ? (t.esimLateSubject ? t.esimLateSubject(newEsims[0].countryName) : t.esimSubject(newEsims[0].countryName))
+        : t.esimSubject(newEsims[0].countryName);
+    } else {
+      subject = isDe
+        ? `📱 Deine ${newEsims.length} eSIMs sind bereit (Bestellung #${shortOrderId})`
+        : `📱 Your ${newEsims.length} eSIMs are ready (Order #${shortOrderId})`;
+    }
+  }
+
+  const emailType = isAllTopUp
+    ? 'topup_bestaetigung'
+    : (data.isLatePayment ? 'verspaetet_lieferung' : 'esim_lieferung');
+
+  const primaryOrderId = data.items[0]?.orderId || data.orderRef;
+  const orderIds = data.items.map((i) => i.orderId);
+
+  await sendMailThroughTransporter({
+    to: data.to,
+    subject: subject,
+    html: buildConsolidatedOrderHtml(data),
+    text: buildConsolidatedOrderText(data),
+    emailType: emailType,
+    metadata: {
+      order_id: primaryOrderId,
+      order_ids: orderIds,
+      order_ref: data.orderRef,
+      item_count: data.items.length,
+      iccids: data.items.map((i) => i.iccid),
+      is_late_payment: data.isLatePayment,
+    },
+  });
 }
 
 // ─── Send eSIM purchase confirmation ─────────────────────────

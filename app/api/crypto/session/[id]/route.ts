@@ -833,46 +833,44 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     // 1. Fetch the session
     const { data: s, error: fetchErr } = await db
       .from('crypto_sessions')
-      .select('id, status, order_ids, received_amount')
+      .select('id, status, order_ids, wallet_address, coin, received_amount')
       .eq('id', id)
       .maybeSingle();
 
     if (fetchErr || !s) {
-      // Idempotent: already removed or cancelled
       return NextResponse.json({ success: true, alreadyCancelled: true });
     }
 
-    // If order was already fulfilled / paid, refuse cancellation
-    if (s.status === 'paid') {
-      return NextResponse.json({ error: 'Zahlung wurde bereits bestätigt. Stornierung nicht möglich.' }, { status: 400 });
+    // If order was already fulfilled / paid / detected, refuse cancellation
+    if (s.status === 'paid' || s.status === 'detected' || s.status === 'partially_paid') {
+      return NextResponse.json(
+        { error: 'Zahlung wurde bereits erkannt oder bestätigt. Stornierung nicht möglich.', status: s.status },
+        { status: 400 }
+      );
     }
 
     const orderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
 
-    // 2. Mark pending orders as cancelled (or delete unfulfilled pending orders if safe)
+    // 2. Mark pending orders as 'expired' so Admin Dashboard shows "Abgelaufen ⏱️"
     if (orderIds.length > 0) {
       await db
         .from('orders')
-        .update({ status: 'cancelled' })
+        .update({ status: 'expired' })
         .in('id', orderIds)
         .in('status', ['pending', 'pending_payment']);
-
-      // Attempt to clean up pure pending orders from DB so cart can recreate cleanly
-      try {
-        await db
-          .from('orders')
-          .delete()
-          .in('id', orderIds)
-          .in('status', ['cancelled', 'pending', 'pending_payment']);
-      } catch (delErr) {
-        console.warn('[crypto/session/cancel] Could not hard-delete orders, left as cancelled:', (delErr as Error).message);
-      }
     }
 
-    // 3. Update session status to cancelled
+    // Also cancel any orders linked via checkout_ref if matching session id
+    await db
+      .from('orders')
+      .update({ status: 'expired' })
+      .eq('checkout_ref', id)
+      .in('status', ['pending', 'pending_payment']);
+
+    // 3. Update session status to 'expired' (frees up wallet address automatically)
     await db
       .from('crypto_sessions')
-      .update({ status: 'cancelled' })
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
       .eq('id', id);
 
     // 4. Notify pure-wallet gateway if configured / reachable
@@ -888,7 +886,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       }
     } catch {}
 
-    return NextResponse.json({ success: true, status: 'cancelled' });
+    console.log(`[crypto/session/cancel] Session ${id} and associated orders marked as 'expired'.`);
+    return NextResponse.json({ success: true, status: 'expired' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[crypto/session/cancel] Error:', msg);

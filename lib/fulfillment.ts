@@ -7,7 +7,7 @@
  */
 import { createServiceClient } from '@/lib/supabase/server';
 import { allocateEsim, applyTopUp } from '@/lib/esimaccess/client';
-import { sendEsimEmail, sendTopUpEmail } from '@/lib/email/mailer';
+import { sendEsimEmail, sendTopUpEmail, sendConsolidatedOrderEmail } from '@/lib/email/mailer';
 import { applyOrderCompletionCashback } from './cashback';
 import { getEsimOverviewUrl } from '@/lib/url';
 
@@ -16,6 +16,94 @@ export interface FulfillResult { orderId: string; ok: boolean; error?: string }
 export interface FulfillOptions {
   forceResendEmail?: boolean;
   isLatePayment?: boolean;
+  skipEmail?: boolean;
+}
+
+/** Sends a single consolidated email for one or more completed orders */
+export async function sendConsolidatedEmailForOrders(
+  supabase: ReturnType<typeof createServiceClient>,
+  orders: any[],
+  options?: FulfillOptions
+): Promise<void> {
+  if (!orders || orders.length === 0) return;
+  const first = orders[0];
+  const customerEmail = first.customer_email;
+  if (!customerEmail) return;
+
+  const customerName = orders.find((o) => Boolean(o.customer_name))?.customer_name ?? undefined;
+  const locale = orders.find((o) => Boolean(o.locale))?.locale ?? undefined;
+
+  let txId = first.checkout_ref;
+  try {
+    const { data: sessions } = await supabase
+      .from('crypto_sessions')
+      .select('id, order_ids')
+      .eq('customer_email', customerEmail);
+
+    if (sessions) {
+      const session = sessions.find((s: any) =>
+        orders.some((o) => s.order_ids?.includes(o.id))
+      );
+      if (session) txId = session.id;
+    }
+  } catch (err) {
+    console.error('[fulfillment] session lookup failed for email:', err);
+  }
+
+  const orderRef = txId || first.checkout_ref || first.id;
+  let totalPaidEur = 0;
+
+  const items = orders.map((o) => {
+    const price = Number(o.amount_eur ?? o.tariffs?.sale_price_eur ?? 0);
+    totalPaidEur += price;
+
+    if (o.order_type === 'top_up') {
+      return {
+        orderId: o.id,
+        type: 'top_up' as const,
+        countryName: o.tariffs?.country_name || 'Global',
+        tariffName: o.tariffs?.name || 'Top-Up',
+        dataGb: Number(o.tariffs?.data_gb ?? 0),
+        validityDays: Number(o.period_num ?? o.tariffs?.validity_days ?? 1),
+        priceEur: price,
+        iccid: o.top_up_iccid || o.iccid || '',
+        topUpIccid: o.top_up_iccid,
+      };
+    } else {
+      const finalToken = txId || o.checkout_ref || o.id;
+      const overviewUrl = o.iccid ? getEsimOverviewUrl(finalToken, o.iccid) : undefined;
+      return {
+        orderId: o.id,
+        type: 'new_esim' as const,
+        countryName: o.tariffs?.country_name || 'Global',
+        tariffName: o.tariffs?.name || 'eSIM',
+        dataGb: Number(o.tariffs?.data_gb ?? 0),
+        validityDays: Number(o.period_num ?? o.tariffs?.validity_days ?? 1),
+        priceEur: price,
+        iccid: o.iccid || '',
+        qrCodeUrl: o.qr_code_url,
+        activationCode: o.activation_code,
+        smdpAddress: o.smdp_address,
+        apn: o.apn ?? 'internet',
+        lpaCode: o.smdp_address ? `LPA:1$${o.smdp_address}$${o.activation_code || ''}` : undefined,
+        overviewUrl,
+      };
+    }
+  });
+
+  try {
+    await sendConsolidatedOrderEmail({
+      to: customerEmail,
+      customerName,
+      orderRef,
+      totalPaidEur,
+      items,
+      locale,
+      isLatePayment: options?.isLatePayment,
+    });
+  } catch (emailErr) {
+    console.error('[fulfillment] sendConsolidatedOrderEmail dispatch error:', emailErr);
+  }
 }
 
 /** Fulfil a single order by id. Safe to call multiple times (idempotent). */
@@ -36,51 +124,12 @@ export async function fulfillOrder(
   const o = order as any;
 
   if (o.status === 'completed' && !options?.forceResendEmail) {
-    // If order is completed, check if email was already successfully recorded
     return { orderId, ok: true };
   }
 
-  // If already completed and forceResendEmail is requested, just dispatch email & return
+  // If already completed and forceResendEmail is requested, dispatch consolidated email & return
   if (o.status === 'completed' && options?.forceResendEmail) {
-    let txId = o.checkout_ref;
-    try {
-      const { data: sessions } = await supabase
-        .from('crypto_sessions')
-        .select('id, order_ids')
-        .eq('customer_email', o.customer_email);
-
-      if (sessions) {
-        const session = sessions.find((s: any) => s.order_ids?.includes(orderId));
-        if (session) txId = session.id;
-      }
-    } catch (err) {
-      console.error('[fulfillment] session lookup failed:', err);
-    }
-
-    const finalToken = txId || o.checkout_ref || orderId;
-    const overviewUrl = getEsimOverviewUrl(finalToken, o.iccid);
-
-    if (o.order_type === 'top_up') {
-      await sendTopUpEmail({
-        to: o.customer_email, customerName: o.customer_name ?? undefined,
-        iccid: o.top_up_iccid, tariffName: o.tariffs?.name || 'Top-Up',
-        dataGb: Number(o.tariffs?.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs?.validity_days ?? 1),
-        priceEur: Number(o.amount_eur ?? o.tariffs?.sale_price_eur ?? 0), orderId,
-        locale: o.locale ?? undefined,
-      });
-    } else {
-      await sendEsimEmail({
-        to: o.customer_email, customerName: o.customer_name ?? undefined,
-        tariffName: o.tariffs?.name || 'eSIM', countryName: o.tariffs?.country_name || 'Global',
-        dataGb: Number(o.tariffs?.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs?.validity_days ?? 1),
-        priceEur: Number(o.amount_eur ?? o.tariffs?.sale_price_eur ?? 0),
-        iccid: o.iccid, qrCodeUrl: o.qr_code_url, activationCode: o.activation_code,
-        smdpAddress: o.smdp_address, apn: o.apn ?? 'internet', lpaCode: `LPA:1$${o.smdp_address || ''}$${o.activation_code || ''}`, orderId,
-        overviewUrl,
-        locale: o.locale ?? undefined,
-        isLatePayment: options?.isLatePayment,
-      });
-    }
+    await sendConsolidatedEmailForOrders(supabase, [o], options);
     return { orderId, ok: true };
   }
 
@@ -114,18 +163,18 @@ export async function fulfillOrder(
       const periodNum = o.period_num ? Number(o.period_num) : undefined;
       await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId, { periodNum });
       await supabase.from('orders').update({ status: 'completed', iccid: o.top_up_iccid }).eq('id', orderId);
+      
       try {
-        await sendTopUpEmail({
-          to: o.customer_email, customerName: o.customer_name ?? undefined,
-          iccid: o.top_up_iccid, tariffName: o.tariffs.name,
-          dataGb: o.tariffs.data_gb ?? 0, validityDays: o.period_num ?? o.tariffs.validity_days,
-          priceEur: o.amount_eur ?? o.tariffs.sale_price_eur, orderId,
-          locale: o.locale ?? undefined,
-        });
-      } catch (mailErr) {
-        console.error('[fulfillment] sendTopUpEmail dispatch error:', mailErr);
+        await applyOrderCompletionCashback(supabase, orderId);
+      } catch (cbErr) {
+        console.error('[fulfillment] cashback application error:', cbErr);
       }
-      await applyOrderCompletionCashback(supabase, orderId);
+
+      if (!options?.skipEmail) {
+        const { data: freshOrder } = await supabase.from('orders').select('*, tariffs(*)').eq('id', orderId).single();
+        await sendConsolidatedEmailForOrders(supabase, [freshOrder || o], options);
+      }
+
       return { orderId, ok: true };
     }
 
@@ -159,48 +208,15 @@ export async function fulfillOrder(
       esim_status_at:  new Date().toISOString(),
     }).eq('id', orderId);
 
-    // Compute the secure overview URL
-    let txId = o.checkout_ref;
-    try {
-      const { data: sessions } = await supabase
-        .from('crypto_sessions')
-        .select('id, order_ids')
-        .eq('customer_email', o.customer_email);
-
-      if (sessions) {
-        const session = sessions.find((s) => s.order_ids?.includes(orderId));
-        if (session) {
-          txId = session.id;
-        }
-      }
-    } catch (err) {
-      console.error('[fulfillment] session lookup failed:', err);
-    }
-
-    const finalToken = txId || o.checkout_ref || orderId;
-    const overviewUrl = getEsimOverviewUrl(finalToken, esim.iccid);
-
-    try {
-      await sendEsimEmail({
-        to: o.customer_email, customerName: o.customer_name ?? undefined,
-        tariffName: o.tariffs.name, countryName: o.tariffs.country_name,
-        dataGb: Number(o.tariffs.data_gb ?? 0), validityDays: Number(o.period_num ?? o.tariffs.validity_days ?? 1),
-        priceEur: Number(o.amount_eur ?? o.tariffs.sale_price_eur ?? 0),
-        iccid: esim.iccid, qrCodeUrl: esim.qrCodeUrl, activationCode: esim.matchingId,
-        smdpAddress: esim.smdpAddress, apn: esim.apn, lpaCode: esim.lpaCode ?? '', orderId,
-        overviewUrl,
-        locale: o.locale ?? undefined,
-        isLatePayment: options?.isLatePayment,
-      });
-    } catch (emailErr) {
-      console.error('[fulfillment] sendEsimEmail dispatch error for order', orderId, emailErr);
-      // Order remains status='completed' since eSIM allocation at esimaccess succeeded
-    }
-
     try {
       await applyOrderCompletionCashback(supabase, orderId);
     } catch (cbErr) {
       console.error('[fulfillment] cashback application error:', cbErr);
+    }
+
+    if (!options?.skipEmail) {
+      const { data: freshOrder } = await supabase.from('orders').select('*, tariffs(*)').eq('id', orderId).single();
+      await sendConsolidatedEmailForOrders(supabase, [freshOrder || o], options);
     }
 
     return { orderId, ok: true };
@@ -212,14 +228,33 @@ export async function fulfillOrder(
   }
 }
 
-/** Fulfil many orders sequentially. */
+/** Fulfil many orders sequentially and dispatch a single consolidated email. */
 export async function fulfillOrders(
   supabase: ReturnType<typeof createServiceClient>,
   orderIds: string[],
   options?: FulfillOptions,
 ): Promise<FulfillResult[]> {
   const out: FulfillResult[] = [];
-  for (const id of orderIds) out.push(await fulfillOrder(supabase, id, options));
+  for (const id of orderIds) {
+    out.push(await fulfillOrder(supabase, id, { ...options, skipEmail: true }));
+  }
+
+  // If email was not requested to be skipped, send 1 consolidated email for all successfully completed orders in this batch
+  if (!options?.skipEmail) {
+    const successIds = out.filter((r) => r.ok).map((r) => r.orderId);
+    if (successIds.length > 0) {
+      const { data: completedOrders } = await supabase
+        .from('orders')
+        .select('*, tariffs(*)')
+        .in('id', successIds)
+        .eq('status', 'completed');
+
+      if (completedOrders && completedOrders.length > 0) {
+        await sendConsolidatedEmailForOrders(supabase, completedOrders, options);
+      }
+    }
+  }
+
   return out;
 }
 
@@ -246,7 +281,10 @@ export async function sweepFailedEmailDeliveries(supabase: ReturnType<typeof cre
         .eq('status', 'sent');
 
       const sentOrderIds = new Set(
-        (sentList || []).map((s: any) => s.metadata?.order_id).filter(Boolean)
+        (sentList || []).flatMap((s: any) => [
+          s.metadata?.order_id,
+          ...(Array.isArray(s.metadata?.order_ids) ? s.metadata.order_ids : [])
+        ]).filter(Boolean)
       );
 
       for (const ord of validOrders) {

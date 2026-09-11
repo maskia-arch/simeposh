@@ -15,7 +15,7 @@ import { isUuid }                from '@/lib/utils';
 import { resolveCustomer }     from '@/lib/customers';
 import { createCryptoSession } from '@/lib/crypto/session';
 import { getCoin }             from '@/lib/crypto/coins';
-import { fulfillOrder }        from '@/lib/fulfillment';
+import { fulfillOrders }       from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
 import { calculateSalePrice }  from '@/lib/pricing';
@@ -272,9 +272,7 @@ export async function POST(request: Request) {
 
       // Fulfill orders immediately
       const orderIds = inserted.map((o) => o.id);
-      for (const orderId of orderIds) {
-        await fulfillOrder(service, orderId);
-      }
+      await fulfillOrders(service, orderIds);
 
       // Save newsletter consent if checked
       if (body.newsletterConsent && email) {

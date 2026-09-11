@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { EsimDelivery, type DeliveredEsim } from '@/components/EsimDelivery';
+import { TopUpDelivery } from '@/components/TopUpDelivery';
 import { CountryFlag } from '@/components/CountryFlag';
 import { formatEur } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n';
@@ -10,6 +11,10 @@ import { CheckoutFeedbackWidget } from '@/components/CheckoutFeedbackWidget';
 
 interface OrderItem extends DeliveredEsim {
   status: string;
+  orderType?: string;
+  topUpIccid?: string | null;
+  tariffName?: string | null;
+  amountEur?: number | null;
 }
 
 interface StatusResp {
@@ -49,12 +54,44 @@ export function OrderView({ orderRef }: { orderRef: string }) {
 
   const orders       = data?.orders ?? [];
   const completed    = orders.filter((o) => o.status === 'completed');
+  const topUps       = completed.filter((o) => o.orderType === 'top_up');
+  const newEsims     = completed.filter((o) => o.orderType !== 'top_up');
+  const isAllTopUp   = completed.length > 0 && newEsims.length === 0;
+  const isAllNew     = completed.length > 0 && topUps.length === 0;
+  const isMixed      = newEsims.length > 0 && topUps.length > 0;
+
   const provisioning = orders.filter((o) => o.status === 'paid' || o.status === 'provisioning');
   const failed       = orders.filter((o) => o.status === 'failed');
   const allDone      = data?.allDone ?? false;
   const isPaid       = data?.isPaid ?? orders.some(o => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
   const isExpired    = data?.paymentStatus === 'expired' || data?.paymentStatus === 'cancelled' || (orders.length > 0 && orders.every(o => o.status === 'expired' || o.status === 'cancelled'));
   const isPending    = !isPaid && !isExpired && orders.some(o => o.status === 'pending');
+
+  const getBannerTitle = () => {
+    if (!allDone || failed.length > 0) return t('op_provisioning_title');
+    if (isAllTopUp) {
+      return topUps.length > 1
+        ? (t('op_topup_ready_many', { count: topUps.length }) || `${topUps.length} eSIMs erfolgreich aufgeladen!`)
+        : (t('op_topup_ready_one') || 'eSIM erfolgreich aufgeladen!');
+    }
+    if (isMixed) {
+      return t('op_mixed_ready_title') || 'Bestellung erfolgreich bereitgestellt!';
+    }
+    return completed.length > 1
+      ? t('op_ready_many', { count: completed.length })
+      : t('op_ready_one');
+  };
+
+  const getBannerSub = () => {
+    if (!allDone || failed.length > 0) return t('op_provisioning_sub');
+    if (isAllTopUp) {
+      return t('op_topup_ready_sub') || 'Das gebuchte Datenpaket wurde direkt auf deiner bestehenden eSIM gutgeschrieben. Kein neuer QR-Code nötig!';
+    }
+    if (isMixed) {
+      return t('op_mixed_ready_sub') || 'Deine neuen eSIMs sind bereit zur Installation und deine bestehenden eSIMs wurden aufgeladen.';
+    }
+    return t('op_ready_sub');
+  };
 
   // Not found yet (webhook/redirect race) → keep waiting a bit
   if (data && !data.found) {
@@ -112,12 +149,10 @@ export function OrderView({ orderRef }: { orderRef: string }) {
             <span className="text-3xl">{allDone && failed.length === 0 ? '✨' : '⚡'}</span>
           </div>
           <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
-            {allDone && failed.length === 0
-              ? (completed.length > 1 ? t('op_ready_many', { count: completed.length }) : t('op_ready_one'))
-              : t('op_provisioning_title')}
+            {getBannerTitle()}
           </h1>
           <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
-            {allDone ? t('op_ready_sub') : t('op_provisioning_sub')}
+            {getBannerSub()}
           </p>
           {data?.totalPaid != null && data.totalPaid > 0 && (
             <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
@@ -155,27 +190,80 @@ export function OrderView({ orderRef }: { orderRef: string }) {
               }`}
             >
               <CountryFlag countryCode={o.flag || o.countryName} countryName={o.countryName} size={18} className="shrink-0" />
-              <span>#{idx + 1} {o.countryName}</span>
+              <span>
+                #{idx + 1} {o.countryName} {o.orderType === 'top_up' ? '(Refill)' : ''}
+              </span>
             </button>
           ))}
         </div>
       )}
 
-      {/* Delivered eSIMs */}
+      {/* Delivered Items */}
       <div className="space-y-6">
-        {selectedIndex === 'all' ? (
-          completed.map((o, idx) => (
-            <EsimDelivery key={o.id} esim={o} index={idx + 1} totalCount={completed.length} />
-          ))
-        ) : (
+        {selectedIndex !== 'all' ? (
           completed[selectedIndex] && (
-            <EsimDelivery
-              key={completed[selectedIndex].id}
-              esim={completed[selectedIndex]}
-              index={selectedIndex + 1}
-              totalCount={completed.length}
-            />
+            completed[selectedIndex].orderType === 'top_up' ? (
+              <TopUpDelivery
+                key={completed[selectedIndex].id}
+                item={completed[selectedIndex]}
+                index={selectedIndex + 1}
+                totalCount={completed.length}
+              />
+            ) : (
+              <EsimDelivery
+                key={completed[selectedIndex].id}
+                esim={completed[selectedIndex]}
+                index={selectedIndex + 1}
+                totalCount={completed.length}
+              />
+            )
           )
+        ) : isMixed ? (
+          <div className="space-y-8">
+            {/* 1. New eSIMs Section */}
+            {newEsims.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <span className="text-sm font-extrabold text-slate-800">
+                    {t('op_section_new_esims') || '📱 Neue eSIMs'} ({newEsims.length})
+                  </span>
+                </div>
+                <div className="space-y-6">
+                  {newEsims.map((o, idx) => (
+                    <EsimDelivery key={o.id} esim={o} index={idx + 1} totalCount={newEsims.length} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 2. Top-Ups Section */}
+            {topUps.length > 0 && (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <span className="text-sm font-extrabold text-slate-800">
+                    {t('op_section_topups') || '🔄 Aufgeladene eSIMs'} ({topUps.length})
+                  </span>
+                </div>
+                <div className="space-y-6">
+                  {topUps.map((o, idx) => (
+                    <TopUpDelivery key={o.id} item={o} index={idx + 1} totalCount={topUps.length} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : isAllTopUp ? (
+          <div className="space-y-6">
+            {topUps.map((o, idx) => (
+              <TopUpDelivery key={o.id} item={o} index={idx + 1} totalCount={topUps.length} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {newEsims.map((o, idx) => (
+              <EsimDelivery key={o.id} esim={o} index={idx + 1} totalCount={newEsims.length} />
+            ))}
+          </div>
         )}
 
         {provisioning.map((o) => (
@@ -185,7 +273,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <div>
-              <p className="font-extrabold text-slate-800">{o.flag ?? '🌐'} {o.countryName}</p>
+              <p className="font-extrabold text-slate-800">{o.flag ?? '🌐'} {o.countryName} {o.orderType === 'top_up' ? '(Refill)' : ''}</p>
               <p className="text-xs text-slate-500 mt-0.5">{t('op_provisioning_item')}</p>
             </div>
           </div>
