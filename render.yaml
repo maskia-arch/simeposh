@@ -79,3 +79,21 @@ services:
       - key: CRON_SECRET
         sync: false
 
+  # ── Automated Email Queue Dispatch (daily at 01:00 UTC / 03:00 CEST upon limit reset) ──
+  - type: cron
+    name: esim-email-queue
+    env: node
+    region: frankfurt
+    schedule: "0 1 * * *"    # 01:00 UTC daily (03:00 CEST)
+    buildCommand: echo "no build needed"
+    startCommand: >
+      curl -s -X GET
+      "${NEXT_PUBLIC_APP_URL}/api/cron/process-email-queue"
+      -H "Authorization: Bearer ${CRON_SECRET}"
+    envVars:
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+
+

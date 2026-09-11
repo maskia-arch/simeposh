@@ -63,8 +63,10 @@ function fromAddress(): string {
 }
 
 import { createServiceClient } from '@/lib/supabase/server';
+import { getEmailQuotaStatus } from './quota';
+import { enqueueEmail } from './queue';
 
-async function sendMailThroughTransporter(mailOptions: {
+export async function sendMailDirect(mailOptions: {
   to: string;
   subject: string;
   html: string;
@@ -211,6 +213,94 @@ async function sendMailThroughTransporter(mailOptions: {
 
   if (!sendSuccess) {
     throw lastError || new Error(`Failed to deliver email to ${cleanTo}: No working email transport configured`);
+  }
+}
+
+async function sendMailThroughTransporter(mailOptions: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  emailType?: string;
+  metadata?: any;
+}): Promise<void> {
+  const cleanTo = mailOptions.to.trim();
+  if (!cleanTo || !cleanTo.includes('@')) {
+    console.error('[mailer] Cannot send email: invalid or empty recipient address:', mailOptions.to);
+    return;
+  }
+
+  const emailType = mailOptions.emailType || 'custom';
+  const isTransactional = [
+    'esim_lieferung',
+    'verspaetet_lieferung',
+    'topup_bestaetigung',
+    'underpayment_warnung',
+    'ticket_created',
+    'ticket_reply',
+  ].includes(emailType);
+  const priority = isTransactional ? 1 : 2;
+
+  // 1. Quota Check against 200/day and 3000/month
+  try {
+    const quota = await getEmailQuotaStatus();
+    const canSend = isTransactional ? quota.canSendTransactional : quota.canSendMarketing;
+
+    if (!canSend) {
+      console.warn(
+        `[mailer] Quota reached or reserved (daily: ${quota.dailySent}/200, monthly: ${quota.monthlySent}/3000). Enqueueing email for ${cleanTo} (${emailType}) with Priority ${priority} for 03:00 reset.`
+      );
+      await enqueueEmail({
+        to: cleanTo,
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+        text: mailOptions.text,
+        emailType,
+        metadata: mailOptions.metadata,
+        priority,
+        reason: quota.isDailyLimitReached ? 'daily_quota_200_reached' : 'monthly_quota_3000_reached',
+        nextAttemptAt: quota.nextResetAt,
+      });
+
+      // Do NOT crash transactional caller (checkout / payment verify)
+      return;
+    }
+  } catch (quotaErr: any) {
+    console.warn('[mailer] Error checking quota status, attempting direct send:', quotaErr?.message || quotaErr);
+  }
+
+  // 2. Direct Send Attempt
+  try {
+    await sendMailDirect(mailOptions);
+  } catch (sendErr: any) {
+    const errStr = String(sendErr?.message || sendErr);
+    const isQuotaOrLimitError =
+      errStr.includes('429') ||
+      errStr.includes('quota') ||
+      errStr.includes('limit') ||
+      errStr.includes('Too Many Requests');
+
+    console.warn(`[mailer] Direct send failed for ${cleanTo}: ${errStr}. Enqueueing into email_queue.`);
+
+    // Enqueue into database queue so it is guaranteed to be retried
+    await enqueueEmail({
+      to: cleanTo,
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+      text: mailOptions.text,
+      emailType,
+      metadata: mailOptions.metadata,
+      priority,
+      reason: isQuotaOrLimitError ? 'resend_rate_limit_429' : 'send_error_retry',
+    });
+
+    // If transactional, we log clearly and do NOT throw to protect checkout/payment flow
+    if (isTransactional) {
+      console.log(`[mailer] Transactional email for ${cleanTo} safely queued in database. Proceeding without crash.`);
+      return;
+    }
+
+    throw sendErr;
   }
 }
 

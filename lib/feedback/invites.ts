@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { sendFeedbackInviteEmail } from '@/lib/email/mailer';
+import { getEmailQuotaStatus, TRANSACTIONAL_BUFFER } from '@/lib/email/quota';
 import { generateFeedbackToken } from './token';
 
 /**
@@ -15,6 +16,38 @@ export async function processFeedbackInvites(limit: number = 100): Promise<{
   totalEligible: number;
 }> {
   try {
+    // 1. Quota Guard: Verify that sending marketing/invitation emails does not deplete quota for real purchase deliveries
+    const quota = await getEmailQuotaStatus();
+    if (!quota.canSendMarketing) {
+      console.warn(
+        `[Feedback Invites] Quota reserved or reached (daily: ${quota.dailySent}/200, monthly: ${quota.monthlySent}/3000). Pausing feedback invites to preserve quota for purchase deliveries.`
+      );
+      return {
+        success: true,
+        message: `Kontingent für E-Mail-Lieferungen reserviert (${quota.dailySent}/200 heute, ${quota.monthlySent}/3000 Monat). Einladungen pausieren bis zum nächsten 03:00 Reset.`,
+        sentCount: 0,
+        failedCount: 0,
+        totalEligible: 0,
+      };
+    }
+
+    // Maximum invitations we can send while preserving the transactional buffer
+    const maxInvitesAllowed = Math.min(
+      limit,
+      Math.max(0, quota.dailyRemaining - TRANSACTIONAL_BUFFER),
+      Math.max(0, quota.monthlyRemaining - TRANSACTIONAL_BUFFER)
+    );
+
+    if (maxInvitesAllowed <= 0) {
+      return {
+        success: true,
+        message: 'Kein freies Kontingent für Feedback-Einladungen verfügbar.',
+        sentCount: 0,
+        failedCount: 0,
+        totalEligible: 0,
+      };
+    }
+
     // Query eligible unreviewed purchases completed/paid >= 24 hours ago.
     // Deduplicates by customer email to ensure in any single batch run (e.g. 12:00 daily),
     // a customer receives at most 1 invitation (for their oldest unreviewed purchase).
@@ -61,7 +94,7 @@ export async function processFeedbackInvites(limit: number = 100): Promise<{
        FROM candidate_purchases lo
        LEFT JOIN public.tariffs t ON t.id = lo.tariff_id
        LIMIT $1`,
-      [limit]
+      [maxInvitesAllowed]
     );
 
     if (eligibleOrders.length === 0) {
