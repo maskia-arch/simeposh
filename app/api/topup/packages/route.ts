@@ -9,7 +9,12 @@ import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes, detectTariff
 import { calculateSalePrice }  from '@/lib/pricing';
 import { createServiceClient } from '@/lib/supabase/server';
 
-export const runtime = 'nodejs';
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -150,32 +155,50 @@ export async function GET(request: Request) {
         } else {
           // Auto-create missing top-up tariff in DB so orders.tariff_id has a valid FK UUID
           try {
-            const { data: created } = await supabase
+            const tariffSlug = slugify(pkg.name) || slugify(pkg.package_code) || 'topup-tariff';
+            const { data: created, error: createErr } = await supabase
               .from('tariffs')
-              .insert({
+              .upsert({
                 package_code: pkg.package_code,
+                slug: tariffSlug,
                 name: pkg.name,
                 country_code: pkg.country_code || 'XX',
                 country_name: pkg.country_name || 'Global',
                 flag_emoji: pkg.flag_emoji || '🌐',
                 data_gb: pkg.data_gb,
-                validity_days: pkg.validity_days,
-                ek_price_usd: pkg.ek_price_usd,
+                validity_days: pkg.validity_days || 1,
+                ek_price_usd: pkg.ek_price_usd ?? 0,
                 sale_price_eur: pkg.sale_price_eur,
                 usd_eur_rate: usdEurRate,
                 is_active: true,
                 is_top_up_eligible: true,
-                tariff_type: pkg.tariff_type,
-                speed_kbps: pkg.speed_kbps,
-                raw_data: pkg.raw_data,
-              } as any)
+                tariff_type: pkg.tariff_type || 'travel',
+                speed_kbps: pkg.speed_kbps ?? null,
+                raw_data: pkg.raw_data ?? {},
+              } as any, { onConflict: 'package_code' })
               .select('id, package_code, flag_emoji, country_name, country_code, sale_price_eur, ek_price_usd, tariff_type, speed_kbps, raw_data, data_gb, validity_days')
               .single();
 
+            if (createErr) {
+              console.warn('[topup/packages] Notice creating tariff entry:', createErr.message);
+            }
             if (created) {
               pkg.id = created.id;
               tariffMap.set(pkg.package_code, created);
               tariffMap.set(pkg.package_code.replace(/^TOPUP_/, ''), created);
+              tariffMap.set(`TOPUP_${pkg.package_code.replace(/^TOPUP_/, '')}`, created);
+            } else {
+              const { data: existing } = await supabase
+                .from('tariffs')
+                .select('id, package_code, flag_emoji, country_name, country_code, sale_price_eur, ek_price_usd, tariff_type, speed_kbps, raw_data, data_gb, validity_days')
+                .eq('package_code', pkg.package_code)
+                .maybeSingle();
+              if (existing) {
+                pkg.id = existing.id;
+                tariffMap.set(pkg.package_code, existing);
+                tariffMap.set(pkg.package_code.replace(/^TOPUP_/, ''), existing);
+                tariffMap.set(`TOPUP_${pkg.package_code.replace(/^TOPUP_/, '')}`, existing);
+              }
             }
           } catch (createErr) {
             console.warn('[topup/packages] Notice creating tariff entry:', (createErr as Error).message);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { CheckoutModal } from '@/components/CheckoutModal';
 import { formatGb, roundToX9, getDiscountPct } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
@@ -38,8 +37,6 @@ export default function TopUpPage() {
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
   const [searched,     setSearched]     = useState(false);
-  const [selected,     setSelected]     = useState<Tariff | null>(null);
-  const [checkoutDays, setCheckoutDays] = useState<number | undefined>(undefined);
   const [addedCode,    setAddedCode]    = useState<string | null>(null);
 
   // Unlimited Configurator state
@@ -145,18 +142,22 @@ export default function TopUpPage() {
       id:             activeUnlimitedPkg.id,
       package_code:   activeUnlimitedPkg.package_code,
       name:           activeUnlimitedPkg.name,
+      country_name:   activeUnlimitedPkg.country_name,
+      country_code:   activeUnlimitedPkg.country_code || 'XX',
+      flag_emoji:     activeUnlimitedPkg.flag_emoji || '🌐',
       validity_days:  unlimitedDays,
       data_gb:        activeUnlimitedPkg.data_gb,
       sale_price_eur: unlimitedTotalPrice,
       tariff_type:    activeUnlimitedPkg.tariff_type || 'unlimited_eco',
+      speed_kbps:     activeUnlimitedPkg.speed_kbps,
     };
-    setCheckoutDays(unlimitedDays);
-    setSelected(synthetic as Tariff);
+    addItem(synthetic as Tariff, 1, { periodDays: unlimitedDays, topUpIccid: iccid });
+    open();
   };
 
   const handleOpenTravelCheckout = (pkg: TopUpPackage) => {
-    setCheckoutDays(pkg.validity_days);
-    setSelected(pkg as unknown as Tariff);
+    addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
+    open();
   };
 
   return (
@@ -341,10 +342,14 @@ export default function TopUpPage() {
                         id:             activeUnlimitedPkg.id,
                         package_code:   activeUnlimitedPkg.package_code,
                         name:           activeUnlimitedPkg.name,
+                        country_name:   activeUnlimitedPkg.country_name,
+                        country_code:   activeUnlimitedPkg.country_code || 'XX',
+                        flag_emoji:     activeUnlimitedPkg.flag_emoji || '🌐',
                         validity_days:  unlimitedDays,
                         data_gb:        activeUnlimitedPkg.data_gb,
                         sale_price_eur: unlimitedTotalPrice,
                         tariff_type:    activeUnlimitedPkg.tariff_type || 'unlimited_eco',
+                        speed_kbps:     activeUnlimitedPkg.speed_kbps,
                       };
                       addItem(synthetic as Tariff, 1, { periodDays: unlimitedDays, topUpIccid: iccid });
                       setAddedCode('unlimited');
@@ -434,17 +439,6 @@ export default function TopUpPage() {
             </span>
           </div>
         </div>
-      )}
-
-      {/* Checkout modal */}
-      {selected && (
-        <CheckoutModal
-          tariff={selected}
-          orderType="top_up"
-          topUpIccid={iccid}
-          days={checkoutDays}
-          onClose={() => setSelected(null)}
-        />
       )}
     </div>
   );

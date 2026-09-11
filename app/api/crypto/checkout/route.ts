@@ -22,6 +22,13 @@ import { calculateSalePrice }  from '@/lib/pricing';
 
 export const runtime = 'nodejs';
 
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIccid?: string }
 
 export async function POST(request: Request) {
@@ -90,7 +97,8 @@ export async function POST(request: Request) {
 
     // Fallback: If any top-up line is not found yet in tariffs, query eSIMAccess and auto-create
     for (const line of lines) {
-      if (line.topUpIccid && !tMap.get(line.tariffId)) {
+      const existing = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
+      if (line.topUpIccid && !existing) {
         try {
           const res = await fetchTopUpPackages(line.topUpIccid);
           const pkgs = res.obj?.packageList ?? [];
@@ -102,33 +110,48 @@ export async function POST(request: Request) {
           if (found) {
             const ekUsd = priceToUsd(found.price);
             const salePriceEur = calculateSalePrice(ekUsd, 0.92);
-            const { data: created } = await service
+            const tariffSlug = slugify(found.name) || slugify(found.packageCode) || 'topup-tariff';
+            const { data: created, error: insErr } = await service
               .from('tariffs')
-              .insert({
+              .upsert({
                 package_code: found.packageCode,
+                slug: tariffSlug,
                 name: found.name,
                 country_code: found.locationCode || 'XX',
                 country_name: found.locationCode || 'Global',
                 flag_emoji: '🌐',
                 data_gb: bytesToGb(getVolumeBytes(found as any)),
-                validity_days: found.duration,
+                validity_days: found.duration || 1,
                 ek_price_usd: ekUsd,
                 sale_price_eur: salePriceEur,
                 usd_eur_rate: 0.92,
                 is_active: true,
                 is_top_up_eligible: true,
+                tariff_type: 'travel',
                 raw_data: found as any,
-              } as any)
+              } as any, { onConflict: 'package_code' })
               .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
               .single();
 
-            if (created) {
-              tariffs.push(created);
-              tMap.set(created.id, created);
-              tMap.set(created.package_code, created);
-              tMap.set(created.package_code.replace(/^TOPUP_/, ''), created);
-              tMap.set(`TOPUP_${created.package_code.replace(/^TOPUP_/, '')}`, created);
-              line.tariffId = created.id;
+            if (insErr) {
+              console.warn('[checkout] Fallback top-up upsert error:', insErr.message);
+            }
+            let targetTariff = created;
+            if (!targetTariff) {
+              const { data: byCode } = await service
+                .from('tariffs')
+                .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+                .eq('package_code', found.packageCode)
+                .maybeSingle();
+              targetTariff = byCode;
+            }
+            if (targetTariff) {
+              tariffs.push(targetTariff);
+              tMap.set(targetTariff.id, targetTariff);
+              tMap.set(targetTariff.package_code, targetTariff);
+              tMap.set(targetTariff.package_code.replace(/^TOPUP_/, ''), targetTariff);
+              tMap.set(`TOPUP_${targetTariff.package_code.replace(/^TOPUP_/, '')}`, targetTariff);
+              line.tariffId = targetTariff.id;
             }
           }
         } catch (err) {
@@ -145,7 +168,7 @@ export async function POST(request: Request) {
     // 1. Calculate total base amount
     let totalBaseEur = 0;
     for (const line of lines) {
-      const t = tMap.get(line.tariffId);
+      const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
       if (!t) continue;
       const isTopUp = !!line.topUpIccid;
       if (!isTopUp && !t.is_active) continue;
@@ -211,7 +234,7 @@ export async function POST(request: Request) {
       // Build order rows
       const orderRows: Array<Record<string, unknown>> = [];
       for (const line of lines) {
-        const t = tMap.get(line.tariffId);
+        const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
         if (!isTopUp && !t.is_active) continue;
@@ -274,7 +297,7 @@ export async function POST(request: Request) {
       // Standard Crypto Checkout
       const orderRows: Array<Record<string, unknown>> = [];
       for (const line of lines) {
-        const t = tMap.get(line.tariffId);
+        const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
         if (!isTopUp && !t.is_active) continue;
