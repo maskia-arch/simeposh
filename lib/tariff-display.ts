@@ -195,7 +195,7 @@ export function isNonHkIpTariff(tariff: {
 }
 
 export interface TariffSpecialFeature {
-  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'has_5g';
+  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'topup_days' | 'topup_data' | 'topup_none' | 'has_5g';
   badgeKey: string;
   titleKey: string;
   descKey: string;
@@ -203,6 +203,69 @@ export interface TariffSpecialFeature {
   icon: string;
   cls: string;
   extra?: string;
+}
+
+export interface ReloadabilityInfo {
+  type: 'days' | 'data' | 'none';
+  labelKey: string;
+  badgeKey: string;
+  titleKey: string;
+  descKey: string;
+  icon: string;
+  isReloadable: boolean;
+}
+
+/**
+ * Determine reloadability classification according to eSIMAccess API specs:
+ * - supportTopUpType = 1: Single-Use (Nicht aufladbar)
+ * - supportTopUpType = 2: Travel (fixed data) -> Data Reloadable for same area within validity
+ * - supportTopUpType = 3: Unlimited -> Days Reloadable for extending validity
+ */
+export function getReloadabilityInfo(tariff: {
+  tariff_type?: string | null;
+  data_gb?: number | null;
+  raw_data?: Record<string, unknown> | null;
+  is_top_up_eligible?: boolean | null;
+}): ReloadabilityInfo {
+  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
+  const rawTopUpType = raw.supportTopUpType !== undefined && raw.supportTopUpType !== null 
+    ? Number(raw.supportTopUpType) 
+    : undefined;
+  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+
+  if (rawTopUpType === 3 || (isUnlimited && rawTopUpType !== 1 && tariff.is_top_up_eligible !== false)) {
+    return {
+      type: 'days',
+      labelKey: 'det_reloadable_unlimited',
+      badgeKey: 'feat_topup_days_badge',
+      titleKey: 'feat_topup_days_title',
+      descKey: 'feat_topup_days_desc',
+      icon: '🔄',
+      isReloadable: true,
+    };
+  }
+
+  if (rawTopUpType === 2 || (!isUnlimited && rawTopUpType !== 1 && tariff.is_top_up_eligible !== false)) {
+    return {
+      type: 'data',
+      labelKey: 'det_reloadable',
+      badgeKey: 'feat_topup_data_badge',
+      titleKey: 'feat_topup_data_title',
+      descKey: 'feat_topup_data_desc',
+      icon: '🔄',
+      isReloadable: true,
+    };
+  }
+
+  return {
+    type: 'none',
+    labelKey: 'det_not_reloadable',
+    badgeKey: 'feat_topup_none_badge',
+    titleKey: 'feat_topup_none_title',
+    descKey: 'feat_topup_none_desc',
+    icon: '⚡',
+    isReloadable: false,
+  };
 }
 
 /**
@@ -213,6 +276,8 @@ export function getTariffSpecialFeatures(
     name?: string | null;
     package_code?: string | null;
     description?: string | null;
+    tariff_type?: string | null;
+    data_gb?: number | null;
     raw_data?: Record<string, unknown> | null;
     is_top_up_eligible?: boolean | null;
   },
@@ -261,18 +326,34 @@ export function getTariffSpecialFeatures(
     });
   }
 
-  // 4. Top-Up Eligible / Reloadable
-  // In eSIMAccess API: supportTopUpType 2 or 3 = reloadable, 1 = NOT reloadable
-  const topUpType = Number(raw.supportTopUpType ?? 0);
-  const isReloadable = tariff.is_top_up_eligible === true || topUpType === 2 || topUpType === 3;
-  if (isReloadable) {
+  // 4. Reloadability Feature Badge (differentiated according to eSIMAccess API specs)
+  const reload = getReloadabilityInfo(tariff);
+  if (reload.type === 'days') {
     features.push({
-      id: 'topup_eligible',
-      badgeKey: 'feat_topup_badge',
-      titleKey: 'feat_topup_title',
-      descKey: 'feat_topup_desc',
-      icon: '🔄',
-      cls: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+      id: 'topup_days',
+      badgeKey: reload.badgeKey,
+      titleKey: reload.titleKey,
+      descKey: reload.descKey,
+      icon: reload.icon,
+      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+    });
+  } else if (reload.type === 'data') {
+    features.push({
+      id: 'topup_data',
+      badgeKey: reload.badgeKey,
+      titleKey: reload.titleKey,
+      descKey: reload.descKey,
+      icon: reload.icon,
+      cls: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
+    });
+  } else {
+    features.push({
+      id: 'topup_none',
+      badgeKey: reload.badgeKey,
+      titleKey: reload.titleKey,
+      descKey: reload.descKey,
+      icon: reload.icon,
+      cls: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200',
     });
   }
 

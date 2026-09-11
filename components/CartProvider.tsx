@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
 export interface CartItem {
-  /** unique line key = tariffId + periodDays (custom configs differ per days) */
+  /** unique line key = tariffId + periodDays + topUpIccid */
   key:          string;
   tariffId:     string;
   packageCode:  string;
@@ -24,6 +24,8 @@ export interface CartItem {
   region:       string | null;
   /** custom day-pass duration (null = fixed package) */
   periodDays:   number | null;
+  /** top-up ICCID if this is a refill item */
+  topUpIccid?:  string | null;
   quantity:     number;
 }
 
@@ -36,7 +38,7 @@ interface CartContextValue {
   open:       () => void;
   close:      () => void;
   toggle:     () => void;
-  addItem:    (tariff: Tariff, quantity?: number, opts?: { periodDays?: number }) => void;
+  addItem:    (tariff: Tariff, quantity?: number, opts?: { periodDays?: number; topUpIccid?: string }) => void;
   removeItem: (key: string) => void;
   setQuantity:(key: string, quantity: number) => void;
   clear:      () => void;
@@ -95,9 +97,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const addItem = useCallback((tariff: Tariff, quantity = 1, opts?: { periodDays?: number }) => {
+  const addItem = useCallback((tariff: Tariff, quantity = 1, opts?: { periodDays?: number; topUpIccid?: string }) => {
     const periodDays = opts?.periodDays ?? null;
-    const key = `${tariff.id}__${periodDays ?? ''}`;
+    const topUpIccid = opts?.topUpIccid?.trim() || null;
+    const key = `${tariff.id}__${periodDays ?? ''}__${topUpIccid ?? ''}`;
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.key === key);
       if (idx >= 0) {
@@ -120,6 +123,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         locationCodes: tariff.location_codes,
         region:        tariff.region,
         periodDays,
+        topUpIccid,
         quantity:      Math.min(99, Math.max(1, quantity)),
       };
       return [...prev, item];

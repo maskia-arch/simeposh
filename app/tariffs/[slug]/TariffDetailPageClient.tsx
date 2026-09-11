@@ -10,7 +10,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
@@ -42,6 +42,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
+  const reloadInfo   = getReloadabilityInfo(tariff);
 
   if (showCheckout) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={() => setShowCheckout(false)} />;
@@ -237,8 +238,8 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 <span>{t('det_no_number')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldIcon size={16} className="text-emerald-500 shrink-0" />
-                <span>{isTravel ? t('det_reloadable') : t('det_reloadable_unlimited')}</span>
+                <ShieldIcon size={16} className={reloadInfo.isReloadable ? "text-emerald-500 shrink-0" : "text-slate-400 shrink-0"} />
+                <span>{t(reloadInfo.labelKey as any)}</span>
               </div>
             </div>
 

@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n';
 import type { Database } from '@/lib/supabase/types';
 import { NetworkIcon, SearchIcon, InfinityIcon, BoltIcon, ShieldIcon, TopUpIcon } from '@/components/Icons';
 import { DaySlider, computePrice, perDayEur } from '@/components/UnlimitedConfigurator';
+import { useCart } from '@/components/CartProvider';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -31,6 +32,7 @@ interface TopUpPackage {
 
 export default function TopUpPage() {
   const { t } = useTranslation();
+  const { addItem, open } = useCart();
   const [iccid,        setIccid]        = useState('');
   const [packages,     setPackages]     = useState<TopUpPackage[]>([]);
   const [loading,      setLoading]      = useState(false);
@@ -38,6 +40,7 @@ export default function TopUpPage() {
   const [searched,     setSearched]     = useState(false);
   const [selected,     setSelected]     = useState<Tariff | null>(null);
   const [checkoutDays, setCheckoutDays] = useState<number | undefined>(undefined);
+  const [addedCode,    setAddedCode]    = useState<string | null>(null);
 
   // Unlimited Configurator state
   const [unlimitedDays, setUnlimitedDays]   = useState(7);
@@ -248,9 +251,9 @@ export default function TopUpPage() {
                   </div>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700 shrink-0">
-                  <InfinityIcon size={14} className="text-emerald-600" />
-                  <span>Unlimited Tarif</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-bold text-indigo-700 shrink-0">
+                  <InfinityIcon size={14} className="text-indigo-600" />
+                  <span>🔄 Days Reloadable (Laufzeit-Verlängerung)</span>
                 </span>
               </div>
 
@@ -328,15 +331,40 @@ export default function TopUpPage() {
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenUnlimitedCheckout}
-                  className="rounded-2xl bg-brand-600 px-6 py-3.5 text-sm font-black text-white hover:bg-brand-700 shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center gap-2"
-                >
-                  <span>eSIM um {unlimitedDays} {unlimitedDays === 1 ? 'Tag' : 'Tage'} verlängern</span>
-                  <span>·</span>
-                  <Price eur={unlimitedTotalPrice} />
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!activeUnlimitedPkg) return;
+                      const synthetic: Partial<Tariff> = {
+                        ...activeUnlimitedPkg,
+                        id:             activeUnlimitedPkg.id,
+                        package_code:   activeUnlimitedPkg.package_code,
+                        name:           activeUnlimitedPkg.name,
+                        validity_days:  unlimitedDays,
+                        data_gb:        activeUnlimitedPkg.data_gb,
+                        sale_price_eur: unlimitedTotalPrice,
+                        tariff_type:    activeUnlimitedPkg.tariff_type || 'unlimited_eco',
+                      };
+                      addItem(synthetic as Tariff, 1, { periodDays: unlimitedDays, topUpIccid: iccid });
+                      setAddedCode('unlimited');
+                      setTimeout(() => setAddedCode(null), 2000);
+                    }}
+                    className="rounded-2xl border-2 border-brand-200 bg-brand-50 px-5 py-3.5 text-sm font-bold text-brand-700 hover:bg-brand-100 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    {addedCode === 'unlimited' ? '✓ Im Warenkorb' : '+ In den Warenkorb'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenUnlimitedCheckout}
+                    className="rounded-2xl bg-brand-600 px-6 py-3.5 text-sm font-black text-white hover:bg-brand-700 shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span>eSIM um {unlimitedDays} {unlimitedDays === 1 ? 'Tag' : 'Tage'} verlängern</span>
+                    <span>·</span>
+                    <Price eur={unlimitedTotalPrice} />
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -359,20 +387,38 @@ export default function TopUpPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{pkg.flag_emoji ?? '🌐'}</span>
                       <div>
-                        <p className="font-extrabold text-slate-800 text-sm">{pkg.name}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-extrabold text-slate-800 text-sm">{pkg.name}</p>
+                          <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-1.5 py-0.2 text-[9px] font-bold text-sky-700">
+                            🔄 Data Reloadable
+                          </span>
+                        </div>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          {formatGb(pkg.data_gb)} · {pkg.validity_days} {t('cfg_days')}
+                          {formatGb(pkg.data_gb)} · {pkg.validity_days} {t('cfg_days')} · Selbes Gebiet
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <Price eur={pkg.sale_price_eur} className="text-lg font-bold text-slate-900" />
-                      <button
-                        onClick={() => handleOpenTravelCheckout(pkg)}
-                        className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-brand-700 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                      >
-                        {t('topup_btn')}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
+                            setAddedCode(pkg.package_code);
+                            setTimeout(() => setAddedCode(null), 2000);
+                          }}
+                          className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-all cursor-pointer active:scale-[0.98]"
+                        >
+                          {addedCode === pkg.package_code ? '✓' : '+ Warenkorb'}
+                        </button>
+                        <button
+                          onClick={() => handleOpenTravelCheckout(pkg)}
+                          className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-brand-700 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                        >
+                          {t('topup_btn')}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -127,6 +127,11 @@ export default function CartPage() {
                             <span>{coverage}</span>
                           </span>
                         )}
+                        {i.topUpIccid && (
+                          <span className="inline-flex items-center gap-1 ml-2 rounded-md bg-brand-50 border border-brand-200 px-2 py-0.5 text-[10px] font-bold text-brand-700 font-mono">
+                            🔄 Refill: {i.topUpIccid}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <button
@@ -216,7 +221,7 @@ export default function CartPage() {
             <div className="border-t border-slate-100 pt-4">
               <CryptoPaySelector
                 email={email}
-                items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined }))}
+                items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined, topUpIccid: i.topUpIccid ?? undefined }))}
                 total={total}
                 balance={balance}
                 user={user}

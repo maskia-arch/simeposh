@@ -197,6 +197,11 @@ export function CartDrawer() {
                         <p className="text-[10px] text-slate-500 font-medium flex items-center flex-wrap gap-1">
                           {badge && <span className="inline-flex items-center gap-0.5 mr-0.5">{badge.icon} <span>{badge.label}</span></span>}
                           <span>· {isUnlimited ? '∞ Unlimited' : formatGb(i.dataGb)} · {i.validityDays}d</span>
+                          {i.topUpIccid && (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-brand-50 border border-brand-200 px-1.5 py-0.5 text-[9px] font-bold text-brand-700 font-mono">
+                              🔄 Refill: {i.topUpIccid.slice(-8)}
+                            </span>
+                          )}
                         </p>
                       </div>
 
@@ -274,7 +279,7 @@ export function CartDrawer() {
             {/* Section 3: High-Density Payment Selector & Sticky Balanced CTA */}
             <CryptoPaySelector
               email={email}
-              items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined }))}
+              items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined, topUpIccid: i.topUpIccid ?? undefined }))}
               total={total}
               balance={balance}
               user={user}

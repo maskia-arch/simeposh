@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 
@@ -48,6 +48,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
   const features     = getTariffSpecialFeatures(tariff);
+  const reloadInfo   = getReloadabilityInfo(tariff);
   const cleanedTitle = cleanTariffName(tariff.name);
 
   if (showCheckout) {
@@ -247,8 +248,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <span className="font-semibold">{t('det_no_number')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <ShieldIcon size={14} className="text-emerald-600 shrink-0" />
-              <span className="font-semibold">{isTravel ? t('det_reloadable') : t('det_reloadable_unlimited')}</span>
+              <ShieldIcon size={14} className={reloadInfo.isReloadable ? "text-emerald-600 shrink-0" : "text-slate-400 shrink-0"} />
+              <span className="font-semibold">{t(reloadInfo.labelKey as any)}</span>
             </div>
           </div>
 
