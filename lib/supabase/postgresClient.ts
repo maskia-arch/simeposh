@@ -37,6 +37,8 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
   private valuesToSave: any = null;
   private isSingle: boolean = false;
   private isMaybeSingle: boolean = false;
+  private isHead: boolean = false;
+  private countType?: 'exact' | 'planned' | 'estimated';
 
   constructor(table: string) {
     this.table = table;
@@ -51,6 +53,10 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
     if (options?.head) {
       this.isSingle = false;
       this.isMaybeSingle = false;
+      this.isHead = true;
+    }
+    if (options?.count) {
+      this.countType = options.count;
     }
     return this;
   }
@@ -388,6 +394,18 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
       } 
       else if (this.method === 'delete') {
         sql = `DELETE FROM "${this.table}"` + compileWhere() + ` RETURNING ${returning}`;
+      }
+    }
+
+    if (this.isHead) {
+      const countSql = `SELECT COUNT(*)::int AS count FROM "${this.table}"` + compileWhere();
+      try {
+        const dbRes = await query(countSql, params);
+        const count = Number(dbRes.rows[0]?.count || 0);
+        return { data: null, error: null, count };
+      } catch (err: any) {
+        console.error('[PostgresQueryBuilder] count execution error:', err);
+        return { data: null, error: { message: err.message, code: err.code || 'UNKNOWN' }, count: 0 };
       }
     }
 
