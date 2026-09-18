@@ -261,66 +261,70 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
     };
 
     if (this.method === 'select') {
-      let fields = this.selectFields;
+      if (this.isHead) {
+        sql = `SELECT COUNT(*)::int AS count FROM "${this.table}"` + compileWhere();
+      } else {
+        let fields = this.selectFields;
 
-      if (fields.includes('tariffs(')) {
-        const tariffsMatch = fields.match(/tariffs\(([^)]*)\)/);
-        if (tariffsMatch) {
-          const innerFields = tariffsMatch[1].trim();
-          let subQuery = '';
-          if (innerFields === '*' || innerFields === '') {
-            subQuery = `(SELECT to_jsonb(t) FROM tariffs t WHERE t.id = "${this.table}".tariff_id) as tariffs`;
-          } else {
-            const cols = innerFields.split(',').map(c => c.trim());
-            const jsonBuildObjArgs = cols.map(c => `'${c}', t."${c}"`).join(', ');
-            subQuery = `(SELECT json_build_object(${jsonBuildObjArgs}) FROM tariffs t WHERE t.id = "${this.table}".tariff_id) as tariffs`;
+        if (fields.includes('tariffs(')) {
+          const tariffsMatch = fields.match(/tariffs\(([^)]*)\)/);
+          if (tariffsMatch) {
+            const innerFields = tariffsMatch[1].trim();
+            let subQuery = '';
+            if (innerFields === '*' || innerFields === '') {
+              subQuery = `(SELECT to_jsonb(t) FROM tariffs t WHERE t.id = "${this.table}".tariff_id) as tariffs`;
+            } else {
+              const cols = innerFields.split(',').map(c => c.trim());
+              const jsonBuildObjArgs = cols.map(c => `'${c}', t."${c}"`).join(', ');
+              subQuery = `(SELECT json_build_object(${jsonBuildObjArgs}) FROM tariffs t WHERE t.id = "${this.table}".tariff_id) as tariffs`;
+            }
+            fields = fields.replace(/tariffs\([^)]*\)/, subQuery);
           }
-          fields = fields.replace(/tariffs\([^)]*\)/, subQuery);
         }
-      }
 
-      if (fields.includes('post_translations(')) {
-        const transMatch = fields.match(/post_translations\(([^)]*)\)/);
-        if (transMatch) {
-          const innerFields = transMatch[1].trim();
-          let subQuery = '';
-          if (innerFields === '*' || innerFields === '') {
-            subQuery = `COALESCE((SELECT json_agg(to_jsonb(pt)) FROM post_translations pt WHERE pt.post_id = "${this.table}".id), '[]'::json) as post_translations`;
-          } else {
-            const cols = innerFields.split(',').map(c => c.trim());
-            const jsonBuildObjArgs = cols.map(c => `'${c}', pt."${c}"`).join(', ');
-            subQuery = `COALESCE((SELECT json_agg(json_build_object(${jsonBuildObjArgs})) FROM post_translations pt WHERE pt.post_id = "${this.table}".id), '[]'::json) as post_translations`;
+        if (fields.includes('post_translations(')) {
+          const transMatch = fields.match(/post_translations\(([^)]*)\)/);
+          if (transMatch) {
+            const innerFields = transMatch[1].trim();
+            let subQuery = '';
+            if (innerFields === '*' || innerFields === '') {
+              subQuery = `COALESCE((SELECT json_agg(to_jsonb(pt)) FROM post_translations pt WHERE pt.post_id = "${this.table}".id), '[]'::json) as post_translations`;
+            } else {
+              const cols = innerFields.split(',').map(c => c.trim());
+              const jsonBuildObjArgs = cols.map(c => `'${c}', pt."${c}"`).join(', ');
+              subQuery = `COALESCE((SELECT json_agg(json_build_object(${jsonBuildObjArgs})) FROM post_translations pt WHERE pt.post_id = "${this.table}".id), '[]'::json) as post_translations`;
+            }
+            fields = fields.replace(/post_translations\([^)]*\)/, subQuery);
           }
-          fields = fields.replace(/post_translations\([^)]*\)/, subQuery);
         }
-      }
 
-      if (fields.includes('crypto_coins(')) {
-        const coinsMatch = fields.match(/crypto_coins\(([^)]*)\)/);
-        if (coinsMatch) {
-          const innerFields = coinsMatch[1].trim();
-          let subQuery = '';
-          if (innerFields === '*' || innerFields === '') {
-            subQuery = `(SELECT to_jsonb(cc) FROM crypto_coins cc WHERE cc.code = "${this.table}".coin) as crypto_coins`;
-          } else {
-            const cols = innerFields.split(',').map(c => c.trim());
-            const jsonBuildObjArgs = cols.map(c => `'${c}', cc."${c}"`).join(', ');
-            subQuery = `(SELECT json_build_object(${jsonBuildObjArgs}) FROM crypto_coins cc WHERE cc.code = "${this.table}".coin) as crypto_coins`;
+        if (fields.includes('crypto_coins(')) {
+          const coinsMatch = fields.match(/crypto_coins\(([^)]*)\)/);
+          if (coinsMatch) {
+            const innerFields = coinsMatch[1].trim();
+            let subQuery = '';
+            if (innerFields === '*' || innerFields === '') {
+              subQuery = `(SELECT to_jsonb(cc) FROM crypto_coins cc WHERE cc.code = "${this.table}".coin) as crypto_coins`;
+            } else {
+              const cols = innerFields.split(',').map(c => c.trim());
+              const jsonBuildObjArgs = cols.map(c => `'${c}', cc."${c}"`).join(', ');
+              subQuery = `(SELECT json_build_object(${jsonBuildObjArgs}) FROM crypto_coins cc WHERE cc.code = "${this.table}".coin) as crypto_coins`;
+            }
+            fields = fields.replace(/crypto_coins\([^)]*\)/, subQuery);
           }
-          fields = fields.replace(/crypto_coins\([^)]*\)/, subQuery);
         }
-      }
 
-      sql = `SELECT ${fields} FROM "${this.table}"` + compileWhere();
+        sql = `SELECT ${fields} FROM "${this.table}"` + compileWhere();
 
-      if (this.orderBy) {
-        sql += ` ORDER BY "${this.orderBy}" ${this.orderAsc ? 'ASC' : 'DESC'}`;
-      }
-      if (this.limitVal !== null) {
-        sql += ` LIMIT ${this.limitVal}`;
-      }
-      if (this.offsetVal !== null) {
-        sql += ` OFFSET ${this.offsetVal}`;
+        if (this.orderBy) {
+          sql += ` ORDER BY "${this.orderBy}" ${this.orderAsc ? 'ASC' : 'DESC'}`;
+        }
+        if (this.limitVal !== null) {
+          sql += ` LIMIT ${this.limitVal}`;
+        }
+        if (this.offsetVal !== null) {
+          sql += ` OFFSET ${this.offsetVal}`;
+        }
       }
     } 
     else {
@@ -397,21 +401,14 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
       }
     }
 
-    if (this.isHead) {
-      const countSql = `SELECT COUNT(*)::int AS count FROM "${this.table}"` + compileWhere();
-      try {
-        const dbRes = await query(countSql, params);
-        const count = Number(dbRes.rows[0]?.count || 0);
-        return { data: null, error: null, count };
-      } catch (err: any) {
-        console.error('[PostgresQueryBuilder] count execution error:', err);
-        return { data: null, error: { message: err.message, code: err.code || 'UNKNOWN' }, count: 0 };
-      }
-    }
-
     try {
       const dbRes = await query(sql, params);
       const rows = dbRes.rows;
+
+      if (this.isHead) {
+        const count = Number(rows[0]?.count || 0);
+        return { data: null, error: null, count };
+      }
 
       if (this.isSingle) {
         if (rows.length === 0) {
