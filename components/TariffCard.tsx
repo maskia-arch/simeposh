@@ -8,7 +8,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
 import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, type TariffSpecialFeature } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -19,7 +19,7 @@ const NET_COLOR: Record<string, string> = {
 };
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; labelKey: 'badge_travel'|'badge_eco'|'badge_pro'; cls: string; descKey: 'type_travel_desc'|'type_eco_desc'|'type_pro_desc' }> = {
-  travel:        { icon: <PlaneIcon size={12} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  travel:        { icon: <TravelGlobeIcon size={13} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
   unlimited_eco: { icon: <EcoIcon size={12} />, labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, labelKey: 'badge_pro',    descKey: 'type_pro_desc',    cls: 'bg-violet-50 text-violet-700 border-violet-200' },
 };
@@ -98,7 +98,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
               title={t('type_travel_premium_desc' as any)}
               className="shrink-0 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-2 py-0.5 text-xs font-extrabold text-amber-900 shadow-2xs"
             >
-              <span>👑</span> {t('badge_travel_premium' as any)}
+              <TravelPremiumGlobeIcon size={14} className="text-amber-800" /> {t('badge_travel_premium' as any)}
             </span>
           ) : badge ? (
             <span
@@ -128,7 +128,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                   }`}
                   title={`${t(feat.titleKey as any)} – Details anzeigen`}
                 >
-                  <span>{feat.icon}</span>
+                  {feat.id === 'travel_premium' ? (
+                    <TravelPremiumGlobeIcon size={12} className="text-amber-800" />
+                  ) : (
+                    <span>{feat.icon}</span>
+                  )}
                   <span>{t(feat.badgeKey as any)}</span>
                   <span className="opacity-50 text-[9px]">ⓘ</span>
                 </button>
@@ -145,7 +149,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           >
             <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1 mb-1">
               <span className="font-extrabold flex items-center gap-1 text-indigo-900 text-[11px]">
-                <span>{activeFeature.icon}</span>
+                {activeFeature.id === 'travel_premium' ? (
+                  <TravelPremiumGlobeIcon size={13} className="text-amber-800" />
+                ) : (
+                  <span>{activeFeature.icon}</span>
+                )}
                 <span>{t(activeFeature.titleKey as any)}</span>
               </span>
               <button

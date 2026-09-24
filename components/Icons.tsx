@@ -18,6 +18,50 @@ export const PlaneIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[#
   </svg>
 );
 
+// 2a. Travel Globe Icon (Weltkugel mit Flugzeug)
+export const TravelGlobeIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[#0ea5e9]', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`${className} shrink-0`} {...props}>
+    {/* Globe */}
+    <circle cx="10" cy="13" r="7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2.7 13h14.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    <path d="M10 5.5c-2.4 2-3.8 5-3.8 7.5s1.4 5.5 3.8 7.5c2.4-2 3.8-5 3.8-7.5S12.4 7.5 10 5.5z" stroke="currentColor" strokeWidth="1.3" fill="none" />
+    {/* Flight trail */}
+    <path d="M3.5 19.5C6 19 11 17 16 9" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 2" strokeLinecap="round" opacity="0.75" />
+    {/* Airplane */}
+    <path d="M22 3.5c-.3-.3-.8-.2-1.1.1l-4.4 4.4-4.5-1.7c-.4-.1-.8 0-1 .3l-.3.4c-.2.3-.1.7.2.9l3.4 2.4-2.5 2.5-2.1-.7c-.3-.1-.6 0-.8.2l-.3.3c-.2.2-.2.5 0 .7l2 2 2 2c.2.2.5.2.7 0l.3-.3c.2-.2.3-.5.2-.8l-.7-2.1 2.5-2.5 2.4 3.4c.2.3.6.4.9.2l.4-.3c.3-.2.4-.6.3-1l-1.7-4.5 4.4-4.4c.3-.3.4-.8.1-1.1z" fill="currentColor" />
+  </svg>
+);
+
+// 2b. Travel Premium Globe Icon (Weltkugel mit goldenem Flugzeug und goldenem "+" Symbol)
+export const TravelPremiumGlobeIcon: React.FC<IconProps> = ({ size = 20, className = 'text-amber-800', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`${className} shrink-0`} {...props}>
+    <defs>
+      <linearGradient id="psGoldPlane" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FDE047" />
+        <stop offset="45%" stopColor="#F59E0B" />
+        <stop offset="100%" stopColor="#D97706" />
+      </linearGradient>
+      <linearGradient id="psGoldPlusBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#B45309" />
+      </linearGradient>
+    </defs>
+    {/* Globe */}
+    <circle cx="10" cy="13" r="7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2.7 13h14.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.85" />
+    <path d="M10 5.5c-2.4 2-3.8 5-3.8 7.5s1.4 5.5 3.8 7.5c2.4-2 3.8-5 3.8-7.5S12.4 7.5 10 5.5z" stroke="currentColor" strokeWidth="1.3" fill="none" opacity="0.85" />
+    {/* Flight trail */}
+    <path d="M3.5 19.5C6 19 11 17 16 9" stroke="#F59E0B" strokeWidth="1.2" strokeDasharray="2 2" strokeLinecap="round" opacity="0.85" />
+    {/* Golden Airplane */}
+    <path d="M22 3.5c-.3-.3-.8-.2-1.1.1l-4.4 4.4-4.5-1.7c-.4-.1-.8 0-1 .3l-.3.4c-.2.3-.1.7.2.9l3.4 2.4-2.5 2.5-2.1-.7c-.3-.1-.6 0-.8.2l-.3.3c-.2.2-.2.5 0 .7l2 2 2 2c.2.2.5.2.7 0l.3-.3c.2-.2.3-.5.2-.8l-.7-2.1 2.5-2.5 2.4 3.4c.2.3.6.4.9.2l.4-.3c.3-.2.4-.6.3-1l-1.7-4.5 4.4-4.4c.3-.3.4-.8.1-1.1z" fill="url(#psGoldPlane)" />
+    {/* Golden Plus Badge */}
+    <g transform="translate(13.8, 12.8)">
+      <circle cx="4.6" cy="4.6" r="4.3" fill="url(#psGoldPlusBadge)" stroke="#FFFFFF" strokeWidth="1.2" />
+      <path d="M4.6 2.5v4.2M2.5 4.6h4.2" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" />
+    </g>
+  </svg>
+);
+
 // 3. Infinity Icon (genuine infinity symbol ∞)
 export const InfinityIcon: React.FC<IconProps> = ({ size = 20, className = 'text-[#1d4ed8]', ...props }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} className={`${className} shrink-0`} {...props}>

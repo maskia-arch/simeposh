@@ -10,10 +10,10 @@ import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { displayCountryName, coverageLabel, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
-  travel:        { icon: <PlaneIcon size={12} className="currentColor" />, label: 'Travel' },
+  travel:        { icon: <TravelGlobeIcon size={13} className="currentColor text-sky-600" />, label: 'Travel' },
   unlimited_eco: { icon: <EcoIcon size={12} />, label: 'Unlimited Eco' },
   unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, label: 'Unlimited Pro' },
 };
@@ -103,7 +103,7 @@ export default function CartPage() {
           {items.map((i) => {
             const isPremium = isPremiumTariff({ name: i.name, package_code: i.packageCode });
             const badge = isPremium && (!i.tariffType || i.tariffType === 'travel')
-              ? { icon: <span>👑</span>, label: 'Travel Premium' }
+              ? { icon: <TravelPremiumGlobeIcon size={14} className="text-amber-800" />, label: 'Travel Premium' }
               : i.tariffType ? TYPE_BADGE[i.tariffType] : null;
             const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
             const label = displayCountryName(
@@ -124,7 +124,7 @@ export default function CartPage() {
                         <span>{label}</span>
                         {isPremium && (
                           <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900">
-                            👑 Travel Premium
+                            <TravelPremiumGlobeIcon size={12} className="text-amber-800" /> Travel Premium
                           </span>
                         )}
                       </p>

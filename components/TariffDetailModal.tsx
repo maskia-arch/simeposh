@@ -10,7 +10,7 @@ import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
@@ -24,7 +24,7 @@ const NETWORK_COLORS: Record<string, string> = {
 };
 
 const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
-  travel:        { icon: <PlaneIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  travel:        { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
   unlimited_eco: { icon: <EcoIcon size={14} />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
   unlimited_pro: { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
@@ -141,8 +141,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                   </div>
                 )}
                 {isPremium && isTravel ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
-                    <span>👑</span> {t('badge_travel_premium' as any)}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
+                    <TravelPremiumGlobeIcon size={14} className="text-amber-800" /> {t('badge_travel_premium' as any)}
                   </span>
                 ) : typeInfo ? (
                   <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold ${typeInfo.color}`}>
@@ -184,7 +184,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
             <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 to-orange-50/70 p-4 text-xs text-amber-950 shadow-sm space-y-3">
               <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
                 <span className="font-extrabold flex items-center gap-1.5 text-amber-900 text-sm">
-                  <span>👑</span> {t('turkey_premium_title' as any)}
+                  <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> {t('turkey_premium_title' as any)}
                 </span>
                 <span className="rounded-full bg-amber-200/90 px-2 py-0.5 text-[10px] font-bold text-amber-950">
                   {t('turkey_premium_badge' as any)}
@@ -218,7 +218,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3.5 text-xs text-sky-950 shadow-2xs space-y-2">
               <div className="flex items-center justify-between border-b border-sky-200/60 pb-1.5">
                 <span className="font-extrabold flex items-center gap-1.5 text-sky-900 text-xs">
-                  <span>ℹ️</span> {t('turkey_standard_title' as any)}
+                  <TravelGlobeIcon size={14} className="text-sky-700" /> {t('turkey_standard_title' as any)}
                 </span>
                 <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
                   {t('turkey_standard_badge' as any)}
@@ -242,7 +242,9 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                 {features.map((feat) => (
                   <div key={feat.id} className="rounded-2xl border border-indigo-200/80 bg-indigo-50/60 p-3.5 text-xs text-indigo-950 shadow-2xs">
                     <div className="flex items-center gap-1.5 font-extrabold text-indigo-900 mb-1">
-                      <span className="text-sm">{feat.icon}</span>
+                      <span className="text-sm">
+                        {feat.id === 'travel_premium' ? <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> : feat.icon}
+                      </span>
                       <span>{t(feat.titleKey as any)}</span>
                     </div>
                     <p className="leading-relaxed text-indigo-900/90 text-[11px]">{t(feat.descKey as any)}</p>

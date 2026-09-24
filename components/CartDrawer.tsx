@@ -9,10 +9,10 @@ import { displayCountryName, isNonHkIpTariff, isPremiumTariff } from '@/lib/tari
 import { useTranslation } from '@/lib/i18n';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { createClient } from '@/lib/supabase/client';
-import { EcoIcon } from '@/components/Icons';
+import { EcoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
-  travel:        { icon: <span>✈️</span>, label: 'Travel' },
+  travel:        { icon: <TravelGlobeIcon size={12} className="inline-block align-middle text-sky-600" />, label: 'Travel' },
   unlimited_eco: { icon: <EcoIcon size={12} className="inline-block align-middle" />, label: 'Eco' },
   unlimited_pro: { icon: <span>⚡</span>, label: 'Pro' },
 };
@@ -166,7 +166,7 @@ export function CartDrawer() {
                 {items.map((i) => {
                   const isPremium = isPremiumTariff({ name: i.name, package_code: i.packageCode });
                   const badge = isPremium && (!i.tariffType || i.tariffType === 'travel')
-                    ? { icon: <span>👑</span>, label: 'Travel Premium' }
+                    ? { icon: <TravelPremiumGlobeIcon size={12} className="inline-block align-middle text-amber-700" />, label: 'Travel Premium' }
                     : i.tariffType ? TYPE_BADGE[i.tariffType] : null;
                   const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
                   const isNonHk = isNonHkIpTariff({ name: i.name, package_code: i.packageCode });
@@ -183,8 +183,8 @@ export function CartDrawer() {
                               )}
                             </span>
                             {isPremium && (
-                              <span className="shrink-0 text-[8px] font-bold text-amber-900 bg-amber-50 border border-amber-300 px-1 py-0.2 rounded-full">
-                                👑 Premium
+                              <span className="shrink-0 text-[8px] font-bold text-amber-900 bg-amber-50 border border-amber-300 px-1 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                <TravelPremiumGlobeIcon size={10} className="text-amber-800" /> Premium
                               </span>
                             )}
                             {isNonHk && (

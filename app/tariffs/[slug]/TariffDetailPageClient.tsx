@@ -11,7 +11,7 @@ import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon } from '@/components/Icons';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 
@@ -24,7 +24,7 @@ const NETWORK_COLORS: Record<string, string> = {
 };
 
 const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
-  travel:        { icon: <PlaneIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  travel:        { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
   unlimited_eco: { icon: <EcoIcon size={14} />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
   unlimited_pro: { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
@@ -129,7 +129,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
                 {isPremium && isTravel ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-900 shadow-2xs">
-                    <span>👑</span> {t('badge_travel_premium' as any)}
+                    <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> {t('badge_travel_premium' as any)}
                   </span>
                 ) : typeInfo ? (
                   <div>
@@ -161,7 +161,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
               <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 via-orange-50/60 to-amber-50/80 p-8 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-amber-200/80 pb-3">
                   <span className="font-extrabold flex items-center gap-2 text-amber-900 text-lg">
-                    <span>👑</span> {t('turkey_premium_title' as any)}
+                    <TravelPremiumGlobeIcon size={20} className="text-amber-800" /> {t('turkey_premium_title' as any)}
                   </span>
                   <span className="rounded-full bg-amber-200/90 px-3 py-1 text-xs font-extrabold text-amber-950">
                     {t('turkey_premium_badge' as any)}
@@ -195,7 +195,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
               <div className="rounded-3xl border border-sky-200 bg-sky-50/80 p-6 shadow-sm space-y-3">
                 <div className="flex items-center justify-between border-b border-sky-200/70 pb-2">
                   <span className="font-extrabold flex items-center gap-2 text-sky-900 text-base">
-                    <span>ℹ️</span> {t('turkey_standard_title' as any)}
+                    <TravelGlobeIcon size={18} className="text-sky-700" /> {t('turkey_standard_title' as any)}
                   </span>
                   <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-800">
                     {t('turkey_standard_badge' as any)}

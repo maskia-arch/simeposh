@@ -6,8 +6,8 @@ import { TariffsGrid }          from '@/components/TariffsGrid';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { useTranslation }        from '@/lib/i18n';
 import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, SearchIcon } from '@/components/Icons';
-import { isPremiumTariff, isTurkeyTariff } from '@/lib/tariff-display';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, SearchIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
+import { isPremiumTariff } from '@/lib/tariff-display';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
 export type ActiveCategory = 'travel' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro';
@@ -170,13 +170,6 @@ export function TariffsPageClient({
     return filteredTravel;
   }, [filteredTravel, activeCategory, travelTier]);
 
-  const isTurkeyTargeted = useMemo(() => {
-    const qLow = q.trim().toLowerCase();
-    if (qLow.includes('tr') || qLow.includes('turk') || qLow.includes('türk')) return true;
-    if (filteredTravel.length > 0 && filteredTravel.every((t) => isTurkeyTariff(t))) return true;
-    return false;
-  }, [q, filteredTravel]);
-
   // Count helpers
   const allTravelTotalCount = travelTariffs.filter((t) => !isPremiumTariff(t)).length;
 
@@ -211,7 +204,7 @@ export function TariffsPageClient({
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
               activeCategory === 'travel' ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-600'
             }`}>
-              <PlaneIcon size={18} />
+              <TravelGlobeIcon size={20} className={activeCategory === 'travel' ? 'text-white' : 'text-sky-600'} />
             </div>
             <div className="text-left min-w-0">
               <span className="block text-sm font-extrabold truncate">{t('cat_travel')}</span>
@@ -260,7 +253,7 @@ export function TariffsPageClient({
                   ? 'bg-white/20 text-white'
                   : 'bg-amber-200/80 text-amber-900'
             }`}>
-              <span className="text-base">👑</span>
+              <TravelPremiumGlobeIcon size={20} className={!hasPremiumAvailable ? 'text-slate-400' : activeCategory === 'travel_premium' ? 'text-white' : 'text-amber-800'} />
             </div>
             <div className="text-left min-w-0">
               <div className="flex items-center gap-1.5">
@@ -366,9 +359,13 @@ export function TariffsPageClient({
               ? 'bg-amber-50/80 border-amber-200 text-amber-950'
               : 'bg-sky-50 border-sky-200 text-sky-950'
           }`}>
-            <span className="text-2xl shrink-0 mt-0.5">
-              {activeCategory === 'travel_premium' ? '👑' : <PlaneIcon size={24} className="text-sky-700" />}
-            </span>
+            <div className="shrink-0 mt-0.5">
+              {activeCategory === 'travel_premium' ? (
+                <TravelPremiumGlobeIcon size={26} className="text-amber-700" />
+              ) : (
+                <TravelGlobeIcon size={26} className="text-sky-700" />
+              )}
+            </div>
             <div>
               <p className={`font-semibold ${activeCategory === 'travel_premium' ? 'text-amber-900' : 'text-sky-800'}`}>
                 {activeCategory === 'travel_premium' ? t('cat_travel_premium') : t('tp_travel_title')}
@@ -426,13 +423,17 @@ export function TariffsPageClient({
                 setTravelTier('standard');
                 if (activeCategory === 'travel_premium') setActiveCategory('travel');
               }}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all border cursor-pointer ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${
                 travelTier === 'standard' && activeCategory !== 'travel_premium'
                   ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-sky-300'
               }`}
             >
-              {t('filter_tier_standard')} ({travelStandardCount})
+              <TravelGlobeIcon
+                size={15}
+                className={travelTier === 'standard' && activeCategory !== 'travel_premium' ? 'text-white' : 'text-sky-600'}
+              />
+              <span>{t('filter_tier_standard')} ({travelStandardCount})</span>
             </button>
             {hasPremiumAvailable ? (
               <button
@@ -446,8 +447,11 @@ export function TariffsPageClient({
                     : 'bg-amber-50/80 text-amber-900 border-amber-300/80 hover:border-amber-400'
                 }`}
               >
-                <span>👑</span>
-                <span>{t('filter_tier_premium')}</span>
+                <TravelPremiumGlobeIcon
+                  size={15}
+                  className={travelTier === 'premium' || activeCategory === 'travel_premium' ? 'text-white' : 'text-amber-800'}
+                />
+                <span>{t('cat_travel_premium')}</span>
                 <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
                   travelTier === 'premium' || activeCategory === 'travel_premium' ? 'bg-white/20 text-white' : 'bg-amber-200 text-amber-950'
                 }`}>
@@ -461,158 +465,14 @@ export function TariffsPageClient({
                 title={t('premium_unavailable_hint')}
                 className="rounded-xl px-4 py-2 text-xs font-bold border border-slate-200 bg-slate-100/70 text-slate-400 cursor-not-allowed flex items-center gap-1.5 opacity-50 select-none"
               >
-                <span>👑</span>
-                <span>{t('filter_tier_premium')}</span>
+                <TravelPremiumGlobeIcon size={15} className="text-slate-400" />
+                <span>{t('cat_travel_premium')}</span>
                 <span className="rounded-full px-1.5 py-0.2 text-[10px] font-bold bg-slate-200 text-slate-500">
                   0
                 </span>
               </button>
             )}
           </div>
-
-          {/* ── Turkey Comparison Highlight Box ── */}
-          {isTurkeyTargeted && (
-            <div className="mb-8 rounded-3xl border-2 border-amber-300/80 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 p-6 sm:p-7 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-200/80 pb-4 mb-5">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">🇹🇷</span>
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-                      <span>{t('turkey_comparison_title')}</span>
-                      <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-bold text-amber-900">
-                        Neu
-                      </span>
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-600 mt-0.5 leading-relaxed">
-                      {t('turkey_comparison_sub')}
-                    </p>
-                  </div>
-                </div>
-                {travelTier !== 'all' && (
-                  <button
-                    onClick={() => {
-                      setActiveCategory('travel');
-                      setTravelTier('all');
-                    }}
-                    className="shrink-0 text-xs font-bold text-amber-800 hover:text-amber-950 underline self-start sm:self-auto cursor-pointer"
-                  >
-                    {t('turkey_btn_show_all')}
-                  </button>
-                )}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* Standard Card */}
-                <div
-                  onClick={() => {
-                    setActiveCategory('travel');
-                    setTravelTier('standard');
-                  }}
-                  className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer ${
-                    travelTier === 'standard' && activeCategory !== 'travel_premium'
-                      ? 'border-sky-500 bg-sky-50/70 ring-2 ring-sky-300 shadow-xs'
-                      : 'border-slate-200 bg-white hover:border-sky-300 hover:bg-slate-50/60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-extrabold text-slate-800 text-base flex items-center gap-1.5">
-                      <span>✈️</span> {t('turkey_standard_title')}
-                    </span>
-                    <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
-                      {t('turkey_standard_badge')}
-                    </span>
-                  </div>
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <p className="font-bold text-slate-700 flex items-center gap-1">
-                        <span>📶</span> {t('turkey_standard_coverage_label')}
-                      </p>
-                      <p className="mt-0.5 text-slate-600 leading-relaxed text-[11px]">
-                        {t('turkey_standard_coverage_text')}
-                      </p>
-                    </div>
-                    <div className="pt-2 border-t border-slate-100">
-                      <p className="font-bold text-slate-700 flex items-center gap-1">
-                        <span>🌐</span> {t('turkey_standard_routing_label')}
-                      </p>
-                      <p className="mt-0.5 text-slate-600 leading-relaxed text-[11px]">
-                        {t('turkey_standard_routing_text')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-medium">
-                      {t('turkey_standard_recommendation')}
-                    </span>
-                    <button
-                      type="button"
-                      className="shrink-0 text-xs font-bold text-sky-700 hover:text-sky-800"
-                    >
-                      {travelTier === 'standard' && activeCategory !== 'travel_premium' ? '✓ Aktiviert' : 'Filtern →'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Premium Card */}
-                <div
-                  onClick={() => {
-                    if (hasPremiumAvailable) {
-                      setActiveCategory('travel_premium');
-                      setTravelTier('premium');
-                    }
-                  }}
-                  className={`rounded-2xl border-2 p-4 sm:p-5 transition-all relative overflow-hidden ${
-                    !hasPremiumAvailable
-                      ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50'
-                      : travelTier === 'premium' || activeCategory === 'travel_premium'
-                        ? 'border-amber-500 bg-amber-50/80 ring-2 ring-amber-300 shadow-md cursor-pointer'
-                        : 'border-amber-300 bg-gradient-to-br from-amber-50/50 to-orange-50/30 hover:border-amber-400 hover:shadow-sm cursor-pointer'
-                  }`}
-                >
-                  <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-0.5 rounded-bl-xl shadow-xs">
-                    Empfohlen
-                  </div>
-                  <div className="flex items-center justify-between mb-3 pr-16">
-                    <span className="font-black text-amber-950 text-base flex items-center gap-1.5">
-                      <span>👑</span> {t('turkey_premium_title')}
-                    </span>
-                    <span className="rounded-full bg-amber-200/80 border border-amber-300 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-950">
-                      {t('turkey_premium_badge')}
-                    </span>
-                  </div>
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <p className="font-bold text-amber-950 flex items-center gap-1">
-                        <span>📶</span> {t('turkey_premium_coverage_label')}
-                      </p>
-                      <p className="mt-0.5 text-amber-900 leading-relaxed text-[11px]">
-                        {t('turkey_premium_coverage_text')}
-                      </p>
-                    </div>
-                    <div className="pt-2 border-t border-amber-200/60">
-                      <p className="font-bold text-amber-950 flex items-center gap-1">
-                        <span>🌐</span> {t('turkey_premium_routing_label')}
-                      </p>
-                      <p className="mt-0.5 text-amber-900 leading-relaxed text-[11px]">
-                        {t('turkey_premium_routing_text')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-amber-200/60 flex items-center justify-between">
-                    <span className="text-[10px] text-amber-950 font-medium">
-                      {t('turkey_premium_recommendation')}
-                    </span>
-                    <button
-                      type="button"
-                      className="shrink-0 text-xs font-black text-amber-800 hover:text-amber-950"
-                    >
-                      {travelTier === 'premium' || activeCategory === 'travel_premium' ? '✓ Aktiviert' : 'Filtern →'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Result hint */}
           {q && (
@@ -640,7 +500,7 @@ export function TariffsPageClient({
                       }}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-500 hover:bg-slate-50 transition-colors"
                     >
-                      {t('turkey_btn_show_all')}
+                      {t('filter_tier_all')}
                     </button>
                   )}
                   {q && (
