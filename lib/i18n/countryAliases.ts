@@ -225,6 +225,18 @@ export function aliasesToCodes(query: string): string[] {
       codes.add(code.toUpperCase());
     }
   }
+  // Also check individual words if multi-word query (e.g. "Türkei Premium" -> matches "türkei" -> 'TR')
+  const words = q.split(/\s+/).filter((w) => w.length >= 3);
+  if (words.length > 1) {
+    for (const w of words) {
+      if (['premium', 'standard', 'esim', 'travel', 'unlimited'].includes(w)) continue;
+      for (const [alias, code] of Object.entries(COUNTRY_ALIASES)) {
+        if (alias === w || alias.startsWith(w)) {
+          codes.add(code.toUpperCase());
+        }
+      }
+    }
+  }
   return Array.from(codes);
 }
 
@@ -238,6 +250,17 @@ export function aliasesToRegions(query: string): string[] {
   for (const [alias, code] of Object.entries(REGION_ALIASES)) {
     if (alias.startsWith(q) || alias.includes(q)) {
       regions.add(code.toUpperCase());
+    }
+  }
+  const words = q.split(/\s+/).filter((w) => w.length >= 3);
+  if (words.length > 1) {
+    for (const w of words) {
+      if (['premium', 'standard', 'esim', 'travel', 'unlimited'].includes(w)) continue;
+      for (const [alias, code] of Object.entries(REGION_ALIASES)) {
+        if (alias === w || alias.startsWith(w)) {
+          regions.add(code.toUpperCase());
+        }
+      }
     }
   }
   return Array.from(regions);

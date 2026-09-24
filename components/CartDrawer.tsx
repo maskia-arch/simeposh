@@ -5,7 +5,7 @@ import { useCart } from '@/components/CartProvider';
 import { CountryFlag } from '@/components/CountryFlag';
 import { formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
-import { displayCountryName, isNonHkIpTariff } from '@/lib/tariff-display';
+import { displayCountryName, isNonHkIpTariff, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { createClient } from '@/lib/supabase/client';
@@ -164,7 +164,10 @@ export function CartDrawer() {
 
               <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
                 {items.map((i) => {
-                  const badge = i.tariffType ? TYPE_BADGE[i.tariffType] : null;
+                  const isPremium = isPremiumTariff({ name: i.name, package_code: i.packageCode });
+                  const badge = isPremium && (!i.tariffType || i.tariffType === 'travel')
+                    ? { icon: <span>👑</span>, label: 'Travel Premium' }
+                    : i.tariffType ? TYPE_BADGE[i.tariffType] : null;
                   const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
                   const isNonHk = isNonHkIpTariff({ name: i.name, package_code: i.packageCode });
                   return (
@@ -179,6 +182,11 @@ export function CartDrawer() {
                                 locale,
                               )}
                             </span>
+                            {isPremium && (
+                              <span className="shrink-0 text-[8px] font-bold text-amber-900 bg-amber-50 border border-amber-300 px-1 py-0.2 rounded-full">
+                                👑 Premium
+                              </span>
+                            )}
                             {isNonHk && (
                               <span className="shrink-0 text-[8px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1 py-0.2 rounded-full">
                                 🛡️ Non-HK

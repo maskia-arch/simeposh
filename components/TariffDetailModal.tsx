@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 
@@ -41,6 +41,9 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const { locale, t } = useTranslation();
   const { addItem, open } = useCart();
 
+  const isPremium    = isPremiumTariff(tariff);
+  const breakoutIp   = getTariffBreakoutIp(tariff);
+  const isTR         = isTurkeyTariff(tariff);
   const ops          = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 8);
   const typeInfo     = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
   const isTravel     = (tariff.tariff_type ?? 'travel') === 'travel';
@@ -63,9 +66,10 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
       <div className="relative flex flex-col w-full max-w-lg max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
 
         {/* ── Top Gradient Accent Bar ── */}
-        <div className={`h-2 w-full shrink-0 ${
+        <div className={`h-2.5 w-full shrink-0 ${
           tariff.tariff_type === 'unlimited_pro' ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500' :
           tariff.tariff_type === 'unlimited_eco' ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500' :
+          isPremium ? 'bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600' :
           'bg-gradient-to-r from-brand-500 via-blue-500 to-indigo-600'
         }`} />
 
@@ -136,11 +140,15 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                     )}
                   </div>
                 )}
-                {typeInfo && (
+                {isPremium && isTravel ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
+                    <span>👑</span> {t('badge_travel_premium' as any)}
+                  </span>
+                ) : typeInfo ? (
                   <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold ${typeInfo.color}`}>
                     {typeInfo.icon} {t(typeInfo.labelKey)}
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -170,6 +178,61 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <p className="text-[11px] font-bold text-slate-500 mt-0.5">{t('det_price')}</p>
             </div>
           </div>
+
+          {/* ── Turkey / Premium Comparison Box ── */}
+          {isTR && isPremium && (
+            <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 to-orange-50/70 p-4 text-xs text-amber-950 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
+                <span className="font-extrabold flex items-center gap-1.5 text-amber-900 text-sm">
+                  <span>👑</span> {t('turkey_premium_title' as any)}
+                </span>
+                <span className="rounded-full bg-amber-200/90 px-2 py-0.5 text-[10px] font-bold text-amber-950">
+                  {t('turkey_premium_badge' as any)}
+                </span>
+              </div>
+              <div className="space-y-2.5">
+                <div>
+                  <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                    <span>📶</span> {t('turkey_premium_coverage_label' as any)}
+                  </p>
+                  <p className="mt-0.5 leading-relaxed text-[11px] text-amber-900">
+                    {t('turkey_premium_coverage_text' as any)}
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-amber-200/70">
+                  <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                    <span>🌐</span> {t('turkey_premium_routing_label' as any)}
+                  </p>
+                  <p className="mt-0.5 leading-relaxed text-[11px] text-amber-900">
+                    {t('turkey_premium_routing_text' as any)}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-1 text-[10px] bg-amber-100/90 rounded-xl p-2 font-medium text-amber-950 leading-tight">
+                💡 {t('turkey_premium_recommendation' as any)}
+              </p>
+            </div>
+          )}
+
+          {isTR && !isPremium && (
+            <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3.5 text-xs text-sky-950 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between border-b border-sky-200/60 pb-1.5">
+                <span className="font-extrabold flex items-center gap-1.5 text-sky-900 text-xs">
+                  <span>ℹ️</span> {t('turkey_standard_title' as any)}
+                </span>
+                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
+                  {t('turkey_standard_badge' as any)}
+                </span>
+              </div>
+              <div className="text-[11px] text-sky-900/90 space-y-1">
+                <p><strong>Netzabdeckung:</strong> {t('turkey_standard_coverage_text' as any)}</p>
+                <p><strong>Routing & Latenz:</strong> {t('turkey_standard_routing_text' as any)}</p>
+              </div>
+              <div className="mt-1 pt-1.5 border-t border-sky-200/60 text-[10px] text-sky-800 leading-tight">
+                💡 <em>Tipp:</em> Für maximale Ausfallsicherheit in abgelegeneren Regionen oder bei Netzausfall gibt es auch <strong>Travel Premium</strong> mit 2 Netzen (Vodafone + Türk Telekom) und UK-Routing.
+              </div>
+            </div>
+          )}
 
           {/* ── Special Features Callout Section ── */}
           {features.length > 0 && (

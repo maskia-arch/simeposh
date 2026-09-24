@@ -51,8 +51,15 @@ async function getTariffs(): Promise<Tariff[]> {
 export default async function TariffsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; tab?: string }>;
 }) {
   const [tariffs, params] = await Promise.all([getTariffs(), searchParams]);
-  return <TariffsPageClient tariffs={tariffs} initialQuery={params.q ?? ''} />;
+  const initialCategory = params.category ?? (params.tab === 'unlimited' ? 'unlimited_eco' : params.tab);
+  return (
+    <TariffsPageClient
+      tariffs={tariffs}
+      initialQuery={params.q ?? ''}
+      initialCategory={initialCategory}
+    />
+  );
 }

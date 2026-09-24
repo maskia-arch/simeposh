@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
-import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, type TariffSpecialFeature } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, type TariffSpecialFeature } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
@@ -37,9 +37,12 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
   const [showCountryList, setShowCountryList] = useState(false);
   const [activeFeature, setActiveFeature] = useState<TariffSpecialFeature | null>(null);
 
-  const badge   = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
-  const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 3);
-  const network = bestNetworkType(ops);
+  const isPremium   = isPremiumTariff(tariff);
+  const breakoutIp  = getTariffBreakoutIp(tariff);
+  const isTravel    = (tariff.tariff_type ?? 'travel') === 'travel';
+  const badge       = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
+  const ops         = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 4);
+  const network     = bestNetworkType(ops);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
@@ -48,12 +51,15 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
 
   return (
     <div
-      className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-brand-300 hover:shadow-md overflow-hidden"
+      className={`group relative flex flex-col rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden ${
+        isPremium && isTravel ? 'border-amber-300/80 hover:border-amber-400' : 'border-slate-200 hover:border-brand-300'
+      }`}
     >
       {/* ── Type colour strip ── */}
-      <div className={`h-1 w-full ${
+      <div className={`h-1.5 w-full ${
         tariff.tariff_type === 'unlimited_pro' ? 'bg-gradient-to-r from-violet-500 to-purple-400' :
         tariff.tariff_type === 'unlimited_eco' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
+        isPremium ? 'bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600' :
         'bg-gradient-to-r from-brand-500 to-brand-400'
       }`} />
 
@@ -87,14 +93,21 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </div>
 
           {/* Type badge top-right */}
-          {badge && (
+          {isPremium && isTravel ? (
+            <span
+              title={t('type_travel_premium_desc' as any)}
+              className="shrink-0 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-2 py-0.5 text-xs font-extrabold text-amber-900 shadow-2xs"
+            >
+              <span>👑</span> {t('badge_travel_premium' as any)}
+            </span>
+          ) : badge ? (
             <span
               title={t(badge.descKey)}
               className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.cls}`}
             >
               {badge.icon} {t(badge.labelKey)}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* ── Special Feature Badges (Compact Horizontal Tag Chips) ── */}
@@ -201,7 +214,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </p>
         )}
 
-        {/* ── Network operators ── */}
+        {/* ── Network operators & Routing ── */}
         <div className="mb-3 flex flex-wrap items-center gap-1.5 min-h-[22px]">
           {network && (
             <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${NET_COLOR[network] ?? ''}`}>
@@ -209,14 +222,27 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             </span>
           )}
           {ops.length > 0 ? (
-            <span className="flex items-center gap-1 text-[11px] text-slate-500 truncate">
-              <NetworkIcon size={12} className="text-slate-500" />
+            <span className="flex items-center gap-1 text-[11px] text-slate-600 truncate">
+              <NetworkIcon size={12} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
             </span>
           ) : (
             <span className="flex items-center gap-1 text-[11px] text-slate-400">
               <NetworkIcon size={12} className="text-slate-400" />
               <span>{t('card_best_network')}</span>
+            </span>
+          )}
+          {ops.length > 1 && (
+            <span className="rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-extrabold text-emerald-800">
+              Dual-Netz
+            </span>
+          )}
+          {breakoutIp && (
+            <span
+              title={breakoutIp === 'UK' ? 'Routing über Großbritannien (UK)' : breakoutIp === 'NL' ? 'Routing über die Niederlande (NL)' : `Breakout IP: ${breakoutIp}`}
+              className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.2 text-[9px] font-mono font-bold text-slate-700"
+            >
+              {breakoutIp === 'UK' ? '🇬🇧 UK IP' : breakoutIp === 'NL' ? '🇳🇱 NL IP' : `${breakoutIp} IP`}
             </span>
           )}
         </div>

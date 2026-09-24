@@ -8,7 +8,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
-import { displayCountryName, coverageLabel } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon } from '@/components/Icons';
 
@@ -101,7 +101,10 @@ export default function CartPage() {
         {/* Items */}
         <div className="space-y-3 lg:col-span-2">
           {items.map((i) => {
-            const badge = i.tariffType ? TYPE_BADGE[i.tariffType] : null;
+            const isPremium = isPremiumTariff({ name: i.name, package_code: i.packageCode });
+            const badge = isPremium && (!i.tariffType || i.tariffType === 'travel')
+              ? { icon: <span>👑</span>, label: 'Travel Premium' }
+              : i.tariffType ? TYPE_BADGE[i.tariffType] : null;
             const isUnlimited = i.tariffType?.startsWith('unlimited') || i.dataGb === 0;
             const label = displayCountryName(
               { country_name: i.countryName, country_code: i.countryCode, location_codes: i.locationCodes, region: i.region },
@@ -117,7 +120,14 @@ export default function CartPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-bold text-slate-800">{label}</p>
+                      <p className="font-bold text-slate-800 flex items-center gap-2">
+                        <span>{label}</span>
+                        {isPremium && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                            👑 Travel Premium
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-slate-500">
                         {badge && <span className="inline-flex items-center gap-1">{badge.icon} {badge.label} · </span>}
                         {isUnlimited ? '∞' : formatGb(i.dataGb)} · {i.validityDays} {t('cfg_days')}

@@ -10,7 +10,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon } from '@/components/Icons';
 
 type Tariff = Database['public']['Tables']['tariffs']['Row'];
@@ -36,9 +36,12 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const { locale, t } = useTranslation();
   const { addItem } = useCart();
 
-  const ops     = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 8);
-  const typeInfo = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
-  const isTravel = (tariff.tariff_type ?? 'travel') === 'travel';
+  const isPremium   = isPremiumTariff(tariff);
+  const breakoutIp  = getTariffBreakoutIp(tariff);
+  const isTR        = isTurkeyTariff(tariff);
+  const ops         = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 8);
+  const typeInfo    = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
+  const isTravel    = (tariff.tariff_type ?? 'travel') === 'travel';
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
@@ -124,13 +127,17 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                   </div>
                 </div>
 
-                {typeInfo && (
+                {isPremium && isTravel ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-900 shadow-2xs">
+                    <span>👑</span> {t('badge_travel_premium' as any)}
+                  </span>
+                ) : typeInfo ? (
                   <div>
                     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${typeInfo.color}`}>
                       {typeInfo.icon} {t(typeInfo.labelKey)}
                     </span>
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="mt-6 border-t border-slate-100 pt-6">
@@ -149,10 +156,85 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
               </div>
             </div>
 
+            {/* ── Turkey / Premium Comparison Box ── */}
+            {isTR && isPremium && (
+              <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 via-orange-50/60 to-amber-50/80 p-8 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-amber-200/80 pb-3">
+                  <span className="font-extrabold flex items-center gap-2 text-amber-900 text-lg">
+                    <span>👑</span> {t('turkey_premium_title' as any)}
+                  </span>
+                  <span className="rounded-full bg-amber-200/90 px-3 py-1 text-xs font-extrabold text-amber-950">
+                    {t('turkey_premium_badge' as any)}
+                  </span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="bg-white/80 rounded-2xl p-4 border border-amber-200/60">
+                    <p className="font-extrabold text-amber-950 flex items-center gap-1.5 text-sm">
+                      <span>📶</span> {t('turkey_premium_coverage_label' as any)}
+                    </p>
+                    <p className="mt-1 leading-relaxed text-xs text-amber-900">
+                      {t('turkey_premium_coverage_text' as any)}
+                    </p>
+                  </div>
+                  <div className="bg-white/80 rounded-2xl p-4 border border-amber-200/60">
+                    <p className="font-extrabold text-amber-950 flex items-center gap-1.5 text-sm">
+                      <span>🌐</span> {t('turkey_premium_routing_label' as any)}
+                    </p>
+                    <p className="mt-1 leading-relaxed text-xs text-amber-900">
+                      {t('turkey_premium_routing_text' as any)}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs bg-amber-100/90 rounded-2xl p-3 font-medium text-amber-950 leading-relaxed">
+                  💡 {t('turkey_premium_recommendation' as any)}
+                </p>
+              </div>
+            )}
+
+            {isTR && !isPremium && (
+              <div className="rounded-3xl border border-sky-200 bg-sky-50/80 p-6 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-sky-200/70 pb-2">
+                  <span className="font-extrabold flex items-center gap-2 text-sky-900 text-base">
+                    <span>ℹ️</span> {t('turkey_standard_title' as any)}
+                  </span>
+                  <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-800">
+                    {t('turkey_standard_badge' as any)}
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 text-xs text-sky-900/90">
+                  <div className="bg-white/80 rounded-xl p-3 border border-sky-200/60">
+                    <p className="font-bold text-sky-950">Netzabdeckung:</p>
+                    <p className="mt-0.5">{t('turkey_standard_coverage_text' as any)}</p>
+                  </div>
+                  <div className="bg-white/80 rounded-xl p-3 border border-sky-200/60">
+                    <p className="font-bold text-sky-950">Routing & Latenz:</p>
+                    <p className="mt-0.5">{t('turkey_standard_routing_text' as any)}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-sky-800 pt-1">
+                  💡 <em>Tipp:</em> Benötigst du maximale Ausfallsicherheit in abgelegeneren Gebieten oder bei regionalen Störungen? Wähle unsere <strong>Travel Premium</strong> Tarife mit 2 Netzen (Vodafone + Türk Telekom) und UK-Routing.
+                </p>
+              </div>
+            )}
+
             {/* Carrier specs / operators */}
             {ops.length > 0 && (
               <div className="rounded-3xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-8 shadow-sm">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">{t('det_operators')}</h3>
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">{t('det_operators')}</h3>
+                  <div className="flex items-center gap-1.5">
+                    {ops.length > 1 && (
+                      <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                        Dual-Netz (Redundanz)
+                      </span>
+                    )}
+                    {breakoutIp && (
+                      <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700 font-mono">
+                        {breakoutIp === 'UK' ? '🇬🇧 Breakout IP: UK' : breakoutIp === 'NL' ? '🇳🇱 Breakout IP: NL' : `Breakout IP: ${breakoutIp}`}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {ops.map((op, i) => (
                     <div key={i} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-brand-300 transition-colors">

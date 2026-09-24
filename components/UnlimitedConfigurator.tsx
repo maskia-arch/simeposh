@@ -199,13 +199,26 @@ export function DaySlider({
 interface Props {
   tariffs: Tariff[];
   initialQuery?: string;
+  initialTariffType?: TariffType;
+  onTariffTypeChange?: (type: TariffType) => void;
 }
 
-export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
+export function UnlimitedConfigurator({
+  tariffs,
+  initialQuery = '',
+  initialTariffType,
+  onTariffTypeChange,
+}: Props) {
   const [countrySearch, setCountrySearch]     = useState('');
   const [selectedCountry, setSelectedCountry] = useState<string | null>('DE');
   const [isChangingCountry, setIsChangingCountry] = useState(false);
-  const [tariffType, setTariffType]           = useState<TariffType>('unlimited_eco');
+  const [tariffType, setTariffType]           = useState<TariffType>(initialTariffType ?? 'unlimited_eco');
+
+  useEffect(() => {
+    if (initialTariffType) {
+      setTariffType(initialTariffType);
+    }
+  }, [initialTariffType]);
   const [selectedGb, setSelectedGb]           = useState<number | null>(null);
   const [days, setDays]                       = useState(7);
   const [checkoutTariff, setCheckoutTariff]   = useState<Tariff | null>(null);
@@ -502,7 +515,10 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                   {availableSpeedTypes.includes('unlimited_eco') && (
                     <button
                       type="button"
-                      onClick={() => setTariffType('unlimited_eco')}
+                      onClick={() => {
+                        setTariffType('unlimited_eco');
+                        onTariffTypeChange?.('unlimited_eco');
+                      }}
                       className={`rounded-xl border p-3 text-left transition-all cursor-pointer flex items-center justify-between ${
                         tariffType === 'unlimited_eco'
                           ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-300 shadow-xs'
@@ -523,7 +539,10 @@ export function UnlimitedConfigurator({ tariffs, initialQuery = '' }: Props) {
                   {availableSpeedTypes.includes('unlimited_pro') && (
                     <button
                       type="button"
-                      onClick={() => setTariffType('unlimited_pro')}
+                      onClick={() => {
+                        setTariffType('unlimited_pro');
+                        onTariffTypeChange?.('unlimited_pro');
+                      }}
                       className={`rounded-xl border p-3 text-left transition-all cursor-pointer flex items-center justify-between ${
                         tariffType === 'unlimited_pro'
                           ? 'border-violet-500 bg-violet-50/70 ring-2 ring-violet-300 shadow-xs'

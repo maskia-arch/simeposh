@@ -194,8 +194,57 @@ export function isNonHkIpTariff(tariff: {
   );
 }
 
+/**
+ * Checks if a tariff is a Premium tariff (e.g. Travel Premium / Dual-Network redundancy).
+ */
+export function isPremiumTariff(tariff: {
+  name?: string | null;
+  package_code?: string | null;
+  description?: string | null;
+  raw_data?: Record<string, unknown> | null;
+}): boolean {
+  const nameStr = (tariff.name ?? '').toLowerCase();
+  const codeStr = (tariff.package_code ?? '').toLowerCase();
+  const descStr = (tariff.description ?? '').toLowerCase();
+  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
+  const rawName = String(raw.name ?? '').toLowerCase();
+
+  return (
+    nameStr.includes('premium') ||
+    codeStr.includes('premium') ||
+    rawName.includes('premium') ||
+    descStr.includes('premium')
+  );
+}
+
+/**
+ * Extract Breakout IP export country/location code (e.g. "UK", "NL", "SG").
+ */
+export function getTariffBreakoutIp(tariff: {
+  raw_data?: Record<string, unknown> | null;
+}): string | null {
+  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
+  if (typeof raw.ipExport === 'string' && raw.ipExport.trim()) {
+    return raw.ipExport.trim().toUpperCase();
+  }
+  return null;
+}
+
+/**
+ * Checks if a tariff applies to Turkey (TR).
+ */
+export function isTurkeyTariff(tariff: {
+  country_code?: string | null;
+  location_codes?: string[] | null;
+}): boolean {
+  const code = (tariff.country_code ?? '').toUpperCase();
+  if (code === 'TR') return true;
+  const codes = tariff.location_codes ?? [];
+  return codes.length === 1 && codes[0].toUpperCase() === 'TR';
+}
+
 export interface TariffSpecialFeature {
-  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'topup_days' | 'topup_data' | 'topup_none' | 'has_5g';
+  id: 'non_hk_ip' | 'activation_on_arrival' | 'topup_eligible' | 'topup_days' | 'topup_data' | 'topup_none' | 'has_5g' | 'travel_premium';
   badgeKey: string;
   titleKey: string;
   descKey: string;
@@ -284,6 +333,24 @@ export function getTariffSpecialFeatures(
 ): TariffSpecialFeature[] {
   const features: TariffSpecialFeature[] = [];
   const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
+
+  // 0. Travel Premium (Dual-Network Redundancy & Breakout IP)
+  if (isPremiumTariff(tariff)) {
+    const isTR = isTurkeyTariff(tariff as any);
+    const ip = getTariffBreakoutIp(tariff);
+    features.push({
+      id: 'travel_premium',
+      badgeKey: 'feat_travel_premium_badge',
+      titleKey: isTR ? 'feat_tr_premium_title' : 'feat_travel_premium_title',
+      descKey: isTR ? 'feat_tr_premium_desc' : 'feat_travel_premium_desc',
+      priceNoteKey: isTR ? 'feat_tr_premium_price_note' : 'feat_travel_premium_price_note',
+      icon: '👑',
+      cls: 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 font-bold',
+      extra: isTR
+        ? 'Vodafone & Türk Telekom/Avea (2 Netze) · Breakout IP: UK'
+        : (ip ? `Breakout IP: ${ip}` : undefined),
+    });
+  }
 
   // 1. Non-HK IP
   if (isNonHkIpTariff(tariff)) {
