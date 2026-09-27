@@ -8,10 +8,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-// Trampoline via npx tsx if not already running under tsx
+// Trampoline via npx tsx if not already running under tsx.
+// Only pass --env-file if .env.local actually exists (it won't in Docker builds).
 if (!process.env.TSX_EXEC) {
   try {
-    execSync(`npx tsx --env-file=.env.local "${__filename}"`, {
+    const envLocalPath = path.join(rootDir, '.env.local');
+    const envFlag = fs.existsSync(envLocalPath) ? `--env-file=.env.local` : '';
+    execSync(`npx tsx ${envFlag} "${__filename}"`, {
       cwd: rootDir,
       stdio: 'inherit',
       env: { ...process.env, TSX_EXEC: '1' }
