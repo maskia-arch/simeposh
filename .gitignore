@@ -23,3 +23,9 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Benchmark and audit artifacts
+lh/
+screenshots/
+lh_test.json
+scripts/

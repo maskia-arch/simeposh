@@ -18,7 +18,7 @@ async function getOrders(ids: string[]): Promise<OrderRow[]> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('orders')
-    .select('*, tariffs(*)')
+    .select('id, status, amount_eur, iccid, qr_code_url, activation_code, apn, tariffs(name, country_name, country_code, data_gb, validity_days)')
     .in('id', ids)
     .in('status', ['completed', 'provisioning', 'paid']);
   return data ?? [];

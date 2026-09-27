@@ -8,25 +8,24 @@ import type { Database } from '@/lib/supabase/types';
 import { NetworkIcon, SearchIcon, InfinityIcon, BoltIcon, ShieldIcon, TopUpIcon } from '@/components/Icons';
 import { DaySlider, computePrice, perDayEur } from '@/components/UnlimitedConfigurator';
 import { useCart } from '@/components/CartProvider';
+import type { PublicTariff } from '@/lib/tariffs';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff;
 
-interface TopUpPackage {
+interface TopUpPackage extends Partial<PublicTariff> {
   id:             string;
   package_code:   string;
   name:           string;
   data_gb:        number | null;
   validity_days:  number;
   sale_price_eur: number;
-  ek_price_usd?:  number;
   flag_emoji:     string | null;
   country_name:   string;
   country_code?:  string;
   description?:   string;
-  tariff_type?:   'travel' | 'unlimited_eco' | 'unlimited_pro';
+  tariff_type?:   'travel' | 'unlimited_eco' | 'unlimited_pro' | string;
   speed_kbps?:    number | null;
   is_unlimited?:  boolean;
-  raw_data?:      Record<string, unknown>;
 }
 
 export default function TopUpPage() {

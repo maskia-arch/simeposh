@@ -3,45 +3,45 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import TariffDetailPageClient from './TariffDetailPageClient';
-import type { Database } from '@/lib/supabase/types';
+import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 import { displayCountryName } from '@/lib/tariff-display';
 import { formatGb } from '@/lib/utils';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, raw_data';
 
-async function getTariff(slug: string): Promise<Tariff | null> {
+async function getTariff(slug: string): Promise<PublicTariff | null> {
   const supabase = await createClient();
   
   // 1. Try slug match
   let { data } = await supabase
     .from('tariffs')
-    .select('*')
+    .select(PUBLIC_SELECT_FIELDS)
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
 
-  if (data) return data as Tariff;
+  if (data) return toPublicTariff(data);
 
   // 2. Try package_code match (case-insensitive fallback)
   const codeTry = slug.replace(/-/g, '_').toUpperCase();
   const { data: dataCode } = await supabase
     .from('tariffs')
-    .select('*')
+    .select(PUBLIC_SELECT_FIELDS)
     .eq('package_code', codeTry)
     .eq('is_active', true)
     .maybeSingle();
 
-  if (dataCode) return dataCode as Tariff;
+  if (dataCode) return toPublicTariff(dataCode);
 
   // 3. Try original slug as package_code directly
   const { data: dataCodeDirect } = await supabase
     .from('tariffs')
-    .select('*')
+    .select(PUBLIC_SELECT_FIELDS)
     .eq('package_code', slug.toUpperCase())
     .eq('is_active', true)
     .maybeSingle();
 
-  return (dataCodeDirect || null) as Tariff | null;
+  return dataCodeDirect ? toPublicTariff(dataCodeDirect) : null;
 }
 
 export async function generateMetadata({

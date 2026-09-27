@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatGb } from '@/lib/utils';
+import type { PublicTariff } from '@/lib/tariffs';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
 interface CheckoutModalProps {
   tariff:       Tariff;

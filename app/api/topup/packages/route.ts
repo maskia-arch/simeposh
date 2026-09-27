@@ -8,6 +8,7 @@ import { NextResponse }        from 'next/server';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes, detectTariffType } from '@/lib/esimaccess/client';
 import { calculateSalePrice }  from '@/lib/pricing';
 import { createServiceClient } from '@/lib/supabase/server';
+import { toPublicTariff }       from '@/lib/tariffs';
 
 function slugify(str: string): string {
   return str
@@ -217,10 +218,17 @@ export async function GET(request: Request) {
       return a.sale_price_eur - b.sale_price_eur;
     });
 
+    const publicPackages = packages.map((p) => {
+      const pub = toPublicTariff(p);
+      return {
+        ...pub,
+        is_unlimited: Boolean(p.is_unlimited),
+      };
+    });
+
     return NextResponse.json({
-      packages,
-      usdEurRate,
-      orderInfo: existingOrder ? { id: existingOrder.id, tariff: existingTariff } : null
+      packages: publicPackages,
+      orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, tariff: toPublicTariff(existingTariff) } : null
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { Database } from '@/lib/supabase/types';
+import type { PublicTariff } from '@/lib/tariffs';
 import { TariffsGrid }          from '@/components/TariffsGrid';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { useTranslation }        from '@/lib/i18n';
@@ -9,7 +9,7 @@ import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_A
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, SearchIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { isPremiumTariff } from '@/lib/tariff-display';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff;
 export type ActiveCategory = 'travel' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro';
 export type TravelTier = 'all' | 'standard' | 'premium';
 

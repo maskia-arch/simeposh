@@ -267,15 +267,6 @@ export default function ReviewsPage() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <div className="inline-block animate-spin h-8 w-8 rounded-full border-4 border-brand-500 border-t-transparent"></div>
-        <p className="mt-4 text-slate-500">{isDe ? 'Bewertungen werden geladen...' : 'Loading reviews...'}</p>
-      </div>
-    );
-  }
-
   // Filter feedbacks locally based on active ratingFilter chip
   const filteredFeedbacks = feedbacks.filter((fb) => {
     if (ratingFilter === 'all') return true;
@@ -306,40 +297,59 @@ export default function ReviewsPage() {
       )}
 
       {/* Stats Summary Grid */}
-      <div className="mb-10 grid gap-6 md:grid-cols-3 bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-xs">
-        {/* Large Average Score */}
-        <div className="flex flex-col items-center justify-center border-b border-slate-100 pb-6 md:border-b-0 md:border-r md:pb-0">
-          <p className="text-6xl font-black text-slate-900 tracking-tight">{stats.averageRating}</p>
-          <div className="mt-3">{renderStars(Math.round(stats.averageRating), 'h-5 w-5')}</div>
-          <p className="mt-3 text-xs font-semibold text-slate-400">
-            {isDe
-              ? `Basierend auf ${stats.totalCount} Stimmen`
-              : `Based on ${stats.totalCount} ratings`}
-          </p>
-        </div>
-
-        {/* Rating Bars Distribution */}
-        <div className="md:col-span-2 space-y-3 flex flex-col justify-center">
-          {[5, 4, 3, 2, 1].map((stars) => {
-            const count = stats.distribution[stars] || 0;
-            const percentage = stats.totalCount > 0 ? (count / stats.totalCount) * 100 : 0;
-            return (
-              <div key={stars} className="flex items-center gap-3.5 text-xs font-semibold text-slate-600">
-                <span className="w-14 shrink-0 text-right">
-                  {stars} {isDe ? 'Sterne' : 'stars'}
-                </span>
-                <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-                <span className="w-8 text-slate-400 text-right shrink-0">{count}</span>
+      {loading ? (
+        <div className="mb-10 grid gap-6 md:grid-cols-3 bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-xs" aria-busy="true">
+          <div className="flex flex-col items-center justify-center border-b border-slate-100 pb-6 md:border-b-0 md:border-r md:pb-0 motion-safe:animate-pulse">
+            <div className="h-16 w-28 rounded-2xl bg-slate-200" />
+            <div className="mt-4 h-5 w-28 rounded-lg bg-slate-100" />
+            <div className="mt-3 h-4 w-36 rounded-md bg-slate-100" />
+          </div>
+          <div className="md:col-span-2 space-y-3.5 flex flex-col justify-center motion-safe:animate-pulse">
+            {[5, 4, 3, 2, 1].map((stars) => (
+              <div key={stars} className="flex items-center gap-3.5 text-xs font-semibold text-slate-400">
+                <span className="w-14 shrink-0 text-right">{stars} {isDe ? 'Sterne' : 'stars'}</span>
+                <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden" />
+                <div className="w-8 h-3 rounded bg-slate-100 shrink-0" />
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mb-10 grid gap-6 md:grid-cols-3 bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-xs">
+          {/* Large Average Score */}
+          <div className="flex flex-col items-center justify-center border-b border-slate-100 pb-6 md:border-b-0 md:border-r md:pb-0">
+            <p className="text-6xl font-black text-slate-900 tracking-tight">{stats.averageRating}</p>
+            <div className="mt-3">{renderStars(Math.round(stats.averageRating), 'h-5 w-5')}</div>
+            <p className="mt-3 text-xs font-semibold text-slate-400">
+              {isDe
+                ? `Basierend auf ${stats.totalCount} Stimmen`
+                : `Based on ${stats.totalCount} ratings`}
+            </p>
+          </div>
+
+          {/* Rating Bars Distribution */}
+          <div className="md:col-span-2 space-y-3 flex flex-col justify-center">
+            {[5, 4, 3, 2, 1].map((stars) => {
+              const count = stats.distribution[stars] || 0;
+              const percentage = stats.totalCount > 0 ? (count / stats.totalCount) * 100 : 0;
+              return (
+                <div key={stars} className="flex items-center gap-3.5 text-xs font-semibold text-slate-600">
+                  <span className="w-14 shrink-0 text-right">
+                    {stars} {isDe ? 'Sterne' : 'stars'}
+                  </span>
+                  <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-slate-400 text-right shrink-0">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filters & CTA Header */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-150 pb-5">
@@ -364,7 +374,6 @@ export default function ReviewsPage() {
             })}
           </div>
         </div>
-
       </div>
 
       {/* Trust Notice Info box */}
@@ -383,7 +392,33 @@ export default function ReviewsPage() {
       </div>
 
       {/* Feedbacks List */}
-      {filteredFeedbacks.length === 0 ? (
+      {loading ? (
+        <div className="space-y-5" aria-busy="true" aria-label={isDe ? 'Bewertungen laden...' : 'Loading reviews...'}>
+          <span className="sr-only">{isDe ? 'Bewertungen laden…' : 'Loading reviews…'}</span>
+          {[1, 2, 3, 4].map((idx) => (
+            <div
+              key={idx}
+              className="border border-slate-150 rounded-3xl p-6 bg-white shadow-xs motion-safe:animate-pulse space-y-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-slate-200 shrink-0" />
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-32 rounded bg-slate-200" />
+                    <div className="h-3 w-20 rounded bg-slate-100" />
+                  </div>
+                </div>
+                <div className="h-4 w-24 rounded bg-slate-200 shrink-0" />
+              </div>
+              <div className="space-y-2 pt-1 md:pl-13">
+                <div className="h-3.5 w-full rounded bg-slate-100" />
+                <div className="h-3.5 w-5/6 rounded bg-slate-100" />
+                <div className="h-3.5 w-2/3 rounded bg-slate-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredFeedbacks.length === 0 ? (
         <div className="text-center py-16 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl">
           <p className="text-slate-500 font-medium">
             {isDe ? 'Keine Bewertungen für diesen Filter.' : 'No reviews match this filter.'}

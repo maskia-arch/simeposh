@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { formatGb } from '@/lib/utils';
-import type { Database } from '@/lib/supabase/types';
+import type { PublicTariff } from '@/lib/tariffs';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
@@ -10,7 +10,7 @@ import { useCart } from '@/components/CartProvider';
 import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, type TariffSpecialFeature } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff;
 
 const NET_COLOR: Record<string, string> = {
   '5G': 'bg-violet-100 text-violet-700',
@@ -41,7 +41,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
   const breakoutIp  = getTariffBreakoutIp(tariff);
   const isTravel    = (tariff.tariff_type ?? 'travel') === 'travel';
   const badge       = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
-  const ops         = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 4);
+  const ops         = getTariffOperators(tariff, 4);
   const network     = bestNetworkType(ops);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { roundToX9, getDiscountPct, discountLabel, formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
-import type { Database } from '@/lib/supabase/types';
+import type { PublicTariff } from '@/lib/tariffs';
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { CountryFlag } from '@/components/CountryFlag';
 import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
@@ -12,7 +12,7 @@ import { useCart } from '@/components/CartProvider';
 import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType } from '@/lib/tariff-display';
 import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon } from '@/components/Icons';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff;
 type TariffType = 'unlimited_eco' | 'unlimited_pro';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -387,7 +387,7 @@ export function UnlimitedConfigurator({
 
   const selectedCountryData = countries.find((c) => c.code === selectedCountry);
   const specialFeatures     = bestPackage ? getTariffSpecialFeatures(bestPackage) : [];
-  const ops                 = bestPackage ? getTariffOperators(bestPackage.raw_data as Record<string, unknown> | null, 4) : [];
+  const ops                 = bestPackage ? getTariffOperators(bestPackage, 4) : [];
   const network             = bestNetworkType(ops);
 
   // ── Render Unified Configurator Studio ────────────────────────────────────

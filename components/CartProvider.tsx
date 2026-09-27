@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import type { PublicTariff } from '@/lib/tariffs';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
 export interface CartItem {
   /** unique line key = tariffId + periodDays + topUpIccid */

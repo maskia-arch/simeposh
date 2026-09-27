@@ -99,9 +99,17 @@ export interface TariffOperator {
  * locationNetworkList[].operatorList — so it works on already-synced data.
  */
 export function getTariffOperators(
-  rawData: Record<string, unknown> | null | undefined,
+  source: Record<string, unknown> | { operators?: TariffOperator[]; raw_data?: Record<string, unknown> | null } | null | undefined,
   max = 6,
 ): TariffOperator[] {
+  if (!source) return [];
+
+  // Check if operators are already mapped (PublicTariff)
+  if ('operators' in source && Array.isArray((source as any).operators)) {
+    return (source as any).operators.slice(0, max);
+  }
+
+  const rawData = ('raw_data' in source ? (source as any).raw_data : source) as Record<string, unknown> | null | undefined;
   if (!rawData) return [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -182,7 +190,11 @@ export function isNonHkIpTariff(tariff: {
   package_code?: string | null;
   description?: string | null;
   raw_data?: Record<string, unknown> | null;
+  isNonHkIp?: boolean | null;
+  is_non_hk_ip?: boolean | null;
 }): boolean {
+  if (typeof tariff.isNonHkIp === 'boolean') return tariff.isNonHkIp;
+  if (typeof tariff.is_non_hk_ip === 'boolean') return tariff.is_non_hk_ip;
   const nameStr = (tariff.name ?? '').toLowerCase();
   const codeStr = (tariff.package_code ?? '').toLowerCase();
   const descStr = (tariff.description ?? '').toLowerCase();
@@ -202,7 +214,11 @@ export function isPremiumTariff(tariff: {
   package_code?: string | null;
   description?: string | null;
   raw_data?: Record<string, unknown> | null;
+  isPremium?: boolean | null;
+  is_premium?: boolean | null;
 }): boolean {
+  if (typeof tariff.isPremium === 'boolean') return tariff.isPremium;
+  if (typeof tariff.is_premium === 'boolean') return tariff.is_premium;
   const nameStr = (tariff.name ?? '').toLowerCase();
   const codeStr = (tariff.package_code ?? '').toLowerCase();
   const descStr = (tariff.description ?? '').toLowerCase();
@@ -222,7 +238,11 @@ export function isPremiumTariff(tariff: {
  */
 export function getTariffBreakoutIp(tariff: {
   raw_data?: Record<string, unknown> | null;
+  breakoutIp?: string | null;
+  breakout_ip?: string | null;
 }): string | null {
+  if (tariff.breakoutIp !== undefined) return tariff.breakoutIp;
+  if (tariff.breakout_ip !== undefined) return tariff.breakout_ip;
   const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
   if (typeof raw.ipExport === 'string' && raw.ipExport.trim()) {
     return raw.ipExport.trim().toUpperCase();
@@ -275,7 +295,46 @@ export function getReloadabilityInfo(tariff: {
   data_gb?: number | null;
   raw_data?: Record<string, unknown> | null;
   is_top_up_eligible?: boolean | null;
+  reloadType?: 'days' | 'data' | 'none' | null;
+  reloadability_type?: 'days' | 'data' | 'none' | null;
+  isReloadable?: boolean | null;
+  is_reloadable?: boolean | null;
 }): ReloadabilityInfo {
+  const type = tariff.reloadType || tariff.reloadability_type;
+  if (type === 'days') {
+    return {
+      type: 'days',
+      labelKey: 'det_reloadable_unlimited',
+      badgeKey: 'feat_topup_days_badge',
+      titleKey: 'feat_topup_days_title',
+      descKey: 'feat_topup_days_desc',
+      icon: '🔄',
+      isReloadable: true,
+    };
+  }
+  if (type === 'data') {
+    return {
+      type: 'data',
+      labelKey: 'det_reloadable',
+      badgeKey: 'feat_topup_data_badge',
+      titleKey: 'feat_topup_data_title',
+      descKey: 'feat_topup_data_desc',
+      icon: '🔄',
+      isReloadable: true,
+    };
+  }
+  if (type === 'none') {
+    return {
+      type: 'none',
+      labelKey: 'det_not_reloadable',
+      badgeKey: 'feat_topup_none_badge',
+      titleKey: 'feat_topup_none_title',
+      descKey: 'feat_topup_none_desc',
+      icon: '⚡',
+      isReloadable: false,
+    };
+  }
+
   const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
   const rawTopUpType = raw.supportTopUpType !== undefined && raw.supportTopUpType !== null 
     ? Number(raw.supportTopUpType) 
@@ -329,6 +388,19 @@ export function getTariffSpecialFeatures(
     data_gb?: number | null;
     raw_data?: Record<string, unknown> | null;
     is_top_up_eligible?: boolean | null;
+    operators?: TariffOperator[];
+    breakoutIp?: string | null;
+    breakout_ip?: string | null;
+    isPremium?: boolean | null;
+    is_premium?: boolean | null;
+    isNonHkIp?: boolean | null;
+    is_non_hk_ip?: boolean | null;
+    isReloadable?: boolean | null;
+    is_reloadable?: boolean | null;
+    reloadType?: 'days' | 'data' | 'none' | null;
+    reloadability_type?: 'days' | 'data' | 'none' | null;
+    country_code?: string | null;
+    location_codes?: string[] | null;
   },
 ): TariffSpecialFeature[] {
   const features: TariffSpecialFeature[] = [];
@@ -354,7 +426,7 @@ export function getTariffSpecialFeatures(
 
   // 1. Non-HK IP
   if (isNonHkIpTariff(tariff)) {
-    const ipExp = typeof raw.ipExport === 'string' && raw.ipExport ? raw.ipExport : undefined;
+    const ipExp = getTariffBreakoutIp(tariff) || (typeof raw.ipExport === 'string' && raw.ipExport ? raw.ipExport : undefined);
     features.push({
       id: 'non_hk_ip',
       badgeKey: 'feat_non_hk_ip_badge',
@@ -381,7 +453,7 @@ export function getTariffSpecialFeatures(
   }
 
   // 3. 5G Network Ready
-  const ops = getTariffOperators(raw, 10);
+  const ops = getTariffOperators(tariff, 10);
   if (bestNetworkType(ops) === '5G' || String(raw.supportedNetworkTypes ?? '').includes('5G')) {
     features.push({
       id: 'has_5g',

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
-import type { Database } from '@/lib/supabase/types';
+import type { PublicTariff } from '@/lib/tariffs';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { CheckoutModal } from '@/components/CheckoutModal';
@@ -13,7 +13,7 @@ import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff;
 
 const NETWORK_COLORS: Record<string, string> = {
   '5G':  'bg-violet-100 text-violet-700 border-violet-200',
@@ -39,7 +39,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const isPremium   = isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
   const isTR        = isTurkeyTariff(tariff);
-  const ops         = getTariffOperators(tariff.raw_data as Record<string, unknown> | null, 8);
+  const ops         = getTariffOperators(tariff, 8);
   const typeInfo    = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
   const isTravel    = (tariff.tariff_type ?? 'travel') === 'travel';
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;

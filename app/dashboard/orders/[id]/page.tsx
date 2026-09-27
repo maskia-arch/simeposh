@@ -25,7 +25,7 @@ export default async function OrderDetailPage({
   const service = createServiceClient();
   const { data: order } = await service
     .from('orders')
-    .select('*, tariffs(*)')
+    .select('id, status, amount_eur, iccid, checkout_ref, payment_confirmed_at, tariffs(name, country_name, country_code, flag_emoji, data_gb, validity_days)')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();

@@ -5,11 +5,11 @@ import { TariffCard }        from './TariffCard';
 import { CheckoutModal }     from './CheckoutModal';
 import { TariffDetailModal } from './TariffDetailModal';
 import { useTranslation }    from '@/lib/i18n';
-import type { Database }     from '@/lib/supabase/types';
+import type { PublicTariff } from '@/lib/tariffs';
 
 import { NetworkIcon } from '@/components/Icons';
 
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+type Tariff = PublicTariff;
 
 export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
   const { t } = useTranslation();

@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { createClient }      from '@/lib/supabase/server';
 import { TariffsPageClient } from './TariffsPageClient';
-import type { Database }     from '@/lib/supabase/types';
-
-type Tariff = Database['public']['Tables']['tariffs']['Row'];
+import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 
 export const metadata: Metadata = { title: 'Plans | PureSim' };
 
@@ -11,26 +9,22 @@ export const metadata: Metadata = { title: 'Plans | PureSim' };
 export const revalidate = 600;
 
 /**
- * Load ALL active tariffs.
+ * Load ALL active tariffs mapped to safe PublicTariff DTOs.
  *
- * CRITICAL: Supabase / PostgREST caps a single response at `max-rows`
- * (1000 by default). A plain `.limit(50000)` is silently truncated to 1000,
- * which is why the customer page only ever showed the first ~1000 tariffs
- * alphabetically (everything from "G…" onward — incl. Germany — was missing,
- * while the admin page used pagination and showed them correctly).
- *
- * We therefore page through the table with `.range()` until a short page
- * signals the end. This reliably returns the complete catalogue.
+ * CRITICAL:
+ * - Sensitive columns (ek_price_usd, usd_eur_rate) are NEVER selected from the DB.
+ * - raw_data is only read on the server to extract operators & breakout IP, then discarded.
+ * - Client components receive strictly whitelisted PublicTariff objects.
  */
-async function getTariffs(): Promise<Tariff[]> {
+async function getTariffs(): Promise<PublicTariff[]> {
   const supabase = await createClient();
   const PAGE = 1000;
-  const all: Tariff[] = [];
+  const all: PublicTariff[] = [];
 
   for (let from = 0; from < 200_000; from += PAGE) {
     const { data, error } = await supabase
       .from('tariffs')
-      .select('*')
+      .select('id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, raw_data')
       .eq('is_active', true)
       .order('country_name', { ascending: true })
       .order('sale_price_eur', { ascending: true })
@@ -41,7 +35,9 @@ async function getTariffs(): Promise<Tariff[]> {
       break;
     }
     if (!data || data.length === 0) break;
-    all.push(...(data as Tariff[]));
+    for (const row of data) {
+      all.push(toPublicTariff(row));
+    }
     if (data.length < PAGE) break; // last (short) page
   }
 
