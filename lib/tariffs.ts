@@ -95,45 +95,38 @@ import {
   bestNetworkType,
   cleanTariffName,
   type TariffOperator,
-} from '@/lib/tariff-display';
+} from './tariff-display';
 
 export interface PublicTariff {
-  id:                 string;
-  slug:               string;
-  package_code:       string;
-  name:               string;
-  description:        string | null;
-  country_code:       string;
-  country_name:       string;
-  region:             string | null;
-  flag_emoji:         string | null;
-  location_codes:     string[] | null;
-  data_gb:            number | null;
-  validity_days:      number;
-  sale_price_eur:     number;
-  tariff_type:        'travel' | 'unlimited_eco' | 'unlimited_pro' | string | null;
-  speed_kbps:         number | null;
-  label:              string | null;
-  is_top_up_eligible: boolean | null;
+  id:                   string;
+  slug:                 string;
+  package_code:         string;
+  name:                 string;
+  description:          string | null;
+  country_code:         string;
+  country_name:         string;
+  region:               string | null;
+  flag_emoji:           string | null;
+  location_codes:       string[] | null;
+  data_gb:              number | null;
+  validity_days:        number;
+  sale_price_eur:       number;
+  tariff_type:          'travel' | 'unlimited_eco' | 'unlimited_pro' | string | null;
+  speed_kbps:           number | null;
+  label:                string | null;
+  is_top_up_eligible:   boolean | null;
 
-  // Serverseitig sauber aufbereitete Felder (ersetzen raw_data vollständig):
-  operators:          TariffOperator[];
-  breakoutIp:         string | null;
-  breakout_ip:        string | null;
-  bestNetworkType:    string | null;
-  best_network_type:  string | null;
-  isPremium:          boolean;
-  is_premium:         boolean;
-  isNonHkIp:          boolean;
-  is_non_hk_ip:       boolean;
-  isReloadable:       boolean;
-  is_reloadable:      boolean;
-  reloadType:         'days' | 'data' | 'none';
-  reloadability_type: 'days' | 'data' | 'none';
-  fupPolicy:          string | null;
-  fup_policy:         string | null;
-  networkSpeed:       string | null;
-  network_speed:      string | null;
+  // Serverseitig sauber aufbereitete Felder (ersetzen raw_data vollständig, einheitlich snake_case):
+  operators:            TariffOperator[];
+  breakout_ip:          string | null;
+  best_network_type:    string | null;
+  is_premium:           boolean;
+  is_non_hk_ip:         boolean;
+  is_reloadable:        boolean;
+  reloadability_type:   'days' | 'data' | 'none';
+  throttle_speed:       string | null; // Drosselungsgeschwindigkeit (ehemals fupPolicy/fup_policy)
+  network_speed:        string | null;
+  activates_on_arrival: boolean;       // steuert das Badge Activation on Arrival (activeType === 2)
 }
 
 /**
@@ -177,6 +170,7 @@ function sanitizeNetworkSpeed(rawSpeed: unknown): string | null {
  * - NO object spread (...row), NO omit.
  * - NO raw_data passthrough under any circumstances.
  * - NO ek_price_usd, usd_eur_rate, retailPrice, raw_data.price, saleNote.
+ * - Unified snake_case fields, no duplicate camelCase fields.
  */
 export function toPublicTariff(row: any): PublicTariff {
   if (!row) {
@@ -190,7 +184,7 @@ export function toPublicTariff(row: any): PublicTariff {
   const isPrem = isPremiumTariff(row);
   const isNonHk = isNonHkIpTariff(row);
   const reload = getReloadabilityInfo(row);
-  const safeFup = sanitizeFupPolicy(row.raw_data?.fupPolicy ?? row.fup_policy ?? row.fupPolicy);
+  const safeThrottle = sanitizeFupPolicy(row.raw_data?.fupPolicy ?? row.throttle_speed ?? row.fup_policy ?? row.fupPolicy);
   const safeSpeed = sanitizeNetworkSpeed(row.raw_data?.speed ?? row.network_speed ?? row.networkSpeed);
 
   const locationCodes = Array.isArray(row.location_codes)
@@ -199,42 +193,41 @@ export function toPublicTariff(row: any): PublicTariff {
 
   const cleanName = cleanTariffName(row.name);
 
-  return {
-    id:                 String(row.id ?? ''),
-    slug:               String(row.slug ?? (row.package_code ? String(row.package_code).toLowerCase() : '')),
-    package_code:       String(row.package_code ?? row.packageCode ?? ''),
-    name:               cleanName || String(row.name ?? ''),
-    description:        row.description ? String(row.description) : null,
-    country_code:       String(row.country_code ?? row.locationCode ?? 'XX').toUpperCase(),
-    country_name:       String(row.country_name ?? row.locationCode ?? 'Global'),
-    region:             row.region ? String(row.region) : null,
-    flag_emoji:         row.flag_emoji ? String(row.flag_emoji) : null,
-    location_codes:     locationCodes,
-    data_gb:            row.data_gb !== null && row.data_gb !== undefined ? Number(row.data_gb) : null,
-    validity_days:      Math.max(1, Number(row.validity_days ?? row.duration ?? 1)),
-    sale_price_eur:     Number(row.sale_price_eur ?? 0),
-    tariff_type:        row.tariff_type ? String(row.tariff_type) : 'travel',
-    speed_kbps:         row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
-    label:              row.label ? String(row.label) : null,
-    is_top_up_eligible: row.is_top_up_eligible !== undefined && row.is_top_up_eligible !== null ? Boolean(row.is_top_up_eligible) : null,
+  // Activates on Arrival: strictly activeType === 2 (from raw_data, database row, or existing PublicTariff)
+  const rawActiveType = row.raw_data?.activeType ?? row.activeType;
+  const activatesOnArrival = rawActiveType !== undefined && rawActiveType !== null
+    ? String(rawActiveType) === '2'
+    : row.activates_on_arrival === true;
 
-    // Derived fields
-    operators:          ops,
-    breakoutIp:         breakout,
-    breakout_ip:        breakout,
-    bestNetworkType:    bestNet,
-    best_network_type:  bestNet,
-    isPremium:          isPrem,
-    is_premium:         isPrem,
-    isNonHkIp:          isNonHk,
-    is_non_hk_ip:       isNonHk,
-    isReloadable:       reload.isReloadable,
-    is_reloadable:      reload.isReloadable,
-    reloadType:         reload.type,
-    reloadability_type: reload.type,
-    fupPolicy:          safeFup,
-    fup_policy:         safeFup,
-    networkSpeed:       safeSpeed,
-    network_speed:      safeSpeed,
+  return {
+    id:                   String(row.id ?? ''),
+    slug:                 String(row.slug ?? (row.package_code ? String(row.package_code).toLowerCase() : '')),
+    package_code:         String(row.package_code ?? row.packageCode ?? ''),
+    name:                 cleanName || String(row.name ?? ''),
+    description:          row.description ? String(row.description) : null,
+    country_code:         String(row.country_code ?? row.locationCode ?? 'XX').toUpperCase(),
+    country_name:         String(row.country_name ?? row.locationCode ?? 'Global'),
+    region:               row.region ? String(row.region) : null,
+    flag_emoji:           row.flag_emoji ? String(row.flag_emoji) : null,
+    location_codes:       locationCodes,
+    data_gb:              row.data_gb !== null && row.data_gb !== undefined ? Number(row.data_gb) : null,
+    validity_days:        Math.max(1, Number(row.validity_days ?? row.duration ?? 1)),
+    sale_price_eur:       Number(row.sale_price_eur ?? 0),
+    tariff_type:          row.tariff_type ? String(row.tariff_type) : 'travel',
+    speed_kbps:           row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
+    label:                row.label ? String(row.label) : null,
+    is_top_up_eligible:   row.is_top_up_eligible !== undefined && row.is_top_up_eligible !== null ? Boolean(row.is_top_up_eligible) : null,
+
+    // Derived whitelisted fields (strictly snake_case)
+    operators:            ops,
+    breakout_ip:          breakout,
+    best_network_type:    bestNet,
+    is_premium:           isPrem,
+    is_non_hk_ip:         isNonHk,
+    is_reloadable:        reload.isReloadable,
+    reloadability_type:   reload.type,
+    throttle_speed:       safeThrottle,
+    network_speed:        safeSpeed,
+    activates_on_arrival: activatesOnArrival,
   };
 }

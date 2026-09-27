@@ -12,6 +12,7 @@ import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
+import { useHideChatBubble } from '@/lib/useHideChatBubble';
 
 type Tariff = PublicTariff;
 
@@ -40,6 +41,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const [showCountryList, setShowCountryList] = useState(false);
   const { locale, t } = useTranslation();
   const { addItem, open } = useCart();
+
+  useHideChatBubble(true);
 
   const isPremium    = isPremiumTariff(tariff);
   const breakoutIp   = getTariffBreakoutIp(tariff);

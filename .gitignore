@@ -27,5 +27,10 @@ next-env.d.ts
 # Benchmark and audit artifacts
 lh/
 screenshots/
+screenshots_checkout/
+screenshots_followup/
 lh_test.json
-scripts/
+scripts/*
+!scripts/test_tariff_mapper.mjs
+!scripts/check-public-payload.mjs
+

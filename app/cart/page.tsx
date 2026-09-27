@@ -8,9 +8,11 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
+import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { displayCountryName, coverageLabel, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
+import { useHideChatBubble } from '@/lib/useHideChatBubble';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
   travel:        { icon: <TravelGlobeIcon size={13} className="currentColor text-sky-600" />, label: 'Travel' },
@@ -21,12 +23,15 @@ const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
 export default function CartPage() {
   const { locale, t } = useTranslation();
   const { items, total, count, setQuantity, removeItem, clear } = useCart();
-  const [email,   setEmail]   = useState('');
-  const [user,    setUser]    = useState<any>(null);
-  const [balance, setBalance] = useState<number>(0);
+  const [email,      setEmail]      = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [user,       setUser]       = useState<any>(null);
+  const [balance,    setBalance]    = useState<number>(0);
   const [totalSpend, setTotalSpend] = useState<number>(0);
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
   const supabase = createClient();
+
+  useHideChatBubble(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -208,24 +213,13 @@ export default function CartPage() {
               )}
             </div>
 
-            {user ? (
-              <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('checkout_email_label') || 'Email Address'}</p>
-                <p className="text-sm font-semibold text-slate-700 mt-0.5">{user.email}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{t('cart_email_hint')}</p>
-              </div>
-            ) : (
-              <>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('cart_email_ph')}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                />
-                <p className="text-xs text-slate-400">{t('cart_email_hint')}</p>
-              </>
-            )}
+            <CheckoutEmailField
+              email={email}
+              onChange={setEmail}
+              error={emailError}
+              onErrorChange={setEmailError}
+              user={user}
+            />
 
             {/* Crypto payment (own infrastructure, amount-based matching) */}
             <div className="border-t border-slate-100 pt-4">
@@ -235,6 +229,8 @@ export default function CartPage() {
                 total={total}
                 balance={balance}
                 user={user}
+                emailError={emailError}
+                setEmailError={setEmailError}
               />
             </div>
           </div>

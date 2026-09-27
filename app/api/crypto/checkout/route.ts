@@ -19,8 +19,15 @@ import { fulfillOrders }       from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
 import { calculateSalePrice }  from '@/lib/pricing';
+import { validateEmail }        from '@/lib/validation/email';
 
 export const runtime = 'nodejs';
+
+/**
+ * Valid terms & privacy policy version (matches 'Last updated: June 2026' on /agb).
+ * NOTE: Must be updated whenever Terms or Privacy Policy are changed.
+ */
+const TERMS_VERSION = '2026-06';
 
 function slugify(str: string): string {
   return str
@@ -34,16 +41,32 @@ interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIcci
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, coin, items, referredBy } = body as {
-      email?:      string;
-      coin?:       string;
-      items?:      ReqItem[];
-      referredBy?: string;
+    const { email, coin, items, referredBy, termsAccepted } = body as {
+      email?:         string;
+      coin?:          string;
+      items?:         ReqItem[];
+      referredBy?:    string;
+      termsAccepted?: boolean;
+      termsVersion?:  string;
     };
 
-    if (!email || !coin || !Array.isArray(items) || items.length === 0) {
+    // 1. Strict Email Validation (checked before any DB/order creation or payment calls)
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      return NextResponse.json({ error: 'INVALID_EMAIL', field: 'email' }, { status: 422 });
+    }
+    const normalizedEmail = emailValidation.normalized;
+
+    // 2. Strict Terms & Privacy Acceptance (checked before any DB/order creation or payment calls)
+    if (termsAccepted !== true) {
+      return NextResponse.json({ error: 'TERMS_NOT_ACCEPTED', field: 'terms' }, { status: 422 });
+    }
+
+    if (!coin || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const termsAcceptedAt = new Date().toISOString();
 
     // Merge identical cart lines
     const merged = new Map<string, { tariffId: string; days: number | null; quantity: number; topUpIccid: string | null }>();
@@ -162,7 +185,7 @@ export async function POST(request: Request) {
 
     const userClient = await createClient();
     const { data: { user } } = await userClient.auth.getUser();
-    const userId = await resolveCustomer(service, user, email);
+    const userId = await resolveCustomer(service, user, normalizedEmail);
     const ref = crypto.randomUUID();
 
     // 1. Calculate total base amount
@@ -224,7 +247,7 @@ export async function POST(request: Request) {
 
       // Log transaction
       await service.from('esim_cash_transactions').insert({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         user_id: userId,
         amount: -totalBaseEur,
         type: 'spend',
@@ -249,11 +272,13 @@ export async function POST(request: Request) {
           orderRows.push({
             user_id: userId, tariff_id: t.id,
             order_type: isTopUp ? 'top_up' : 'new_esim', status: 'paid',
-            customer_email: email, customer_name: user?.user_metadata?.full_name ?? null,
+            customer_email: normalizedEmail, customer_name: user?.user_metadata?.full_name ?? null,
             amount_eur: unit, usd_eur_rate: t.usd_eur_rate, period_num: periodNum,
             top_up_iccid: line.topUpIccid, checkout_ref: ref,
             referred_by_code: referredBy,
-            cashback_applied_eur: unit // fully paid with eSIM Cash
+            cashback_applied_eur: unit, // fully paid with eSIM Cash
+            terms_accepted_at: termsAcceptedAt,
+            terms_version: TERMS_VERSION,
           });
         }
       }
@@ -275,12 +300,12 @@ export async function POST(request: Request) {
       await fulfillOrders(service, orderIds);
 
       // Save newsletter consent if checked
-      if (body.newsletterConsent && email) {
+      if (body.newsletterConsent) {
         try {
           await service
             .from('users')
             .update({ newsletter_consent: true } as any)
-            .eq('email', email.trim().toLowerCase());
+            .eq('email', normalizedEmail);
         } catch (dbErr) {
           console.error('[checkout] newsletter update failed:', dbErr);
         }
@@ -310,12 +335,14 @@ export async function POST(request: Request) {
           orderRows.push({
             user_id: userId, tariff_id: t.id,
             order_type: isTopUp ? 'top_up' : 'new_esim', status: 'pending',
-            customer_email: email, customer_name: user?.user_metadata?.full_name ?? null,
+            customer_email: normalizedEmail, customer_name: user?.user_metadata?.full_name ?? null,
             amount_eur: unit, usd_eur_rate: t.usd_eur_rate, period_num: periodNum,
             top_up_iccid: line.topUpIccid, checkout_ref: ref,
             referred_by_code: referredBy,
             cashback_applied_eur: 0.00, // no balance discount
             locale: customerLocale,
+            terms_accepted_at: termsAcceptedAt,
+            terms_version: TERMS_VERSION,
           });
         }
       }
@@ -333,21 +360,19 @@ export async function POST(request: Request) {
       const orderIds = inserted.map((o) => o.id);
 
       const session = await createCryptoSession({
-        orderIds, email, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale,
+        orderIds, email: normalizedEmail, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale,
       });
 
       // Save newsletter consent & locale if checked
-      if (email) {
-        try {
-          const updateObj: Record<string, unknown> = { locale: customerLocale };
-          if (body.newsletterConsent) updateObj.newsletter_consent = true;
-          await service
-            .from('users')
-            .update(updateObj as any)
-            .eq('email', email.trim().toLowerCase());
-        } catch (dbErr) {
-          console.error('[checkout] user update failed:', dbErr);
-        }
+      try {
+        const updateObj: Record<string, unknown> = { locale: customerLocale };
+        if (body.newsletterConsent) updateObj.newsletter_consent = true;
+        await service
+          .from('users')
+          .update(updateObj as any)
+          .eq('email', normalizedEmail);
+      } catch (dbErr) {
+        console.error('[checkout] user update failed:', dbErr);
       }
 
       // Send checkout email notification
@@ -355,7 +380,7 @@ export async function POST(request: Request) {
         const checkoutLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net'}/checkout/crypto/${session.id}`;
         const invoiceId = `INV-${session.id.split('-')[0].toUpperCase()}`;
         await sendCheckoutNotificationEmail({
-          to: email,
+          to: normalizedEmail,
           invoiceId,
           coin: session.coin.toUpperCase(),
           cryptoAmount: session.cryptoAmount,

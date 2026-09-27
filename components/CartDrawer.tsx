@@ -8,8 +8,10 @@ import { Price } from '@/components/Price';
 import { displayCountryName, isNonHkIpTariff, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
+import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { createClient } from '@/lib/supabase/client';
 import { EcoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
+import { useHideChatBubble } from '@/lib/useHideChatBubble';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
   travel:        { icon: <TravelGlobeIcon size={12} className="inline-block align-middle text-sky-600" />, label: 'Travel' },
@@ -36,6 +38,7 @@ export function CartDrawer() {
   };
 
   const [email, setEmail]             = useState('');
+  const [emailError, setEmailError]   = useState('');
   const [user, setUser]               = useState<any>(null);
   const [balance, setBalance]         = useState<number>(0);
   const [totalSpend, setTotalSpend]   = useState<number>(0);
@@ -94,6 +97,8 @@ export function CartDrawer() {
       setEmail(user.email);
     }
   }, [user]);
+
+  useHideChatBubble(isOpen);
 
   return (
     <>
@@ -236,25 +241,13 @@ export function CartDrawer() {
             {/* Section 2: Compact Cashback & Delivery Email Row */}
             <div className="space-y-2">
               {/* Delivery Email Input */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  E-Mail für QR-Zustellung
-                </label>
-                {user ? (
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5">
-                    <span className="text-xs font-bold text-slate-800 truncate">{user.email}</span>
-                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded-full border border-emerald-200 shrink-0">Eingeloggt</span>
-                  </div>
-                ) : (
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value.trim().toLowerCase())}
-                    placeholder="deine@email.de"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all placeholder:text-slate-400"
-                  />
-                )}
-              </div>
+              <CheckoutEmailField
+                email={email}
+                onChange={setEmail}
+                error={emailError}
+                onErrorChange={setEmailError}
+                user={user}
+              />
 
               {/* Compact Cashback Note */}
               <div className="rounded-xl p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 text-[11px] text-blue-900 flex items-center gap-2">
@@ -291,6 +284,8 @@ export function CartDrawer() {
               total={total}
               balance={balance}
               user={user}
+              emailError={emailError}
+              setEmailError={setEmailError}
             />
           </div>
         )}

@@ -71,3 +71,12 @@ input[type='range']::-moz-range-thumb {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* ── Multi-state hiding of floating AI support chat bubble so it never overlaps checkout/notices ── */
+body.hide-chat-bubble #vs25-bbl,
+body.hide-chat-bubble #vs25-inv,
+html[data-checkout-open="true"] #vs25-bbl,
+html[data-checkout-open="true"] #vs25-inv {
+  display: none !important;
+}
+

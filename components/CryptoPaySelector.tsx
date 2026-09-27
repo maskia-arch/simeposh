@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
+import { validateEmail } from '@/lib/validation/email';
+import { OpenChatButton } from '@/components/OpenChatButton';
 
 interface CoinOption {
   code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number; minOrderEur?: number;
@@ -38,6 +40,8 @@ interface CryptoPaySelectorProps {
   total: number;
   balance: number;
   user: any;
+  emailError?: string;
+  setEmailError?: (err: string) => void;
 }
 
 function BitcoinIcon({ className = 'h-4 w-4' }: { className?: string }) {
@@ -64,12 +68,13 @@ function ShieldCheckIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function CryptoPaySelector({ email, items, total, balance, user }: CryptoPaySelectorProps) {
+export function CryptoPaySelector({ email, items, total, balance, user, emailError, setEmailError }: CryptoPaySelectorProps) {
   const { locale, t } = useTranslation();
   const [coins, setCoins]                 = useState<CoinOption[]>([]);
   const [loading, setLoading]             = useState<string | null>(null);
   const [error, setError]                 = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError]       = useState('');
   const [acceptedNewsletter, setAcceptedNewsletter] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [activeTab, setActiveTab]        = useState<'crypto' | 'cash'>('crypto');
@@ -101,13 +106,65 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   const hasEnoughBalance = balance >= total;
 
+  function validateCheckoutForm(): boolean {
+    let emailOk = true;
+    let termsOk = true;
+
+    const effectiveEmail = (user?.email || email || '').trim();
+    const emailRes = validateEmail(effectiveEmail);
+
+    if (!emailRes.isValid) {
+      emailOk = false;
+      const msg = emailRes.errorKey === 'empty' ? t('checkout_email_empty') : t('checkout_email_invalid');
+      if (setEmailError) {
+        setEmailError(msg);
+      }
+    } else {
+      if (setEmailError) setEmailError('');
+    }
+
+    if (!acceptedTerms) {
+      termsOk = false;
+      setTermsError(t('checkout_agree_error'));
+    } else {
+      setTermsError('');
+    }
+
+    if (!emailOk && !termsOk) {
+      const emailEl = document.getElementById('checkout-email');
+      if (emailEl) {
+        emailEl.focus();
+        emailEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return false;
+    }
+
+    if (!emailOk) {
+      const emailEl = document.getElementById('checkout-email');
+      if (emailEl) {
+        emailEl.focus();
+        emailEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return false;
+    }
+
+    if (!termsOk) {
+      const termsEl = document.getElementById('accept-terms-checkout');
+      if (termsEl) {
+        termsEl.focus();
+        termsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return false;
+    }
+
+    return true;
+  }
+
   async function handleEsimCashPay() {
     setError('');
+    if (!validateCheckoutForm()) return;
+
     const effectiveEmail = (user?.email || email || '').trim().toLowerCase();
-    if (!acceptedTerms) {
-      setError(t('checkout_agree_error'));
-      return;
-    }
     if (!user) {
       if (typeof window !== 'undefined') {
         const currentPath = window.location.pathname + window.location.search;
@@ -116,20 +173,43 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       return;
     }
     if (!hasEnoughBalance) return;
-    if (!effectiveEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(effectiveEmail)) {
-      setError(t('pay_invalid_email'));
-      return;
-    }
 
     setLoading('ESIM_CASH');
     try {
       const res = await fetch('/api/crypto/checkout', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ email: effectiveEmail, coin: 'ESIM_CASH', items, newsletterConsent: acceptedNewsletter, locale }),
+         body: JSON.stringify({
+           email: effectiveEmail,
+           coin: 'ESIM_CASH',
+           items,
+           termsAccepted: true,
+           termsVersion: '2026-06',
+           newsletterConsent: acceptedNewsletter,
+           locale,
+         }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ref) throw new Error(data.error ?? t('pay_error'));
+      if (!res.ok) {
+        if (res.status === 422) {
+          if (data.field === 'email') {
+            setEmailError?.(t('checkout_email_invalid'));
+            document.getElementById('checkout-email')?.focus();
+            document.getElementById('checkout-email')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setLoading(null);
+            return;
+          }
+          if (data.field === 'terms') {
+            setTermsError(t('checkout_agree_error'));
+            document.getElementById('accept-terms-checkout')?.focus();
+            document.getElementById('accept-terms-checkout')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setLoading(null);
+            return;
+          }
+        }
+        throw new Error(data.error ?? t('pay_error'));
+      }
+      if (!data.ref) throw new Error(data.error ?? t('pay_error'));
       window.location.href = `/order?ref=${data.ref}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pay_error'));
@@ -139,23 +219,45 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
   async function start(coin: string) {
     setError('');
+    if (!validateCheckoutForm()) return;
+
     const effectiveEmail = (user?.email || email || '').trim().toLowerCase();
-    if (!acceptedTerms) {
-      setError(t('checkout_agree_error'));
-      return;
-    }
-    if (!effectiveEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(effectiveEmail)) {
-      setError(t('pay_invalid_email'));
-      return;
-    }
     setLoading(coin);
     try {
       const res = await fetch('/api/crypto/checkout', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: effectiveEmail, coin, items, newsletterConsent: acceptedNewsletter, locale }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: effectiveEmail,
+          coin,
+          items,
+          termsAccepted: true,
+          termsVersion: '2026-06',
+          newsletterConsent: acceptedNewsletter,
+          locale,
+        }),
       });
       const data = await res.json();
-      if (!res.ok || !data.sessionId) throw new Error(data.error ?? t('pay_error'));
+      if (!res.ok) {
+        if (res.status === 422) {
+          if (data.field === 'email') {
+            setEmailError?.(t('checkout_email_invalid'));
+            document.getElementById('checkout-email')?.focus();
+            document.getElementById('checkout-email')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setLoading(null);
+            return;
+          }
+          if (data.field === 'terms') {
+            setTermsError(t('checkout_agree_error'));
+            document.getElementById('accept-terms-checkout')?.focus();
+            document.getElementById('accept-terms-checkout')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setLoading(null);
+            return;
+          }
+        }
+        throw new Error(data.error ?? t('pay_error'));
+      }
+      if (!data.sessionId) throw new Error(data.error ?? t('pay_error'));
       window.location.href = `/checkout/crypto/${data.sessionId}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : t('pay_error'));
@@ -336,7 +438,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
       </div>
 
       {/* 3. Balanced Sticky Drawer Footer with Explicit Price & Fee Breakdown */}
-      <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-md space-y-2.5 z-20">
+      <div className="sticky -bottom-4 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-md space-y-2.5 z-20">
         <div className="space-y-0.5">
           <div className="flex items-baseline justify-between text-xs text-slate-500">
             <span>{t('pay_subtotal')}</span>
@@ -362,30 +464,61 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
         {/* Prominent, Touch-Friendly Legal Checkbox inside Sticky Container (Guaranteed 100% Visible on Mobile/Brave) */}
         <div
           className={`rounded-xl border p-2.5 transition-all ${
-            error === t('checkout_agree_error')
-              ? 'border-red-400 bg-red-50/90 text-red-900 ring-2 ring-red-300 animate-pulse'
+            termsError
+              ? 'border-red-400 bg-red-50/90 text-red-900 ring-2 ring-red-300'
               : 'border-slate-200 bg-slate-50/80 text-slate-700 hover:bg-slate-100/80'
           }`}
         >
           <label htmlFor="accept-terms-checkout" className="flex items-start gap-2.5 cursor-pointer select-none">
             <input
               id="accept-terms-checkout"
+              data-testid="checkout-terms-checkbox"
               type="checkbox"
+              required
+              aria-required="true"
+              aria-invalid={!!termsError}
+              aria-describedby={termsError ? 'checkout-terms-error' : undefined}
               checked={acceptedTerms}
               onChange={(e) => {
                 setAcceptedTerms(e.target.checked);
-                if (e.target.checked && error === t('checkout_agree_error')) setError('');
+                if (e.target.checked) setTermsError('');
               }}
               className="mt-0.5 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
             />
             <span className="text-[11px] font-medium leading-snug">
               {t('checkout_agree_prefix')}{' '}
-              <Link href="/agb" target="_blank" className="font-bold text-brand-600 underline hover:text-brand-800">
+              <Link
+                href="/agb"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-brand-600 underline hover:text-brand-800"
+              >
                 {t('checkout_agree_link')}
-              </Link>
-              {' '}{t('checkout_agree_suffix')}
+              </Link>{' '}
+              {t('checkout_agree_middle')}{' '}
+              <Link
+                href="/datenschutz"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-brand-600 underline hover:text-brand-800"
+              >
+                {t('checkout_agree_privacy_link')}
+              </Link>{' '}
+              {t('checkout_agree_suffix')}
             </span>
           </label>
+          {termsError && (
+            <p
+              id="checkout-terms-error"
+              data-testid="checkout-terms-error"
+              role="alert"
+              className="mt-1.5 text-[11px] font-semibold text-red-600"
+            >
+              {termsError}
+            </p>
+          )}
         </div>
 
         {error && (
@@ -396,7 +529,9 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
 
         <button
           type="button"
-          disabled={loading !== null}
+          data-testid="pay-now"
+          disabled={loading !== null || !acceptedTerms}
+          aria-disabled={loading !== null || !acceptedTerms}
           onClick={() => {
             if (selectedMethod === 'ESIM_CASH') {
               handleEsimCashPay();
@@ -406,7 +541,7 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
               setError(t('pay_select_method'));
             }
           }}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] py-3 text-center text-xs font-extrabold text-white shadow-md disabled:opacity-50 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] py-3 text-center text-xs font-extrabold text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
         >
           {loading ? (
             <span className="flex items-center gap-1.5">
@@ -423,6 +558,11 @@ export function CryptoPaySelector({ email, items, total, balance, user }: Crypto
             </span>
           )}
         </button>
+
+        {/* Support Chat Link */}
+        <div className="pt-3 flex justify-center">
+          <OpenChatButton />
+        </div>
 
         <p className="text-center text-[9px] text-slate-400 font-medium">
           {t('pay_ssl_notice')}

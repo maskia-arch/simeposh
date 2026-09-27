@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import type { PublicTariff } from '@/lib/tariffs';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
+import { useHideChatBubble } from '@/lib/useHideChatBubble';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -66,6 +67,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string } | null>(null);
+
+  useHideChatBubble(toast !== null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {

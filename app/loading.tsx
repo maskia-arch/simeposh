@@ -1,11 +1,17 @@
+import { cookies } from 'next/headers';
+
 export default function Loading() {
+  const cookieStore = cookies();
+  const locale = cookieStore.get('locale')?.value;
+  const label = locale === 'de' ? 'Wird geladen…' : 'Loading…';
+
   return (
     <div
       className="w-full flex-1 min-h-[calc(100svh-5.25rem)] py-8 px-4 bg-slate-50/50 flex flex-col items-center justify-start"
       aria-busy="true"
-      aria-label="Laden..."
+      aria-label={label}
     >
-      <span className="sr-only">Laden…</span>
+      <span className="sr-only">{label}</span>
       <div className="w-full max-w-6xl space-y-8 motion-safe:animate-pulse">
         {/* Top banner placeholder */}
         <div className="h-40 w-full rounded-3xl bg-slate-200/80 shadow-xs" />

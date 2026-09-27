@@ -8,6 +8,7 @@ import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
+import { useHideChatBubble } from '@/lib/useHideChatBubble';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -34,6 +35,8 @@ export function CheckoutModal({
   const [totalSpend, setTotalSpend] = useState<number>(0);
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+
+  useHideChatBubble(true);
 
   const supabase = createClient();
 
