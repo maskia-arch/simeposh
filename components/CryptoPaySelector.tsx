@@ -505,8 +505,8 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
                 className="font-bold text-brand-600 underline hover:text-brand-800"
               >
                 {t('checkout_agree_privacy_link')}
-              </Link>{' '}
-              {t('checkout_agree_suffix')}
+              </Link>
+              {t('checkout_agree_suffix') ? (t('checkout_agree_suffix').startsWith('.') ? t('checkout_agree_suffix') : ` ${t('checkout_agree_suffix')}`) : ''}
             </span>
           </label>
           {termsError && (
@@ -514,7 +514,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
               id="checkout-terms-error"
               data-testid="checkout-terms-error"
               role="alert"
-              className="mt-1.5 text-[11px] font-semibold text-red-600"
+              className="mt-1 text-[11px] font-semibold text-red-600"
             >
               {termsError}
             </p>
@@ -530,8 +530,8 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         <button
           type="button"
           data-testid="pay-now"
-          disabled={loading !== null || !acceptedTerms}
-          aria-disabled={loading !== null || !acceptedTerms}
+          disabled={loading !== null}
+          aria-busy={loading !== null ? 'true' : undefined}
           onClick={() => {
             if (selectedMethod === 'ESIM_CASH') {
               handleEsimCashPay();

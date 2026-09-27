@@ -94,58 +94,20 @@ export interface TariffOperator {
 }
 
 /**
- * Extract the covered network operators from a tariff's stored raw_data.
- * Handles every esimaccess shape: operatorList, networkList, and the nested
- * locationNetworkList[].operatorList — so it works on already-synced data.
+ * Extract the covered network operators from a public tariff object or operator array.
  */
 export function getTariffOperators(
-  source: Record<string, unknown> | { operators?: TariffOperator[]; raw_data?: Record<string, unknown> | null } | null | undefined,
+  source: { operators?: TariffOperator[] | null } | TariffOperator[] | null | undefined,
   max = 6,
 ): TariffOperator[] {
   if (!source) return [];
-
-  // Check if operators are already mapped (PublicTariff)
-  if ('operators' in source && Array.isArray((source as any).operators)) {
-    return (source as any).operators.slice(0, max);
+  if (Array.isArray(source)) {
+    return source.slice(0, max);
   }
-
-  const rawData = ('raw_data' in source ? (source as any).raw_data : source) as Record<string, unknown> | null | undefined;
-  if (!rawData) return [];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const norm = (arr: any[]): TariffOperator[] =>
-    arr
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((o: any) => ({
-        name:        String(o?.operatorName ?? o?.name ?? '').trim(),
-        networkType: o?.networkType ? String(o.networkType) : undefined,
-      }))
-      .filter((o) => o.name);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let ops: any[] = [];
-  if (Array.isArray(rawData.operatorList) && rawData.operatorList.length) {
-    ops = rawData.operatorList;
-  } else if (Array.isArray(rawData.networkList) && rawData.networkList.length) {
-    ops = rawData.networkList;
-  } else if (Array.isArray(rawData.locationNetworkList)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ops = (rawData.locationNetworkList as any[]).flatMap((l) =>
-      Array.isArray(l?.operatorList) ? l.operatorList : [],
-    );
+  if (Array.isArray(source.operators)) {
+    return source.operators.slice(0, max);
   }
-
-  // De-duplicate by operator name
-  const seen = new Set<string>();
-  const out: TariffOperator[] = [];
-  for (const o of norm(ops)) {
-    const key = o.name.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(o);
-    if (out.length >= max) break;
-  }
-  return out;
+  return [];
 }
 
 /** Best (highest) network generation among a set of operators. */
@@ -207,23 +169,19 @@ export function isNonHkIpTariff(tariff: {
  * Checks if a tariff is a Premium tariff (e.g. Travel Premium / Dual-Network redundancy).
  */
 export function isPremiumTariff(tariff: {
+  is_premium?: boolean | null;
   name?: string | null;
   package_code?: string | null;
   description?: string | null;
-  is_premium?: boolean | null;
-  raw_data?: Record<string, unknown> | null;
 }): boolean {
   if (typeof tariff.is_premium === 'boolean') return tariff.is_premium;
   const nameStr = (tariff.name ?? '').toLowerCase();
   const codeStr = (tariff.package_code ?? '').toLowerCase();
   const descStr = (tariff.description ?? '').toLowerCase();
-  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
-  const rawName = String(raw.name ?? '').toLowerCase();
 
   return (
     nameStr.includes('premium') ||
     codeStr.includes('premium') ||
-    rawName.includes('premium') ||
     descStr.includes('premium')
   );
 }
@@ -233,14 +191,8 @@ export function isPremiumTariff(tariff: {
  */
 export function getTariffBreakoutIp(tariff: {
   breakout_ip?: string | null;
-  raw_data?: Record<string, unknown> | null;
 }): string | null {
-  if (tariff.breakout_ip !== undefined) return tariff.breakout_ip;
-  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
-  if (typeof raw.ipExport === 'string' && raw.ipExport.trim()) {
-    return raw.ipExport.trim().toUpperCase();
-  }
-  return null;
+  return tariff.breakout_ip ?? null;
 }
 
 /**
@@ -278,15 +230,14 @@ export interface ReloadabilityInfo {
 }
 
 /**
- * Determine reloadability classification according to eSIMAccess API specs:
- * - supportTopUpType = 1: Single-Use (Nicht aufladbar)
- * - supportTopUpType = 2: Travel (fixed data) -> Data Reloadable for same area within validity
- * - supportTopUpType = 3: Unlimited -> Days Reloadable for extending validity
+ * Determine reloadability classification:
+ * - 'days': Unlimited / validity extension
+ * - 'data': Fixed data top-up
+ * - 'none': Not reloadable
  */
 export function getReloadabilityInfo(tariff: {
   tariff_type?: string | null;
   data_gb?: number | null;
-  raw_data?: Record<string, unknown> | null;
   is_top_up_eligible?: boolean | null;
   reloadability_type?: 'days' | 'data' | 'none' | null;
   is_reloadable?: boolean | null;
@@ -326,25 +277,21 @@ export function getReloadabilityInfo(tariff: {
     };
   }
 
-  const raw = (tariff.raw_data ?? {}) as Record<string, unknown>;
-  const rawTopUpType = raw.supportTopUpType !== undefined && raw.supportTopUpType !== null 
-    ? Number(raw.supportTopUpType) 
-    : undefined;
-  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
-
-  if (rawTopUpType === 3 || (isUnlimited && rawTopUpType !== 1 && tariff.is_top_up_eligible !== false)) {
-    return {
-      type: 'days',
-      labelKey: 'det_reloadable_unlimited',
-      badgeKey: 'feat_topup_days_badge',
-      titleKey: 'feat_topup_days_title',
-      descKey: 'feat_topup_days_desc',
-      icon: '🔄',
-      isReloadable: true,
-    };
-  }
-
-  if (rawTopUpType === 2 || (!isUnlimited && rawTopUpType !== 1 && tariff.is_top_up_eligible !== false)) {
+  // Fallback if reloadability_type is not explicitly set
+  const isEligible = tariff.is_reloadable === true || tariff.is_top_up_eligible === true;
+  if (isEligible) {
+    const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+    if (isUnlimited) {
+      return {
+        type: 'days',
+        labelKey: 'det_reloadable_unlimited',
+        badgeKey: 'feat_topup_days_badge',
+        titleKey: 'feat_topup_days_title',
+        descKey: 'feat_topup_days_desc',
+        icon: '🔄',
+        isReloadable: true,
+      };
+    }
     return {
       type: 'data',
       labelKey: 'det_reloadable',
@@ -424,7 +371,7 @@ export function getTariffSpecialFeatures(
     });
   }
 
-  // 2. Activation on Arrival (controlled strictly by activates_on_arrival === true, activeType === 2)
+  // 2. Activation on Arrival (controlled strictly by activates_on_arrival === true)
   if (tariff.activates_on_arrival === true) {
     features.push({
       id: 'activation_on_arrival',

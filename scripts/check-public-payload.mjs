@@ -127,9 +127,9 @@ try {
 }
 
 // 3. Scan static chunks in .next if present
-console.log('\nStep 3: Checking build artifacts in .next directory if present...');
-const nextStaticDir = path.join(rootDir, '.next', 'static');
-if (fs.existsSync(nextStaticDir)) {
+console.log('\nStep 3: Checking build artifacts in .next/static/chunks if present...');
+const nextChunksDir = path.join(rootDir, '.next', 'static', 'chunks');
+if (fs.existsSync(nextChunksDir)) {
   const files = [];
   function walkDir(dir) {
     for (const item of fs.readdirSync(dir)) {
@@ -141,23 +141,42 @@ if (fs.existsSync(nextStaticDir)) {
       }
     }
   }
-  walkDir(nextStaticDir);
-  console.log(`Found ${files.length} client chunk files in .next/static.`);
+  walkDir(nextChunksDir);
+  console.log(`Found ${files.length} client chunk files in .next/static/chunks.`);
 
-  let foundError = false;
+  const FORBIDDEN_CHUNK_PATTERNS = [
+    'raw_data',
+    'ipExport',
+    'operatorList',
+    'networkList',
+    'locationNetworkList',
+    'supportTopUpType',
+    'activeType',
+    'fupPolicy',
+    'ek_price_usd',
+    'usd_eur_rate',
+  ];
+
+  const violations = [];
   for (const file of files) {
     const content = fs.readFileSync(file, 'utf-8');
-    // Ensure raw_data does not appear as tariff DTO property or leak
-    // Notice: react/webpack minified code might have arbitrary substrings, but check sensitive secrets:
-    if (content.includes('ek_price_usd') || content.includes('usd_eur_rate')) {
-      console.error(`❌ Hard failure: Secret token found in client bundle ${path.relative(rootDir, file)}!`);
-      foundError = true;
+    for (const pattern of FORBIDDEN_CHUNK_PATTERNS) {
+      if (content.includes(pattern)) {
+        violations.push({ file: path.relative(rootDir, file), pattern });
+      }
     }
   }
-  if (foundError) process.exit(1);
-  console.log('✓ No secret supplier pricing found in static bundles.');
+
+  if (violations.length > 0) {
+    console.error(`❌ Hard failure: Forbidden raw data / supplier fields leaked into client chunks (${violations.length} violations):`);
+    for (const v of violations) {
+      console.error(`  - ${v.file}: contains "${v.pattern}"`);
+    }
+    process.exit(1);
+  }
+  console.log('✓ All client chunks are clean! 0 forbidden supplier/raw data leaks detected.');
 } else {
-  console.log('No .next/static directory found (run build first to inspect chunks).');
+  console.log('No .next/static/chunks directory found (run build first to inspect chunks).');
 }
 
 console.log('\n=== Public Payload Check Passed Successfully! ===\n');

@@ -87,11 +87,8 @@
  */
 
 import {
-  getTariffOperators,
-  getTariffBreakoutIp,
   isPremiumTariff,
   isNonHkIpTariff,
-  getReloadabilityInfo,
   bestNetworkType,
   cleanTariffName,
   type TariffOperator,
@@ -163,6 +160,90 @@ function sanitizeNetworkSpeed(rawSpeed: unknown): string | null {
 }
 
 /**
+ * Server-side helper: Extract operators from database row or supplier raw_data.
+ */
+export function extractRawOperators(row: any, max = 8): TariffOperator[] {
+  if (Array.isArray(row.operators) && row.operators.length > 0) {
+    return row.operators.slice(0, max);
+  }
+  const rawData = (row.raw_data ?? row) as Record<string, unknown> | null | undefined;
+  if (!rawData) return [];
+
+  const norm = (arr: any[]): TariffOperator[] =>
+    arr
+      .map((o: any) => ({
+        name: String(o?.operatorName ?? o?.name ?? '').trim(),
+        networkType: o?.networkType ? String(o.networkType) : undefined,
+      }))
+      .filter((o) => o.name);
+
+  let ops: any[] = [];
+  if (Array.isArray(rawData.operatorList) && rawData.operatorList.length) {
+    ops = rawData.operatorList;
+  } else if (Array.isArray(rawData.networkList) && rawData.networkList.length) {
+    ops = rawData.networkList;
+  } else if (Array.isArray(rawData.locationNetworkList)) {
+    ops = (rawData.locationNetworkList as any[]).flatMap((l) =>
+      Array.isArray(l?.operatorList) ? l.operatorList : [],
+    );
+  }
+
+  const seen = new Set<string>();
+  const out: TariffOperator[] = [];
+  for (const o of norm(ops)) {
+    const key = o.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(o);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/**
+ * Server-side helper: Extract breakout IP from database row or supplier raw_data.
+ */
+export function extractServerBreakoutIp(row: any): string | null {
+  if (row.breakout_ip !== undefined && row.breakout_ip !== null) {
+    return String(row.breakout_ip).trim().toUpperCase() || null;
+  }
+  const raw = (row.raw_data ?? {}) as Record<string, unknown>;
+  if (typeof raw.ipExport === 'string' && raw.ipExport.trim()) {
+    return raw.ipExport.trim().toUpperCase();
+  }
+  return null;
+}
+
+/**
+ * Server-side helper: Extract reloadability classification from database row or supplier raw_data.
+ */
+export function extractServerReloadability(row: any): { isReloadable: boolean; type: 'days' | 'data' | 'none' } {
+  if (row.reloadability_type === 'days' || row.reloadability_type === 'data' || row.reloadability_type === 'none') {
+    return {
+      type: row.reloadability_type,
+      isReloadable: row.reloadability_type !== 'none',
+    };
+  }
+
+  const raw = (row.raw_data ?? {}) as Record<string, unknown>;
+  const rawTopUpType = raw.supportTopUpType !== undefined && raw.supportTopUpType !== null
+    ? Number(raw.supportTopUpType)
+    : undefined;
+  const isUnlimited = row.tariff_type?.startsWith('unlimited') || row.data_gb === 0;
+
+  if (rawTopUpType === 3 || (isUnlimited && rawTopUpType !== 1 && row.is_top_up_eligible !== false)) {
+    return { type: 'days', isReloadable: true };
+  }
+  if (rawTopUpType === 2 || (!isUnlimited && rawTopUpType !== 1 && row.is_top_up_eligible !== false)) {
+    return { type: 'data', isReloadable: true };
+  }
+  if (row.is_reloadable === true || row.is_top_up_eligible === true) {
+    return isUnlimited ? { type: 'days', isReloadable: true } : { type: 'data', isReloadable: true };
+  }
+  return { type: 'none', isReloadable: false };
+}
+
+/**
  * Maps a database row or supplier package to a strictly whitelisted PublicTariff.
  *
  * RULES:
@@ -178,12 +259,12 @@ export function toPublicTariff(row: any): PublicTariff {
   }
 
   // Pre-calculate safe derived values from server-side raw_data
-  const ops = getTariffOperators(row.raw_data ?? row.operators, 8);
+  const ops = extractRawOperators(row, 8);
   const bestNet = bestNetworkType(ops);
-  const breakout = getTariffBreakoutIp(row);
-  const isPrem = isPremiumTariff(row);
+  const breakout = extractServerBreakoutIp(row);
+  const isPrem = typeof row.is_premium === 'boolean' ? row.is_premium : isPremiumTariff(row);
   const isNonHk = isNonHkIpTariff(row);
-  const reload = getReloadabilityInfo(row);
+  const reload = extractServerReloadability(row);
   const safeThrottle = sanitizeFupPolicy(row.raw_data?.fupPolicy ?? row.throttle_speed ?? row.fup_policy ?? row.fupPolicy);
   const safeSpeed = sanitizeNetworkSpeed(row.raw_data?.speed ?? row.network_speed ?? row.networkSpeed);
 

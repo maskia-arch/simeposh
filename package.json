@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/check-public-payload.mjs",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
