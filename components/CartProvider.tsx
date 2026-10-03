@@ -89,6 +89,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      const tariffStr = items.map((i) => i.name).filter(Boolean).join(', ');
+      const tot = items.reduce((s, i) => s + (Number(i.priceEur) || 0) * (Number(i.quantity) || 1), 0);
+      const amountStr = tot > 0 ? `${tot.toFixed(2)} €` : '';
+      if (tariffStr) {
+        document.cookie = `esim_checkout_tariff=${encodeURIComponent(tariffStr)};path=/;max-age=86400;SameSite=Lax`;
+      }
+      if (amountStr) {
+        document.cookie = `esim_checkout_amount=${encodeURIComponent(amountStr)};path=/;max-age=86400;SameSite=Lax`;
+      }
     } catch { /* quota / private mode – ignore */ }
   }, [items, hydrated]);
 

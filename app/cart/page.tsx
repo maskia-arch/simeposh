@@ -12,7 +12,6 @@ import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { displayCountryName, coverageLabel, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
-import { useHideChatBubble } from '@/lib/useHideChatBubble';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
   travel:        { icon: <TravelGlobeIcon size={13} className="currentColor text-sky-600" />, label: 'Travel' },
@@ -38,8 +37,6 @@ export default function CartPage() {
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
   const supabase = createClient();
-
-  useHideChatBubble(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

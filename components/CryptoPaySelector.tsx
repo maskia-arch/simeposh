@@ -266,10 +266,18 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
 
     if (typeof window !== 'undefined') {
       try {
+        const tariffVal = cartItems.map((i) => i.name).filter(Boolean).join(', ');
+        const amountVal = `${finalTotal.toFixed(2)} €`;
         localStorage.setItem('esim_checkout_email', effectiveEmail);
         localStorage.setItem('esim_checkout_terms', 'true');
-        localStorage.setItem('esim_checkout_amount', `${finalTotal.toFixed(2)} €`);
-        localStorage.setItem('esim_checkout_tariff', cartItems.map((i) => i.name).join(', '));
+        localStorage.setItem('esim_checkout_amount', amountVal);
+        localStorage.setItem('esim_checkout_tariff', tariffVal);
+        if (tariffVal) {
+          document.cookie = `esim_checkout_tariff=${encodeURIComponent(tariffVal)};path=/;max-age=86400;SameSite=Lax`;
+        }
+        if (amountVal) {
+          document.cookie = `esim_checkout_amount=${encodeURIComponent(amountVal)};path=/;max-age=86400;SameSite=Lax`;
+        }
       } catch {}
     }
 

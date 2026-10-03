@@ -290,12 +290,15 @@ export function openChatWidget(): boolean {
 
     const pnl = document.getElementById('vs25-pnl');
     if (pnl) {
+      if (window.location.pathname.startsWith('/checkout/crypto/')) {
+        pnl.classList.add('vs25-checkout');
+      }
       pnl.classList.add('on');
-    }
-
-    const bbl = document.getElementById('vs25-bbl');
-    if (bbl) {
-      bbl.click();
+      const realBbl = document.querySelector('#vs25 #vs25-bbl') || document.querySelector('button#vs25-bbl');
+      if (realBbl) {
+        realBbl.classList.add('vs25-open');
+        realBbl.setAttribute('aria-label', 'Chat schließen');
+      }
       return true;
     }
 
