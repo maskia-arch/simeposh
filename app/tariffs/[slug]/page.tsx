@@ -75,8 +75,8 @@ export async function generateMetadata({
     : `Buy eSIM ${country} ${dataLabel} (${daysLabelEn})`;
 
   const description = isDe
-    ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${tariff.validity_days} Tage im besten lokalen Mobilfunknetz. Sofort-Aktivierung per QR-Code.`
-    : `Affordable prepaid eSIM for ${country}. Enjoy ${dataLabel} high-speed data for ${tariff.validity_days} days. Instant activation via QR code.`;
+    ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${daysLabelDe}. Sofort-Aktivierung per QR-Code.`
+    : `Affordable prepaid eSIM for ${country}. Enjoy ${dataLabel} high-speed data for ${daysLabelEn.toLowerCase()}. Instant activation via QR code.`;
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
 
@@ -133,16 +133,19 @@ export default async function TariffDetailPage({
       ? 'Unlimited'
       : `${tariff.data_gb} GB`;
 
+  const daysLabelDe = tariff.validity_days === 1 ? '1 Tag' : `${tariff.validity_days} Tage`;
+  const daysLabelEn = tariff.validity_days === 1 ? '1 Day' : `${tariff.validity_days} Days`;
+
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
 
   // Inject Structured Data for Google Rich Snippets
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: `${countryLabel} eSIM - ${dataLabel} (${tariff.validity_days} ${isDe ? 'Tage' : 'Days'})`,
+    name: `${countryLabel} eSIM - ${dataLabel} (${isDe ? daysLabelDe : daysLabelEn})`,
     description: isDe
-      ? `Prepaid eSIM Datenpaket für ${countryLabel} mit ${dataLabel} Daten für ${tariff.validity_days} Tage.`
-      : `Prepaid eSIM data plan for ${countryLabel} featuring ${dataLabel} data for ${tariff.validity_days} days.`,
+      ? `Prepaid eSIM Datenpaket für ${countryLabel} mit ${dataLabel} Daten für ${daysLabelDe}.`
+      : `Prepaid eSIM data plan for ${countryLabel} featuring ${dataLabel} data for ${daysLabelEn.toLowerCase()}.`,
     image: `${baseUrl}/logo.png`,
     brand: {
       '@type': 'Brand',

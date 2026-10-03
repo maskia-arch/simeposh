@@ -348,7 +348,7 @@ const de = {
   "checkout_agree_error": "Bitte akzeptiere die AGB, um fortzufahren.",
   "checkout_email_invalid": "Bitte gib eine vollständige E-Mail-Adresse ein, z. B. name@beispiel.de.",
   "checkout_email_empty": "Bitte gib deine E-Mail-Adresse ein. Dorthin schicken wir deinen QR-Code.",
-  "checkout_cancelled_notice": "Zahlung abgebrochen, Warenkorb bleibt",
+  "checkout_cancelled_notice": "Zahlung abgebrochen, Warenkorb bleibt.",
   "topup_error_invalid_iccid": "Die angegebene ICCID ist ungültig oder konnte nicht gefunden werden.",
   "topup_error_general": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später noch einmal.",
   "nav_blog": "Blog",

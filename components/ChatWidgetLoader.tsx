@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { loadChatScript, openChatWidget } from '@/lib/chatLoader';
+import { loadChatScript, openChatWidget, sendVisitorBeacon, isChatScriptLoaded } from '@/lib/chatLoader';
 
 /**
  * Custom event name used to trigger opening or loading chat widget.
@@ -12,34 +12,53 @@ export const OPEN_CHAT_EVENT = 'puresim:open-chat';
 export function ChatWidgetLoader() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    setScriptLoaded(isChatScriptLoaded());
+
+    // Send single visitor tracking beacon upon page load
+    sendVisitorBeacon();
 
     const handleOpenChat = () => {
-      // Do not load on /checkout/crypto/*
-      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/checkout/crypto/')) {
-        return;
-      }
       loadChatScript(() => {
+        setScriptLoaded(true);
         openChatWidget();
       });
     };
 
+    const handleChatLoaded = () => {
+      setScriptLoaded(true);
+    };
+
     window.addEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+    window.addEventListener('puresim:chat-loaded', handleChatLoaded);
+
     return () => {
       window.removeEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+      window.removeEventListener('puresim:chat-loaded', handleChatLoaded);
     };
   }, []);
 
+  // Send visitor tracking beacon upon route change
+  useEffect(() => {
+    if (mounted) {
+      sendVisitorBeacon();
+    }
+  }, [pathname, mounted]);
+
   const isCheckoutCrypto = pathname?.startsWith('/checkout/crypto/');
 
-  if (!mounted || isCheckoutCrypto) {
+  // Do not render bubble on /checkout/crypto/* before click,
+  // or once the real widget.js has loaded and injected its own UI
+  if (!mounted || isCheckoutCrypto || scriptLoaded) {
     return null;
   }
 
   const handleClickFakeBubble = () => {
     loadChatScript(() => {
+      setScriptLoaded(true);
       openChatWidget();
     });
   };

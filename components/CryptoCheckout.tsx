@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import { useTranslation } from '@/lib/i18n';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
 import { useCart } from '@/components/CartProvider';
+import { OpenChatButton } from '@/components/OpenChatButton';
 
 interface SessionState {
   id: string; coin: string; coinName: string; status: string;
@@ -187,8 +188,38 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
   const { items, total } = useCart();
   const s = (k: keyof typeof STR) => (STR[k][locale] ?? STR[k].en);
 
-  const [cachedTariff, setCachedTariff] = useState('');
-  const [cachedAmount, setCachedAmount] = useState('');
+  const [cachedTariff, setCachedTariff] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const t = localStorage.getItem('esim_checkout_tariff');
+      if (t) return t;
+      const rawCart = localStorage.getItem('esim_cart_v1');
+      if (rawCart) {
+        const parsed = JSON.parse(rawCart);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((i: any) => i.name).filter(Boolean).join(', ');
+        }
+      }
+    } catch {}
+    return '';
+  });
+
+  const [cachedAmount, setCachedAmount] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const a = localStorage.getItem('esim_checkout_amount');
+      if (a) return a;
+      const rawCart = localStorage.getItem('esim_cart_v1');
+      if (rawCart) {
+        const parsed = JSON.parse(rawCart);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const tot = parsed.reduce((sum: number, i: any) => sum + (Number(i.priceEur) || 0) * (Number(i.quantity) || 1), 0);
+          if (tot > 0) return `${tot.toFixed(2)} €`;
+        }
+      }
+    } catch {}
+    return '';
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -201,8 +232,11 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
     }
   }, []);
 
-  const displayTariff = items.length > 0 ? items.map((i) => i.name).join(', ') : cachedTariff;
-  const displayAmount = cachedAmount || (total > 0 ? `${total.toFixed(2)} €` : '');
+  const displayTariff = (items.length > 0 ? items.map((i) => i.name).join(', ') : '') || cachedTariff;
+  const rawDisplayAmount = cachedAmount || (total > 0 ? `${total.toFixed(2)} €` : '');
+  const displayAmount = rawDisplayAmount
+    ? (locale === 'de' ? rawDisplayAmount.replace('.', ',') : rawDisplayAmount.replace(',', '.'))
+    : '';
 
   const [sess, setSess]   = useState<SessionState | null>(null);
   const [qr, setQr]       = useState<string | null>(null);
@@ -239,20 +273,16 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
     setCancelling(true);
     try {
       if (pollRef.current) clearInterval(pollRef.current);
-      const res = await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
-      if (res.status === 200 || res.ok) {
-        if (typeof window !== 'undefined') {
-          try {
-            sessionStorage.setItem('esim_checkout_cancelled', '1');
-          } catch {}
-        }
-        window.location.href = '/cart?cancelled=1';
-        return;
-      }
+      await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
     } catch {
       /* ignore network errors during cancel */
     } finally {
-      window.location.href = '/cart';
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('esim_checkout_cancelled', '1');
+        } catch {}
+      }
+      window.location.href = '/cart?cancelled=1';
     }
   };
 
@@ -353,7 +383,7 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
                 {locale === 'de' ? 'Tarif' : 'Plan'}
               </span>
               <span className="text-xs font-bold text-slate-800 text-right truncate max-w-[200px]" data-testid="skeleton-tariff-name">
-                {displayTariff || (locale === 'de' ? 'eSIM Tarif' : 'eSIM Plan')}
+                {displayTariff}
               </span>
             </div>
             <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
@@ -361,7 +391,7 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
                 {locale === 'de' ? 'Betrag' : 'Amount'}
               </span>
               <span className="text-sm font-extrabold text-slate-900 tabular-nums" data-testid="skeleton-amount">
-                {displayAmount || '—'}
+                {displayAmount}
               </span>
             </div>
           </div>
@@ -386,6 +416,10 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
             <div className="space-y-2 pt-2">
               <div className="h-12 w-full rounded-xl bg-slate-100" />
               <div className="h-10 w-full rounded-xl bg-slate-100" />
+            </div>
+
+            <div className="pt-2 flex justify-center">
+              <OpenChatButton />
             </div>
           </div>
         </div>
@@ -667,6 +701,11 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
           >
             <span>🎫</span> Zahlungsproblem? Support-Ticket öffnen
           </button>
+
+          {/* Support Chat Link */}
+          <div className="pt-2 flex justify-center">
+            <OpenChatButton />
+          </div>
         </div>
 
         {/* Verification Messages */}
