@@ -392,7 +392,35 @@ export async function POST(request: Request) {
         console.error('[checkout] failed to send checkout email:', mailErr);
       });
 
-      return NextResponse.json({ sessionId: session.id, ref });
+      const response = NextResponse.json({ sessionId: session.id, ref });
+      try {
+        const tariffNames = orderRows.map((r: any) => {
+          const t = tMap.get(r.tariff_id);
+          return t?.name;
+        }).filter(Boolean);
+        const uniqueTariffs = Array.from(new Set(tariffNames)).join(', ');
+        const finalEur = session.amountEur || totalBaseEur;
+        const amountStr = `${finalEur.toFixed(2)} €`;
+
+        if (uniqueTariffs) {
+          response.cookies.set('esim_checkout_tariff', encodeURIComponent(uniqueTariffs), {
+            path: '/',
+            maxAge: 86400,
+            sameSite: 'lax',
+          });
+        }
+        if (amountStr) {
+          response.cookies.set('esim_checkout_amount', encodeURIComponent(amountStr), {
+            path: '/',
+            maxAge: 86400,
+            sameSite: 'lax',
+          });
+        }
+      } catch (cookieErr) {
+        console.error('[checkout] error setting response cookies:', cookieErr);
+      }
+
+      return response;
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
