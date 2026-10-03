@@ -430,3 +430,41 @@ export function getTariffSpecialFeatures(
   return features;
 }
 
+/**
+ * Returns the activation sentence key under "Activation & Setup"
+ * strictly driven by activates_on_arrival boolean.
+ *
+ * If activates_on_arrival === true:
+ *   EN: "Validity starts counting upon your first connection to the local network."
+ *   DE: "Die Laufzeit beginnt mit der ersten Verbindung zum lokalen Netz."
+ * If activates_on_arrival is false, null, or undefined:
+ *   EN: "Validity starts when the eSIM is installed/activated."
+ *   DE: "Die Laufzeit beginnt mit dem Installieren oder Aktivieren der eSIM."
+ */
+export function getTariffActivationNoticeKey(tariff: {
+  activates_on_arrival?: boolean | null;
+}): 'det_act_4_arrival' | 'det_act_4_installed' {
+  return tariff.activates_on_arrival === true
+    ? 'det_act_4_arrival'
+    : 'det_act_4_installed';
+}
+
+/**
+ * Returns the speed description for an unlimited tariff.
+ * For unlimited_eco: uses tariff.throttle_speed if present, or generic note without 512 kbps fallback.
+ * For unlimited_pro: uses pro description.
+ */
+export function getTariffSpeedDesc(
+  tariff: { tariff_type?: string | null; throttle_speed?: string | null },
+  t: (key: any, vars?: Record<string, string | number>) => string,
+): string {
+  if (tariff.tariff_type === 'unlimited_eco') {
+    const speed = tariff.throttle_speed?.trim();
+    if (speed) {
+      return t('tp_eco_desc', { speed });
+    }
+    return t('tp_eco_desc_generic');
+  }
+  return t('tp_pro_desc');
+}
+

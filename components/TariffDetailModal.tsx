@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
@@ -278,7 +278,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
           {/* ── Unlimited Speed Info Note ── */}
           {typeInfo && tariff.tariff_type !== 'travel' && (
             <div className={`rounded-2xl border px-4 py-3 text-xs ${typeInfo.color}`}>
-              <p className="font-bold flex items-center gap-1.5">{typeInfo.icon} {t(typeInfo.descKey)}</p>
+              <p className="font-bold flex items-center gap-1.5">{typeInfo.icon} {getTariffSpeedDesc(tariff, t)}</p>
               <p className="mt-1 text-[11px] opacity-85 leading-relaxed">{t('det_renew_note')}</p>
             </div>
           )}
@@ -328,7 +328,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <li>{t('det_act_1')}</li>
               <li dangerouslySetInnerHTML={{ __html: t('det_act_2') }} />
               <li dangerouslySetInnerHTML={{ __html: t('det_act_3') }} />
-              <li>{t('det_act_4')}</li>
+              <li>{t(getTariffActivationNoticeKey(tariff))}</li>
               <li>{t('det_act_5')}</li>
             </ol>
           </div>

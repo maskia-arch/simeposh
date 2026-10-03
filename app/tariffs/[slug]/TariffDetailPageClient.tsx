@@ -10,7 +10,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
@@ -264,7 +264,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 <li className="leading-relaxed"><strong className="text-slate-800">{t('det_act_1')}</strong></li>
                 <li className="leading-relaxed" dangerouslySetInnerHTML={{ __html: t('det_act_2') }} />
                 <li className="leading-relaxed" dangerouslySetInnerHTML={{ __html: t('det_act_3') }} />
-                <li className="leading-relaxed"><strong className="text-slate-800">{t('det_act_4')}</strong></li>
+                <li className="leading-relaxed"><strong className="text-slate-800">{t(getTariffActivationNoticeKey(tariff))}</strong></li>
                 <li className="leading-relaxed">{t('det_act_5')}</li>
               </ol>
             </div>
@@ -307,7 +307,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             {typeInfo && tariff.tariff_type !== 'travel' && (
               <div className={`rounded-2xl border px-4 py-3 text-xs ${typeInfo.color} space-y-1 shadow-sm`}>
                 <p className="font-bold flex items-center gap-1">
-                  {typeInfo.icon} {t(typeInfo.descKey)}
+                  {typeInfo.icon} {getTariffSpeedDesc(tariff, t)}
                 </p>
                 <p className="opacity-80">{t('det_renew_note')}</p>
               </div>

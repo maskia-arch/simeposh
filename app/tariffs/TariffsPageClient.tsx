@@ -304,7 +304,7 @@ export function TariffsPageClient({
               <span className={`block text-[11px] truncate ${
                 activeCategory === 'unlimited_eco' ? 'text-emerald-100' : 'text-slate-400'
               }`}>
-                512 kbps Drosselung
+                Drosselung
               </span>
             </div>
           </div>
