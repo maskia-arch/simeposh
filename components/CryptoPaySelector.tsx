@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { validateEmail } from '@/lib/validation/email';
 import { OpenChatButton } from '@/components/OpenChatButton';
+import { useCart } from '@/components/CartProvider';
 
 interface CoinOption {
   code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number; minOrderEur?: number;
@@ -70,14 +71,34 @@ function ShieldCheckIcon({ className = 'h-4 w-4' }: { className?: string }) {
 
 export function CryptoPaySelector({ email, items, total, balance, user, emailError, setEmailError }: CryptoPaySelectorProps) {
   const { locale, t } = useTranslation();
+  const { items: cartItems } = useCart();
   const [coins, setCoins]                 = useState<CoinOption[]>([]);
   const [loading, setLoading]             = useState<string | null>(null);
   const [error, setError]                 = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('esim_checkout_terms') === 'true';
+      } catch {}
+    }
+    return false;
+  });
   const [termsError, setTermsError]       = useState('');
   const [acceptedNewsletter, setAcceptedNewsletter] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [activeTab, setActiveTab]        = useState<'crypto' | 'cash'>('crypto');
+  const submittingRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedTerms = localStorage.getItem('esim_checkout_terms');
+        if (savedTerms === 'true') {
+          setAcceptedTerms(true);
+        }
+      } catch {}
+    }
+  }, []);
 
   useEffect(() => {
     fetch('/api/crypto/coins')
@@ -161,6 +182,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
   }
 
   async function handleEsimCashPay() {
+    if (submittingRef.current || loading !== null) return;
     setError('');
     if (!validateCheckoutForm()) return;
 
@@ -174,7 +196,18 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
     }
     if (!hasEnoughBalance) return;
 
+    submittingRef.current = true;
     setLoading('ESIM_CASH');
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('esim_checkout_email', effectiveEmail);
+        localStorage.setItem('esim_checkout_terms', 'true');
+        localStorage.setItem('esim_checkout_amount', `${finalTotal.toFixed(2)} €`);
+        localStorage.setItem('esim_checkout_tariff', cartItems.map((i) => i.name).join(', '));
+      } catch {}
+    }
+
     try {
       const res = await fetch('/api/crypto/checkout', {
          method: 'POST',
@@ -191,38 +224,55 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
       });
       const data = await res.json();
       if (!res.ok) {
+        submittingRef.current = false;
+        setLoading(null);
         if (res.status === 422) {
           if (data.field === 'email') {
             setEmailError?.(t('checkout_email_invalid'));
             document.getElementById('checkout-email')?.focus();
             document.getElementById('checkout-email')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setLoading(null);
             return;
           }
           if (data.field === 'terms') {
             setTermsError(t('checkout_agree_error'));
             document.getElementById('accept-terms-checkout')?.focus();
             document.getElementById('accept-terms-checkout')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setLoading(null);
             return;
           }
         }
         throw new Error(data.error ?? t('pay_error'));
       }
-      if (!data.ref) throw new Error(data.error ?? t('pay_error'));
+      if (!data.ref) {
+        submittingRef.current = false;
+        setLoading(null);
+        throw new Error(data.error ?? t('pay_error'));
+      }
       window.location.href = `/order?ref=${data.ref}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('pay_error'));
+      submittingRef.current = false;
       setLoading(null);
+      setError(err instanceof Error ? err.message : t('pay_error'));
     }
   }
 
   async function start(coin: string) {
+    if (submittingRef.current || loading !== null) return;
     setError('');
     if (!validateCheckoutForm()) return;
 
     const effectiveEmail = (user?.email || email || '').trim().toLowerCase();
+    submittingRef.current = true;
     setLoading(coin);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('esim_checkout_email', effectiveEmail);
+        localStorage.setItem('esim_checkout_terms', 'true');
+        localStorage.setItem('esim_checkout_amount', `${finalTotal.toFixed(2)} €`);
+        localStorage.setItem('esim_checkout_tariff', cartItems.map((i) => i.name).join(', '));
+      } catch {}
+    }
+
     try {
       const res = await fetch('/api/crypto/checkout', {
         method: 'POST',
@@ -239,29 +289,34 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
       });
       const data = await res.json();
       if (!res.ok) {
+        submittingRef.current = false;
+        setLoading(null);
         if (res.status === 422) {
           if (data.field === 'email') {
             setEmailError?.(t('checkout_email_invalid'));
             document.getElementById('checkout-email')?.focus();
             document.getElementById('checkout-email')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setLoading(null);
             return;
           }
           if (data.field === 'terms') {
             setTermsError(t('checkout_agree_error'));
             document.getElementById('accept-terms-checkout')?.focus();
             document.getElementById('accept-terms-checkout')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setLoading(null);
             return;
           }
         }
         throw new Error(data.error ?? t('pay_error'));
       }
-      if (!data.sessionId) throw new Error(data.error ?? t('pay_error'));
+      if (!data.sessionId) {
+        submittingRef.current = false;
+        setLoading(null);
+        throw new Error(data.error ?? t('pay_error'));
+      }
       window.location.href = `/checkout/crypto/${data.sessionId}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('pay_error'));
+      submittingRef.current = false;
       setLoading(null);
+      setError(err instanceof Error ? err.message : t('pay_error'));
     }
   }
 
@@ -480,8 +535,14 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
               aria-describedby={termsError ? 'checkout-terms-error' : undefined}
               checked={acceptedTerms}
               onChange={(e) => {
-                setAcceptedTerms(e.target.checked);
-                if (e.target.checked) setTermsError('');
+                const checked = e.target.checked;
+                setAcceptedTerms(checked);
+                if (checked) setTermsError('');
+                if (typeof window !== 'undefined') {
+                  try {
+                    localStorage.setItem('esim_checkout_terms', checked ? 'true' : 'false');
+                  } catch {}
+                }
               }}
               className="mt-0.5 h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer accent-brand-600 shrink-0"
             />
@@ -530,9 +591,10 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         <button
           type="button"
           data-testid="pay-now"
-          disabled={loading !== null}
-          aria-busy={loading !== null ? 'true' : undefined}
+          disabled={loading !== null || submittingRef.current}
+          aria-busy={loading !== null || submittingRef.current ? 'true' : undefined}
           onClick={() => {
+            if (submittingRef.current || loading !== null) return;
             if (selectedMethod === 'ESIM_CASH') {
               handleEsimCashPay();
             } else if (selectedMethod) {
@@ -541,7 +603,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
               setError(t('pay_select_method'));
             }
           }}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] py-3 text-center text-xs font-extrabold text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+          className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] py-3 text-center text-xs font-extrabold text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
         >
           {loading ? (
             <span className="flex items-center gap-1.5">

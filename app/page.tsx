@@ -240,6 +240,12 @@ export default async function HomePage() {
     name: 'PureSim',
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
+    sameAs: ['https://t.me/autoacts'],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      url: 'https://t.me/autoacts',
+      contactType: 'customer support',
+    },
   };
 
   return (

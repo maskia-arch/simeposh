@@ -312,8 +312,8 @@ export async function createCryptoSession(opts: {
     throw new Error(`Failed to update session address: ${updateErr.message}`);
   }
 
-  // Queue the address to be synchronized by the wallet gateway
-  await queueAddressSync(walletRes.address);
+  // Queue the address to be synchronized by the wallet gateway asynchronously
+  queueAddressSync(walletRes.address).catch(() => {});
 
   // Proactively notify pure-wallet gateway if it's currently online
   try {

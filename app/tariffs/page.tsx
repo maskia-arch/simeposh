@@ -3,7 +3,7 @@ import { createClient }      from '@/lib/supabase/server';
 import { TariffsPageClient } from './TariffsPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 
-export const metadata: Metadata = { title: 'Plans | PureSim' };
+export const metadata: Metadata = { title: 'Plans' };
 
 // Revalidate every 10 minutes so freshly-synced tariffs appear quickly
 export const revalidate = 600;

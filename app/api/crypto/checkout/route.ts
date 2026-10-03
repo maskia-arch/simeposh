@@ -363,36 +363,34 @@ export async function POST(request: Request) {
         orderIds, email: normalizedEmail, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale,
       });
 
-      // Save newsletter consent & locale if checked
-      try {
-        const updateObj: Record<string, unknown> = { locale: customerLocale };
-        if (body.newsletterConsent) updateObj.newsletter_consent = true;
-        await service
-          .from('users')
-          .update(updateObj as any)
-          .eq('email', normalizedEmail);
-      } catch (dbErr) {
-        console.error('[checkout] user update failed:', dbErr);
-      }
-
-      // Send checkout email notification
-      try {
-        const checkoutLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net'}/checkout/crypto/${session.id}`;
-        const invoiceId = `INV-${session.id.split('-')[0].toUpperCase()}`;
-        await sendCheckoutNotificationEmail({
-          to: normalizedEmail,
-          invoiceId,
-          coin: session.coin.toUpperCase(),
-          cryptoAmount: session.cryptoAmount,
-          amountEur: session.amountEur,
-          expiresAt: session.expiresAt,
-          checkoutLink,
-          locale: customerLocale,
-          durationMins: session.checkoutDurationMins || 30,
+      // Save newsletter consent & locale asynchronously (non-blocking)
+      const updateObj: Record<string, unknown> = { locale: customerLocale };
+      if (body.newsletterConsent) updateObj.newsletter_consent = true;
+      service
+        .from('users')
+        .update(updateObj as any)
+        .eq('email', normalizedEmail)
+        .then(() => {})
+        .catch((dbErr: any) => {
+          console.error('[checkout] user update failed:', dbErr);
         });
-      } catch (mailErr) {
+
+      // Send checkout email notification asynchronously (non-blocking)
+      const checkoutLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net'}/checkout/crypto/${session.id}`;
+      const invoiceId = `INV-${session.id.split('-')[0].toUpperCase()}`;
+      sendCheckoutNotificationEmail({
+        to: normalizedEmail,
+        invoiceId,
+        coin: session.coin.toUpperCase(),
+        cryptoAmount: session.cryptoAmount,
+        amountEur: session.amountEur,
+        expiresAt: session.expiresAt,
+        checkoutLink,
+        locale: customerLocale,
+        durationMins: session.checkoutDurationMins || 30,
+      }).catch((mailErr: any) => {
         console.error('[checkout] failed to send checkout email:', mailErr);
-      }
+      });
 
       return NextResponse.json({ sessionId: session.id, ref });
     }

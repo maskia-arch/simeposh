@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
-import { openChatWidget } from '@/lib/useHideChatBubble';
+import { loadChatScript, openChatWidget } from '@/lib/chatLoader';
 
 interface OpenChatButtonProps {
   className?: string;
@@ -10,48 +9,16 @@ interface OpenChatButtonProps {
 
 export function OpenChatButton({ className = '' }: OpenChatButtonProps) {
   const { locale } = useTranslation();
-  const [widgetAvailable, setWidgetAvailable] = useState(false);
-
-  useEffect(() => {
-    // Check if chat widget elements or API are present in the DOM
-    const checkWidget = () => {
-      const win = window as any;
-      const exists = Boolean(
-        document.getElementById('vs25-bbl') ||
-        document.getElementById('vs25-pnl') ||
-        (win.vs25 && typeof win.vs25.open === 'function')
-      );
-      if (exists) {
-        setWidgetAvailable(true);
-        return true;
-      }
-      return false;
-    };
-
-    if (checkWidget()) return;
-
-    // Retry checking periodically in case script loads asynchronously
-    const interval = setInterval(() => {
-      if (checkWidget()) clearInterval(interval);
-    }, 800);
-
-    const timer = setTimeout(() => clearInterval(interval), 8000);
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
-    };
-  }, []);
 
   const handleClick = () => {
-    const opened = openChatWidget();
-    if (!opened) {
-      // Fallback if widget is blocked (e.g. adblocker)
-      window.location.href = 'mailto:support@puresim.net?subject=Support%20Anfrage%20pureSIM';
-    }
+    loadChatScript(() => {
+      const opened = openChatWidget();
+      if (!opened) {
+        // Fallback if widget is blocked (e.g. adblocker)
+        window.location.href = 'mailto:support@puresim.net?subject=Support%20Anfrage%20pureSIM';
+      }
+    });
   };
-
-  // If widget is not available / detected, do not render to avoid dead UI
-  if (!widgetAvailable) return null;
 
   return (
     <button

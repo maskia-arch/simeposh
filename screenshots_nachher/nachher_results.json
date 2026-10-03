@@ -1,0 +1,127 @@
+{
+  "teil20": {
+    "isDrawerOpen": false,
+    "bubbleVisibilityMobile": {
+      "exists": false,
+      "visible": false
+    },
+    "hitTestResults": {
+      "buttonInfo": {
+        "width": 308,
+        "height": 44,
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "color": "rgb(30, 41, 59)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderWidth": "2px",
+        "borderStyle": "solid"
+      },
+      "hits": [
+        {
+          "point": "center",
+          "targetId": "",
+          "targetTag": "BUTTON",
+          "hitsCancel": true,
+          "hitsChatBubble": false
+        },
+        {
+          "point": "topLeft",
+          "targetId": "",
+          "targetTag": "BUTTON",
+          "hitsCancel": true,
+          "hitsChatBubble": false
+        },
+        {
+          "point": "topRight",
+          "targetId": "",
+          "targetTag": "BUTTON",
+          "hitsCancel": true,
+          "hitsChatBubble": false
+        },
+        {
+          "point": "bottomLeft",
+          "targetId": "",
+          "targetTag": "BUTTON",
+          "hitsCancel": true,
+          "hitsChatBubble": false
+        },
+        {
+          "point": "bottomRight",
+          "targetId": "",
+          "targetTag": "BUTTON",
+          "hitsCancel": true,
+          "hitsChatBubble": false
+        }
+      ]
+    },
+    "chatRequestsCheckout": 0,
+    "iPaidBtnInfo": {
+      "width": 308,
+      "height": 44,
+      "fontSize": "14px",
+      "fontWeight": "700",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgb(52, 93, 157)"
+    },
+    "deleteSessionCalled": true,
+    "navigatedBackToCart": true,
+    "cartPreserved": true
+  },
+  "teil3": {
+    "orgJsonLd": {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "PureSim",
+      "url": "https://puresim.net",
+      "logo": "https://puresim.net/logo.png",
+      "sameAs": [
+        "https://t.me/autoacts"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "url": "https://t.me/autoacts",
+        "contactType": "customer support"
+      }
+    },
+    "footerTelegramInfo": {
+      "text": "Kontakt über Telegram",
+      "href": "https://t.me/autoacts",
+      "target": "_blank",
+      "rel": "noopener noreferrer",
+      "color": "rgb(51, 65, 85)",
+      "hasSvg": true
+    },
+    "mobileTelegramInfo": {
+      "text": "Kontakt über Telegram",
+      "href": "https://t.me/autoacts",
+      "target": "_blank",
+      "rel": "noopener noreferrer",
+      "width": 358,
+      "height": 44,
+      "hasSvg": true
+    },
+    "blogLinkInfo": {
+      "text": "View plans →",
+      "href": "https://puresim.net/tariffs"
+    }
+  },
+  "teil16": {
+    "chatRequestsHomeBeforeClick": 0,
+    "homeHasPreload": false,
+    "chatRequestsTariffsBeforeClick": 0,
+    "requestsBeforeClickOnBubble": 0,
+    "requestsAfterClickOnBubble": 7,
+    "loadedWidgetJsOnFirstClick": true
+  },
+  "teil5a": {
+    "tariffsTitle": "Plans | PureSim",
+    "tariff1DayTitleDe": "Buy eSIM Ukraine Unlimited (1 Day) | PureSim",
+    "tariff1DayTitleEn": "Buy eSIM Ukraine Unlimited (1 Day) | PureSim",
+    "tariff30DayTitleEn": "Buy eSIM Malaysia 10 GB (30 Days) | PureSim",
+    "cartEnTitle": "Cart | PureSim",
+    "homeTitle": "PureSim – Günstige eSIMs weltweit",
+    "topupTitle": "PureSim – Günstige eSIMs weltweit",
+    "reviewsTitle": "PureSim – Günstige eSIMs weltweit",
+    "loginTitle": "PureSim – Günstige eSIMs weltweit"
+  }
+}

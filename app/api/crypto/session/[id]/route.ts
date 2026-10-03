@@ -749,12 +749,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const db = createServiceClient();
 
-  // 1. Sync local session state with the gateway first
-  await syncSessionWithGateway(id, db);
-
-  // Trigger background sweep of active sessions asynchronously
-  syncAllActiveCryptoSessions(db).catch(() => {});
-
+  // 1. Fetch current session status from database first
   const { data: s, error } = await db
     .from('crypto_sessions')
     .select('*, crypto_coins(name, uri_scheme, decimals)')
@@ -762,6 +757,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .single();
 
   if (error || !s) return NextResponse.json({ error: 'not found' }, { status: 404 });
+
+  const now = Date.now();
+  const createdMs = s.created_at ? new Date(s.created_at).getTime() : now;
+  const ageMs = now - createdMs;
+
+  // For freshly created pending sessions (< 15 seconds old), no transaction can possibly have confirmed yet.
+  // Returning the freshly inserted DB session directly avoids blocking the user on slow external explorers/RPCS,
+  // making the initial GET response virtually instant (<100ms)!
+  // For older sessions or verification polling, perform gateway / blockchain sync.
+  if (s.status !== 'pending' || ageMs >= 15000) {
+    await syncSessionWithGateway(id, db);
+  }
+
+  // Trigger background sweep of active sessions asynchronously (fire-and-forget)
+  syncAllActiveCryptoSessions(db).catch(() => {});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
@@ -779,7 +789,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     ref = ord?.checkout_ref ?? null;
   }
 
-  const now = Date.now();
   const expiresMs = new Date(s.expires_at).getTime();
   let status = s.status;
 

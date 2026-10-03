@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
-import Script from 'next/script';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -9,6 +8,7 @@ import { CartProvider } from '@/components/CartProvider';
 import { CartDrawer } from '@/components/CartDrawer';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
 import { TicketProvider } from '@/components/TicketContext';
+import { ChatWidgetLoader } from '@/components/ChatWidgetLoader';
 import { detectLocale, countryFromHeaders, isSupportedLocale } from '@/lib/i18n/detect';
 import type { LocaleCode } from '@/lib/i18n';
 
@@ -93,15 +93,11 @@ export default async function RootLayout({
                 <main className="flex-1 min-h-[calc(100svh-5.25rem)]">{children}</main>
                 <Footer />
                 <CartDrawer />
+                <ChatWidgetLoader />
               </TicketProvider>
             </CartProvider>
           </CurrencyProvider>
         </LanguageProvider>
-
-        <Script
-          src="https://puresimaisupport.autoacts.link/widget.js"
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );

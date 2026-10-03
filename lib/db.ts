@@ -51,14 +51,12 @@ async function runMigrations() {
     .filter(f => f.endsWith('.sql'))
     .sort();
 
+  const { rows: completedRows } = await p.query('SELECT version FROM public.schema_migrations');
+  const completedVersions = new Set(completedRows.map((r: any) => r.version));
+
   for (const file of files) {
     try {
-      const { rows } = await p.query(
-        'SELECT 1 FROM public.schema_migrations WHERE version = $1',
-        [file]
-      );
-
-      if (rows.length === 0) {
+      if (!completedVersions.has(file)) {
         console.log(`[Migrations] Running migration: ${file}...`);
         const filePath = path.join(migrationsDir, file);
         const sql = fs.readFileSync(filePath, 'utf8');

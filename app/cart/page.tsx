@@ -23,15 +23,66 @@ const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
 export default function CartPage() {
   const { locale, t } = useTranslation();
   const { items, total, count, setQuantity, removeItem, clear } = useCart();
-  const [email,      setEmail]      = useState('');
+  const [email, setEmail] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('esim_checkout_email') || '';
+      } catch {}
+    }
+    return '';
+  });
   const [emailError, setEmailError] = useState('');
   const [user,       setUser]       = useState<any>(null);
   const [balance,    setBalance]    = useState<number>(0);
   const [totalSpend, setTotalSpend] = useState<number>(0);
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
   const supabase = createClient();
 
   useHideChatBubble(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const isCancelledUrl = params.get('cancelled') === '1' || params.get('cancelled') === 'true';
+      let isCancelledStorage = false;
+      try {
+        isCancelledStorage = sessionStorage.getItem('esim_checkout_cancelled') === '1';
+        if (isCancelledStorage) {
+          sessionStorage.removeItem('esim_checkout_cancelled');
+        }
+      } catch {}
+      if (isCancelledUrl || isCancelledStorage) {
+        setPaymentCancelled(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedEmail = localStorage.getItem('esim_checkout_email');
+        if (savedEmail && !user) {
+          setEmail(savedEmail);
+        }
+      } catch {}
+    }
+  }, [user]);
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('esim_checkout_email', val);
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = locale === 'de' ? 'Warenkorb | PureSim' : 'Cart | PureSim';
+    }
+  }, [locale]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -73,7 +124,8 @@ export default function CartPage() {
           setBalance(0);
           setTotalSpend(0);
           setExtraCashbackQueue(0);
-          setEmail('');
+          const saved = typeof window !== 'undefined' ? localStorage.getItem('esim_checkout_email') || '' : '';
+          setEmail(saved);
         }
       }
     );
@@ -101,6 +153,17 @@ export default function CartPage() {
         <CartIcon size={28} className="text-slate-900" />
         <span>{t('cart_title')}</span>
       </h1>
+
+      {paymentCancelled && (
+        <div
+          data-testid="checkout-cancelled-notice"
+          role="status"
+          className="mb-6 flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs font-semibold text-amber-900 shadow-xs"
+        >
+          <span className="shrink-0 text-sm">ℹ️</span>
+          <span>{t('checkout_cancelled_notice')}</span>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Items */}
@@ -215,7 +278,7 @@ export default function CartPage() {
 
             <CheckoutEmailField
               email={email}
-              onChange={setEmail}
+              onChange={handleEmailChange}
               error={emailError}
               onErrorChange={setEmailError}
               user={user}

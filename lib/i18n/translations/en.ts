@@ -437,6 +437,7 @@ const en = {
   "checkout_agree_error": "Please accept the Terms and Conditions to continue.",
   "checkout_email_invalid": "Please enter a complete email address, e.g. name@example.com.",
   "checkout_email_empty": "Please enter your email address. We'll send your QR code there.",
+  "checkout_cancelled_notice": "Payment cancelled, your cart stays.",
   "topup_error_invalid_iccid": "The specified ICCID is invalid or could not be found.",
   "topup_error_general": "An unexpected error occurred. Please try again later.",
   "nav_blog": "Blog",

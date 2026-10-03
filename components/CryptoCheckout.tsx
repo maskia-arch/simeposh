@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { useTranslation } from '@/lib/i18n';
+import { useHideChatBubble } from '@/lib/useHideChatBubble';
+import { useCart } from '@/components/CartProvider';
 
 interface SessionState {
   id: string; coin: string; coinName: string; status: string;
@@ -180,8 +182,27 @@ function Copyable({ value, label, s, theme }: { value: string; label: string; s:
 }
 
 export function CryptoCheckout({ sessionId }: { sessionId: string }) {
+  useHideChatBubble(true);
   const { locale } = useTranslation();
+  const { items, total } = useCart();
   const s = (k: keyof typeof STR) => (STR[k][locale] ?? STR[k].en);
+
+  const [cachedTariff, setCachedTariff] = useState('');
+  const [cachedAmount, setCachedAmount] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const t = localStorage.getItem('esim_checkout_tariff');
+        const a = localStorage.getItem('esim_checkout_amount');
+        if (t) setCachedTariff(t);
+        if (a) setCachedAmount(a);
+      } catch {}
+    }
+  }, []);
+
+  const displayTariff = items.length > 0 ? items.map((i) => i.name).join(', ') : cachedTariff;
+  const displayAmount = cachedAmount || (total > 0 ? `${total.toFixed(2)} €` : '');
 
   const [sess, setSess]   = useState<SessionState | null>(null);
   const [qr, setQr]       = useState<string | null>(null);
@@ -218,7 +239,16 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
     setCancelling(true);
     try {
       if (pollRef.current) clearInterval(pollRef.current);
-      await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
+      if (res.status === 200 || res.ok) {
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('esim_checkout_cancelled', '1');
+          } catch {}
+        }
+        window.location.href = '/cart?cancelled=1';
+        return;
+      }
     } catch {
       /* ignore network errors during cancel */
     } finally {
@@ -301,7 +331,66 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
   }, [sess?.paymentUri]);
 
   if (!sess) {
-    return <div className="mx-auto max-w-md px-4 py-20 text-center text-slate-400">…</div>;
+    return (
+      <div className="mx-auto max-w-md px-4 py-10" data-testid="checkout-skeleton">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 animate-pulse">
+          {/* Header with PureSim brand */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="PureSim Logo" className="h-7 w-7 object-contain" />
+              <span className="text-xl font-bold tracking-tight">
+                <span className="text-[#1d4ed8]">Pur</span>
+                <span className="text-[#0ea5e9]">eSim</span>
+              </span>
+            </div>
+            <div className="h-6 w-20 rounded-full bg-slate-100" />
+          </div>
+
+          {/* Cart Tariff & Amount Box */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500">
+                {locale === 'de' ? 'Tarif' : 'Plan'}
+              </span>
+              <span className="text-xs font-bold text-slate-800 text-right truncate max-w-[200px]" data-testid="skeleton-tariff-name">
+                {displayTariff || (locale === 'de' ? 'eSIM Tarif' : 'eSIM Plan')}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
+              <span className="text-xs font-semibold text-slate-500">
+                {locale === 'de' ? 'Betrag' : 'Amount'}
+              </span>
+              <span className="text-sm font-extrabold text-slate-900 tabular-nums" data-testid="skeleton-amount">
+                {displayAmount || '—'}
+              </span>
+            </div>
+          </div>
+
+          {/* Skeleton placeholders */}
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center space-y-3 py-4">
+              <div className="flex h-[200px] w-[200px] items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                <svg className="h-8 w-8 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+              <div className="h-4 w-32 rounded-md bg-slate-100" />
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="h-11 w-full rounded-xl bg-slate-100" />
+              <div className="h-11 w-full rounded-xl bg-slate-100" />
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <div className="h-12 w-full rounded-xl bg-slate-100" />
+              <div className="h-10 w-full rounded-xl bg-slate-100" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
 
@@ -553,7 +642,7 @@ export function CryptoCheckout({ sessionId }: { sessionId: string }) {
           <button
             onClick={handleCancel}
             disabled={cancelling}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 transition-colors"
+            className="w-full min-h-[44px] rounded-xl border-2 border-slate-300 bg-white py-2.5 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 disabled:opacity-50 transition-colors flex items-center justify-center cursor-pointer shadow-xs"
           >
             {cancelling ? '...' : s('cancel_btn')}
           </button>

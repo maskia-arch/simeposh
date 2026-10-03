@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import { CountryFlag } from '@/components/CountryFlag';
 import { formatGb } from '@/lib/utils';
@@ -28,16 +29,30 @@ function CustomCartIcon({ className = 'h-5 w-5' }: { className?: string }) {
 }
 
 export function CartDrawer() {
+  const pathname = usePathname();
   const { locale, t } = useTranslation();
   const { items, isOpen, close, total, count, setQuantity, removeItem, clear } = useCart();
   
+  useEffect(() => {
+    if (pathname?.startsWith('/checkout/crypto/')) {
+      close();
+    }
+  }, [pathname, close]);
+
   const handleClearConfirm = () => {
     if (window.confirm(t('cart_clear_confirm'))) {
       clear();
     }
   };
 
-  const [email, setEmail]             = useState('');
+  const [email, setEmail] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('esim_checkout_email') || '';
+      } catch {}
+    }
+    return '';
+  });
   const [emailError, setEmailError]   = useState('');
   const [user, setUser]               = useState<any>(null);
   const [balance, setBalance]         = useState<number>(0);
@@ -85,12 +100,33 @@ export function CartDrawer() {
           setBalance(0);
           setTotalSpend(0);
           setExtraCashbackQueue(0);
-          setEmail('');
+          const saved = typeof window !== 'undefined' ? localStorage.getItem('esim_checkout_email') || '' : '';
+          setEmail(saved);
         }
       }
     );
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedEmail = localStorage.getItem('esim_checkout_email');
+        if (savedEmail && !user) {
+          setEmail(savedEmail);
+        }
+      } catch {}
+    }
+  }, [user]);
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('esim_checkout_email', val);
+      } catch {}
+    }
+  };
 
   useEffect(() => {
     if (user?.email && (!email || email !== user.email)) {
@@ -243,7 +279,7 @@ export function CartDrawer() {
               {/* Delivery Email Input */}
               <CheckoutEmailField
                 email={email}
-                onChange={setEmail}
+                onChange={handleEmailChange}
                 error={emailError}
                 onErrorChange={setEmailError}
                 user={user}

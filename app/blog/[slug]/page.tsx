@@ -198,7 +198,8 @@ export default async function PostDetailPage({ params }: PostPageProps) {
     ? new Date(post.published_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : new Date(post.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  const parsedContentHtml = parseMarkdownToHtml(post.content);
+  const sanitizedContent = (post.content || '').replaceAll('https://puresim.com', 'https://puresim.net/tariffs');
+  const parsedContentHtml = parseMarkdownToHtml(sanitizedContent);
 
   return (
     <div className="min-h-screen bg-white pb-20">

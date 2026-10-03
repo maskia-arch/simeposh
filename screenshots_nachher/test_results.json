@@ -1,0 +1,17 @@
+{
+  "criterion1_singleRequest_doubleClickProtected": true,
+  "criterion1_ariaBusy": true,
+  "criterion1_buttonSizePreserved": true,
+  "criterion2_noPostWithoutEmailOrTerms": true,
+  "criterion2_buttonNotPermanentlyLocked": true,
+  "criterion3_skeletonVisibleWithBrandTariffAmount": true,
+  "criterion3_noQrOrWalletInSkeleton": true,
+  "criterion4_sessionReplacesSkeleton": true,
+  "criterion5_noticeDE": true,
+  "criterion6_noticeEN": true,
+  "criterion7_emailAndTermsPreservedAfterCancel": true,
+  "criterion7_dismissedConfirmStaysOnCheckout": true,
+  "criterion8_cartItemsPreservedExact": true,
+  "criterion9_nativeConfirmUsed": true,
+  "criterion10_postBodyCleanAndUnchanged": true
+}

@@ -1,0 +1,49 @@
+{
+  "chatRequestsHome": [
+    "https://puresimaisupport.autoacts.link/widget.js",
+    "https://puresimaisupport.autoacts.link/api/widget/beacon",
+    "https://puresimaisupport.autoacts.link/api/widget/config",
+    "https://puresimaisupport.autoacts.link/api/widget/beacon",
+    "https://puresimaisupport.autoacts.link/api/widget/init",
+    "https://puresimaisupport.autoacts.link/api/widget/faq",
+    "https://puresimaisupport.autoacts.link/api/widget/init",
+    "https://puresimaisupport.autoacts.link/api/widget/history",
+    "https://puresimaisupport.autoacts.link/api/widget/history",
+    "https://puresimaisupport.autoacts.link/widget.js",
+    "https://puresimaisupport.autoacts.link/api/widget/beacon",
+    "https://puresimaisupport.autoacts.link/api/widget/config",
+    "https://puresimaisupport.autoacts.link/api/widget/history",
+    "https://puresimaisupport.autoacts.link/api/widget/faq",
+    "https://puresimaisupport.autoacts.link/widget.js",
+    "https://puresimaisupport.autoacts.link/api/widget/beacon",
+    "https://puresimaisupport.autoacts.link/api/widget/config",
+    "https://puresimaisupport.autoacts.link/api/widget/history",
+    "https://puresimaisupport.autoacts.link/api/widget/faq",
+    "https://puresimaisupport.autoacts.link/api/widget/leave"
+  ],
+  "chatRequestsTariffs": [
+    "https://puresimaisupport.autoacts.link/widget.js",
+    "https://puresimaisupport.autoacts.link/api/widget/beacon",
+    "https://puresimaisupport.autoacts.link/api/widget/config",
+    "https://puresimaisupport.autoacts.link/api/widget/beacon",
+    "https://puresimaisupport.autoacts.link/api/widget/history",
+    "https://puresimaisupport.autoacts.link/api/widget/faq",
+    "https://puresimaisupport.autoacts.link/api/widget/history"
+  ],
+  "tariffsTitle": "Plans | PureSim | PureSim",
+  "tariff1DayTitle": "eSIM Ukraine Unlimited (1 Tage) kaufen | PureSim | PureSim",
+  "tariff30DayTitle": "eSIM Malaysia 10 GB (30 Tage) kaufen | PureSim | PureSim",
+  "cartEnTitle": "PureSim – Günstige eSIMs weltweit",
+  "homeTitle": "PureSim – Günstige eSIMs weltweit",
+  "topupTitle": "PureSim – Günstige eSIMs weltweit",
+  "reviewsTitle": "PureSim – Günstige eSIMs weltweit",
+  "loginTitle": "PureSim – Günstige eSIMs weltweit",
+  "cancelBtnInfo": {
+    "width": 308,
+    "height": 38,
+    "fontSize": "12px",
+    "fontWeight": "600",
+    "color": "rgb(100, 116, 139)",
+    "backgroundColor": "rgb(255, 255, 255)"
+  }
+}

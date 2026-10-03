@@ -53,7 +53,7 @@ export async function generateMetadata({
   const tariff = await getTariff(slug);
   if (!tariff) {
     return {
-      title: 'Tarif nicht gefunden | PureSim',
+      title: 'Tarif nicht gefunden',
     };
   }
 
@@ -67,9 +67,12 @@ export async function generateMetadata({
       ? 'Unlimited'
       : formatGb(tariff.data_gb);
 
+  const daysLabelDe = tariff.validity_days === 1 ? '1 Tag' : `${tariff.validity_days} Tage`;
+  const daysLabelEn = tariff.validity_days === 1 ? '1 Day' : `${tariff.validity_days} Days`;
+
   const title = isDe
-    ? `eSIM ${country} ${dataLabel} (${tariff.validity_days} Tage) kaufen | PureSim`
-    : `Buy eSIM ${country} ${dataLabel} (${tariff.validity_days} Days) | PureSim`;
+    ? `eSIM ${country} ${dataLabel} (${daysLabelDe}) kaufen`
+    : `Buy eSIM ${country} ${dataLabel} (${daysLabelEn})`;
 
   const description = isDe
     ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${tariff.validity_days} Tage im besten lokalen Mobilfunknetz. Sofort-Aktivierung per QR-Code.`
