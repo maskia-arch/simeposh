@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     if (uuidIds.length > 0) {
       const { data: byId } = await service
         .from('tariffs')
-        .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+        .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
         .in('id', uuidIds);
       if (byId) tariffs.push(...byId);
     }
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       ]));
       const { data: byCode } = await service
         .from('tariffs')
-        .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+        .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
         .in('package_code', allCodes);
       if (byCode) tariffs.push(...byCode);
     }
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
                 tariff_type: 'travel',
                 raw_data: found as any,
               } as any, { onConflict: 'package_code' })
-              .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+              .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
               .single();
 
             if (insErr) {
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
             if (!targetTariff) {
               const { data: byCode } = await service
                 .from('tariffs')
-                .select('id, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+                .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
                 .eq('package_code', found.packageCode)
                 .maybeSingle();
               targetTariff = byCode;

@@ -386,46 +386,44 @@ export function CryptoCheckout({
             <div className="h-6 w-20 rounded-full bg-slate-100" />
           </div>
 
-          {/* Synchronous pre-paint helper script */}
+          {/* Cart Tariff & Amount Box: rendered unconditionally so elements exist in DOM from Frame 0 */}
+          <div
+            id="skeleton-cart-box"
+            data-testid="skeleton-cart-box"
+            className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500">
+                {locale === 'de' ? 'Tarif' : 'Plan'}
+              </span>
+              <span
+                className="text-xs font-bold text-slate-800 text-right truncate max-w-[200px]"
+                data-testid="skeleton-tariff-name"
+                id="skeleton-tariff-text"
+              >
+                {displayTariff}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
+              <span className="text-xs font-semibold text-slate-500">
+                {locale === 'de' ? 'Betrag' : 'Amount'}
+              </span>
+              <span
+                className="text-sm font-extrabold text-slate-900 tabular-nums"
+                data-testid="skeleton-amount"
+                id="skeleton-amount-text"
+              >
+                {displayAmount}
+              </span>
+            </div>
+          </div>
+
+          {/* Synchronous pre-paint helper script to populate skeleton from localStorage before first paint */}
           <script
             dangerouslySetInnerHTML={{
-              __html: `(function(){try{var t=localStorage.getItem('esim_checkout_tariff');var a=localStorage.getItem('esim_checkout_amount');if(!t||!a){var c=localStorage.getItem('esim_cart_v1');if(c){var items=JSON.parse(c);if(Array.isArray(items)&&items.length){if(!t)t=items.map(function(i){return i.name;}).filter(Boolean).join(', ');if(!a){var tot=items.reduce(function(s,i){return s+(Number(i.priceEur)||0)*(Number(i.quantity)||1);},0);if(tot>0)a=tot.toFixed(2)+' €';}}}}var tEl=document.getElementById('skeleton-tariff-text');var aEl=document.getElementById('skeleton-amount-text');if(t&&tEl&&!tEl.textContent)tEl.textContent=t;if(a&&aEl&&!aEl.textContent)aEl.textContent=a;}catch(_){}})();`,
+              __html: `(function(){try{var t=localStorage.getItem('esim_checkout_tariff');var a=localStorage.getItem('esim_checkout_amount');if(!t||!a){var c=localStorage.getItem('esim_cart_v1');if(c){var items=JSON.parse(c);if(Array.isArray(items)&&items.length){if(!t)t=items.map(function(i){return i.name;}).filter(Boolean).join(', ');if(!a){var tot=items.reduce(function(s,i){return s+(Number(i.priceEur)||0)*(Number(i.quantity)||1);},0);if(tot>0)a=tot.toFixed(2)+' €';}}}}var tEl=document.getElementById('skeleton-tariff-text');var aEl=document.getElementById('skeleton-amount-text');if(t&&tEl&&(!tEl.textContent||tEl.textContent.trim()===''))tEl.textContent=t;if(a&&aEl&&(!aEl.textContent||aEl.textContent.trim()===''))aEl.textContent=a;}catch(_){}})();`,
             }}
           />
-
-          {/* Cart Tariff & Amount Box: only rendered if data is present, removing empty Plan/Amount placeholders */}
-          {(displayTariff || displayAmount) && (
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-2">
-              {displayTariff && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500">
-                    {locale === 'de' ? 'Tarif' : 'Plan'}
-                  </span>
-                  <span
-                    className="text-xs font-bold text-slate-800 text-right truncate max-w-[200px]"
-                    data-testid="skeleton-tariff-name"
-                    id="skeleton-tariff-text"
-                  >
-                    {displayTariff}
-                  </span>
-                </div>
-              )}
-              {displayAmount && (
-                <div className={`flex items-center justify-between ${displayTariff ? 'border-t border-slate-200/60 pt-2' : ''}`}>
-                  <span className="text-xs font-semibold text-slate-500">
-                    {locale === 'de' ? 'Betrag' : 'Amount'}
-                  </span>
-                  <span
-                    className="text-sm font-extrabold text-slate-900 tabular-nums"
-                    data-testid="skeleton-amount"
-                    id="skeleton-amount-text"
-                  >
-                    {displayAmount}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Skeleton placeholders */}
           <div className="space-y-4">
