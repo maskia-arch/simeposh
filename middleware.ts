@@ -59,6 +59,10 @@ export async function middleware(request: NextRequest) {
   const webhookSecret = process.env.SHOP_WEBHOOK_SECRET;
   const isTrustedM2M = (webhookSecret && authHeader === `Bearer ${webhookSecret}`) || request.headers.has('x-pure-wallet-signature');
 
+  const isEn = pathname === '/en' || pathname.startsWith('/en/');
+  const normalizedPath = isEn ? (pathname.replace(/^\/en/, '') || '/') : pathname;
+  const langPrefix = isEn ? '/en' : '';
+
   if (!isTrustedM2M && !isPublicMeta) {
     // 1. Block suspicious path probes (e.g. php admin portals, env files)
     const isSuspiciousPath = SUSPICIOUS_PATH_PATTERNS.some(p => p.test(pathname));
@@ -69,8 +73,8 @@ export async function middleware(request: NextRequest) {
 
     // Standard user shop and checkout routes (never block human shoppers for User-Agent quirks or privacy browsers)
     const isStandardUserRoute =
-      pathname === '/' ||
-      /^\/(cart|checkout|order|tariffs|esim|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(pathname) ||
+      normalizedPath === '/' ||
+      /^\/(cart|checkout|order|tariffs|esim|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(normalizedPath) ||
       pathname.startsWith('/api/crypto') ||
       pathname.startsWith('/api/order') ||
       pathname.startsWith('/api/tariffs');
@@ -112,9 +116,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
   }
 
-  const isEn = pathname === '/en' || pathname.startsWith('/en/');
-  const normalizedPath = isEn ? (pathname.replace(/^\/en/, '') || '/') : pathname;
-  const langPrefix = isEn ? '/en' : '';
 
   // ── 301 Redirect old filter URLs: /tariffs?q=Germany -> /esim/germany ──
   if (normalizedPath === '/tariffs') {
