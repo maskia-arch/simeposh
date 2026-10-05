@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
-import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, type TariffSpecialFeature } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, isNonHkIpTariff, getTariffBreakoutIp, isTurkeyTariff, type TariffSpecialFeature } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
@@ -25,17 +25,19 @@ const TYPE_BADGE: Record<string, { icon: React.ReactNode; labelKey: 'badge_trave
 };
 
 interface TariffCardProps {
-  tariff:      Tariff;
-  onBuy:       (tariff: Tariff) => void;
-  onDetail?:   (tariff: Tariff) => void;
-  loading?:    boolean;
+  tariff:         Tariff;
+  onBuy:          (tariff: Tariff) => void;
+  onDetail?:      (tariff: Tariff) => void;
+  loading?:       boolean;
+  isRecommended?: boolean;
 }
 
-export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps) {
+export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: TariffCardProps) {
   const { t, locale } = useTranslation();
   const { addItem, open } = useCart();
   const [showCountryList, setShowCountryList] = useState(false);
   const [activeFeature, setActiveFeature] = useState<TariffSpecialFeature | null>(null);
+  const [activeAbbr, setActiveAbbr] = useState<{ label: string; text: string } | null>(null);
 
   const isPremium   = isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
@@ -49,14 +51,28 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
   const features     = getTariffSpecialFeatures(tariff);
   const cleanedTitle = cleanTariffName(tariff.name);
 
+  // Determine abbreviations
+  const isNonHk = isNonHkIpTariff(tariff);
+  const isDualNet = ops.length > 1;
+  const isHk = !isNonHk && !isPremium && (!breakoutIp || breakoutIp === 'HK');
+
+  // Limit badges shown directly on card face to at most 2
+  const visibleFeatures = features.slice(0, 2);
+  const hiddenCount = features.length - visibleFeatures.length;
+
   return (
     <div
-      className={`group relative flex flex-col rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden ${
-        isPremium && isTravel ? 'border-amber-300/80 hover:border-amber-400' : 'border-slate-200 hover:border-brand-300'
+      className={`group relative flex flex-col rounded-2xl bg-white shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden ${
+        isRecommended
+          ? 'border-2 border-brand-500 shadow-md ring-2 ring-brand-100/80 hover:border-brand-600'
+          : isPremium && isTravel
+            ? 'border border-amber-300/80 hover:border-amber-400'
+            : 'border border-slate-200 hover:border-brand-300'
       }`}
     >
       {/* ── Type colour strip ── */}
       <div className={`h-1.5 w-full ${
+        isRecommended ? 'bg-gradient-to-r from-brand-600 via-sky-500 to-brand-500' :
         tariff.tariff_type === 'unlimited_pro' ? 'bg-gradient-to-r from-violet-500 to-purple-400' :
         tariff.tariff_type === 'unlimited_eco' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
         isPremium ? 'bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600' :
@@ -65,14 +81,14 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
 
       <div className="p-5 flex flex-col flex-1">
 
-        {/* ── Flag + Country ── */}
+        {/* ── Flag + Country + Badges ── */}
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
             <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={40} />
             <div>
               <p className="font-bold text-slate-800 leading-tight">{countryLabel}</p>
               {coverage && (
-                <div className="relative inline-flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+                <div className="relative inline-flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
                   <span>🌍 {coverage}</span>
                   <button
                     type="button"
@@ -80,7 +96,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                       e.stopPropagation();
                       setShowCountryList(true);
                     }}
-                    className="inline-flex items-center justify-center rounded-full p-0.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none"
+                    className="inline-flex items-center justify-center rounded-full p-0.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none"
                     title={t('det_show_countries')}
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -92,28 +108,35 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             </div>
           </div>
 
-          {/* Type badge top-right */}
-          {isPremium && isTravel ? (
-            <span
-              title={t('type_travel_premium_desc' as any)}
-              className="shrink-0 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-2 py-0.5 text-xs font-extrabold text-amber-900 shadow-2xs"
-            >
-              <TravelPremiumGlobeIcon size={14} className="text-amber-800" /> {t('badge_travel_premium' as any)}
-            </span>
-          ) : badge ? (
-            <span
-              title={t(badge.descKey)}
-              className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.cls}`}
-            >
-              {badge.icon} {t(badge.labelKey)}
-            </span>
-          ) : null}
+          {/* Badges top-right: Recommended takes priority, or type badge */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isRecommended && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-brand-600 text-white px-2.5 py-0.5 text-xs font-bold shadow-xs">
+                ★ {t('badge_recommended')}
+              </span>
+            )}
+            {isPremium && isTravel ? (
+              <span
+                title={t('type_travel_premium_desc' as any)}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-2 py-0.5 text-xs font-extrabold text-amber-900 shadow-2xs"
+              >
+                <TravelPremiumGlobeIcon size={14} className="text-amber-800" /> {t('badge_travel_premium' as any)}
+              </span>
+            ) : badge && !isRecommended ? (
+              <span
+                title={t(badge.descKey)}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.cls}`}
+              >
+                {badge.icon} {t(badge.labelKey)}
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        {/* ── Special Feature Badges (Compact Horizontal Tag Chips) ── */}
-        {features.length > 0 && (
-          <div className="mb-2.5 flex flex-wrap items-center gap-1">
-            {features.map((feat) => {
+        {/* ── Special Feature Badges (At most 2 on card face, font-size at least 12px / text-xs) ── */}
+        {visibleFeatures.length > 0 && (
+          <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+            {visibleFeatures.map((feat) => {
               const isSelected = activeFeature?.id === feat.id;
               return (
                 <button
@@ -121,23 +144,36 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setActiveAbbr(null);
                     setActiveFeature(isSelected ? null : feat);
                   }}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-all cursor-pointer ${feat.cls} ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all cursor-pointer ${feat.cls} ${
                     isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-xs' : ''
                   }`}
                   title={`${t(feat.titleKey as any)} – Details anzeigen`}
                 >
                   {feat.id === 'travel_premium' ? (
-                    <TravelPremiumGlobeIcon size={12} className="text-amber-800" />
+                    <TravelPremiumGlobeIcon size={13} className="text-amber-800" />
                   ) : (
                     <span>{feat.icon}</span>
                   )}
                   <span>{t(feat.badgeKey as any)}</span>
-                  <span className="opacity-50 text-[9px]">ⓘ</span>
+                  <span className="opacity-60 text-xs">ⓘ</span>
                 </button>
               );
             })}
+            {hiddenCount > 0 && onDetail && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDetail(tariff);
+                }}
+                className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                +{hiddenCount}
+              </button>
+            )}
           </div>
         )}
 
@@ -145,12 +181,12 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
         {activeFeature && (
           <div
             onClick={(e) => e.stopPropagation()}
-            className="mb-2.5 rounded-xl border border-indigo-200 bg-indigo-50/90 p-2.5 text-xs text-indigo-950 animate-in fade-in slide-in-from-top-1 duration-150 relative cursor-default shadow-xs"
+            className="mb-2.5 rounded-xl border border-indigo-200 bg-indigo-50/90 p-3 text-xs text-indigo-950 animate-in fade-in slide-in-from-top-1 duration-150 relative cursor-default shadow-xs"
           >
             <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1 mb-1">
-              <span className="font-extrabold flex items-center gap-1 text-indigo-900 text-[11px]">
+              <span className="font-extrabold flex items-center gap-1 text-indigo-900 text-xs">
                 {activeFeature.id === 'travel_premium' ? (
-                  <TravelPremiumGlobeIcon size={13} className="text-amber-800" />
+                  <TravelPremiumGlobeIcon size={14} className="text-amber-800" />
                 ) : (
                   <span>{activeFeature.icon}</span>
                 )}
@@ -167,15 +203,40 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                 ✕
               </button>
             </div>
-            <p className="leading-relaxed text-[10px] font-medium">{t(activeFeature.descKey as any)}</p>
+            <p className="leading-relaxed text-xs font-medium">{t(activeFeature.descKey as any)}</p>
             {activeFeature.priceNoteKey && (
-              <p className="mt-1 text-[9px] text-indigo-800 bg-indigo-100/70 rounded-md p-1 font-semibold leading-tight">
+              <p className="mt-1 text-xs text-indigo-800 bg-indigo-100/70 rounded-md p-1.5 font-semibold leading-tight">
                 💡 {t(activeFeature.priceNoteKey as any)}
               </p>
             )}
             {activeFeature.extra && (
-              <p className="mt-0.5 text-[9px] font-mono text-indigo-600 font-semibold">{activeFeature.extra}</p>
+              <p className="mt-0.5 text-xs font-mono text-indigo-600 font-semibold">{activeFeature.extra}</p>
             )}
+          </div>
+        )}
+
+        {/* ── Interactive Abbreviation Explanations Popover (HK IP, Non-HK IP, Dual-Netz) ── */}
+        {activeAbbr && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="mb-2.5 rounded-xl border border-slate-300 bg-slate-50 p-2.5 text-xs text-slate-800 animate-in fade-in slide-in-from-top-1 duration-150 relative shadow-sm"
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
+              <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                <span>ℹ️</span> {activeAbbr.label}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveAbbr(null);
+                }}
+                className="text-slate-400 hover:text-slate-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="leading-relaxed text-xs font-medium text-slate-700">{activeAbbr.text}</p>
           </div>
         )}
 
@@ -197,7 +258,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
             </p>
             <p className="text-xs text-slate-500 mt-0.5">{t('card_data')}</p>
             {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
-              <p className="text-[10px] text-brand-500">{formatGb(tariff.data_gb)}/{t('cfg_day')}</p>
+              <p className="text-xs text-brand-500">{formatGb(tariff.data_gb)}/{t('cfg_day')}</p>
             )}
           </div>
           <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-center">
@@ -222,46 +283,99 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
           </p>
         )}
 
-        {/* ── Network operators & Routing ── */}
-        <div className="mb-3 flex flex-wrap items-center gap-1.5 min-h-[22px]">
+        {/* ── Network operators & Routing Line (Differentiates same-price cards) ── */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 min-h-[24px]">
           {network && (
-            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${NET_COLOR[network] ?? ''}`}>
+            <span className={`rounded-md px-1.5 py-0.5 text-xs font-bold ${NET_COLOR[network] ?? ''}`}>
               {network}
             </span>
           )}
           {ops.length > 0 ? (
-            <span className="flex items-center gap-1 text-[11px] text-slate-600 truncate">
-              <NetworkIcon size={12} className="text-slate-500 shrink-0" />
+            <span className="flex items-center gap-1 text-xs text-slate-700 truncate font-medium">
+              <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
+              {ops.length > 1 && (
+                <span className="text-slate-400 font-normal">({ops.length} Netze)</span>
+              )}
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[11px] text-slate-400">
-              <NetworkIcon size={12} className="text-slate-400" />
+            <span className="flex items-center gap-1 text-xs text-slate-500">
+              <NetworkIcon size={13} className="text-slate-400" />
               <span>{t('card_best_network')}</span>
             </span>
           )}
-          {ops.length > 1 && (
-            <span className="rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-extrabold text-emerald-800">
-              Dual-Netz
-            </span>
+
+          {/* Interactive Dual-Netz Pill */}
+          {isDualNet && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveFeature(null);
+                setActiveAbbr(activeAbbr?.label === 'Dual-Netz' ? null : {
+                  label: 'Dual-Netz',
+                  text: t('feat_dual_net_desc'),
+                });
+              }}
+              className="rounded-md bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors"
+              title="Klicken für Erklärung: Wechselt zwischen zwei Netzen"
+            >
+              Dual-Netz ⓘ
+            </button>
           )}
-          {breakoutIp && (
+
+          {/* Interactive Routing Pill (HK IP / Non-HK IP / Specific Breakout IP) */}
+          {isNonHk ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveFeature(null);
+                setActiveAbbr(activeAbbr?.label === 'Non-HK IP' ? null : {
+                  label: 'Non-HK IP',
+                  text: t('feat_non_hk_ip_desc'),
+                });
+              }}
+              className="rounded-md bg-indigo-50 border border-indigo-300 px-1.5 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
+              title="Klicken für Erklärung: Ohne Umweg über Hongkong"
+            >
+              Non-HK IP ⓘ
+            </button>
+          ) : isHk ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveFeature(null);
+                setActiveAbbr(activeAbbr?.label === 'HK IP' ? null : {
+                  label: 'HK IP',
+                  text: t('feat_hk_ip_desc'),
+                });
+              }}
+              className="rounded-md bg-slate-100 border border-slate-300 px-1.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
+              title="Klicken für Erklärung: Internet läuft über Hongkong"
+            >
+              HK IP ⓘ
+            </button>
+          ) : breakoutIp ? (
             <span
-              title={breakoutIp === 'UK' ? 'Routing über Großbritannien (UK)' : breakoutIp === 'NL' ? 'Routing über die Niederlande (NL)' : `Breakout IP: ${breakoutIp}`}
-              className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.2 text-[9px] font-mono font-bold text-slate-700"
+              className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-xs font-mono font-medium text-slate-700"
             >
               {breakoutIp === 'UK' ? '🇬🇧 UK IP' : breakoutIp === 'NL' ? '🇳🇱 NL IP' : `${breakoutIp} IP`}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* ── Price ── */}
-        <div className="mt-auto flex items-baseline justify-between pt-3 border-t border-slate-100">
-          <Price eur={tariff.sale_price_eur} className="text-xl font-extrabold text-slate-900" />
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
+          <Price
+            eur={tariff.sale_price_eur}
+            className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
+          />
           {onDetail && (
             <button
               onClick={(e) => { e.stopPropagation(); onDetail(tariff); }}
-              className="text-xs font-medium text-slate-400 hover:text-brand-600 transition-colors"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-2 py-2 text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               title={t('card_details')}
             >
               {t('card_details')} ℹ️
@@ -270,13 +384,13 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
         </div>
 
         {/* ── CTAs: Add to cart + Buy now ── */}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 items-center">
           <button
             onClick={(e) => { e.stopPropagation(); addItem(tariff); }}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 active:scale-95"
+            className="flex flex-1 h-12 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:border-brand-300 active:scale-95 cursor-pointer"
             title={t('det_add_cart')}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .96-.343 1.087-.835l1.823-6.844a.75.75 0 00-.726-.94H6.106M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
             </svg>
             <span className="hidden sm:inline">{t('card_add_cart')}</span>
@@ -287,7 +401,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
               addItem(tariff);
               open();
             }}
-            className="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 active:scale-95 cursor-pointer text-center"
+            className="flex-1 btn-primary !h-12 !text-sm !px-4 active:scale-95 text-center"
           >
             {t('card_buy_now')}
           </button>
@@ -306,7 +420,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
                 e.stopPropagation();
                 setShowCountryList(false);
               }}
-              className="text-slate-400 hover:text-slate-600 text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+              className="text-slate-500 hover:text-slate-700 text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
             >
               ✕
             </button>
@@ -317,7 +431,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading }: TariffCardProps
               return (
                 <div key={code} className="flex items-center gap-2 text-xs text-slate-600 hover:bg-slate-50 py-1 px-1.5 rounded-lg transition-colors">
                   <CountryFlag countryCode={code} countryName={name} size={16} className="shrink-0 rounded-sm" />
-                  <span className="shrink-0 font-mono text-[9px] font-semibold text-slate-400 uppercase w-4">{code}</span>
+                  <span className="shrink-0 font-mono text-xs font-semibold text-slate-600 uppercase w-5">{code}</span>
                   <span className="truncate">{name}</span>
                 </div>
               );

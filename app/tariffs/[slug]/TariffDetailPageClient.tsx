@@ -221,7 +221,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             {ops.length > 0 && (
               <div className="rounded-3xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">{t('det_operators')}</h3>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">{t('det_operators')}</h2>
                   <div className="flex items-center gap-1.5">
                     {ops.length > 1 && (
                       <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
@@ -259,7 +259,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
             {/* Activation Guide */}
             <div className="rounded-3xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-8 shadow-sm">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">{t('det_activation')}</h3>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">{t('det_activation')}</h2>
               <ol className="space-y-3 text-sm text-slate-600 list-decimal list-inside">
                 <li className="leading-relaxed"><strong className="text-slate-800">{t('det_act_1')}</strong></li>
                 <li className="leading-relaxed" dangerouslySetInnerHTML={{ __html: t('det_act_2') }} />

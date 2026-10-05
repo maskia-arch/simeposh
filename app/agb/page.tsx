@@ -1,10 +1,21 @@
 import type { Metadata } from 'next';
 import { getServerLocale } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'AGB | Terms and Conditions',
-  description: 'Allgemeine Geschäftsbedingungen und Nutzungsbedingungen von PureSim.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const isDe = locale === 'de';
+  return {
+    title: isDe ? 'AGB – Allgemeine Geschäftsbedingungen' : 'Terms and Conditions',
+    description: isDe
+      ? 'Allgemeine Geschäftsbedingungen und Nutzungsbedingungen von PureSim.'
+      : 'Terms and conditions and terms of use for PureSim.',
+    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'agb', enPath: 'agb' }),
+    openGraph: {
+      locale: isDe ? 'de_DE' : 'en_US',
+    },
+  };
+}
 
 export default async function TermsPage() {
   const locale = await getServerLocale();

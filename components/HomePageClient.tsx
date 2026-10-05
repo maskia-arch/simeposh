@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { displayCountryName } from '@/lib/tariff-display';
+import { countryCodeToSlug } from '@/lib/destinations-shared';
 import { SearchIcon, CreditCardIcon, CameraIcon, GlobeIcon, BookIcon, NetworkIcon, CheckCircleIcon, ScalesIcon } from '@/components/Icons';
 
 interface PopularDestination {
@@ -38,6 +39,7 @@ export function HomePageClient({
   recentReviews?: any[];
 }) {
   const { t, locale } = useTranslation();
+  const prefix = locale === 'en' ? '/en' : '';
 
   const features = [
     {
@@ -99,7 +101,7 @@ export function HomePageClient({
 
           {/* Social Proof Stars Rating Link */}
           <Link
-            href="/reviews"
+            href={`${prefix}/reviews`}
             className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-brand-100 hover:bg-white/20 transition-all backdrop-blur-sm mb-6 border border-white/15 cursor-pointer hover:text-white"
           >
             <div className="flex gap-0.5 text-amber-400">
@@ -124,14 +126,14 @@ export function HomePageClient({
 
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link
-              href="/tariffs"
-              className="rounded-full bg-brand-600 px-6 py-3 font-semibold text-white shadow-md hover:bg-brand-700 transition-colors border border-brand-500/20"
+              href={`${prefix}/tariffs`}
+              className="btn-primary shadow-md"
             >
               {t('hero_cta_plans')}
             </Link>
             <Link
-              href="/topup"
-              className="rounded-full border-2 border-white bg-transparent px-6 py-3 font-semibold text-white hover:bg-white/10 transition-colors"
+              href={`${prefix}/topup`}
+              className="btn-secondary !border-white !text-white hover:!bg-white/10 hover:!text-white"
             >
               {t('hero_cta_topup')}
             </Link>
@@ -164,7 +166,7 @@ export function HomePageClient({
             <p className="text-slate-500 text-sm mt-1">{t('section_popular_sub')}</p>
           </div>
           <Link
-            href="/tariffs"
+            href={`${prefix}/tariffs`}
             className="text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
           >
             {t('section_view_all')}
@@ -174,10 +176,11 @@ export function HomePageClient({
         <div className="grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
           {popularDestinations.map((dest) => {
             const countryLabel = displayCountryName(dest, locale);
+            const slug = countryCodeToSlug(dest.country_code, dest.country_name);
             return (
               <Link
                 key={dest.country_code}
-                href={`/tariffs?q=${encodeURIComponent(countryLabel)}`}
+                href={`${prefix}/esim/${slug}`}
                 className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-1 shrink-0 w-[280px] snap-start sm:w-auto sm:shrink"
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-brand-50 transition-colors duration-300 overflow-hidden border border-slate-100">
@@ -254,11 +257,11 @@ export function HomePageClient({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <Link
-              href="/reviews"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-brand-600 transition-colors shadow-xs"
+              href={`${prefix}/reviews`}
+              className="btn-secondary gap-1.5"
             >
               <span>{locale === 'de' ? 'Alle Bewertungen ansehen' : 'View all reviews'}</span>
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -317,7 +320,7 @@ export function HomePageClient({
                 : 'Excellent customer satisfaction – check out all reviews on our reviews page.'}
             </p>
             <Link
-              href="/reviews"
+              href={`${prefix}/reviews`}
               className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700"
             >
               <span>{locale === 'de' ? 'Zu den Bewertungen →' : 'Read reviews →'}</span>
@@ -356,7 +359,7 @@ export function HomePageClient({
                 </p>
               </div>
               <Link
-                href="/blog"
+                href={`${prefix}/blog`}
                 className="mt-6 md:mt-8 inline-flex items-center gap-2 font-semibold text-white group-hover:underline text-xs md:text-sm"
               >
                 <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
@@ -407,7 +410,7 @@ export function HomePageClient({
                       </p>
                     </div>
                     <Link
-                      href="/blog"
+                      href={`${prefix}/blog`}
                       className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
                     >
                       <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
@@ -428,6 +431,7 @@ export function HomePageClient({
 
 function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean; t: any }) {
   const { locale } = useTranslation();
+  const prefix = locale === 'en' ? '/en' : '';
   const formattedDate = post.published_at 
     ? new Date(post.published_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
     : new Date(post.created_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -468,7 +472,7 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
             </p>
           </div>
           <Link
-            href={`/blog/${post.slug}`}
+            href={`${prefix}/blog/${post.slug}`}
             className="mt-4 md:mt-6 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
           >
             <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
@@ -515,7 +519,7 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
           </p>
         </div>
         <Link
-          href={`/blog/${post.slug}`}
+          href={`${prefix}/blog/${post.slug}`}
           className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
         >
           <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>

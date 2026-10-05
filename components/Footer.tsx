@@ -6,7 +6,8 @@ import { useTranslation } from '@/lib/i18n';
 import { useTicket } from '@/components/TicketContext';
 
 export function Footer() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const prefix = locale === 'en' ? '/en' : '';
   const { openTicketModal } = useTicket();
   const year  = new Date().getFullYear();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -43,7 +44,9 @@ export function Footer() {
                 <button
                   type="button"
                   onClick={() => toggleFaq(idx)}
-                  className="flex w-full items-center justify-between px-6 py-4.5 text-left font-semibold text-slate-800 hover:text-brand-650 transition-colors duration-200 cursor-pointer outline-none"
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center justify-between px-6 py-4.5 min-h-[52px] text-left font-semibold text-slate-800 hover:text-brand-650 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                  style={{ paddingTop: '18px', paddingBottom: '18px' }}
                 >
                   <span className="text-sm md:text-base pr-4 leading-snug">{faq.q}</span>
                   <span className={`text-slate-400 shrink-0 transform transition-transform duration-300 ${isOpen ? 'rotate-180 text-brand-600' : ''}`}>
@@ -75,9 +78,8 @@ export function Footer() {
             <div className="md:col-span-1">
               <div className="flex items-center gap-2 text-lg font-bold">
                 <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
-                <span className="text-2xl tracking-tight">
-                  <span className="text-[#1d4ed8]">Pur</span>
-                  <span className="text-[#0ea5e9]">eSim</span>
+                <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
+                  PureSim
                 </span>
               </div>
               <p className="mt-2 text-sm text-slate-500 leading-relaxed">
@@ -89,20 +91,20 @@ export function Footer() {
               <div>
                 <p className="font-semibold text-slate-800 mb-3">{t('footer_nav_title')}</p>
                 <ul className="space-y-2 text-sm text-slate-500">
-                  <li><Link href="/tariffs"   className="hover:text-brand-700 transition-colors">{t('footer_browse')}</Link></li>
-                  <li><Link href="/topup"     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
-                  <li><Link href="/dashboard" className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
-                  <li><Link href="/blog"      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
-                  <li><Link href="/ai"        className="hover:text-brand-700 transition-colors">{t('footer_ai')}</Link></li>
+                  <li><Link href={`${prefix}/tariffs`}   className="hover:text-brand-700 transition-colors">{t('footer_browse')}</Link></li>
+                  <li><Link href={`${prefix}/topup`}     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
+                  <li><Link href={`${prefix}/dashboard`} className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
+                  <li><Link href={`${prefix}/blog`}      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
+                  <li><Link href={`${prefix}/ai`}        className="hover:text-brand-700 transition-colors">{t('footer_ai')}</Link></li>
                   <li><button onClick={() => openTicketModal()} className="hover:text-brand-700 transition-colors text-left">{t('footer_open_ticket')}</button></li>
                 </ul>
               </div>
               <div>
                 <p className="font-semibold text-slate-800 mb-3">{t('footer_legal_title')}</p>
                 <ul className="space-y-2 text-sm text-slate-500">
-                  <li><Link href="/agb"         className="hover:text-brand-700 transition-colors">{t('footer_terms')}</Link></li>
-                  <li><Link href="/datenschutz" className="hover:text-brand-700 transition-colors">{t('footer_privacy')}</Link></li>
-                  <li><Link href="/refund-policy" className="hover:text-brand-700 transition-colors">{t('footer_refund')}</Link></li>
+                  <li><Link href={`${prefix}/agb`}         className="hover:text-brand-700 transition-colors">{t('footer_terms')}</Link></li>
+                  <li><Link href={`${prefix}/datenschutz`} className="hover:text-brand-700 transition-colors">{t('footer_privacy')}</Link></li>
+                  <li><Link href={`${prefix}/refund-policy`} className="hover:text-brand-700 transition-colors">{t('footer_refund')}</Link></li>
                   <li>
                     <a
                       href="https://t.me/autoacts"

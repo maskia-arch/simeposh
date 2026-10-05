@@ -190,7 +190,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading || !allPassed || !email}
-            className="w-full rounded-xl bg-brand-600 py-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full btn-primary"
           >
             {loading ? t('register_loading') : t('register_submit')}
           </button>

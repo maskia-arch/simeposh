@@ -2,13 +2,19 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const t = getServerT(locale);
+  const isDe = locale === 'de';
   return {
-    title: `${t('blog_title' as any)} & eSIM ${locale === 'de' ? 'Ratgeber' : 'Guides'}`,
+    title: `${t('blog_title' as any)} & eSIM ${isDe ? 'Ratgeber' : 'Guides'}`,
     description: t('blog_tagline' as any),
+    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'blog', enPath: 'blog' }),
+    openGraph: {
+      locale: isDe ? 'de_DE' : 'en_US',
+    },
   };
 }
 
@@ -25,6 +31,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 
   const locale = await getServerLocale();
   const t = getServerT(locale);
+  const prefix = locale === 'en' ? '/en' : '';
   const supabase = await createClient();
 
   // Fetch published posts for the active category
@@ -80,7 +87,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
         <div className="mb-10 flex justify-center">
           <div className="inline-flex rounded-xl bg-white p-1.5 shadow-sm border border-slate-200">
             <Link
-              href="/blog?tab=guides"
+              href={`${prefix}/blog?tab=guides`}
               className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition-all ${
                 activeTab === 'guides'
                   ? 'bg-brand-600 text-white shadow-sm'
@@ -90,7 +97,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               📖 {t('blog_category_guide' as any) || 'eSIM Grundlagen'}
             </Link>
             <Link
-              href="/blog?tab=news"
+              href={`${prefix}/blog?tab=news`}
               className={`rounded-lg px-6 py-2.5 text-sm font-semibold transition-all ${
                 activeTab === 'news'
                   ? 'bg-brand-600 text-white shadow-sm'
@@ -159,14 +166,14 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                     <div>
                       <p className="text-xs text-slate-400 font-medium">{t('blog_published_at' as any) || 'Veröffentlicht am'} {formattedDate}</p>
                       <h2 className="mt-2 text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-600 transition-colors leading-tight">
-                        <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+                        <Link href={`${prefix}/blog/${post.slug}`}>{post.title}</Link>
                       </h2>
                       <p className="mt-2 text-slate-500 text-sm leading-relaxed line-clamp-3">
                         {post.excerpt}
                       </p>
                     </div>
                     <Link
-                      href={`/blog/${post.slug}`}
+                      href={`${prefix}/blog/${post.slug}`}
                       className="mt-6 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-sm group"
                     >
                       <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>

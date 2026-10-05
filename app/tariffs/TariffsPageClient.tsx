@@ -7,7 +7,8 @@ import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { useTranslation }        from '@/lib/i18n';
 import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, SearchIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
-import { isPremiumTariff } from '@/lib/tariff-display';
+import { isPremiumTariff, isoName, regionLabel, isRegionCode } from '@/lib/tariff-display';
+import { resolveCountryOrRegionCode } from '@/lib/destinations-shared';
 
 type Tariff = PublicTariff;
 export type ActiveCategory = 'travel' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro';
@@ -105,7 +106,7 @@ export function TariffsPageClient({
   initialQuery?: string;
   initialCategory?: string;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   
   const validCategories: ActiveCategory[] = ['travel', 'travel_premium', 'unlimited_eco', 'unlimited_pro'];
   const startCat: ActiveCategory = validCategories.includes(initialCategory as ActiveCategory)
@@ -176,17 +177,45 @@ export function TariffsPageClient({
   const isTravelView = activeCategory === 'travel' || activeCategory === 'travel_premium';
   const isUnlimitedView = activeCategory === 'unlimited_eco' || activeCategory === 'unlimited_pro';
 
+  // Dynamic destination / country detection for heading
+  const detectedDestinationName = useMemo(() => {
+    if (!q || !q.trim()) return null;
+    const resolvedCode = resolveCountryOrRegionCode(q.trim());
+    if (resolvedCode) {
+      if (isRegionCode(resolvedCode)) {
+        return regionLabel(resolvedCode, locale);
+      }
+      return isoName(resolvedCode, locale);
+    }
+    // Fallback: check if filtered plans all share one destination country
+    if (filteredTravel.length > 0) {
+      const firstCode = filteredTravel[0].country_code;
+      if (firstCode && filteredTravel.every((t) => t.country_code === firstCode)) {
+        return isRegionCode(firstCode) ? regionLabel(firstCode, locale) : (isoName(firstCode, locale) || filteredTravel[0].country_name);
+      }
+    }
+    return null;
+  }, [q, filteredTravel, locale]);
+
+  const pageHeading = detectedDestinationName
+    ? (locale === 'de' ? `Tarife für ${detectedDestinationName}` : `Plans for ${detectedDestinationName}`)
+    : t('tariffs_title');
+
+  const pageSub = detectedDestinationName
+    ? (locale === 'de' ? `Finde das passende eSIM-Datenpaket für ${detectedDestinationName}.` : `Find the right eSIM data plan for ${detectedDestinationName}.`)
+    : t('tariffs_sub');
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
+    <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
 
       {/* ── Header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">{t('tariffs_title')}</h1>
-        <p className="mt-2 text-slate-500">{t('tariffs_sub')}</p>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{pageHeading}</h1>
+        <p className="mt-2 text-slate-500">{pageSub}</p>
       </div>
 
-      {/* ── Main Category Switcher (4 Categories: Travel, Travel Premium, Unlimited Eco, Unlimited Pro) ── */}
-      <div className="mb-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ── Main Category Switcher (Fully readable on 390px, no truncated titles, no disabled 1/4 tile when 0 plans) ── */}
+      <div className={`mb-8 grid gap-3 ${hasPremiumAvailable ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
         {/* 1. Travel */}
         <button
           type="button"
@@ -194,92 +223,77 @@ export function TariffsPageClient({
             setActiveCategory('travel');
             setTravelTier('all');
           }}
-          className={`flex items-center justify-between rounded-2xl p-4 font-semibold transition-all border cursor-pointer ${
+          className={`flex items-center justify-between rounded-2xl p-3 sm:p-4 font-semibold transition-all border cursor-pointer ${
             activeCategory === 'travel'
-              ? 'bg-sky-600 text-white border-sky-600 shadow-md ring-2 ring-sky-200'
-              : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300 hover:bg-slate-50'
+              ? 'bg-[#1d4ed8] text-white border-[#1d4ed8] shadow-md ring-2 ring-brand-200'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:bg-slate-50'
           }`}
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-              activeCategory === 'travel' ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-600'
+              activeCategory === 'travel' ? 'bg-white/20 text-white' : 'bg-brand-50 text-brand-700'
             }`}>
-              <TravelGlobeIcon size={20} className={activeCategory === 'travel' ? 'text-white' : 'text-sky-600'} />
+              <TravelGlobeIcon size={20} className={activeCategory === 'travel' ? 'text-white' : 'text-brand-700'} />
             </div>
             <div className="text-left min-w-0">
-              <span className="block text-sm font-extrabold truncate">{t('cat_travel')}</span>
-              <span className={`block text-[11px] truncate ${
-                activeCategory === 'travel' ? 'text-sky-100' : 'text-slate-400'
+              <span className="block text-sm font-extrabold whitespace-normal">{t('cat_travel')}</span>
+              <span className={`block text-xs leading-tight ${
+                activeCategory === 'travel' ? 'text-brand-100' : 'text-slate-600'
               }`}>
                 {t('cat_travel_desc')}
               </span>
             </div>
           </div>
-          <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+          <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${
             activeCategory === 'travel' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
           }`}>
             {q ? travelStandardCount : allTravelTotalCount}
           </span>
         </button>
 
-        {/* 2. Travel Premium */}
-        <button
-          type="button"
-          disabled={!hasPremiumAvailable}
-          onClick={() => {
-            if (hasPremiumAvailable) {
+        {/* 2. Travel Premium (Only shown when available, does NOT take up 1/4 screen space as disabled tile) */}
+        {hasPremiumAvailable && (
+          <button
+            type="button"
+            onClick={() => {
               setActiveCategory('travel_premium');
               setTravelTier('premium');
-            }
-          }}
-          title={
-            !hasPremiumAvailable
-              ? t('premium_unavailable_hint')
-              : t('cat_travel_premium_desc')
-          }
-          className={`relative flex items-center justify-between rounded-2xl p-4 font-semibold transition-all border ${
-            !hasPremiumAvailable
-              ? 'opacity-45 bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed select-none'
-              : activeCategory === 'travel_premium'
+            }}
+            title={t('cat_travel_premium_desc')}
+            className={`relative flex items-center justify-between rounded-2xl p-3 sm:p-4 font-semibold transition-all border ${
+              activeCategory === 'travel_premium'
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-300 cursor-pointer'
                 : 'bg-amber-50/70 text-amber-950 border-amber-300 hover:border-amber-400 hover:bg-amber-100/60 cursor-pointer'
-          }`}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-              !hasPremiumAvailable
-                ? 'bg-slate-200/60 text-slate-400'
-                : activeCategory === 'travel_premium'
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                activeCategory === 'travel_premium'
                   ? 'bg-white/20 text-white'
                   : 'bg-amber-200/80 text-amber-900'
-            }`}>
-              <TravelPremiumGlobeIcon size={20} className={!hasPremiumAvailable ? 'text-slate-400' : activeCategory === 'travel_premium' ? 'text-white' : 'text-amber-800'} />
-            </div>
-            <div className="text-left min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black truncate">{t('cat_travel_premium')}</span>
-              </div>
-              <span className={`block text-[11px] truncate ${
-                !hasPremiumAvailable
-                  ? 'text-slate-400'
-                  : activeCategory === 'travel_premium'
-                    ? 'text-amber-100'
-                    : 'text-amber-800/80'
               }`}>
-                {!hasPremiumAvailable ? t('premium_not_available_for_destination') : 'Dual-Netz • UK IP'}
-              </span>
+                <TravelPremiumGlobeIcon size={20} className={activeCategory === 'travel_premium' ? 'text-white' : 'text-amber-800'} />
+              </div>
+              <div className="text-left min-w-0">
+                <span className="block text-sm font-black whitespace-normal">{t('cat_travel_premium')}</span>
+                <span className={`block text-xs leading-tight ${
+                  activeCategory === 'travel_premium'
+                    ? 'text-amber-100'
+                    : 'text-amber-900'
+                }`}>
+                  Dual-Netz • UK IP
+                </span>
+              </div>
             </div>
-          </div>
-          <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-black ${
-            !hasPremiumAvailable
-              ? 'bg-slate-200 text-slate-400'
-              : activeCategory === 'travel_premium'
+            <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-black ${
+              activeCategory === 'travel_premium'
                 ? 'bg-white/20 text-white'
                 : 'bg-amber-200 text-amber-950'
-          }`}>
-            {hasPremiumAvailable ? travelPremiumCount : 0}
-          </span>
-        </button>
+            }`}>
+              {travelPremiumCount}
+            </span>
+          </button>
+        )}
 
         {/* 3. Unlimited Eco */}
         <button
@@ -287,7 +301,7 @@ export function TariffsPageClient({
           onClick={() => {
             setActiveCategory('unlimited_eco');
           }}
-          className={`flex items-center justify-between rounded-2xl p-4 font-semibold transition-all border cursor-pointer ${
+          className={`flex items-center justify-between rounded-2xl p-3 sm:p-4 font-semibold transition-all border cursor-pointer ${
             activeCategory === 'unlimited_eco'
               ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-200'
               : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-300 hover:bg-slate-50'
@@ -300,15 +314,15 @@ export function TariffsPageClient({
               <EcoIcon size={18} />
             </div>
             <div className="text-left min-w-0">
-              <span className="block text-sm font-extrabold truncate">{t('cat_unlimited_eco')}</span>
-              <span className={`block text-[11px] truncate ${
-                activeCategory === 'unlimited_eco' ? 'text-emerald-100' : 'text-slate-400'
+              <span className="block text-sm font-extrabold whitespace-normal">{t('cat_unlimited_eco')}</span>
+              <span className={`block text-xs leading-tight ${
+                activeCategory === 'unlimited_eco' ? 'text-emerald-100' : 'text-slate-600'
               }`}>
                 Drosselung
               </span>
             </div>
           </div>
-          <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+          <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${
             activeCategory === 'unlimited_eco' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
           }`}>
             Eco
@@ -321,7 +335,7 @@ export function TariffsPageClient({
           onClick={() => {
             setActiveCategory('unlimited_pro');
           }}
-          className={`flex items-center justify-between rounded-2xl p-4 font-semibold transition-all border cursor-pointer ${
+          className={`flex items-center justify-between rounded-2xl p-3 sm:p-4 font-semibold transition-all border cursor-pointer ${
             activeCategory === 'unlimited_pro'
               ? 'bg-violet-600 text-white border-violet-600 shadow-md ring-2 ring-violet-200'
               : 'bg-white text-slate-700 border-slate-200 hover:border-violet-300 hover:bg-slate-50'
@@ -334,15 +348,15 @@ export function TariffsPageClient({
               <BoltIcon size={18} />
             </div>
             <div className="text-left min-w-0">
-              <span className="block text-sm font-extrabold truncate">{t('cat_unlimited_pro')}</span>
-              <span className={`block text-[11px] truncate ${
-                activeCategory === 'unlimited_pro' ? 'text-violet-100' : 'text-slate-400'
+              <span className="block text-sm font-extrabold whitespace-normal">{t('cat_unlimited_pro')}</span>
+              <span className={`block text-xs leading-tight ${
+                activeCategory === 'unlimited_pro' ? 'text-violet-100' : 'text-slate-600'
               }`}>
                 ≥ 1 Mbps Drosselung
               </span>
             </div>
           </div>
-          <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+          <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${
             activeCategory === 'unlimited_pro' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
           }`}>
             Pro
@@ -425,13 +439,13 @@ export function TariffsPageClient({
               }}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${
                 travelTier === 'standard' && activeCategory !== 'travel_premium'
-                  ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-sky-300'
+                  ? 'bg-[#1d4ed8] text-white border-[#1d4ed8] shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'
               }`}
             >
               <TravelGlobeIcon
                 size={15}
-                className={travelTier === 'standard' && activeCategory !== 'travel_premium' ? 'text-white' : 'text-sky-600'}
+                className={travelTier === 'standard' && activeCategory !== 'travel_premium' ? 'text-white' : 'text-[#1d4ed8]'}
               />
               <span>{t('filter_tier_standard')} ({travelStandardCount})</span>
             </button>
@@ -452,7 +466,7 @@ export function TariffsPageClient({
                   className={travelTier === 'premium' || activeCategory === 'travel_premium' ? 'text-white' : 'text-amber-800'}
                 />
                 <span>{t('cat_travel_premium')}</span>
-                <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-black ${
+                <span className={`rounded-full px-2 py-0.5 text-xs font-black ${
                   travelTier === 'premium' || activeCategory === 'travel_premium' ? 'bg-white/20 text-white' : 'bg-amber-200 text-amber-950'
                 }`}>
                   {travelPremiumCount}
@@ -463,11 +477,11 @@ export function TariffsPageClient({
                 type="button"
                 disabled
                 title={t('premium_unavailable_hint')}
-                className="rounded-xl px-4 py-2 text-xs font-bold border border-slate-200 bg-slate-100/70 text-slate-400 cursor-not-allowed flex items-center gap-1.5 opacity-50 select-none"
+                className="rounded-xl px-4 py-2 text-xs font-bold border border-slate-200 bg-slate-100/70 text-slate-500 cursor-not-allowed flex items-center gap-1.5 opacity-50 select-none"
               >
-                <TravelPremiumGlobeIcon size={15} className="text-slate-400" />
+                <TravelPremiumGlobeIcon size={15} className="text-slate-500" />
                 <span>{t('cat_travel_premium')}</span>
-                <span className="rounded-full px-1.5 py-0.2 text-[10px] font-bold bg-slate-200 text-slate-500">
+                <span className="rounded-full px-2 py-0.5 text-xs font-bold bg-slate-200 text-slate-600">
                   0
                 </span>
               </button>
@@ -539,7 +553,7 @@ export function TariffsPageClient({
                   <p className="font-semibold text-slate-800 flex items-center gap-1.5">
                     <span>{t('tp_eco_title')}</span>
                     {activeCategory === 'unlimited_eco' && (
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded-full">Aktiv</span>
+                      <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Aktiv</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">{t('tp_eco_desc')}</p>
@@ -558,7 +572,7 @@ export function TariffsPageClient({
                   <p className="font-semibold text-slate-800 flex items-center gap-1.5">
                     <span>{t('tp_pro_title')}</span>
                     {activeCategory === 'unlimited_pro' && (
-                      <span className="text-[10px] font-bold bg-violet-100 text-violet-800 px-2 py-0.2 rounded-full">Aktiv</span>
+                      <span className="text-xs font-bold bg-violet-100 text-violet-800 px-2.5 py-0.5 rounded-full">Aktiv</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">{t('tp_pro_desc')}</p>

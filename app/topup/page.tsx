@@ -177,19 +177,19 @@ export default function TopUpPage() {
         <label htmlFor="iccid" className="block mb-2 text-xs font-extrabold uppercase tracking-wider text-slate-600">
           {t('topup_iccid_label')}
         </label>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <input
             id="iccid"
             type="text"
             placeholder={t('topup_iccid_ph')}
             value={iccid}
             onChange={(e) => setIccid(e.target.value)}
-            className="flex-1 rounded-2xl border border-slate-300 px-4 py-3 font-mono text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all bg-white shadow-2xs"
+            className="flex-1 h-12 rounded-xl border border-slate-300 px-4 font-mono text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all bg-white shadow-2xs"
           />
           <button
             type="submit"
             disabled={loading || !iccid.trim()}
-            className="rounded-2xl bg-brand-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-brand-700 disabled:opacity-60 transition-all shadow-sm active:scale-[0.98] cursor-pointer"
+            className="btn-primary shadow-sm active:scale-[0.98]"
           >
             {loading ? '…' : t('topup_search')}
           </button>
@@ -354,7 +354,7 @@ export default function TopUpPage() {
                       setAddedCode('unlimited');
                       setTimeout(() => setAddedCode(null), 2000);
                     }}
-                    className="rounded-2xl border-2 border-brand-200 bg-brand-50 px-5 py-3.5 text-sm font-bold text-brand-700 hover:bg-brand-100 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                    className="h-12 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-5 text-sm font-semibold text-brand-700 hover:bg-brand-100 hover:border-brand-300 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
                   >
                     {addedCode === 'unlimited' ? '✓ Im Warenkorb' : '+ In den Warenkorb'}
                   </button>
@@ -362,7 +362,7 @@ export default function TopUpPage() {
                   <button
                     type="button"
                     onClick={handleOpenUnlimitedCheckout}
-                    className="rounded-2xl bg-brand-600 px-6 py-3.5 text-sm font-black text-white hover:bg-brand-700 shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center gap-2"
+                    className="btn-primary shadow-md active:scale-[0.98] flex items-center gap-2"
                   >
                     <span>eSIM um {unlimitedDays} {unlimitedDays === 1 ? 'Tag' : 'Tage'} verlängern</span>
                     <span>·</span>
@@ -412,13 +412,13 @@ export default function TopUpPage() {
                             setAddedCode(pkg.package_code);
                             setTimeout(() => setAddedCode(null), 2000);
                           }}
-                          className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-100 transition-all cursor-pointer active:scale-[0.98]"
+                          className="h-10 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-3.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-all cursor-pointer active:scale-[0.98]"
                         >
                           {addedCode === pkg.package_code ? '✓' : '+ Warenkorb'}
                         </button>
                         <button
                           onClick={() => handleOpenTravelCheckout(pkg)}
-                          className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-brand-700 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                          className="btn-primary !h-10 !px-4 !text-xs shadow-xs active:scale-[0.98]"
                         >
                           {t('topup_btn')}
                         </button>

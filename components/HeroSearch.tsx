@@ -6,6 +6,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { useTranslation } from '@/lib/i18n';
 import { displayCountryName, isRegionCode } from '@/lib/tariff-display';
 import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
+import { countryCodeToSlug } from '@/lib/destinations-shared';
 
 export interface Destination {
   code:     string;
@@ -133,9 +134,27 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
     return scored.slice(0, 8).map((x) => x.d);
   }, [q, destinations, locale]);
 
+  function goToDest(d: Destination) {
+    const slug = countryCodeToSlug(d.code, d.name);
+    const prefix = locale === 'en' ? '/en' : '';
+    router.push(`${prefix}/esim/${slug}`);
+  }
+
   function go(query: string) {
     const term = query.trim();
     if (!term) { router.push('/tariffs'); return; }
+
+    const termLow = term.toLowerCase();
+    const matchedCode = aliasToCode(termLow) || aliasToRegion(termLow) || termLow.toUpperCase();
+    const dest = destinations.find(
+      (d) => d.code.toUpperCase() === matchedCode || d.name.toLowerCase() === termLow || label(d).toLowerCase() === termLow
+    );
+
+    if (dest) {
+      goToDest(dest);
+      return;
+    }
+
     router.push(`/tariffs?q=${encodeURIComponent(term)}`);
   }
 
@@ -147,9 +166,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
       e.preventDefault();
       if (results[active]) {
         const dest = results[active];
-        const val = label(dest);
-        setQ(val);
-        go(val);
+        goToDest(dest);
       } else {
         go(q);
       }
@@ -164,7 +181,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
   return (
     <div ref={boxRef} className="relative mx-auto w-full max-w-2xl text-left">
       {/* Search field */}
-      <div className="flex items-center rounded-full bg-white p-1.5 pl-4 pr-1.5 shadow-md border border-slate-200">
+      <div className="flex items-center rounded-xl bg-white p-1.5 pl-4 pr-1.5 shadow-md border border-slate-200 transition-all focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-200">
         <svg className="h-5 w-5 shrink-0 text-slate-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -174,7 +191,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder={s('ph')}
-          className="w-full bg-transparent py-2.5 text-base text-slate-800 placeholder:text-slate-500 outline-none"
+          className="w-full bg-transparent py-2.5 text-base text-slate-800 placeholder:text-slate-500 outline-none focus:outline-none"
           aria-label={s('ph')}
         />
         {q && (
@@ -182,7 +199,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
         )}
         <button
           onClick={() => go(q)}
-          className="shrink-0 rounded-full bg-brand-600 px-6 py-2.5 font-bold text-white hover:bg-brand-700 transition-colors shadow-sm"
+          className="btn-primary shrink-0 shadow-sm"
         >
           {s('btn')}
         </button>
@@ -203,9 +220,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
                     <button
                       onMouseEnter={() => setActive(i)}
                       onClick={() => {
-                        const val = label(d);
-                        setQ(val);
-                        go(val);
+                        goToDest(d);
                         setOpen(false);
                       }}
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
@@ -237,11 +252,9 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
                     <li key={d.code}>
                       <button
                         onClick={() => {
-                        const val = label(d);
-                        setQ(val);
-                        go(val);
-                        setOpen(false);
-                      }}
+                          goToDest(d);
+                          setOpen(false);
+                        }}
                         className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 transition-colors"
                       >
                         <CountryFlag countryCode={d.code} countryName={label(d)} size={24} className="shrink-0" />
@@ -263,9 +276,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
                       <li key={d.code}>
                         <button
                           onClick={() => {
-                            const val = label(d);
-                            setQ(val);
-                            go(val);
+                            goToDest(d);
                             setOpen(false);
                           }}
                           className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 transition-colors"

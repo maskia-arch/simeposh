@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { CountryFlag } from '@/components/CountryFlag';
 import { useTranslation } from '@/lib/i18n';
 import { displayCountryName } from '@/lib/tariff-display';
-import { aliasesToCodes, aliasesToRegions } from '@/lib/i18n/countryAliases';
+import { aliasesToCodes, aliasesToRegions, aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
+import { countryCodeToSlug } from '@/lib/destinations-shared';
 import type { Destination } from '@/components/HeroSearch';
 
 interface Props {
@@ -71,10 +72,30 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
     return scored.slice(0, 5).map((x) => x.d); // show top 5 in header search
   }, [q, destinations, locale]);
 
+  function goToDest(d: Destination) {
+    const slug = countryCodeToSlug(d.code, d.name);
+    const prefix = locale === 'en' ? '/en' : '';
+    router.push(`${prefix}/esim/${slug}`);
+    onSearchClose?.();
+  }
+
   function go(query: string) {
     const term = query.trim();
-    if (!term) { router.push('/tariffs'); return; }
-    router.push(`/tariffs?q=${encodeURIComponent(term)}`);
+    const prefix = locale === 'en' ? '/en' : '';
+    if (!term) { router.push(`${prefix}/tariffs`); onSearchClose?.(); return; }
+
+    const termLow = term.toLowerCase();
+    const matchedCode = aliasToCode(termLow) || aliasToRegion(termLow) || termLow.toUpperCase();
+    const dest = destinations.find(
+      (d) => d.code.toUpperCase() === matchedCode || d.name.toLowerCase() === termLow || label(d).toLowerCase() === termLow
+    );
+
+    if (dest) {
+      goToDest(dest);
+      return;
+    }
+
+    router.push(`${prefix}/tariffs?q=${encodeURIComponent(term)}`);
     onSearchClose?.();
   }
 
@@ -86,9 +107,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
       e.preventDefault();
       if (results[active]) {
         const dest = results[active];
-        const val = label(dest);
-        setQ(val);
-        go(val);
+        goToDest(dest);
       } else {
         go(q);
       }
@@ -100,7 +119,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
 
   return (
     <div ref={boxRef} className="relative w-full text-left">
-      <div className="flex items-center gap-2 rounded-full border-2 border-slate-300 bg-white hover:border-slate-400 focus-within:border-brand-600 focus-within:ring-4 focus-within:ring-brand-100 px-3.5 py-1.5 shadow-sm hover:shadow transition-all duration-150">
+      <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white hover:border-slate-400 focus-within:border-brand-600 focus-within:ring-4 focus-within:ring-brand-100 px-3.5 py-1.5 shadow-sm hover:shadow transition-all duration-150">
         <svg className="h-4 w-4 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -130,9 +149,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
                   <button
                     onMouseEnter={() => setActive(i)}
                     onClick={() => {
-                      const val = label(d);
-                      setQ(val);
-                      go(val);
+                      goToDest(d);
                       setOpen(false);
                     }}
                     className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${

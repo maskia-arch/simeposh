@@ -1,10 +1,21 @@
 import type { Metadata } from 'next';
 import { getServerLocale } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Erstattungsrichtlinie | Refund Policy',
-  description: 'Erstattungsrichtlinien und Bestimmungen zur Stornierung von eSIM-Datenpaketen von PureSim.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const isDe = locale === 'de';
+  return {
+    title: isDe ? 'Erstattungsrichtlinie' : 'Refund Policy',
+    description: isDe
+      ? 'Erstattungsrichtlinien und Bestimmungen zur Stornierung von eSIM-Datenpaketen von PureSim.'
+      : 'Refund policies and cancellation rules for eSIM data plans by PureSim.',
+    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'refund-policy', enPath: 'refund-policy' }),
+    openGraph: {
+      locale: isDe ? 'de_DE' : 'en_US',
+    },
+  };
+}
 
 export default async function RefundPolicyPage() {
   const locale = await getServerLocale();

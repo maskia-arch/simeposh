@@ -12,7 +12,11 @@ import { ChatWidgetLoader } from '@/components/ChatWidgetLoader';
 import { detectLocale, countryFromHeaders, isSupportedLocale } from '@/lib/i18n/detect';
 import type { LocaleCode } from '@/lib/i18n';
 
+import { SkipLink } from '@/components/SkipLink';
+import { BASE_URL } from '@/lib/seo';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
   title: {
     default:  'PureSim – Günstige eSIMs weltweit',
     template: '%s | PureSim',
@@ -31,6 +35,14 @@ export const metadata: Metadata = {
     title:  'PureSim',
     description: 'eSIMs für über 150 Länder – sofort verfügbar.',
   },
+  alternates: {
+    canonical: BASE_URL,
+    languages: {
+      de: BASE_URL,
+      en: `${BASE_URL}/en`,
+      'x-default': `${BASE_URL}/en`,
+    },
+  },
 };
 
 export default async function RootLayout({
@@ -38,16 +50,22 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolve the visitor's locale: explicit cookie wins, else geo/Accept-Language.
-  const cookieStore = await cookies();
   const headerStore = await headers();
-  const cookieLocale = cookieStore.get('locale')?.value;
-  const locale: LocaleCode = (cookieLocale && isSupportedLocale(cookieLocale))
-    ? (cookieLocale as LocaleCode)
-    : (detectLocale({
-        country:        countryFromHeaders((n) => headerStore.get(n)),
-        acceptLanguage: headerStore.get('accept-language'),
-      }) as LocaleCode);
+  const cookieStore = await cookies();
+
+  // 1. Explicit locale from middleware URL rewrite/detection
+  const headerLocale = headerStore.get('x-locale');
+  const pathname = headerStore.get('x-pathname') || '';
+  const urlLocale = (pathname === '/en' || pathname.startsWith('/en/')) ? 'en' : null;
+
+  // 2. Strict URL-driven resolution (URL is authoritative over cookie)
+  const resolvedLocale: LocaleCode = (headerLocale && isSupportedLocale(headerLocale))
+    ? (headerLocale as LocaleCode)
+    : (urlLocale && isSupportedLocale(urlLocale))
+    ? (urlLocale as LocaleCode)
+    : 'de';
+
+  const locale = resolvedLocale;
 
   const host = (headerStore.get('host') || '').toLowerCase();
   const isEsimDomain = host.startsWith('esim.');
@@ -86,11 +104,12 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-screen flex-col">
         <LanguageProvider initialLocale={locale}>
+          <SkipLink />
           <CurrencyProvider>
             <CartProvider>
               <TicketProvider>
                 <Navbar />
-                <main className="flex-1 min-h-[calc(100svh-5.25rem)]">{children}</main>
+                <main id="main-content" className="flex-1 min-h-[calc(100svh-5.25rem)] outline-none" tabIndex={-1}>{children}</main>
                 <Footer />
                 <CartDrawer />
                 <ChatWidgetLoader />

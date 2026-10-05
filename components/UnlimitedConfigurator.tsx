@@ -684,7 +684,7 @@ export function UnlimitedConfigurator({
                   type="button"
                   onClick={() => syntheticTariff && setCheckoutTariff(syntheticTariff)}
                   disabled={!syntheticTariff}
-                  className="w-full rounded-xl bg-brand-600 py-3.5 text-xs font-black text-white shadow-md hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer text-center"
+                  className="w-full btn-primary active:scale-[0.98] shadow-md"
                 >
                   {t('cfg_buy_now')} {finalPrice !== null ? <> · <Price eur={finalPrice} /></> : ''}
                 </button>

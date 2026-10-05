@@ -1,9 +1,12 @@
+import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { getServerLocale } from '@/lib/i18n/server';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import TariffDetailPageClient from './TariffDetailPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
+import { getDestinationBySlug } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { formatGb } from '@/lib/utils';
 
@@ -52,13 +55,16 @@ export async function generateMetadata({
   const { slug } = await params;
   const tariff = await getTariff(slug);
   if (!tariff) {
-    return {
-      title: 'Tarif nicht gefunden',
-    };
+    const dest = await getDestinationBySlug(slug);
+    if (dest) {
+      return {
+        title: `eSIM ${dest.name} | PureSim`,
+      };
+    }
+    notFound();
   }
 
-  const cookieStore = await cookies();
-  const locale = cookieStore.get('locale')?.value || 'de';
+  const locale = await getServerLocale();
   const isDe = locale === 'de';
 
   const country = displayCountryName(tariff, locale);
@@ -78,7 +84,7 @@ export async function generateMetadata({
     ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${daysLabelDe}. Sofort-Aktivierung per QR-Code.`
     : `Affordable prepaid eSIM for ${country}. Enjoy ${dataLabel} high-speed data for ${daysLabelEn.toLowerCase()}. Instant activation via QR code.`;
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
+  const baseUrl = BASE_URL;
 
   return {
     title,
@@ -95,7 +101,7 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      url: `${baseUrl}/tariffs/${tariff.slug}`,
+      url: `${baseUrl}${isDe ? '' : '/en'}/tariffs/${tariff.slug}`,
       images: [
         {
           url: `${baseUrl}/logo.png`,
@@ -105,9 +111,10 @@ export async function generateMetadata({
         },
       ],
     },
-    alternates: {
-      canonical: `${baseUrl}/tariffs/${tariff.slug}`,
-    },
+    alternates: buildAlternates(isDe ? 'de' : 'en', {
+      dePath: `tariffs/${tariff.slug}`,
+      enPath: `tariffs/${tariff.slug}`,
+    }),
   };
 }
 
@@ -117,15 +124,19 @@ export default async function TariffDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const locale = await getServerLocale();
+  const isDe = locale === 'de';
+  const prefix = isDe ? '' : '/en';
+
   const tariff = await getTariff(slug);
 
   if (!tariff) {
+    const dest = await getDestinationBySlug(slug);
+    if (dest) {
+      redirect(`${prefix}/esim/${dest.slug}`);
+    }
     notFound();
   }
-
-  const cookieStore = await cookies();
-  const locale = cookieStore.get('locale')?.value || 'de';
-  const isDe = locale === 'de';
 
   const countryLabel = displayCountryName(tariff, locale);
   const dataLabel =

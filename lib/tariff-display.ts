@@ -166,6 +166,25 @@ export function isNonHkIpTariff(tariff: {
 }
 
 /**
+ * Checks if a tariff has HK IP routing (explicit breakout_ip === 'HK' or default standard routing).
+ */
+export function isHkIpTariff(tariff: {
+  breakout_ip?: string | null;
+  name?: string | null;
+  package_code?: string | null;
+  description?: string | null;
+  is_non_hk_ip?: boolean | null;
+  is_premium?: boolean | null;
+}): boolean {
+  if (isNonHkIpTariff(tariff) || isPremiumTariff(tariff)) return false;
+  const ip = (tariff.breakout_ip ?? '').toUpperCase().trim();
+  if (ip === 'HK') return true;
+  // If no other breakout_ip is specified and it's not non-hk/premium, it routes via HK
+  return !ip || ip === 'HK';
+}
+
+
+/**
  * Checks if a tariff is a Premium tariff (e.g. Travel Premium / Dual-Network redundancy).
  */
 export function isPremiumTariff(tariff: {
@@ -467,4 +486,42 @@ export function getTariffSpeedDesc(
   }
   return t('tp_pro_desc');
 }
+
+/**
+ * Determines the single "Empfohlen" (Recommended) tariff ID for a list of tariffs.
+ * In a destination / country view, travelers typically look for a solid 10 GB (30 days)
+ * or 5 GB (30 days) plan, or the most popular mid-tier plan.
+ * Returns null if list is empty or represents the un-scoped multi-country catalog.
+ */
+export function getRecommendedTariffId<T extends { id: string; data_gb?: number | null; validity_days?: number | null; tariff_type?: string | null; sale_price_eur?: number | null }>(
+  tariffs: T[],
+): string | null {
+  if (!tariffs || tariffs.length === 0) return null;
+
+  // Filter to standard/travel data plans first
+  const travelPlans = tariffs.filter((t) => !t.tariff_type?.startsWith('unlimited') && (t.data_gb ?? 0) > 0);
+  const pool = travelPlans.length > 0 ? travelPlans : tariffs;
+
+  // 1. Ideal candidate: 10 GB with 30 days
+  const plan10Gb = pool.find((t) => t.data_gb === 10 && t.validity_days === 30);
+  if (plan10Gb) return plan10Gb.id;
+
+  // 2. Candidate: 5 GB with 30 days
+  const plan5Gb = pool.find((t) => t.data_gb === 5 && t.validity_days === 30);
+  if (plan5Gb) return plan5Gb.id;
+
+  // 3. Candidate: 3 GB (15 or 30 days)
+  const plan3Gb = pool.find((t) => t.data_gb === 3);
+  if (plan3Gb) return plan3Gb.id;
+
+  // 4. Candidate: 10 GB or 5 GB any duration
+  const any10or5 = pool.find((t) => t.data_gb === 10 || t.data_gb === 5);
+  if (any10or5) return any10or5.id;
+
+  // 5. Fallback: median-priced plan in the pool
+  const sorted = [...pool].sort((a, b) => (a.sale_price_eur ?? 0) - (b.sale_price_eur ?? 0));
+  const midIndex = Math.floor(sorted.length / 2);
+  return sorted[midIndex]?.id ?? pool[0].id;
+}
+
 

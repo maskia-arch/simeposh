@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatGb } from '@/lib/utils';
 import type { PublicTariff } from '@/lib/tariffs';
 import { CountryFlag } from '@/components/CountryFlag';
@@ -41,8 +41,54 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const [showCountryList, setShowCountryList] = useState(false);
   const { locale, t } = useTranslation();
   const { addItem, open } = useCart();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useHideChatBubble(true);
+
+  // Focus restoration & Escape / Focus trap
+  useEffect(() => {
+    triggerRef.current = document.activeElement as HTMLElement | null;
+    const focusTimer = setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleKeyDown);
+      triggerRef.current?.focus();
+    };
+  }, [onClose]);
 
   const isPremium    = isPremiumTariff(tariff);
   const breakoutIp   = getTariffBreakoutIp(tariff);
@@ -61,12 +107,20 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={onClose} />;
   }
 
+  const closeLabel = locale === 'de' ? 'Schließen' : 'Close';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 sm:p-6"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative flex flex-col w-full max-w-lg max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tariff-detail-title"
+        className="relative flex flex-col w-full max-w-lg max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150"
+      >
 
         {/* ── Top Gradient Accent Bar ── */}
         <div className={`h-2.5 w-full shrink-0 ${
@@ -79,8 +133,10 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
         {/* ── Fixed Header ── */}
         <div className="relative shrink-0 p-5 sm:p-6 border-b border-slate-100 bg-white">
           <button
+            ref={closeButtonRef}
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-full bg-slate-100 p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors z-10 cursor-pointer"
+            aria-label={closeLabel}
+            className="absolute right-4 top-4 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors z-10 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
               <path d="M18 6L6 18M6 6l12 12"/>
@@ -89,8 +145,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
 
           <div className="flex items-center gap-4">
             <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={52} className="shrink-0 rounded-xl shadow-xs" />
-            <div className="min-w-0 pr-6">
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 truncate">{countryLabel}</h2>
+            <div className="min-w-0 pr-10">
+              <h2 id="tariff-detail-title" className="text-xl sm:text-2xl font-extrabold text-slate-900 truncate">{countryLabel}</h2>
               <div className="flex flex-wrap items-center gap-2 mt-1">
                 {coverage && (
                   <div className="relative inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
@@ -159,7 +215,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
         </div>
 
         {/* ── Scrollable Body ── */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 scrollbar-thin">
+        <div tabIndex={0} aria-label={t('card_details')} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 scrollbar-thin focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
 
           {/* ── Key Specs Hero Bar ── */}
           <div className="grid grid-cols-3 gap-2.5">
@@ -339,7 +395,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
           <div className="flex gap-2.5">
             <button
               onClick={() => { addItem(tariff); setAdded(true); setTimeout(() => setAdded(false), 1500); }}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl border-2 border-brand-200 bg-brand-50 py-3 text-xs sm:text-sm font-extrabold text-brand-700 hover:bg-brand-100 active:scale-[0.98] transition-all cursor-pointer"
+              className="flex-1 inline-flex h-12 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 text-xs sm:text-sm font-semibold text-brand-700 hover:bg-brand-100 hover:border-brand-300 active:scale-[0.98] transition-all cursor-pointer"
             >
               {added ? t('det_added') : t('det_add_cart')}
             </button>
@@ -349,7 +405,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                 open();
                 onClose();
               }}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-brand-600 py-3 text-xs sm:text-sm font-extrabold text-white hover:bg-brand-700 active:scale-[0.98] transition-all shadow-md cursor-pointer"
+              className="flex-1 btn-primary !h-12 !text-xs sm:!text-sm active:scale-[0.98] shadow-md"
             >
               {t('det_buy_now')}
             </button>

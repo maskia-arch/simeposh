@@ -42,8 +42,25 @@ export function getServerT(locale: LocaleCode): ServerT {
   };
 }
 
-/** Read the active locale from the cookie (server-side). */
-export async function getServerLocale(): Promise<LocaleCode> {
-  const c = (await cookies()).get('locale')?.value;
-  return c && isValidLocale(c) ? c : 'en';
+import { headers } from 'next/headers';
+
+/** Read the active locale: from x-locale / x-pathname header, passed override, or cookie fallback. */
+export async function getServerLocale(explicitLocale?: string): Promise<LocaleCode> {
+  if (explicitLocale && isValidLocale(explicitLocale)) {
+    return explicitLocale;
+  }
+  try {
+    const h = await headers();
+    const headerLoc = h.get('x-locale');
+    if (headerLoc && isValidLocale(headerLoc)) return headerLoc;
+    const pathname = h.get('x-pathname') || '';
+    if (pathname === '/en' || pathname.startsWith('/en/')) {
+      return 'en';
+    }
+    if (pathname) {
+      return 'de';
+    }
+  } catch {}
+
+  return 'de';
 }

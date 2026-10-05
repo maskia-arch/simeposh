@@ -105,25 +105,27 @@ if (process.env.DATABASE_URL) {
 // 2. Check live server if running on localhost:3000 or 127.0.0.1:3000
 console.log('\nStep 2: Checking live endpoints if server is running on http://127.0.0.1:3000...');
 try {
-  const resp = await fetch('http://127.0.0.1:3000/tariffs', { signal: AbortSignal.timeout(15000) });
-  if (resp.ok) {
-    const html = await resp.text();
-    console.log(`Fetched /tariffs HTML (${html.length} bytes). Checking payload...`);
-    for (const token of FORBIDDEN_TOKENS) {
-      // Check for JSON-encoded property names e.g. "raw_data": or \"raw_data\":
-      const pattern = new RegExp(`["\\\\]${token}["\\\\]\\s*:`, 'i');
-      if (pattern.test(html)) {
-        console.error(`❌ Hard failure: Forbidden property "${token}" found in live /tariffs HTML!`);
+  const endpointsToCheck = ['/tariffs', '/esim/germany'];
+  for (const endpoint of endpointsToCheck) {
+    const resp = await fetch(`http://127.0.0.1:3000${endpoint}`, { signal: AbortSignal.timeout(15000) });
+    if (resp.ok) {
+      const html = await resp.text();
+      console.log(`Fetched ${endpoint} HTML (${html.length} bytes). Checking payload...`);
+      for (const token of FORBIDDEN_TOKENS) {
+        const pattern = new RegExp(`["\\\\]${token}["\\\\]\\s*:`, 'i');
+        if (pattern.test(html)) {
+          console.error(`❌ Hard failure: Forbidden property "${token}" found in live ${endpoint} HTML!`);
+          process.exit(1);
+        }
+      }
+      if (html.includes('fupPolicy')) {
+        console.error(`❌ Hard failure: fupPolicy found in live ${endpoint} HTML!`);
         process.exit(1);
       }
+      console.log(`✓ Live ${endpoint} endpoint is clean of forbidden tokens.`);
+    } else {
+      console.log(`Live server returned status ${resp.status} for ${endpoint}.`);
     }
-    if (html.includes('fupPolicy')) {
-      console.error('❌ Hard failure: fupPolicy found in live /tariffs HTML!');
-      process.exit(1);
-    }
-    console.log('✓ Live /tariffs endpoint is clean of forbidden tokens.');
-  } else {
-    console.log(`Live server returned status ${resp.status} - skipping live HTTP check.`);
   }
 } catch (e) {
   console.log(`Live server not reachable or timed out (${e.message}) - skipping live HTTP check.`);

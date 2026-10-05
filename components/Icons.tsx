@@ -83,16 +83,26 @@ export const EcoIcon: React.FC<{ size?: number; className?: string; alt?: string
 );
 
 // 3c. TopUp Arrow Icon for eSIM aufladen header
-export const TopUpIcon: React.FC<{ size?: number; className?: string; alt?: string }> = ({ size = 48, className = '', alt = 'eSIM aufladen' }) => (
-  <img
-    src="/topup-arrow.png"
-    alt={alt}
+export const TopUpIcon: React.FC<IconProps> = ({ size = 48, className = 'text-[#2563eb]', ...props }) => (
+  <svg
     width={size}
     height={size}
-    style={{ width: size, height: size }}
-    className={`inline-block object-contain shrink-0 ${className}`}
-    loading="eager"
-  />
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`inline-block shrink-0 ${className}`}
+    {...props}
+  >
+    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+    <path d="M21 21v-5h-5" />
+    <path d="M12 8v8" />
+    <path d="M8 12h8" />
+  </svg>
 );
 
 

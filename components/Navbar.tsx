@@ -140,7 +140,8 @@ export function Navbar() {
   const [user, setUser]     = useState<User | null>(null);
   const [menuOpen, setMenu] = useState(false);
   const supabase            = createClient();
-  const { t }               = useTranslation();
+  const { t, locale }       = useTranslation();
+  const prefix              = locale === 'en' ? '/en' : '';
   const pathname            = usePathname();
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -156,6 +157,17 @@ export function Navbar() {
   }, [pathname]);
 
   const cashbackRate = user ? (user as any).cashback_rate ?? 5 : null;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     fetch('/api/destinations')
@@ -178,24 +190,7 @@ export function Navbar() {
       return;
     }
 
-    if (pathname !== '/') {
-      // Always show search bar on other client pages (Plans, Topup, Dashboard)
-      setShowSearch(true);
-      return;
-    }
-
-    // On homepage, only show search if scrolled down past 360px
-    const handleScroll = () => {
-      if (window.scrollY > 360) {
-        setShowSearch(true);
-      } else {
-        setShowSearch(false);
-      }
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    setShowSearch(true);
   }, [pathname]);
 
   async function handleLogout() {
@@ -218,11 +213,10 @@ export function Navbar() {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg shrink-0">
+        <Link href={prefix || '/'} className="flex items-center gap-2 font-bold text-lg shrink-0">
           <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
-          <span className="text-2xl tracking-tight">
-            <span className="text-[#1d4ed8]">Pur</span>
-            <span className="text-[#0ea5e9]">eSim</span>
+          <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
+            PureSim
           </span>
         </Link>
 
@@ -235,26 +229,26 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
-          <Link href="/blog" className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/blog`} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_blog' as any) || 'Blog'}
           </Link>
-          <Link href="/tariffs" className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/tariffs`} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_tariffs')}
           </Link>
-          <Link href="/topup" className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/topup`} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_topup')}
           </Link>
           {user ? (
             <>
               <Link
-                href="/dashboard"
-                className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition-colors font-semibold text-sm"
+                href={`${prefix}/dashboard`}
+                className="btn-primary !h-12 !px-5"
               >
                 {t('nav_dashboard')}
               </Link>
               <button
                 onClick={handleLogout}
-                className="rounded-lg bg-slate-100 px-4 py-2 text-slate-700 hover:bg-slate-200 transition-colors"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-slate-100 px-4 text-base font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 {t('nav_logout')}
               </button>
@@ -262,8 +256,8 @@ export function Navbar() {
           ) : (
             <>
               <Link
-                href="/login"
-                className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 transition-colors font-semibold text-sm"
+                href={`${prefix}/login`}
+                className="btn-primary !h-12 !px-5"
               >
                 {t('nav_login')}
               </Link>
@@ -291,9 +285,10 @@ export function Navbar() {
           <CartButton />
           <LocaleCurrencyControls />
           <button
-            className="flex flex-col gap-1.5"
+            className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
             onClick={() => setMenu(!menuOpen)}
             aria-label="Menu"
+            aria-expanded={menuOpen}
           >
             <span className={`block h-0.5 w-6 bg-slate-700 transition-all ${menuOpen ? 'translate-y-2 rotate-45' : ''}`} />
             <span className={`block h-0.5 w-6 bg-slate-700 transition-all ${menuOpen ? 'opacity-0' : ''}`} />
@@ -306,20 +301,20 @@ export function Navbar() {
       {menuOpen && (
         <div className="border-t border-slate-100 bg-white px-4 pb-4 md:hidden">
           <div className="flex flex-col gap-3 pt-3 text-sm font-medium">
-            <Link href="/blog" onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
-            <Link href="/tariffs" onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
-            <Link href="/topup"   onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
+            <Link href={`${prefix}/blog`} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
+            <Link href={`${prefix}/tariffs`} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
+            <Link href={`${prefix}/topup`}   onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
             {user ? (
               <>
  
                 <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
-                  <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-800 font-bold hover:text-brand-700 transition-colors text-sm">
+                  <Link href={`${prefix}/dashboard`} onClick={() => setMenu(false)} className="text-slate-800 font-bold hover:text-brand-700 transition-colors text-sm">
                     {t('nav_dashboard')}
                   </Link>
-                  <Link href="/dashboard" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
+                  <Link href={`${prefix}/dashboard`} onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     📱 {t('nav_my_esims')}
                   </Link>
-                  <Link href="/dashboard?tab=cash" onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
+                  <Link href={`${prefix}/dashboard?tab=cash`} onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     💰 {t('nav_esim_cash' as any) || 'eSIM Cash'}
                   </Link>
                 </div>
@@ -327,7 +322,7 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/login"    onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
+                <Link href={`${prefix}/login`}    onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
               </>
             )}
 
@@ -363,8 +358,8 @@ export function Navbar() {
 
       {/* Announcement Bar under the Header */}
       <Link
-        href={user ? "/dashboard?tab=cash" : "https://puresim.net/blog/puresim-esim-cash-cashback-programm"}
-        className="w-full bg-gradient-to-r from-brand-600 via-brand-750 to-indigo-700 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer"
+        href={user ? `${prefix}/dashboard?tab=cash` : `${prefix}/blog/${locale === 'en' ? 'puresim-esim-cash-cashback-program-save-on-every-plan-purchase' : 'puresim-esim-cash-cashback-programm'}`}
+        className="w-full bg-gradient-to-r from-brand-600 via-brand-700 to-brand-800 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer"
       >
         <CoinsIcon size={16} />
         {user ? (

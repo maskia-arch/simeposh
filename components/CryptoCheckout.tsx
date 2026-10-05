@@ -378,9 +378,8 @@ export function CryptoCheckout({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <img src="/logo.png" alt="PureSim Logo" className="h-7 w-7 object-contain" />
-              <span className="text-xl font-bold tracking-tight">
-                <span className="text-[#1d4ed8]">Pur</span>
-                <span className="text-[#0ea5e9]">eSim</span>
+              <span className="text-xl font-bold tracking-tight text-[#1d4ed8]">
+                PureSim
               </span>
             </div>
             <div className="h-6 w-20 rounded-full bg-slate-100" />

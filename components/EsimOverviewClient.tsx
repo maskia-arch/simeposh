@@ -151,9 +151,8 @@ export function ClientPage({
         <Link href="https://puresim.net" className="flex items-center gap-2.5 font-bold text-lg shrink-0 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
-          <span className="text-2xl font-bold tracking-tight">
-            <span className="text-[#1d4ed8]">Pur</span>
-            <span className="text-[#0ea5e9]">eSim</span>
+          <span className="text-2xl font-bold tracking-tight text-[#1d4ed8]">
+            PureSim
           </span>
         </Link>
 
@@ -685,9 +684,8 @@ export function ClientPage({
         <Link href="https://puresim.net" className="inline-flex items-center gap-2 font-bold justify-center mb-2 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="PureSim Logo" className="h-6 w-6 object-contain" />
-          <span className="text-lg font-bold tracking-tight">
-            <span className="text-[#1d4ed8]">Pur</span>
-            <span className="text-[#0ea5e9]">eSim</span>
+          <span className="text-lg font-bold tracking-tight text-[#1d4ed8]">
+            PureSim
           </span>
         </Link>
         <p>&copy; {new Date().getFullYear()} PureSim. {tr('footer_copy', 'Alle Rechte vorbehalten.').replace('© {year} PureSim. ', '')}</p>

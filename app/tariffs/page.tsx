@@ -1,9 +1,26 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { createClient }      from '@/lib/supabase/server';
 import { TariffsPageClient } from './TariffsPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
+import { getDestinationBySlug } from '@/lib/destinations';
+import { getServerLocale } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
 
-export const metadata: Metadata = { title: 'Plans' };
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const isDe = locale === 'de';
+  return {
+    title: isDe ? 'Tarife & eSIM Pakete' : 'Plans & eSIM Packages',
+    description: isDe
+      ? 'Finde günstige eSIM-Tarife für über 150 Länder weltweit.'
+      : 'Find affordable eSIM plans for over 150 countries worldwide.',
+    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'tariffs', enPath: 'tariffs' }),
+    openGraph: {
+      locale: isDe ? 'de_DE' : 'en_US',
+    },
+  };
+}
 
 // Revalidate every 10 minutes so freshly-synced tariffs appear quickly
 export const revalidate = 600;
@@ -49,7 +66,18 @@ export default async function TariffsPage({
 }: {
   searchParams: Promise<{ q?: string; category?: string; tab?: string }>;
 }) {
-  const [tariffs, params] = await Promise.all([getTariffs(), searchParams]);
+  const locale = await getServerLocale();
+  const prefix = locale === 'en' ? '/en' : '';
+  const params = await searchParams;
+  const q = params.q?.trim();
+  if (q) {
+    const dest = await getDestinationBySlug(q);
+    if (dest) {
+      redirect(`${prefix}/esim/${dest.slug}`);
+    }
+  }
+
+  const tariffs = await getTariffs();
   const initialCategory = params.category ?? (params.tab === 'unlimited' ? 'unlimited_eco' : params.tab);
   return (
     <TariffsPageClient

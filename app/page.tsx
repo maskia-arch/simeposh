@@ -1,9 +1,36 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { HomePageClient } from '@/components/HomePageClient';
 import { isRegionCode } from '@/lib/tariff-display';
 import type { Destination } from '@/components/HeroSearch';
-import { getServerLocale } from '@/lib/i18n/server';
+import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { query } from '@/lib/db';
+import { buildAlternates } from '@/lib/seo';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const isDe = locale === 'de';
+
+  const title = isDe
+    ? 'PureSim – Günstige eSIMs weltweit'
+    : 'PureSim – Affordable Global eSIMs';
+
+  const description = isDe
+    ? 'Kaufe sofort einsatzbereite eSIMs für über 150 Länder. Günstiger Tarif, einfache Aktivierung, kein Aufpreis.'
+    : 'Buy ready-to-use eSIMs for 150+ countries. Affordable plans, instant QR code activation, no roaming fees.';
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: 'website',
+      locale: isDe ? 'de_DE' : 'en_US',
+      title,
+      description,
+    },
+    alternates: buildAlternates(isDe ? 'de' : 'en'),
+  };
+}
 
 export const revalidate = 600;
 

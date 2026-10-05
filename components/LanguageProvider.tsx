@@ -49,18 +49,25 @@ export function LanguageProvider({ children, initialLocale }: { children: React.
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // On mount: read cookie (client-side) and override SSR default
-  useEffect(() => {
-    const cookieLocale = getInitialLocale();
-    if (cookieLocale !== locale) setLocaleState(cookieLocale);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const setLocale = useCallback((code: LocaleCode) => {
     startTransition(() => {
       setLocaleState(code);
       document.cookie = `locale=${code};path=/;max-age=31536000;SameSite=Lax`;
-      router.refresh();
+      if (typeof window !== 'undefined') {
+        const p = window.location.pathname;
+        const search = window.location.search || '';
+        let target = p;
+        if (code === 'en') {
+          if (p === '/') target = '/en';
+          else if (!p.startsWith('/en')) target = '/en' + p;
+        } else {
+          if (p === '/en') target = '/';
+          else if (p.startsWith('/en/')) target = p.slice(3);
+        }
+        window.location.href = target + search;
+      } else {
+        router.refresh();
+      }
     });
   }, [router]);
 

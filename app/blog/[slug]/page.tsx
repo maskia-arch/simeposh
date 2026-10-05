@@ -1,73 +1,99 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { notFound, redirect } from 'next/navigation';
+import { query } from '@/lib/db';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
 import { getOrCreateTranslation } from '@/lib/blog/translation';
+import { buildAlternates, BASE_URL } from '@/lib/seo';
 
-async function getPostAndTranslation(slug: string, locale: string) {
-  const supabase = await createClient();
-  
+interface PostResolution {
+  post: any;
+  deSlug: string;
+  enSlug: string;
+  shouldRedirect: boolean;
+  redirectUrl?: string;
+  resolvedData: {
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    category: string;
+    featured_image: string | null;
+    published_at: string | null;
+    created_at: string;
+  };
+}
+
+async function getPostAndTranslation(slug: string, locale: string): Promise<PostResolution | null> {
   // 1. Try to find the post where slug matches the main posts table
-  let { data: post } = (await supabase
-    .from('posts')
-    .select('*, post_translations(*)')
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .eq('status', 'approved')
-    .maybeSingle()) as any;
+  let isGermanSlug = true;
+  let postRes = await query('SELECT * FROM posts WHERE slug = $1 AND is_published = true AND status = $2', [slug, 'approved']);
+  let post = postRes.rows[0];
 
   // 2. If not found, try to find it by slug in post_translations
   if (!post) {
-    const { data: trans } = (await supabase
-      .from('post_translations')
-      .select('post_id')
-      .eq('slug', slug)
-      .maybeSingle()) as any;
-
+    let transRes = await query('SELECT post_id, slug, locale FROM post_translations WHERE slug = $1', [slug]);
+    let trans = transRes.rows[0];
     if (trans) {
-      const { data: mainPost } = (await supabase
-        .from('posts')
-        .select('*, post_translations(*)')
-        .eq('id', trans.post_id)
-        .eq('is_published', true)
-        .eq('status', 'approved')
-        .maybeSingle()) as any;
-      post = mainPost;
+      let mainRes = await query('SELECT * FROM posts WHERE id = $1 AND is_published = true AND status = $2', [trans.post_id, 'approved']);
+      post = mainRes.rows[0];
+      isGermanSlug = false;
     }
   }
 
   if (!post) return null;
 
-  // 3. Resolve translation
-  if (locale === 'de') {
-    return {
-      ...post,
-      title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
-      content: post.content,
-    };
-  }
+  const deSlug = post.slug;
+  const transEnRes = await query('SELECT * FROM post_translations WHERE post_id = $1 AND locale = $2', [post.id, 'en']);
+  let enTranslation = transEnRes.rows[0];
 
-  // Find translation in existing translations list
-  let translation = post.post_translations?.find((t: any) => t.locale === locale);
-
-  // If translation is missing (auto-translate fallback!), we create it on the fly!
-  if (!translation) {
+  if (!enTranslation && locale === 'en') {
     try {
-      translation = await getOrCreateTranslation(post.id, locale);
+      enTranslation = await getOrCreateTranslation(post.id, 'en');
     } catch (err) {
-      console.error(`[Translation Fallback] Failed to translate post ${post.id} to ${locale}:`, err);
+      console.error(`[Translation Fallback] Failed to translate post ${post.id} to en:`, err);
     }
   }
 
+  const enSlug = enTranslation?.slug || (!isGermanSlug ? slug : post.slug);
+
+  // Check whether request needs canonical language URL redirect
+  let shouldRedirect = false;
+  let redirectUrl: string | undefined;
+
+  if (locale === 'de') {
+    // English slug accessed under German URL (/blog/...)
+    if (!isGermanSlug || (slug === enSlug && enSlug !== deSlug)) {
+      shouldRedirect = true;
+      redirectUrl = `/en/blog/${enSlug}`;
+    }
+  } else if (locale === 'en') {
+    // German slug accessed under English URL (/en/blog/...)
+    if (isGermanSlug && enSlug !== deSlug) {
+      shouldRedirect = true;
+      redirectUrl = `/en/blog/${enSlug}`;
+    }
+  }
+
+  const isDe = locale === 'de';
+  const resolvedData = {
+    title: isDe ? post.title : (enTranslation?.title || post.title),
+    slug: isDe ? post.slug : (enTranslation?.slug || post.slug),
+    excerpt: isDe ? post.excerpt : (enTranslation?.excerpt || post.excerpt),
+    content: isDe ? post.content : (enTranslation?.content || post.content),
+    category: post.category,
+    featured_image: post.featured_image,
+    published_at: post.published_at,
+    created_at: post.created_at,
+  };
+
   return {
-    ...post,
-    title: translation?.title || post.title,
-    slug: translation?.slug || post.slug,
-    excerpt: translation?.excerpt || post.excerpt,
-    content: translation?.content || post.content,
+    post,
+    deSlug,
+    enSlug,
+    shouldRedirect,
+    redirectUrl,
+    resolvedData,
   };
 }
 
@@ -172,15 +198,32 @@ function parseMarkdownToHtml(markdown: string): string {
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const locale = await getServerLocale();
-  const post = await getPostAndTranslation(slug, locale);
+  const res = await getPostAndTranslation(slug, locale);
 
-  if (!post) {
+  if (!res) {
     return { title: 'Artikel nicht gefunden' };
   }
 
+  if (res.shouldRedirect && res.redirectUrl) {
+    redirect(res.redirectUrl);
+  }
+
+  const { deSlug, enSlug, resolvedData } = res;
+  const isDe = locale === 'de';
+
   return {
-    title: post.title,
-    description: post.excerpt || 'Lies den vollständigen Artikel in unserem Blog.',
+    title: resolvedData.title,
+    description: resolvedData.excerpt || (isDe ? 'Lies den vollständigen Artikel in unserem Blog.' : 'Read the full article on our blog.'),
+    alternates: buildAlternates(isDe ? 'de' : 'en', {
+      dePath: `blog/${deSlug}`,
+      enPath: `blog/${enSlug}`,
+    }),
+    openGraph: {
+      title: resolvedData.title,
+      description: resolvedData.excerpt,
+      locale: isDe ? 'de_DE' : 'en_US',
+      url: isDe ? `${BASE_URL}/blog/${deSlug}` : `${BASE_URL}/en/blog/${enSlug}`,
+    },
   };
 }
 
@@ -188,17 +231,24 @@ export default async function PostDetailPage({ params }: PostPageProps) {
   const { slug } = await params;
   const locale = await getServerLocale();
   const t = getServerT(locale);
-  const post = await getPostAndTranslation(slug, locale);
+  const res = await getPostAndTranslation(slug, locale);
 
-  if (!post) {
+  if (!res) {
     notFound();
   }
 
-  const formattedDate = post.published_at
-    ? new Date(post.published_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : new Date(post.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (res.shouldRedirect && res.redirectUrl) {
+    redirect(res.redirectUrl);
+  }
 
-  const sanitizedContent = (post.content || '').replaceAll('https://puresim.com', 'https://puresim.net/tariffs');
+  const { resolvedData } = res;
+  const prefix = locale === 'en' ? '/en' : '';
+
+  const formattedDate = resolvedData.published_at
+    ? new Date(resolvedData.published_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : new Date(resolvedData.created_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const sanitizedContent = (resolvedData.content || '').replaceAll('https://puresim.com', `${BASE_URL}${prefix}/tariffs`);
   const parsedContentHtml = parseMarkdownToHtml(sanitizedContent);
 
   return (
@@ -206,11 +256,11 @@ export default async function PostDetailPage({ params }: PostPageProps) {
       {/* Navigation Breadcrumb bar */}
       <div className="bg-slate-50 border-b border-slate-200 py-3.5">
         <div className="mx-auto max-w-3xl px-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link href="/" className="hover:text-brand-700 transition-colors">Home</Link>
+          <Link href={prefix || '/'} className="hover:text-brand-700 transition-colors">Home</Link>
           <span>/</span>
-          <Link href="/blog" className="hover:text-brand-700 transition-colors">Blog</Link>
+          <Link href={`${prefix}/blog`} className="hover:text-brand-700 transition-colors">Blog</Link>
           <span>/</span>
-          <span className="text-slate-800 truncate">{post.title}</span>
+          <span className="text-slate-800 truncate">{resolvedData.title}</span>
         </div>
       </div>
 
@@ -218,9 +268,9 @@ export default async function PostDetailPage({ params }: PostPageProps) {
         {/* Article Meta */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider text-white ${
-            post.category === 'guide' ? 'bg-brand-600' : 'bg-teal-600'
+            resolvedData.category === 'guide' ? 'bg-brand-600' : 'bg-teal-600'
           }`}>
-            {post.category === 'guide' 
+            {resolvedData.category === 'guide' 
               ? (t('blog_category_guide' as any) || 'eSIM Grundlagen') 
               : (t('blog_category_news' as any) || 'News')}
           </span>
@@ -231,32 +281,32 @@ export default async function PostDetailPage({ params }: PostPageProps) {
 
         {/* Title */}
         <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-6">
-          {post.title}
+          {resolvedData.title}
         </h1>
 
         {/* Excerpt */}
-        {post.excerpt && (
+        {resolvedData.excerpt && (
           <p className="text-lg text-slate-500 border-l-4 border-slate-250 pl-4 py-1 italic mb-10 leading-relaxed">
-            {post.excerpt}
+            {resolvedData.excerpt}
           </p>
         )}
 
         {/* Featured Cover Image */}
-        {post.featured_image ? (
+        {resolvedData.featured_image ? (
           <div className="w-full rounded-2xl overflow-hidden shadow-md border border-slate-200/50 mb-12 aspect-[16/9] relative">
             <img 
-              src={post.featured_image} 
-              alt={post.title}
+              src={resolvedData.featured_image} 
+              alt={resolvedData.title}
               className="w-full h-full object-cover"
             />
           </div>
         ) : (
           <div className={`w-full rounded-2xl aspect-[16/9] shadow-md mb-12 relative flex items-center justify-center text-white bg-gradient-to-br ${
-            post.category === 'guide' 
+            resolvedData.category === 'guide' 
               ? 'from-brand-600 via-brand-700 to-indigo-850' 
               : 'from-indigo-500 to-brand-500'
           }`}>
-            <span className="text-7xl">{post.category === 'guide' ? '📖' : '📡'}</span>
+            <span className="text-7xl">{resolvedData.category === 'guide' ? '📖' : '📡'}</span>
           </div>
         )}
 
@@ -283,7 +333,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
             </div>
             <div className="mt-6 md:mt-0 shrink-0">
               <Link
-                href="/tariffs"
+                href={`${prefix}/tariffs`}
                 className="inline-block rounded-xl bg-white px-6 py-3 text-sm font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-lg"
               >
                 {t('footer_browse')}
@@ -295,7 +345,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
         {/* Back navigation */}
         <div className="border-t border-slate-100 pt-8">
           <Link
-            href="/blog"
+            href={`${prefix}/blog`}
             className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-850 group transition-colors"
           >
             <span className="transform group-hover:-translate-x-1 transition-transform">

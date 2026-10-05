@@ -17,6 +17,18 @@
   }
 }
 
+@layer components {
+  .btn-primary {
+    @apply inline-flex h-12 items-center justify-center rounded-xl bg-brand-600 px-6 text-base font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer;
+  }
+  .btn-secondary {
+    @apply inline-flex h-12 items-center justify-center rounded-xl border-[1.5px] border-brand-600 bg-transparent px-6 text-base font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer;
+  }
+  .btn-tertiary {
+    @apply inline-flex items-center text-brand-600 font-medium hover:text-brand-700 underline underline-offset-2 transition-colors cursor-pointer;
+  }
+}
+
 @layer utilities {
   .gradient-brand {
     @apply bg-gradient-to-br from-brand-700 to-brand-500;

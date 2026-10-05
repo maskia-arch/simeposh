@@ -1,10 +1,21 @@
 import type { Metadata } from 'next';
 import { getServerLocale } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Datenschutz | Privacy Policy',
-  description: 'Datenschutzerklärung und Bestimmungen zum Schutz personenbezogener Daten von PureSim.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const isDe = locale === 'de';
+  return {
+    title: isDe ? 'Datenschutzerklärung' : 'Privacy Policy',
+    description: isDe
+      ? 'Datenschutzerklärung und Bestimmungen zum Schutz personenbezogener Daten von PureSim.'
+      : 'Privacy policy and personal data protection regulations of PureSim.',
+    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'datenschutz', enPath: 'datenschutz' }),
+    openGraph: {
+      locale: isDe ? 'de_DE' : 'en_US',
+    },
+  };
+}
 
 export default async function PrivacyPage() {
   const locale = await getServerLocale();

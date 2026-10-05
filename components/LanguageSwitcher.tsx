@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { SUPPORTED_LOCALES } from '@/lib/i18n';
 import { useTranslation } from '@/lib/i18n';
 
@@ -16,8 +17,20 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  const pathname = usePathname() || '/';
   const current = SUPPORTED_LOCALES.find((l) => l.code === locale) ?? SUPPORTED_LOCALES[0];
   const isDark = variant === 'dark';
+
+  function getTargetUrl(targetCode: string) {
+    if (targetCode === 'en') {
+      if (pathname === '/') return '/en';
+      if (pathname.startsWith('/en')) return pathname;
+      return '/en' + pathname;
+    }
+    if (pathname === '/en') return '/';
+    if (pathname.startsWith('/en/')) return pathname.slice(3);
+    return pathname;
+  }
 
   // Close on outside click
   useEffect(() => {
@@ -67,10 +80,13 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
           <div className="max-h-64 overflow-y-auto space-y-0.5 custom-scrollbar">
             {SUPPORTED_LOCALES.map((lang) => {
               const isSelected = lang.code === locale;
+              const targetUrl = getTargetUrl(lang.code);
               return (
-                <button
+                <Link
                   key={lang.code}
-                  onClick={() => {
+                  href={targetUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
                     setLocale(lang.code);
                     setOpen(false);
                   }}
@@ -91,7 +107,7 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
                       <path d="M5 13l4 4L19 7"/>
                     </svg>
                   )}
-                </button>
+                </Link>
               );
             })}
           </div>

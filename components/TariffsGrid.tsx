@@ -9,12 +9,31 @@ import type { PublicTariff } from '@/lib/tariffs';
 
 import { NetworkIcon } from '@/components/Icons';
 
+import { getRecommendedTariffId } from '@/lib/tariff-display';
+
 type Tariff = PublicTariff;
 
-export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
+export function TariffsGrid({
+  tariffs,
+  recommendedTariffId,
+}: {
+  tariffs: Tariff[];
+  recommendedTariffId?: string | null;
+}) {
   const { t } = useTranslation();
   const [checkout, setCheckout] = useState<Tariff | null>(null);
   const [detail,   setDetail]   = useState<Tariff | null>(null);
+
+  // If recommendedTariffId was explicitly provided (e.g. from CountryPageClient or TariffsPageClient with country search), use it.
+  // Otherwise, if tariffs belong to a single destination country, auto-calculate.
+  const effectiveRecommendedId = recommendedTariffId !== undefined
+    ? recommendedTariffId
+    : (() => {
+        if (tariffs.length <= 1) return null;
+        const firstCode = tariffs[0].country_code;
+        const isSingleCountry = firstCode && tariffs.every((t) => t.country_code === firstCode);
+        return isSingleCountry ? getRecommendedTariffId(tariffs) : null;
+      })();
 
   if (tariffs.length === 0) {
     return (
@@ -35,6 +54,7 @@ export function TariffsGrid({ tariffs }: { tariffs: Tariff[] }) {
           <TariffCard
             key={t.id}
             tariff={t}
+            isRecommended={t.id === effectiveRecommendedId}
             onBuy={(tariff) => setCheckout(tariff)}
             onDetail={(tariff) => setDetail(tariff)}
           />
