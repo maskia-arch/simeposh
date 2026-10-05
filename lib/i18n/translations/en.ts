@@ -271,7 +271,7 @@ const en = {
   "tp_travel_title": "Travel plans with fixed data",
   "tp_travel_desc": "A one-off data allowance you use flexibly over the whole validity. Ideal for trips with known usage.",
   "tp_eco_title": "Unlimited Eco",
-  "tp_eco_desc": "Daily high-speed allowance, then unlimited at {speed}.",
+  "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Daily high-speed allowance, then unlimited.",
   "tp_pro_title": "Unlimited Pro",
   "tp_pro_desc": "Daily high-speed allowance, then unlimited at ≥ 1 Mbps.",

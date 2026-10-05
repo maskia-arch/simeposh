@@ -37,8 +37,8 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   const baseUrl = BASE_URL;
 
   const title = isDe
-    ? `eSIM ${countryLabel} ab ${minPriceFormatted} € – Highspeed Daten ohne Roaming | PureSim`
-    : `eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Prepaid Data | PureSim`;
+    ? `eSIM ${countryLabel} ab ${minPriceFormatted} € – Highspeed Daten ohne Roaming`
+    : `eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Prepaid Data`;
 
   const description = isDe
     ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted} €, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`

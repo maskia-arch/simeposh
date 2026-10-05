@@ -148,12 +148,18 @@ export function CountryPageClient({
             )}
 
             {minUnlimitedPerDay !== null && (
-              <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
-                <span>Unlimited</span>
-                <span className="font-bold text-emerald-600">
-                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € / {isDe ? 'Tag' : 'day'}
+              <Link
+                href={`${prefix}/unlimited/${destination.slug}`}
+                className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between group hover:text-brand-600 transition-colors"
+                title={isDe ? `Unlimited-Tarif für ${countryLabel} anpassen` : `Customize Unlimited plan for ${countryLabel}`}
+              >
+                <span className="flex items-center gap-1 font-semibold text-emerald-700 group-hover:underline">
+                  <InfinityIcon size={12} className="text-emerald-600" /> Unlimited
                 </span>
-              </div>
+                <span className="font-bold text-emerald-600">
+                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € / {isDe ? 'Tag' : 'day'} →
+                </span>
+              </Link>
             )}
 
             {operators.length > 0 && (
@@ -218,6 +224,34 @@ export function CountryPageClient({
             : `${displayedTariffs.length} plans for ${countryLabel}`}
         </p>
       </section>
+
+      {/* ── Unlimited Builder Callout ── */}
+      {unlimitedTariffs.length > 0 && (
+        <section className="mb-8 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/50 to-emerald-50 border border-emerald-200 p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0 mt-0.5"><EcoIcon size={24} /></span>
+            <div>
+              <h2 className="text-sm md:text-base font-bold text-slate-900">
+                {isDe
+                  ? `Eigenen Unlimited-Tarif für ${countryLabel} zusammenstellen`
+                  : `Build your custom Unlimited plan for ${countryLabel}`}
+              </h2>
+              <p className="text-xs text-slate-600 mt-0.5 max-w-xl">
+                {isDe
+                  ? `Wähle dein tägliches Highspeed-Volumen und die genaue Reisedauer von 1 bis 365 Tagen im PureSim Unlimited-Builder für ${countryLabel}.`
+                  : `Choose your daily high-speed volume and exact trip length from 1 to 365 days in the PureSim Unlimited builder for ${countryLabel}.`}
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`${prefix}/unlimited/${destination.slug}`}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-5 text-sm font-semibold text-white shadow-sm transition-colors shrink-0 cursor-pointer"
+          >
+            <span>{isDe ? 'Zum Unlimited-Builder' : 'Go to Unlimited Builder'}</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </section>
+      )}
 
       {/* ── Tariffs Grid ── */}
       <section className="mb-14">

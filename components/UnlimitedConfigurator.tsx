@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { roundToX9, getDiscountPct, discountLabel, formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import type { PublicTariff } from '@/lib/tariffs';
@@ -201,6 +202,9 @@ interface Props {
   initialQuery?: string;
   initialTariffType?: TariffType;
   onTariffTypeChange?: (type: TariffType) => void;
+  initialCountryCode?: string;
+  allDestinations?: Array<{ code: string; name: string; flag?: string | null; slug: string }>;
+  isStandaloneRoute?: boolean;
 }
 
 export function UnlimitedConfigurator({
@@ -208,33 +212,80 @@ export function UnlimitedConfigurator({
   initialQuery = '',
   initialTariffType,
   onTariffTypeChange,
+  initialCountryCode,
+  allDestinations,
+  isStandaloneRoute = false,
 }: Props) {
+  const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const changeCountryBtnRef = useRef<HTMLButtonElement>(null);
+
   const [countrySearch, setCountrySearch]     = useState('');
-  const [selectedCountry, setSelectedCountry] = useState<string | null>('DE');
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(initialCountryCode ?? 'DE');
   const [isChangingCountry, setIsChangingCountry] = useState(false);
   const [tariffType, setTariffType]           = useState<TariffType>(initialTariffType ?? 'unlimited_eco');
+
+  useEffect(() => {
+    if (initialCountryCode) {
+      setSelectedCountry(initialCountryCode);
+    }
+  }, [initialCountryCode]);
 
   useEffect(() => {
     if (initialTariffType) {
       setTariffType(initialTariffType);
     }
   }, [initialTariffType]);
+
+  // Focus search input when country changer opens
+  useEffect(() => {
+    if (isChangingCountry) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isChangingCountry]);
+
+  // Escape listener for country selector panel
+  useEffect(() => {
+    if (!isChangingCountry) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsChangingCountry(false);
+        changeCountryBtnRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isChangingCountry]);
+
   const [selectedGb, setSelectedGb]           = useState<number | null>(null);
   const [days, setDays]                       = useState(7);
   const [checkoutTariff, setCheckoutTariff]   = useState<Tariff | null>(null);
   const [added, setAdded]                     = useState(false);
   const { addItem, open }                     = useCart();
-  const { t }                                 = useTranslation();
+  const { t, locale }                         = useTranslation();
 
   // ── Step 1: Extract available countries ──────────────────────────────────
   type CountryEntry = {
     name:   string;
     flag:   string;
     code:   string;
+    slug?:  string;
     covers: Set<string>;
   };
 
   const countries = useMemo(() => {
+    if (allDestinations && allDestinations.length > 0) {
+      return allDestinations.map((d) => ({
+        name:   d.name,
+        flag:   d.flag ?? '',
+        code:   d.code,
+        slug:   d.slug,
+        covers: new Set<string>([d.code.toUpperCase()]),
+      })).sort((a, b) => a.name.localeCompare(b.name));
+    }
     const map = new Map<string, CountryEntry>();
     tariffs.forEach((t) => {
       let entry = map.get(t.country_code);
@@ -243,6 +294,7 @@ export function UnlimitedConfigurator({
           name:   t.country_name,
           flag:   t.flag_emoji ?? '',
           code:   t.country_code,
+          slug:   t.slug,
           covers: new Set<string>(),
         };
         map.set(t.country_code, entry);
@@ -251,7 +303,22 @@ export function UnlimitedConfigurator({
       for (const l of locs) entry.covers.add(l.toUpperCase());
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [tariffs]);
+  }, [tariffs, allDestinations]);
+
+  const handleSelectCountry = (code: string) => {
+    if (isStandaloneRoute) {
+      const match = countries.find((c) => c.code === code);
+      const slug = match?.slug || code.toLowerCase();
+      const isDe = locale === 'de';
+      router.push(`${isDe ? '' : '/en'}/unlimited/${slug}`);
+      setIsChangingCountry(false);
+      return;
+    }
+    setSelectedCountry(code);
+    setCountrySearch('');
+    setIsChangingCountry(false);
+    changeCountryBtnRef.current?.focus();
+  };
 
   useEffect(() => {
     if (countries.length > 0 && (!selectedCountry || !countries.some(c => c.code === selectedCountry))) {
@@ -409,6 +476,7 @@ export function UnlimitedConfigurator({
               </div>
             </div>
             <button
+              ref={changeCountryBtnRef}
               type="button"
               onClick={() => setIsChangingCountry(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 transition-all cursor-pointer"
@@ -426,8 +494,11 @@ export function UnlimitedConfigurator({
               {selectedCountryData && (
                 <button
                   type="button"
-                  onClick={() => setIsChangingCountry(false)}
-                  className="text-xs font-bold text-slate-400 hover:text-slate-600"
+                  onClick={() => {
+                    setIsChangingCountry(false);
+                    changeCountryBtnRef.current?.focus();
+                  }}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   Abbrechen ✕
                 </button>
@@ -435,12 +506,12 @@ export function UnlimitedConfigurator({
             </div>
 
             <input
+              ref={searchInputRef}
               type="search"
               value={countrySearch}
               onChange={(e) => setCountrySearch(e.target.value)}
               placeholder={t('cfg_search_country')}
               className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
-              autoFocus
             />
 
             <div className="flex flex-wrap items-center gap-1 pt-0.5">
@@ -452,11 +523,7 @@ export function UnlimitedConfigurator({
                   <button
                     key={code}
                     type="button"
-                    onClick={() => {
-                      setSelectedCountry(item.code);
-                      setCountrySearch('');
-                      setIsChangingCountry(false);
-                    }}
+                    onClick={() => handleSelectCountry(item.code)}
                     className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
                       selectedCountry === item.code
                         ? 'border-brand-500 bg-brand-50 text-brand-700 font-bold'
@@ -475,11 +542,7 @@ export function UnlimitedConfigurator({
                 <button
                   key={c.code}
                   type="button"
-                  onClick={() => {
-                    setSelectedCountry(c.code);
-                    setCountrySearch('');
-                    setIsChangingCountry(false);
-                  }}
+                  onClick={() => handleSelectCountry(c.code)}
                   className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-all cursor-pointer ${
                     selectedCountry === c.code
                       ? 'border-brand-500 bg-brand-50 font-bold text-brand-700 shadow-xs'
@@ -711,16 +774,16 @@ export function UnlimitedConfigurator({
                 setAdded(true);
                 setTimeout(() => setAdded(false), 1500);
               }}
-              className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-bold text-brand-700"
+              className="h-12 rounded-xl border border-brand-200 bg-brand-50 px-3.5 text-xs font-bold text-brand-700 cursor-pointer"
             >
               {added ? '✓' : '+ Warenkorb'}
             </button>
             <button
               type="button"
               onClick={() => setCheckoutTariff(syntheticTariff)}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-extrabold text-white shadow-xs"
+              className="btn-primary h-12 px-5 text-sm font-extrabold shadow-sm active:scale-[0.98]"
             >
-              Jetzt kaufen
+              {t('cfg_buy_now')}
             </button>
           </div>
         </div>

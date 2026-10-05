@@ -188,7 +188,7 @@ const de = {
   "tp_travel_title": "Travel-Tarife mit festem Datenvolumen",
   "tp_travel_desc": "Einmaliges Datenvolumen, das du flexibel über die gesamte Laufzeit verbrauchst. Ideal für Reisen mit bekanntem Datenverbrauch.",
   "tp_eco_title": "Unlimited Eco",
-  "tp_eco_desc": "Tägliches Highspeed-Volumen, danach {speed} unbegrenzt weiter.",
+  "tp_eco_desc": "Tägliches Highspeed-Volumen, danach 512 kbps unbegrenzt weiter.",
   "tp_eco_desc_generic": "Tägliches Highspeed-Volumen, danach unbegrenzt weiter.",
   "tp_pro_title": "Unlimited Pro",
   "tp_pro_desc": "Tägliches Highspeed-Volumen, danach ≥ 1 Mbps unbegrenzt.",

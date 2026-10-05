@@ -556,7 +556,7 @@ export function TariffsPageClient({
                       <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Aktiv</span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t('tp_eco_desc')}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('tp_eco_desc', { speed: '512 kbps' })}</p>
                 </div>
               </div>
               <div

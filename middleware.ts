@@ -74,7 +74,7 @@ export async function middleware(request: NextRequest) {
     // Standard user shop and checkout routes (never block human shoppers for User-Agent quirks or privacy browsers)
     const isStandardUserRoute =
       normalizedPath === '/' ||
-      /^\/(cart|checkout|order|tariffs|esim|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(normalizedPath) ||
+      /^\/(cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(normalizedPath) ||
       pathname.startsWith('/api/crypto') ||
       pathname.startsWith('/api/order') ||
       pathname.startsWith('/api/tariffs');
@@ -139,6 +139,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL(`${langPrefix}/esim/${targetSlug}`, request.url), 301);
       }
     }
+  }
+
+  // ── 301 Redirect old soft-404 /esim/unlimited -> /unlimited/germany ──
+  if (normalizedPath === '/esim/unlimited') {
+    return NextResponse.redirect(new URL(`${langPrefix}/unlimited/germany`, request.url), 301);
+  }
+
+  // ── 301 Redirect bare /unlimited or /configurator without country -> /unlimited/germany ──
+  if (normalizedPath === '/unlimited' || normalizedPath === '/configurator') {
+    return NextResponse.redirect(new URL(`${langPrefix}/unlimited/germany`, request.url), 301);
   }
 
   // ── 301 Redirect mismatched blog slugs between German (/blog/...) and English (/en/blog/...) ──
@@ -272,7 +282,7 @@ export async function middleware(request: NextRequest) {
       // 2. If path is root '/' or webshop route, REDIRECT to main domain (puresim.net)
       else if (
         pathname === '/' ||
-        /^\/(tariffs|esim|cart|checkout|dashboard|login|register|reviews|blog|agb|datenschutz|refund-policy|order|topup)/i.test(normalizedPath)
+        /^\/(tariffs|esim|unlimited|cart|checkout|dashboard|login|register|reviews|blog|agb|datenschutz|refund-policy|order|topup)/i.test(normalizedPath)
       ) {
         return NextResponse.redirect(new URL(pathname + request.nextUrl.search, `https://${mainDomain}`), 302);
       }

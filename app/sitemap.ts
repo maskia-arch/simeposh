@@ -80,6 +80,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.9,
           alternates,
         });
+
+        // Unlimited configurator routes
+        const deUnlUrl = `${baseUrl}/unlimited/${d.slug}`;
+        const enUnlUrl = `${baseUrl}/en/unlimited/${d.slug}`;
+        const unlAlternates = {
+          languages: {
+            de: deUnlUrl,
+            en: enUnlUrl,
+            'x-default': enUnlUrl,
+          },
+        };
+
+        sitemapEntries.push({
+          url: deUnlUrl,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.8,
+          alternates: unlAlternates,
+        });
+
+        sitemapEntries.push({
+          url: enUnlUrl,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.8,
+          alternates: unlAlternates,
+        });
       }
     });
   } catch (err) {
