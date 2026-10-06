@@ -124,12 +124,76 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
     }
   };
 
-  // For LTC: Prioritize BlockCypher because litecoinspace.org frequently hangs/times out
+  // Helper for litecoinblockexplorer.net (Insight API)
+  const checkLitecoinBlockExplorer = async (): Promise<ChainCheckResult | null> => {
+    try {
+      const addrRes = await fetch(`https://litecoinblockexplorer.net/api/address/${address}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(3500)
+      });
+      if (!addrRes.ok) return null;
+      const addrData = await addrRes.json();
+      const txids = Array.isArray(addrData.transactions) ? addrData.transactions.slice(0, 15) : [];
+      if (txids.length === 0) return { received: 0, confirmations: 0, txid: null };
+
+      let totalReceivedSat = 0;
+      let latestTxid: string | null = null;
+      let maxConfs = 0;
+
+      for (const txid of txids) {
+        if (claimedTxHashes && claimedTxHashes.has(txid)) continue;
+        try {
+          const txRes = await fetch(`https://litecoinblockexplorer.net/api/tx/${txid}`, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(3000)
+          });
+          if (!txRes.ok) continue;
+          const tx = await txRes.json();
+
+          const txTimeSec = tx.blocktime || tx.time;
+          if (txTimeSec && (txTimeSec * 1000) < minTimestamp) continue;
+
+          let txReceivedSat = 0;
+          if (Array.isArray(tx.vout)) {
+            for (const out of tx.vout) {
+              const addrs = out.scriptPubKey?.addresses || [];
+              if (addrs.includes(address)) {
+                txReceivedSat += Math.round(parseFloat(out.value || 0) * 1e8);
+              }
+            }
+          }
+
+          if (txReceivedSat > 0) {
+            totalReceivedSat += txReceivedSat;
+            latestTxid = tx.txid || latestTxid;
+            const conf = Number(tx.confirmations || 0);
+            if (conf > maxConfs) maxConfs = conf;
+          }
+        } catch {}
+      }
+
+      return {
+        received: totalReceivedSat / 1e8,
+        confirmations: maxConfs,
+        txid: latestTxid
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  // For LTC: Try BlockCypher and litecoinblockexplorer.net (reliable Insight API)
   if (isLtc) {
+    const ltcBlockRes = await checkLitecoinBlockExplorer();
+    if (ltcBlockRes && ltcBlockRes.received > 0) return ltcBlockRes;
+
     const cypherResult = await checkBlockCypher();
+    if (cypherResult && cypherResult.received > 0) return cypherResult;
+
+    if (ltcBlockRes) return ltcBlockRes;
     if (cypherResult) return cypherResult;
 
-    // Fallback: litecoinspace with strict short timeout
+    // Last resort fallback: litecoinspace with strict short timeout
     const spaceResult = await checkMempoolExplorer('https://litecoinspace.org/api');
     if (spaceResult) return spaceResult;
   } else {
