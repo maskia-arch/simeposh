@@ -135,6 +135,11 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
     return this;
   }
 
+  filter(col: string, op: string, val: any): PostgresQueryBuilder<T, R, Single> {
+    this.whereFilters.push({ col, op, val });
+    return this;
+  }
+
   range(from: number, to: number): PostgresQueryBuilder<T, R, Single> {
     this.limitVal = to - from + 1;
     this.offsetVal = from;
@@ -215,6 +220,18 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
           if (f.op === 'IS NULL' || f.op === 'IS TRUE' || f.op === 'IS FALSE') {
             return `${colSafe} ${f.op}`;
           }
+          if (f.op === 'cs') {
+            return `${colSafe} @> ${pushParam(f.val)}`;
+          }
+          if (f.op === 'cd') {
+            return `${colSafe} <@ ${pushParam(f.val)}`;
+          }
+          if (f.op === 'ilike') {
+            return `${colSafe} ILIKE ${pushParam(f.val)}`;
+          }
+          if (f.op === 'like') {
+            return `${colSafe} LIKE ${pushParam(f.val)}`;
+          }
           if (f.op === 'IN') {
             if (!Array.isArray(f.val) || f.val.length === 0) {
               return 'FALSE';
@@ -222,7 +239,14 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
             const placeHolders = f.val.map(v => pushParam(v)).join(', ');
             return `${colSafe} IN (${placeHolders})`;
           }
-          return `${colSafe} ${f.op} ${pushParam(f.val)}`;
+          let op = f.op;
+          if (op === 'eq') op = '=';
+          else if (op === 'neq') op = '!=';
+          else if (op === 'gt') op = '>';
+          else if (op === 'gte') op = '>=';
+          else if (op === 'lt') op = '<';
+          else if (op === 'lte') op = '<=';
+          return `${colSafe} ${op} ${pushParam(f.val)}`;
         });
         parts.push(...clauses);
       }

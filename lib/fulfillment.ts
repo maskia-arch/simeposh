@@ -144,8 +144,10 @@ export async function fulfillOrder(
       const rec = Number(cryptoSess.received_amount || 0);
       const exp = Number(cryptoSess.crypto_amount || 0);
       // If crypto session exists but has 0 received funds, BLOCK FULFILLMENT!
-      if (rec <= 0 || cryptoSess.status === 'cancelled' || cryptoSess.status === 'expired') {
-        console.error(`[FULFILLMENT CRITICAL SECURITY] Blocked provisioning for order ${orderId}: crypto session ${cryptoSess.id} has 0 received amount (${rec}/${exp}, status=${cryptoSess.status})!`);
+      const threshold = exp > 0 ? exp * 0.98 : 0;
+      const isPaidOrLatePaid = cryptoSess.status === 'paid' || (rec > 0 && rec >= threshold);
+      if (rec <= 0 || cryptoSess.status === 'cancelled' || (!isPaidOrLatePaid && cryptoSess.status === 'expired')) {
+        console.error(`[FULFILLMENT CRITICAL SECURITY] Blocked provisioning for order ${orderId}: crypto session ${cryptoSess.id} has insufficient received amount (${rec}/${exp}, status=${cryptoSess.status})!`);
         return { orderId, ok: false, error: 'Cannot fulfill crypto order without verified funds received.' };
       }
     }

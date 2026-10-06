@@ -13,24 +13,70 @@ export const dynamic = 'force-dynamic';
 async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date, claimedTxHashes?: Set<string>): Promise<{ received: number; confirmations: number; txid: string | null }> {
   const isLtc = coinCode === 'LTC';
   const minTimestamp = createdAfter ? (createdAfter.getTime() - 5 * 60 * 1000) : (Date.now() - 35 * 60 * 1000);
-  const primaryUrls = isLtc
-    ? ['https://litecoinspace.org/api']
-    : ['https://mempool.space/api', 'https://blockstream.info/api'];
 
-  // 1. Try Primary Mempool/Space Explorers
-  for (const baseUrl of primaryUrls) {
+  // Helper for BlockCypher parsing
+  const checkBlockCypher = async (): Promise<ChainCheckResult | null> => {
     try {
-      const txsRes = await fetch(`${baseUrl}/address/${address}/txs`, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-      if (!txsRes.ok) continue;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const chainPath = isLtc ? 'ltc/main' : 'btc/main';
+      const cypherRes = await fetch(`https://api.blockcypher.com/v1/${chainPath}/addrs/${address}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(4000)
+      });
+      if (!cypherRes.ok) return null;
+      const data = await cypherRes.json();
+      let totalReceivedSat = 0;
+      let latestTxid: string | null = null;
+      let maxConfs = 0;
+
+      const allRefs: any[] = [
+        ...(Array.isArray(data.txrefs) ? data.txrefs : []),
+        ...(Array.isArray(data.unconfirmed_txrefs) ? data.unconfirmed_txrefs : []),
+      ];
+
+      for (const ref of allRefs) {
+        const isIncoming = (ref.tx_output_n !== undefined && ref.tx_output_n >= 0) || ref.tx_input_n === -1;
+        if (!isIncoming || !ref.value || ref.value <= 0) continue;
+        if (claimedTxHashes && ref.tx_hash && claimedTxHashes.has(ref.tx_hash)) continue;
+
+        if (ref.confirmed) {
+          const refTime = new Date(ref.confirmed).getTime();
+          if (isNaN(refTime) || refTime < minTimestamp) continue;
+        }
+
+        totalReceivedSat += Number(ref.value || 0);
+        latestTxid = ref.tx_hash || latestTxid;
+        const conf = Number(ref.confirmations || (ref.confirmed ? 1 : 0));
+        if (conf > maxConfs) maxConfs = conf;
+      }
+
+      return {
+        received: totalReceivedSat / 1e8,
+        confirmations: maxConfs,
+        txid: latestTxid,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  // Helper for Mempool / Space API parsing
+  const checkMempoolExplorer = async (baseUrl: string): Promise<ChainCheckResult | null> => {
+    try {
+      const timeoutMs = isLtc ? 2500 : 4000;
+      const txsRes = await fetch(`${baseUrl}/address/${address}/txs`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (!txsRes.ok) return null;
       const txs = await txsRes.json() as any[];
 
       let tipHeight = 0;
       try {
-        const tipRes = await fetch(`${baseUrl}/blocks/tip/height`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
-        if (tipRes.ok) {
-          tipHeight = parseInt((await tipRes.text()).trim(), 10);
-        }
+        const tipRes = await fetch(`${baseUrl}/blocks/tip/height`, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(2000)
+        });
+        if (tipRes.ok) tipHeight = parseInt((await tipRes.text()).trim(), 10);
       } catch {}
 
       let totalReceivedSat = 0;
@@ -38,19 +84,12 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
       let lastTxid: string | null = null;
 
       for (const tx of txs) {
-        if (claimedTxHashes && tx.txid && claimedTxHashes.has(tx.txid)) {
-          continue;
-        }
-
-        // Strictly verify transaction was created AFTER the checkout session
+        if (claimedTxHashes && tx.txid && claimedTxHashes.has(tx.txid)) continue;
         if (tx.status?.confirmed) {
           if (tx.status.block_time) {
             const txTimeMs = tx.status.block_time * 1000;
-            if (txTimeMs < minTimestamp) {
-              continue; // Skip historical confirmed transactions
-            }
+            if (txTimeMs < minTimestamp) continue;
           } else {
-            // Confirmed without block_time? Do not trust blindly
             continue;
           }
         }
@@ -67,14 +106,11 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
         if (txReceived > 0) {
           totalReceivedSat += txReceived;
           lastTxid = tx.txid;
-          
           let txConf = 0;
           if (tx.status && tx.status.confirmed && tx.status.block_height) {
             txConf = Math.max(1, tipHeight > 0 ? tipHeight - tx.status.block_height + 1 : 1);
           }
-          if (txConf > maxConfirmations) {
-            maxConfirmations = txConf;
-          }
+          if (txConf > maxConfirmations) maxConfirmations = txConf;
         }
       }
 
@@ -83,65 +119,31 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
         confirmations: maxConfirmations,
         txid: lastTxid
       };
-    } catch {}
+    } catch {
+      return null;
+    }
+  };
+
+  // For LTC: Prioritize BlockCypher because litecoinspace.org frequently hangs/times out
+  if (isLtc) {
+    const cypherResult = await checkBlockCypher();
+    if (cypherResult) return cypherResult;
+
+    // Fallback: litecoinspace with strict short timeout
+    const spaceResult = await checkMempoolExplorer('https://litecoinspace.org/api');
+    if (spaceResult) return spaceResult;
+  } else {
+    // For BTC: Try mempool.space and blockstream.info first, then BlockCypher
+    const btcUrls = ['https://mempool.space/api', 'https://blockstream.info/api'];
+    for (const u of btcUrls) {
+      const res = await checkMempoolExplorer(u);
+      if (res) return res;
+    }
+    const cypherResult = await checkBlockCypher();
+    if (cypherResult) return cypherResult;
   }
 
-  // 2. Secondary Fallback: BlockCypher API
-  try {
-    const chainPath = isLtc ? 'ltc/main' : 'btc/main';
-    const cypherRes = await fetch(`https://api.blockcypher.com/v1/${chainPath}/addrs/${address}`, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-    if (cypherRes.ok) {
-      const data = await cypherRes.json();
-      let totalReceivedSat = 0;
-      let latestTxid: string | null = null;
-      let maxConfs = 0;
-
-      // Combine confirmed txrefs and unconfirmed txrefs if any
-      const allRefs: any[] = [
-        ...(Array.isArray(data.txrefs) ? data.txrefs : []),
-        ...(Array.isArray(data.unconfirmed_txrefs) ? data.unconfirmed_txrefs : []),
-      ];
-
-      for (const ref of allRefs) {
-        // Must be an incoming output to this address (NOT an outgoing spend where tx_output_n === -1)
-        const isIncoming = (ref.tx_output_n !== undefined && ref.tx_output_n >= 0) || ref.tx_input_n === -1;
-        if (!isIncoming || !ref.value || ref.value <= 0) {
-          continue;
-        }
-
-        if (claimedTxHashes && ref.tx_hash && claimedTxHashes.has(ref.tx_hash)) {
-          continue;
-        }
-
-        // Strictly verify confirmed date is AFTER checkout session creation
-        if (ref.confirmed) {
-          const refTime = new Date(ref.confirmed).getTime();
-          if (isNaN(refTime) || refTime < minTimestamp) {
-            continue; // Skip historical transaction
-          }
-        }
-
-        totalReceivedSat += Number(ref.value || 0);
-        latestTxid = ref.tx_hash || latestTxid;
-        const conf = Number(ref.confirmations || (ref.confirmed ? 1 : 0));
-        if (conf > maxConfs) {
-          maxConfs = conf;
-        }
-      }
-
-      return {
-        received: totalReceivedSat / 1e8,
-        confirmations: maxConfs,
-        txid: latestTxid,
-      };
-    }
-  } catch {}
-
-  return {
-    received: 0,
-    confirmations: 0,
-    txid: null,
-  };
+  return { received: 0, confirmations: 0, txid: null };
 }
 
 interface ChainCheckResult {
@@ -189,7 +191,9 @@ const BSC_FALLBACK_RPCS = [
 const SOLANA_FALLBACK_RPCS = [
   'https://api.mainnet-beta.solana.com',
   'https://solana-rpc.publicnode.com',
-  'https://api.tatum.io/v3/blockchain/node/solana-mainnet',
+  'https://rpc.ankr.com/solana',
+  'https://1rpc.io/sol',
+  'https://solana-mainnet.rpc.extrnode.com',
 ];
 
 async function callJsonRpc(urls: string[], method: string, params: any[]): Promise<any> {
@@ -710,17 +714,17 @@ export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
       .select('id, expires_at, status')
       .in('status', ['pending', 'detected', 'partially_paid'])
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(30);
 
-    // 2. ALSO fetch recently expired sessions from the last 72h that may have late on-chain payments!
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    // 2. Fetch recently expired sessions from the last 2 hours that may have late on-chain payments
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const { data: expiredSessions } = await db
       .from('crypto_sessions')
       .select('id, expires_at, status')
       .eq('status', 'expired')
-      .gt('created_at', threeDaysAgo)
+      .gt('created_at', twoHoursAgo)
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(10);
 
     const allCandidateSessions = [
       ...(activeSessions || []),
@@ -730,14 +734,21 @@ export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
     if (allCandidateSessions.length === 0) return 0;
 
     const seenIds = new Set<string>();
-    let count = 0;
-    for (const s of allCandidateSessions) {
-      if (seenIds.has(s.id)) continue;
+    const uniqueSessions = allCandidateSessions.filter(s => {
+      if (seenIds.has(s.id)) return false;
       seenIds.add(s.id);
+      return true;
+    });
 
-      await syncSessionWithGateway(s.id, db);
-      count++;
+    // Process in parallel batches of 5 for high performance without timeout
+    const batchSize = 5;
+    let count = 0;
+    for (let i = 0; i < uniqueSessions.length; i += batchSize) {
+      const batch = uniqueSessions.slice(i, i + batchSize);
+      await Promise.all(batch.map(s => syncSessionWithGateway(s.id, db).catch(() => null)));
+      count += batch.length;
     }
+
     return count;
   } catch (err) {
     console.error('[syncAllActiveCryptoSessions] Error:', err);
@@ -769,9 +780,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (s.status !== 'pending' || ageMs >= 15000) {
     await syncSessionWithGateway(id, db);
   }
-
-  // Trigger background sweep of active sessions asynchronously (fire-and-forget)
-  syncAllActiveCryptoSessions(db).catch(() => {});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
