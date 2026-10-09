@@ -194,7 +194,6 @@ export function isPremiumTariff(tariff: {
   package_code?: string | null;
   description?: string | null;
   slug?: string | null;
-  raw_data?: Record<string, unknown> | null;
 }): boolean {
   if (typeof tariff.is_premium === 'boolean') return tariff.is_premium;
   if (tariff.tariff_type === 'travel_premium') return true;
@@ -204,19 +203,11 @@ export function isPremiumTariff(tariff: {
   const descStr = (tariff.description ?? '').toLowerCase();
   const slugStr = (tariff.slug ?? '').toLowerCase();
 
-  const raw = tariff.raw_data;
-  const rawName = typeof raw?.name === 'string' ? raw.name.toLowerCase() : '';
-  const rawDesc = typeof raw?.description === 'string' ? raw.description.toLowerCase() : '';
-  const rawType = typeof raw?.type === 'string' ? raw.type.toLowerCase() : '';
-
   return (
     nameStr.includes('premium') ||
     codeStr.includes('premium') ||
     descStr.includes('premium') ||
-    slugStr.includes('premium') ||
-    rawName.includes('premium') ||
-    rawDesc.includes('premium') ||
-    rawType.includes('premium')
+    slugStr.includes('premium')
   );
 }
 
