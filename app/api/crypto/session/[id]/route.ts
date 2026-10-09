@@ -10,9 +10,18 @@ import { sendUnderpaymentEmail } from '@/lib/email/mailer';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function checkBtcLtcAddress(address: string, coinCode: string, createdAfter?: Date, claimedTxHashes?: Set<string>): Promise<{ received: number; confirmations: number; txid: string | null }> {
+async function checkBtcLtcAddress(
+  address: string,
+  coinCode: string,
+  createdAfter?: Date,
+  claimedTxHashes?: Set<string>,
+  expiresAt?: Date
+): Promise<{ received: number; confirmations: number; txid: string | null }> {
   const isLtc = coinCode === 'LTC';
   const minTimestamp = createdAfter ? (createdAfter.getTime() - 5 * 60 * 1000) : (Date.now() - 35 * 60 * 1000);
+  const maxTimestamp = expiresAt
+    ? (expiresAt.getTime() + 30 * 60 * 1000)
+    : (createdAfter ? (createdAfter.getTime() + 60 * 60 * 1000) : (Date.now() + 10 * 60 * 1000));
 
   // Helper for BlockCypher parsing
   const checkBlockCypher = async (): Promise<ChainCheckResult | null> => {
@@ -40,7 +49,12 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
 
         if (ref.confirmed) {
           const refTime = new Date(ref.confirmed).getTime();
-          if (isNaN(refTime) || refTime < minTimestamp) continue;
+          if (isNaN(refTime) || refTime < minTimestamp || refTime > maxTimestamp) continue;
+        } else if (ref.received) {
+          const refTime = new Date(ref.received).getTime();
+          if (!isNaN(refTime) && (refTime < minTimestamp || refTime > maxTimestamp)) continue;
+        } else if (Date.now() > maxTimestamp) {
+          continue;
         }
 
         totalReceivedSat += Number(ref.value || 0);
@@ -88,10 +102,12 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
         if (tx.status?.confirmed) {
           if (tx.status.block_time) {
             const txTimeMs = tx.status.block_time * 1000;
-            if (txTimeMs < minTimestamp) continue;
+            if (txTimeMs < minTimestamp || txTimeMs > maxTimestamp) continue;
           } else {
             continue;
           }
+        } else if (Date.now() > maxTimestamp) {
+          continue;
         }
 
         let txReceived = 0;
@@ -151,7 +167,12 @@ async function checkBtcLtcAddress(address: string, coinCode: string, createdAfte
           const tx = await txRes.json();
 
           const txTimeSec = tx.blocktime || tx.time;
-          if (txTimeSec && (txTimeSec * 1000) < minTimestamp) continue;
+          if (txTimeSec) {
+            const txTimeMs = txTimeSec * 1000;
+            if (txTimeMs < minTimestamp || txTimeMs > maxTimestamp) continue;
+          } else if (Date.now() > maxTimestamp) {
+            continue;
+          }
 
           let txReceivedSat = 0;
           if (Array.isArray(tx.vout)) {
@@ -381,10 +402,19 @@ async function checkSolAddress(address: string, coinCode: string = 'SOL'): Promi
   };
 }
 
-async function checkTonAddress(address: string, paymentMemo?: string | null, createdAfter?: Date): Promise<ChainCheckResult> {
+async function checkTonAddress(
+  address: string,
+  paymentMemo?: string | null,
+  createdAfter?: Date,
+  expiresAt?: Date
+): Promise<ChainCheckResult> {
   if (!paymentMemo) {
     return { received: 0, confirmations: 0, txid: null };
   }
+
+  const maxTimestamp = expiresAt
+    ? (expiresAt.getTime() + 30 * 60 * 1000)
+    : (createdAfter ? (createdAfter.getTime() + 60 * 60 * 1000) : (Date.now() + 10 * 60 * 1000));
 
   try {
     const url = `https://toncenter.com/api/v2/getTransactions?address=${encodeURIComponent(address)}&limit=40`;
@@ -413,11 +443,16 @@ async function checkTonAddress(address: string, paymentMemo?: string | null, cre
             } catch {}
           }
 
-          if (createdAfter && tx.utime) {
+          if (tx.utime) {
             const txTimeMs = Number(tx.utime) * 1000;
-            if (txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
+            if (createdAfter && txTimeMs < createdAfter.getTime() - 5 * 60 * 1000) {
               continue;
             }
+            if (txTimeMs > maxTimestamp) {
+              continue;
+            }
+          } else if (Date.now() > maxTimestamp) {
+            continue;
           }
 
           const actualMemo = comment.toLowerCase();
@@ -501,10 +536,18 @@ export async function checkAddressOnChain(
   paymentMemo?: string | null,
   createdAfter?: Date,
   claimedTxHashes?: Set<string>,
-  initialBalance: number = 0
+  initialBalance: number = 0,
+  expiresAt?: Date
 ): Promise<ChainCheckResult> {
   const cleanAddr = address.trim();
   const upperCoin = coinCode.toUpperCase();
+
+  // For account-based coins (EVM, SOL, TRX): if session is already past expiration + grace period, reject
+  if (expiresAt && Date.now() > (expiresAt.getTime() + 30 * 60 * 1000)) {
+    if (upperCoin !== 'BTC' && upperCoin !== 'LTC') {
+      return { received: 0, confirmations: 0, txid: null };
+    }
+  }
 
   let rawRes: ChainCheckResult;
 
@@ -519,10 +562,10 @@ export async function checkAddressOnChain(
     rawRes = await checkSolAddress(cleanAddr, upperCoin);
   } else if (upperCoin === 'TON' || cleanAddr.startsWith('EQ') || cleanAddr.startsWith('UQ')) {
     // 4. TON address
-    return checkTonAddress(cleanAddr, paymentMemo, createdAfter);
+    return checkTonAddress(cleanAddr, paymentMemo, createdAfter, expiresAt);
   } else if (upperCoin === 'BTC' || upperCoin === 'LTC') {
     // 5. Bitcoin / Litecoin
-    return checkBtcLtcAddress(cleanAddr, upperCoin, createdAfter, claimedTxHashes);
+    return checkBtcLtcAddress(cleanAddr, upperCoin, createdAfter, claimedTxHashes, expiresAt);
   } else if (cleanAddr.startsWith('0x')) {
     rawRes = await checkEthAddress(cleanAddr, upperCoin);
   } else {
@@ -578,6 +621,41 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
 
   if (!currentSession) return null;
 
+  const nowMs = Date.now();
+  const expMs = new Date(currentSession.expires_at).getTime();
+  const gracePeriodMs = 30 * 60 * 1000; // 30 minutes grace window for mempool mining
+  const isPastGrace = nowMs > (expMs + gracePeriodMs);
+
+  // If already paid, do not re-evaluate or re-fulfill
+  if (currentSession.status === 'paid') {
+    return currentSession;
+  }
+
+  // If session is expired or cancelled AND past the grace period:
+  // It is PERMANENTLY CLOSED. Never query blockchain explorers, never revive!
+  if ((currentSession.status === 'expired' || currentSession.status === 'cancelled') && isPastGrace) {
+    return currentSession;
+  }
+
+  // If session is pending and already well past grace period:
+  // Seal it as expired immediately without hitting blockchain explorers.
+  if (currentSession.status === 'pending' && isPastGrace) {
+    await db
+      .from('crypto_sessions')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('id', id);
+    const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
+    if (orderIds.length > 0) {
+      await db
+        .from('orders')
+        .update({ status: 'expired' })
+        .in('id', orderIds)
+        .in('status', ['pending', 'pending_payment']);
+    }
+    currentSession.status = 'expired';
+    return currentSession;
+  }
+
   let status: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' = currentSession.status;
   let receivedAmount = currentSession.received_amount || 0;
   let txHash = currentSession.tx_hash;
@@ -600,8 +678,6 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   const expectedAmount = Number(currentSession.crypto_amount);
   const requiredThreshold = expectedAmount * (minPaymentPct / 100);
   const confirmationsRequired = Number(currentSession.confirmations_required || 1);
-  const nowMs = Date.now();
-  const expMs = new Date(currentSession.expires_at).getTime();
 
   if (gatewayData) {
     status = gatewayData.status;
@@ -646,7 +722,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
         } catch {}
 
         const initialBalance = Number((currentSession as any).initial_balance || 0);
-        const chainInfo = await checkAddressOnChain(address, coinCode, paymentMemo, createdAfter, claimedTxHashes, initialBalance);
+        const expiresAt = currentSession.expires_at ? new Date(currentSession.expires_at) : undefined;
+        const chainInfo = await checkAddressOnChain(address, coinCode, paymentMemo, createdAfter, claimedTxHashes, initialBalance, expiresAt);
 
         if (chainInfo.received >= requiredThreshold) {
           status = chainInfo.confirmations >= confirmationsRequired ? 'paid' : 'detected';
@@ -668,6 +745,28 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       }
     } catch (chainErr) {
       console.error(`[Direct Chain Check] Failed to check blockchain for session ${id}:`, (chainErr as Error).message);
+    }
+  }
+
+  // ── GLOBAL TX_HASH COLLISION & RE-USE GUARD ──
+  // If a transaction hash is present, ensure it has NOT been claimed by ANY other paid crypto session!
+  if (txHash && typeof txHash === 'string' && txHash.trim() && !txHash.endsWith('_check')) {
+    try {
+      const { data: duplicateClaims } = await db
+        .from('crypto_sessions')
+        .select('id, customer_email, wallet_address, status')
+        .eq('tx_hash', txHash.trim())
+        .eq('status', 'paid')
+        .neq('id', id);
+
+      if (duplicateClaims && duplicateClaims.length > 0) {
+        console.error(`[CRITICAL SECURITY ALERT] tx_hash ${txHash} is ALREADY claimed by paid session(s) ${duplicateClaims.map((d: any) => d.id).join(', ')}! Rejecting duplicate claim for session ${id}.`);
+        txHash = null;
+        receivedAmount = 0;
+        status = nowMs > expMs ? 'expired' : 'pending';
+      }
+    } catch (dupErr) {
+      console.error('[tx_hash uniqueness check error]:', dupErr);
     }
   }
 
@@ -694,10 +793,25 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
 
     // When session is paid, ensure all associated orders are fulfilled (fire-and-forget to avoid blocking the GET/POST handler)
     if (status === 'paid') {
-      // ── HARD SECURITY GATE: NEVER FULFILL WITHOUT VERIFIED ON-CHAIN FUNDS ──
+      // ── HARD SECURITY GATE 1: NEVER FULFILL WITHOUT VERIFIED ON-CHAIN FUNDS ──
       if (receivedAmount <= 0 || receivedAmount < requiredThreshold) {
         console.error(`[CRITICAL SECURITY GATE BLOCKED] Session ${id} attempted fulfillment without verified funds: receivedAmount=${receivedAmount}, requiredThreshold=${requiredThreshold}. Aborting fulfillment.`);
         return;
+      }
+
+      // ── HARD SECURITY GATE 2: NEVER FULFILL IF TX_HASH IS ALREADY CLAIMED ──
+      if (txHash && typeof txHash === 'string' && !txHash.endsWith('_check')) {
+        const { data: dupClaims } = await db
+          .from('crypto_sessions')
+          .select('id')
+          .eq('tx_hash', txHash.trim())
+          .eq('status', 'paid')
+          .neq('id', id);
+
+        if (dupClaims && dupClaims.length > 0) {
+          console.error(`[CRITICAL SECURITY GATE BLOCKED] Session ${id} tx_hash ${txHash} is already claimed by session ${dupClaims[0].id}. Aborting fulfillment!`);
+          return;
+        }
       }
 
       const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];

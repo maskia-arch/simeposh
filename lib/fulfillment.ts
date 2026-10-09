@@ -136,7 +136,7 @@ export async function fulfillOrder(
   // ── HARD SECURITY GATE: Check crypto session validity if order is crypto-funded ──
   try {
     const { data: cryptoSess } = await (supabase.from('crypto_sessions') as any)
-      .select('id, status, received_amount, crypto_amount')
+      .select('id, status, received_amount, crypto_amount, tx_hash')
       .filter('order_ids', 'cs', `{"${orderId}"}`)
       .maybeSingle();
 
@@ -149,6 +149,20 @@ export async function fulfillOrder(
       if (rec <= 0 || cryptoSess.status === 'cancelled' || (!isPaidOrLatePaid && cryptoSess.status === 'expired')) {
         console.error(`[FULFILLMENT CRITICAL SECURITY] Blocked provisioning for order ${orderId}: crypto session ${cryptoSess.id} has insufficient received amount (${rec}/${exp}, status=${cryptoSess.status})!`);
         return { orderId, ok: false, error: 'Cannot fulfill crypto order without verified funds received.' };
+      }
+
+      // Check if tx_hash was duplicated from another session
+      if (cryptoSess.tx_hash && typeof cryptoSess.tx_hash === 'string' && !cryptoSess.tx_hash.endsWith('_check')) {
+        const { data: dups } = await (supabase.from('crypto_sessions') as any)
+          .select('id')
+          .eq('tx_hash', cryptoSess.tx_hash.trim())
+          .eq('status', 'paid')
+          .neq('id', cryptoSess.id);
+
+        if (dups && dups.length > 0) {
+          console.error(`[FULFILLMENT CRITICAL SECURITY] Blocked provisioning for order ${orderId}: tx_hash ${cryptoSess.tx_hash} is already claimed by session ${dups[0].id}!`);
+          return { orderId, ok: false, error: 'Cannot fulfill order with duplicated transaction hash.' };
+        }
       }
     }
   } catch (secErr) {

@@ -130,6 +130,27 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
     return this;
   }
 
+  not(col: string, op: string, val: any): PostgresQueryBuilder<T, R, Single> {
+    if (op === 'is') {
+      if (val === null) {
+        this.whereFilters.push({ col, op: 'IS NOT NULL', val: null });
+      } else if (val === true) {
+        this.whereFilters.push({ col, op: 'IS NOT TRUE', val: null });
+      } else if (val === false) {
+        this.whereFilters.push({ col, op: 'IS NOT FALSE', val: null });
+      }
+    } else if (op === 'eq') {
+      this.whereFilters.push({ col, op: '!=', val });
+    } else if (op === 'neq') {
+      this.whereFilters.push({ col, op: '=', val });
+    } else if (op === 'in') {
+      this.whereFilters.push({ col, op: 'NOT IN', val });
+    } else {
+      this.whereFilters.push({ col, op: `NOT_${op}`, val });
+    }
+    return this;
+  }
+
   or(filterStr: string): PostgresQueryBuilder<T, R, Single> {
     this.orFilters.push(filterStr);
     return this;
@@ -217,7 +238,7 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
       if (this.whereFilters.length > 0) {
         const clauses = this.whereFilters.map(f => {
           const colSafe = sanitizeIdent(f.col);
-          if (f.op === 'IS NULL' || f.op === 'IS TRUE' || f.op === 'IS FALSE') {
+          if (f.op === 'IS NULL' || f.op === 'IS TRUE' || f.op === 'IS FALSE' || f.op === 'IS NOT NULL' || f.op === 'IS NOT TRUE' || f.op === 'IS NOT FALSE') {
             return `${colSafe} ${f.op}`;
           }
           if (f.op === 'cs') {
@@ -238,6 +259,13 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
             }
             const placeHolders = f.val.map(v => pushParam(v)).join(', ');
             return `${colSafe} IN (${placeHolders})`;
+          }
+          if (f.op === 'NOT IN') {
+            if (!Array.isArray(f.val) || f.val.length === 0) {
+              return 'TRUE';
+            }
+            const placeHolders = f.val.map(v => pushParam(v)).join(', ');
+            return `${colSafe} NOT IN (${placeHolders})`;
           }
           let op = f.op;
           if (op === 'eq') op = '=';
