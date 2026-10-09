@@ -171,7 +171,7 @@ export async function GET(request: Request) {
                 ek_price_usd: pkg.ek_price_usd ?? 0,
                 sale_price_eur: pkg.sale_price_eur,
                 usd_eur_rate: usdEurRate,
-                is_active: true,
+                is_active: false, // Internal reference for top-up orders only; do NOT show as standalone shop tariff
                 is_top_up_eligible: true,
                 tariff_type: pkg.tariff_type || 'travel',
                 speed_kbps: pkg.speed_kbps ?? null,

@@ -148,7 +148,7 @@ export async function POST(request: Request) {
                 ek_price_usd: ekUsd,
                 sale_price_eur: salePriceEur,
                 usd_eur_rate: 0.92,
-                is_active: true,
+                is_active: false, // Internal reference for top-up orders only; do NOT show as standalone shop tariff
                 is_top_up_eligible: true,
                 tariff_type: 'travel',
                 raw_data: found as any,
