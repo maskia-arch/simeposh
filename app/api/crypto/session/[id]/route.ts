@@ -626,8 +626,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   const gracePeriodMs = 30 * 60 * 1000; // 30 minutes grace window for mempool mining
   const isPastGrace = nowMs > (expMs + gracePeriodMs);
 
-  // If already paid, do not re-evaluate or re-fulfill
-  if (currentSession.status === 'paid') {
+  // If already paid or under review, do not re-evaluate or re-fulfill
+  if (currentSession.status === 'paid' || currentSession.status === 'review') {
     return currentSession;
   }
 
@@ -642,7 +642,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   if (currentSession.status === 'pending' && isPastGrace) {
     await db
       .from('crypto_sessions')
-      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .update({ status: 'expired' })
       .eq('id', id);
     const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
     if (orderIds.length > 0) {
@@ -656,7 +656,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
     return currentSession;
   }
 
-  let status: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' = currentSession.status;
+  let status: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' | 'review' | 'cancelled' = currentSession.status;
   let receivedAmount = currentSession.received_amount || 0;
   let txHash = currentSession.tx_hash;
   let confirmations = currentSession.confirmations || 0;
@@ -679,20 +679,36 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   const requiredThreshold = expectedAmount * (minPaymentPct / 100);
   const confirmationsRequired = Number(currentSession.confirmations_required || 1);
 
-  if (gatewayData) {
-    status = gatewayData.status;
-    receivedAmount = gatewayData.received_amount;
-    txHash = gatewayData.tx_hash;
-    confirmations = gatewayData.confirmations;
-    paidAt = gatewayData.paid_at || (gatewayData.status === 'paid' ? new Date().toISOString() : null);
+  const isAlreadyClosed = currentSession.status === 'cancelled' || currentSession.status === 'expired';
 
-    // If gateway returns partially_paid, check if it satisfies min_payment_pct tolerance
-    if (status === 'partially_paid' && expectedAmount > 0 && receivedAmount >= requiredThreshold) {
-      status = confirmations >= confirmationsRequired ? 'paid' : 'detected';
-      paidAt = status === 'paid' ? new Date().toISOString() : null;
-      console.log(`[Session Sync] Overriding gateway partially_paid to ${status} via min_payment_pct (${minPaymentPct}%) tolerance`);
-    } else if (status === 'pending' && nowMs > expMs && receivedAmount === 0) {
-      status = 'expired';
+  if (gatewayData) {
+    const gwReceived = Number(gatewayData.received_amount || 0);
+
+    if (isAlreadyClosed) {
+      if (gwReceived >= requiredThreshold || gatewayData.status === 'paid' || gwReceived > 0) {
+        status = 'review' as any;
+        receivedAmount = gwReceived;
+        txHash = gatewayData.tx_hash;
+        confirmations = gatewayData.confirmations;
+        paidAt = gatewayData.paid_at || new Date().toISOString();
+      } else {
+        status = currentSession.status;
+      }
+    } else {
+      status = gatewayData.status;
+      receivedAmount = gwReceived;
+      txHash = gatewayData.tx_hash;
+      confirmations = gatewayData.confirmations;
+      paidAt = gatewayData.paid_at || (gatewayData.status === 'paid' ? new Date().toISOString() : null);
+
+      // If gateway returns partially_paid, check if it satisfies min_payment_pct tolerance
+      if (status === 'partially_paid' && expectedAmount > 0 && receivedAmount >= requiredThreshold) {
+        status = confirmations >= confirmationsRequired ? 'paid' : 'detected';
+        paidAt = status === 'paid' ? new Date().toISOString() : null;
+        console.log(`[Session Sync] Overriding gateway partially_paid to ${status} via min_payment_pct (${minPaymentPct}%) tolerance`);
+      } else if (status === 'pending' && nowMs > expMs && receivedAmount === 0) {
+        status = 'expired';
+      }
     }
   } else {
     // Direct Blockchain Multi-RPC Check (Autonomous Mode)
@@ -725,12 +741,19 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
         const expiresAt = currentSession.expires_at ? new Date(currentSession.expires_at) : undefined;
         const chainInfo = await checkAddressOnChain(address, coinCode, paymentMemo, createdAfter, claimedTxHashes, initialBalance, expiresAt);
 
-        if (chainInfo.received >= requiredThreshold) {
-          status = chainInfo.confirmations >= confirmationsRequired ? 'paid' : 'detected';
-        } else if (chainInfo.received > 0) {
-          status = 'partially_paid';
+        if (chainInfo.received >= requiredThreshold || chainInfo.received > 0) {
+          if (isAlreadyClosed) {
+            status = 'review' as any;
+          } else if (chainInfo.received >= requiredThreshold) {
+            status = chainInfo.confirmations >= confirmationsRequired ? 'paid' : 'detected';
+          } else {
+            status = 'partially_paid';
+          }
         } else if (currentSession.status === 'detected' || currentSession.status === 'partially_paid') {
           // Preserve existing detected/partially_paid status if explorer transiently returned 0
+          status = currentSession.status;
+        } else if (isAlreadyClosed) {
+          // Keep cancelled as cancelled, expired as expired! Never revive to pending!
           status = currentSession.status;
         } else {
           status = nowMs > expMs ? 'expired' : 'pending';
@@ -739,7 +762,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
         receivedAmount = chainInfo.received;
         txHash = chainInfo.txid || txHash;
         confirmations = chainInfo.confirmations;
-        paidAt = status === 'paid' ? (currentSession.paid_at || new Date().toISOString()) : null;
+        paidAt = (status === 'paid' || status === 'review') ? (currentSession.paid_at || new Date().toISOString()) : null;
 
         console.log(`[Direct Chain Check] Session ${id} (${coinCode} on ${address}): status=${status}, received=${receivedAmount}/${expectedAmount} (threshold: ${requiredThreshold})`);
       }
@@ -792,7 +815,7 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .eq('id', id);
 
     // When session is paid, ensure all associated orders are fulfilled (fire-and-forget to avoid blocking the GET/POST handler)
-    if (status === 'paid') {
+    if (status === 'paid' && currentSession.status !== 'cancelled' && currentSession.status !== 'expired' && currentSession.status !== 'review') {
       // ── HARD SECURITY GATE 1: NEVER FULFILL WITHOUT VERIFIED ON-CHAIN FUNDS ──
       if (receivedAmount <= 0 || receivedAmount < requiredThreshold) {
         console.error(`[CRITICAL SECURITY GATE BLOCKED] Session ${id} attempted fulfillment without verified funds: receivedAmount=${receivedAmount}, requiredThreshold=${requiredThreshold}. Aborting fulfillment.`);
@@ -841,6 +864,18 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           console.error('[Session Sync] Background fulfillment error:', err);
         });
       }
+    } else if (status === 'review') {
+      const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
+      if (orderIds.length > 0) {
+        await db
+          .from('orders')
+          .update({
+            status: 'review',
+            payment_confirmed_at: paidAt || new Date().toISOString(),
+          })
+          .in('id', orderIds);
+      }
+      console.log(`[Session Sync] Session ${id} set to 'review'. Orders updated to 'review'. Fulfillment skipped.`);
     } else if (status === 'expired') {
       const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
       if (orderIds.length > 0) {
@@ -992,6 +1027,56 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
+  // If cancelled or expired: DO NOT expose address, paymentUri, or QR data!
+  if (status === 'cancelled' || status === 'expired') {
+    return NextResponse.json({
+      id:                 s.id,
+      coin:               s.coin,
+      coinName:           coin?.name ?? s.coin,
+      status,
+      walletAddress:      '',
+      cryptoAmount:       '',
+      paymentUri:         '',
+      amountEur:          Number(s.amount_eur),
+      baseEur:            Number(s.base_eur),
+      surchargePct:       Number(s.surcharge_pct),
+      surchargeFixedEur:  Number(s.surcharge_fixed_eur),
+      confirmations:      s.confirmations || 0,
+      confirmationsRequired: s.confirmations_required,
+      txHash:             s.tx_hash,
+      remainingMs:        0,
+      expiresAt:          s.expires_at,
+      ref,
+      paymentMemo:        null,
+      receivedAmount:     Number(s.received_amount || 0),
+    });
+  }
+
+  if (status === 'review') {
+    return NextResponse.json({
+      id:                 s.id,
+      coin:               s.coin,
+      coinName:           coin?.name ?? s.coin,
+      status:             'review',
+      walletAddress:      '',
+      cryptoAmount:       '',
+      paymentUri:         '',
+      amountEur:          Number(s.amount_eur),
+      baseEur:            Number(s.base_eur),
+      surchargePct:       Number(s.surcharge_pct),
+      surchargeFixedEur:  Number(s.surcharge_fixed_eur),
+      confirmations:      s.confirmations || 0,
+      confirmationsRequired: s.confirmations_required,
+      txHash:             s.tx_hash,
+      remainingMs:        0,
+      expiresAt:          s.expires_at,
+      ref,
+      paymentMemo:        null,
+      receivedAmount:     Number(s.received_amount || 0),
+      paidAt:             s.paid_at,
+    });
+  }
+
   // Timer only applies to 'pending'. Once 'detected', 'partially_paid', or 'paid', timer is ended (0 remaining).
   const remainingMs = (status === 'detected' || status === 'partially_paid' || status === 'paid')
     ? 0
@@ -1033,11 +1118,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       .maybeSingle();
 
     if (fetchErr || !s) {
-      return NextResponse.json({ success: true, alreadyCancelled: true });
+      return NextResponse.json({ success: true, alreadyCancelled: true, status: 'cancelled' });
     }
 
-    // If order was already fulfilled / paid / detected, refuse cancellation
-    if (s.status === 'paid' || s.status === 'detected' || s.status === 'partially_paid') {
+    // If order was already fulfilled / paid / detected / in review, refuse cancellation
+    if (s.status === 'paid' || s.status === 'detected' || s.status === 'partially_paid' || s.status === 'review') {
       return NextResponse.json(
         { error: 'Zahlung wurde bereits erkannt oder bestätigt. Stornierung nicht möglich.', status: s.status },
         { status: 400 }
@@ -1046,11 +1131,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
     const orderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
 
-    // 2. Mark pending orders as 'expired' so Admin Dashboard shows "Abgelaufen ⏱️"
+    // 2. Mark pending orders as 'cancelled'
     if (orderIds.length > 0) {
       await db
         .from('orders')
-        .update({ status: 'expired' })
+        .update({ status: 'cancelled' })
         .in('id', orderIds)
         .in('status', ['pending', 'pending_payment']);
     }
@@ -1058,14 +1143,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     // Also cancel any orders linked via checkout_ref if matching session id
     await db
       .from('orders')
-      .update({ status: 'expired' })
+      .update({ status: 'cancelled' })
       .eq('checkout_ref', id)
       .in('status', ['pending', 'pending_payment']);
 
-    // 3. Update session status to 'expired' (frees up wallet address automatically)
+    // 3. Update session status to 'cancelled' (frees up wallet address automatically)
     await db
       .from('crypto_sessions')
-      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .update({ status: 'cancelled' })
       .eq('id', id);
 
     // 4. Notify pure-wallet gateway if configured / reachable
@@ -1081,8 +1166,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       }
     } catch {}
 
-    console.log(`[crypto/session/cancel] Session ${id} and associated orders marked as 'expired'.`);
-    return NextResponse.json({ success: true, status: 'expired' });
+    console.log(`[crypto/session/cancel] Session ${id} and associated orders marked as 'cancelled'.`);
+    return NextResponse.json({ success: true, status: 'cancelled' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[crypto/session/cancel] Error:', msg);
@@ -1138,6 +1223,56 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
           .maybeSingle();
         status = recheck?.status ?? 'expired';
       }
+    }
+
+    // If cancelled or expired: DO NOT expose address, paymentUri, or QR data!
+    if (status === 'cancelled' || status === 'expired') {
+      return NextResponse.json({
+        id:                 s.id,
+        coin:               s.coin,
+        coinName:           coin?.name ?? s.coin,
+        status,
+        walletAddress:      '',
+        cryptoAmount:       '',
+        paymentUri:         '',
+        amountEur:          Number(s.amount_eur),
+        baseEur:            Number(s.base_eur),
+        surchargePct:       Number(s.surcharge_pct),
+        surchargeFixedEur:  Number(s.surcharge_fixed_eur),
+        confirmations:      s.confirmations || 0,
+        confirmationsRequired: s.confirmations_required,
+        txHash:             s.tx_hash,
+        remainingMs:        0,
+        expiresAt:          s.expires_at,
+        ref,
+        paymentMemo:        null,
+        receivedAmount:     Number(s.received_amount || 0),
+      });
+    }
+
+    if (status === 'review') {
+      return NextResponse.json({
+        id:                 s.id,
+        coin:               s.coin,
+        coinName:           coin?.name ?? s.coin,
+        status:             'review',
+        walletAddress:      '',
+        cryptoAmount:       '',
+        paymentUri:         '',
+        amountEur:          Number(s.amount_eur),
+        baseEur:            Number(s.base_eur),
+        surchargePct:       Number(s.surcharge_pct),
+        surchargeFixedEur:  Number(s.surcharge_fixed_eur),
+        confirmations:      s.confirmations || 0,
+        confirmationsRequired: s.confirmations_required,
+        txHash:             s.tx_hash,
+        remainingMs:        0,
+        expiresAt:          s.expires_at,
+        ref,
+        paymentMemo:        null,
+        receivedAmount:     Number(s.received_amount || 0),
+        paidAt:             s.paid_at,
+      });
     }
 
     const remainingMs = (status === 'detected' || status === 'partially_paid' || status === 'paid')

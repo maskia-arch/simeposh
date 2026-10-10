@@ -69,7 +69,131 @@ const STR: Record<string, Record<string, string>> = {
   },
   auto_update_in: { en: 'Automatic update in {seconds}s…', de: 'Automatische Aktualisierung in {seconds}s…' },
   refresh_btn:    { en: 'Refresh', de: 'Aktualisieren' },
-  refreshing:     { en: 'Refreshing…', de: 'Wird aktualisiert…' }
+  refreshing:     { en: 'Refreshing…', de: 'Wird aktualisiert…' },
+  copy_address_aria: {
+    en: 'Copy address', de: 'Adresse kopieren', fr: 'Copier l’adresse', es: 'Copiar dirección',
+    it: 'Copia indirizzo', nl: 'Adres kopiëren', pl: 'Kopiuj adres', pt: 'Copiar endereço',
+    tr: 'Adresi kopyala', sv: 'Kopiera adress', da: 'Kopier adresse', fi: 'Kopioi osoite',
+    cs: 'Kopírovat adresu', ro: 'Copiază adresa', hu: 'Cím másolása'
+  },
+  copy_amount_aria: {
+    en: 'Copy amount', de: 'Betrag kopieren', fr: 'Copier le montant', es: 'Copiar cantidad',
+    it: 'Copia importo', nl: 'Bedrag kopiëren', pl: 'Kopiuj kwotę', pt: 'Copiar valor',
+    tr: 'Tutarı kopyala', sv: 'Kopiera belopp', da: 'Kopier beløb', fi: 'Kopioi summa',
+    cs: 'Kopírovat částku', ro: 'Copiază suma', hu: 'Összeg másolása'
+  },
+  copy_failed_address: {
+    en: 'Unable to copy – address is selected, please press and hold to copy',
+    de: 'Kopieren nicht möglich – Adresse ist markiert, bitte lange drücken und kopieren',
+    fr: 'Copie impossible – l’adresse est sélectionnée, appuyez longuement pour copier',
+    es: 'No se puede copiar: la dirección está seleccionada, mantenga presionado para copiar',
+    it: 'Impossibile copiare: l’indirizzo è selezionato, tieni premuto per copiare',
+    nl: 'Kopiëren mislukt – adres is geselecteerd, houd ingedrukt om te kopiëren',
+    pl: 'Nie można skopiować – adres jest zaznaczony, przytrzymaj, aby skopiować',
+    pt: 'Não foi possível copiar – endereço selecionado, pressione e segure para copiar',
+    tr: 'Kopyalanamadı – adres seçildi, kopyalamak için lütfen basılı tutun',
+    sv: 'Kunde inte kopiera – adressen är markerad, tryck länge för att kopiera',
+    da: 'Kan ikke kopiere – adressen er markeret, hold nede for at kopiere',
+    fi: 'Kopiointi epäonnistui – osoite on valittu, kopioi painamalla pitkään',
+    cs: 'Kopírování selhalo – adresa je označena, dlouhým stiskem zkopírujte',
+    ro: 'Copiere eșuată – adresa este selectată, țineți apăsat pentru a copia',
+    hu: 'A másolás nem sikerült – a cím ki van jelölve, tartsa hosszan nyomva a másoláshoz'
+  },
+  copy_failed_amount: {
+    en: 'Unable to copy – amount is selected, please press and hold to copy',
+    de: 'Kopieren nicht möglich – Betrag ist markiert, bitte lange drücken und kopieren',
+    fr: 'Copie impossible – le montant est sélectionné, appuyez longuement pour copier',
+    es: 'No se puede copiar: el monto está seleccionado, mantenga presionado para copiar',
+    it: 'Impossibile copiare: l’importo è selezionato, tieni premuto per copiare',
+    nl: 'Kopiëren mislukt – bedrag is geselecteerd, houd ingedrukt om te kopiëren',
+    pl: 'Nie można skopiować – kwota jest zaznaczona, przytrzymaj, aby skopiować',
+    pt: 'Não foi possível copiar – valor selecionado, pressione e segure para copiar',
+    tr: 'Kopyalanamadı – tutar seçildi, kopyalamak için lütfen basılı tutun',
+    sv: 'Kunde inte kopiera – beloppet är markerat, tryck länge för att kopiera',
+    da: 'Kan ikke kopiere – beløbet er markeret, hold nede for at kopiere',
+    fi: 'Kopiointi epäonnistui – summa on valittu, kopioi painamalla pitkään',
+    cs: 'Kopírování selhalo – částka je označena, dlouhým stiskem zkopírujte',
+    ro: 'Copiere eșuată – suma este selectată, țineți apăsat pentru a copia',
+    hu: 'A másolás nem sikerült – az összeg ki van jelölve, tartsa hosszan nyomva a másoláshoz'
+  },
+  cancel_failed: {
+    en: 'Cancellation failed, please try again',
+    de: 'Abbrechen hat nicht geklappt, bitte erneut versuchen',
+    fr: 'L’annulation a échoué, veuillez réessayer',
+    es: 'No se pudo cancelar, inténtelo de nuevo',
+    it: 'Annullamento non riuscito, riprova',
+    nl: 'Annuleren mislukt, probeer het opnieuw',
+    pl: 'Anulowanie nie powiodło się, spróbuj ponownie',
+    pt: 'O cancelamento falhou, tente novamente',
+    tr: 'İptal işlemi başarısız oldu, lütfen tekrar deneyin',
+    sv: 'Avbrytningen misslyckades, försök igen',
+    da: 'Annullering mislykkedes, prøv igen',
+    fi: 'Peruutus epäonnistui, yritä uudelleen',
+    cs: 'Zrušení se nezdařilo, zkuste to znovu',
+    ro: 'Anularea a eșuat, vă rugăm să încercați din nou',
+    hu: 'A megszakítás nem sikerült, kérjük, próbálja újra'
+  },
+  cancelled_title: {
+    en: 'Payment cancelled', de: 'Zahlung abgebrochen', fr: 'Paiement annulé', es: 'Pago cancelado',
+    it: 'Pagamento annullato', nl: 'Betaling geannuleerd', pl: 'Płatność anulowana', pt: 'Pagamento cancelado',
+    tr: 'Ödeme iptal edildi', sv: 'Betalning avbruten', da: 'Betaling annulleret', fi: 'Maksu peruutettu',
+    cs: 'Platba byla zrušena', ro: 'Plată anulată', hu: 'Fizetés megszakítva'
+  },
+  cancelled_sub: {
+    en: 'This checkout was cancelled.', de: 'Dieser Checkout wurde abgebrochen.',
+    fr: 'Ce paiement a été annulé.', es: 'Este pago fue cancelado.', it: 'Questo pagamento è stato annullato.',
+    nl: 'Deze betaling is geannuleerd.', pl: 'Ta płatność została anulowana.', pt: 'Este pagamento foi cancelado.',
+    tr: 'Bu ödeme iptal edildi.', sv: 'Denna betalning har avbrutits.', da: 'Denne betaling blev annulleret.',
+    fi: 'Tämä maksu on peruutettu.', cs: 'Tato platba byla zrušena.', ro: 'Această plată a fost anulată.',
+    hu: 'Ez a fizetés meg lett szakítva.'
+  },
+  expired_title: {
+    en: 'Payment expired', de: 'Zahlung abgelaufen', fr: 'Paiement expiré', es: 'Pago vencido',
+    it: 'Pagamento scaduto', nl: 'Betaling verlopen', pl: 'Płatność wygasła', pt: 'Pagamento expirado',
+    tr: 'Ödeme süresi doldu', sv: 'Betalningen har upphört', da: 'Betaling udløbet', fi: 'Maksuaika päättynyt',
+    cs: 'Platba vypršela', ro: 'Plată expirată', hu: 'Fizetés lejárt'
+  },
+  back_to_cart: {
+    en: 'Back to cart', de: 'Zurück zum Warenkorb', fr: 'Retour au panier', es: 'Volver al carrito',
+    it: 'Torna al carrello', nl: 'Terug naar winkelmand', pl: 'Powrót do koszyka', pt: 'Voltar ao carrinho',
+    tr: 'Sepete dön', sv: 'Tillbaka till varukorgen', da: 'Tilbage til kurv', fi: 'Takaisin ostoskoriin',
+    cs: 'Zpět do košíku', ro: 'Înapoi la coș', hu: 'Vissza a kosárhoz'
+  },
+  review_title: {
+    en: 'Payment received, being reviewed', de: 'Zahlung eingegangen, wird geprüft',
+    fr: 'Paiement reçu, en cours de vérification', es: 'Pago recibido, en revisión',
+    it: 'Pagamento ricevuto, in fase di verifica', nl: 'Betaling ontvangen, wordt gecontroleerd',
+    pl: 'Płatność otrzymana, w trakcie weryfikacji', pt: 'Pagamento recebido, em análise',
+    tr: 'Ödeme alındı, inceleniyor', sv: 'Betalning mottagen, granskas', da: 'Betaling modtaget, under kontrol',
+    fi: 'Maksu vastaanotettu, tarkistetaan', cs: 'Platba přijata, ověřuje se', ro: 'Plată primită, în curs de verificare',
+    hu: 'Fizetés beérkezett, ellenőrzés alatt'
+  },
+  review_desc: {
+    en: 'We received your payment after expiry or cancellation. It is not fulfilled automatically and has been queued for manual review.',
+    de: 'Deine Zahlung ist nach Ablauf oder Abbruch eingegangen. Sie wird nicht automatisch ausgeliefert und wurde zur manuellen Prüfung vorgemerkt.',
+    fr: 'Votre paiement a été reçu après expiration ou annulation. Il n’est pas livré automatiquement et a été mis en attente pour vérification manuelle.',
+    es: 'Recibimos su pago después del vencimiento o cancelación. No se procesa automáticamente y se ha puesto en espera para revisión manual.',
+    it: 'Il pagamento è stato ricevuto dopo la scadenza o l’annullamento. Non verrà elaborato automaticamente ed è in attesa di revisione manuale.',
+    nl: 'Uw betaling is ontvangen na afloop of annulering. Deze wordt niet automatisch geleverd en is in de wacht gezet voor handmatige controle.',
+    pl: 'Płatność dotarła po upływie terminu lub anulowaniu. Nie zostanie zrealizowana automatycznie i trafiła do ręcznej weryfikacji.',
+    pt: 'O seu pagamento foi recebido após a expiração ou cancelamento. Não será entregue automaticamente e foi encaminhado para análise manual.',
+    tr: 'Ödemeniz süre dolduktan veya iptalden sonra ulaştı. Otomatik olarak teslim edilmez ve manuel inceleme için sıraya alındı.',
+    sv: 'Din betalning mottogs efter utgång eller avbruten order. Den levereras inte automatiskt och har lagts för manuell granskning.',
+    da: 'Din betaling blev modtaget efter udløb eller annullering. Den leveres ikke automatisk og afventer manuel gennemgang.',
+    fi: 'Maksusi vastaanotettiin vanhenemisen tai peruutuksen jälkeen. Sitä ei toimiteta automaattisesti, vaan se on siirretty manuaaliseen tarkistukseen.',
+    cs: 'Vaše platba dorazila po vypršení nebo zrušení. Nebude doručena automaticky a byla předána k manuální kontrole.',
+    ro: 'Plata a fost primită după expirare sau anulare. Nu este livrată automat și a fost trimisă pentru verificare manuală.',
+    hu: 'Fizetése a lejárati idő vagy a törlés után érkezett meg. Nem kerül automatikus kézbesítésre, kézi ellenőrzésre van jelölve.'
+  },
+  contact_support: {
+    en: 'Contact Support: @autoacts', de: 'Support kontaktieren: @autoacts',
+    fr: 'Contacter le support : @autoacts', es: 'Contactar soporte: @autoacts',
+    it: 'Contatta il supporto: @autoacts', nl: 'Contact opnemen met support: @autoacts',
+    pl: 'Skontaktuj się ze wsparciem: @autoacts', pt: 'Contactar apoio: @autoacts',
+    tr: 'Desteğe ulaşın: @autoacts', sv: 'Kontakta support: @autoacts', da: 'Kontakt support: @autoacts',
+    fi: 'Ota yhteyttä tukeen: @autoacts', cs: 'Kontaktovat podporu: @autoacts', ro: 'Contactează suportul: @autoacts',
+    hu: 'Kapcsolatfelvétel a támogatással: @autoacts'
+  }
 };
 
 interface CoinTheme {
@@ -164,20 +288,144 @@ function fmtTime(ms: number): string {
   return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
 }
 
-function Copyable({ value, label, s, theme }: { value: string; label: string; s: (k: keyof typeof STR) => string; theme: CoinTheme }) {
+function fallbackCopyText(value: string): boolean {
+  if (typeof document === 'undefined') return false;
+  let ok = false;
+  const textArea = document.createElement('textarea');
+  textArea.value = value;
+  textArea.setAttribute('readonly', '');
+  textArea.contentEditable = 'true'; // critical for iOS Safari
+  textArea.style.position = 'fixed';
+  textArea.style.top = '0';
+  textArea.style.left = '-9999px';
+  textArea.style.opacity = '0';
+  textArea.style.pointerEvents = 'none';
+  textArea.style.fontSize = '16px'; // Prevent auto-zoom on iOS
+
+  document.body.appendChild(textArea);
+  try {
+    textArea.focus();
+    textArea.setSelectionRange(0, value.length);
+    textArea.select();
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  } finally {
+    if (textArea.parentNode) {
+      document.body.removeChild(textArea);
+    }
+  }
+  return ok;
+}
+
+function Copyable({
+  value,
+  label,
+  type,
+  copyAriaLabel,
+  s,
+  theme,
+  onCopyFailed,
+}: {
+  value: string;
+  label: string;
+  type: 'address' | 'amount' | 'memo';
+  copyAriaLabel: string;
+  s: (k: string) => string;
+  theme: CoinTheme;
+  onCopyFailed?: () => void;
+}) {
   const [copied, setCopied] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const selectEntireText = () => {
+    if (textRef.current && typeof window !== 'undefined') {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        const range = document.createRange();
+        range.selectNodeContents(textRef.current);
+        sel.addRange(range);
+      }
+    }
+  };
+
+  const handleCopy = async () => {
+    setErrorMsg('');
+
+    // Start navigator.clipboard.writeText immediately & synchronously in the click handler
+    let clipboardPromise: Promise<void> | null = null;
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        clipboardPromise = navigator.clipboard.writeText(value);
+      } catch {
+        clipboardPromise = null;
+      }
+    }
+
+    let success = false;
+    if (clipboardPromise) {
+      try {
+        await clipboardPromise;
+        success = true;
+      } catch {
+        success = false;
+      }
+    }
+
+    // If clipboard API failed or was rejected, immediately use iOS-compatible fallback
+    if (!success) {
+      success = fallbackCopyText(value);
+    }
+
+    if (success) {
+      setCopied(true);
+      setErrorMsg('');
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => setCopied(false), 2500); // at least 2s
+    } else {
+      setCopied(false);
+      selectEntireText();
+      const msg = type === 'address'
+        ? s('copy_failed_address')
+        : type === 'amount'
+          ? s('copy_failed_amount')
+          : s('copy_failed_address');
+      setErrorMsg(msg);
+      if (onCopyFailed) onCopyFailed();
+    }
+  };
+
   return (
-    <div className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 ${theme.bgLight} ${theme.borderLight}`}>
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-        <p className="truncate font-mono text-sm text-slate-800">{value}</p>
+    <div className={`rounded-xl border p-3.5 ${theme.bgLight} ${theme.borderLight} transition-all`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-700">{label}</p>
+          <p
+            ref={textRef}
+            onClick={selectEntireText}
+            className="font-mono text-xs sm:text-sm text-slate-800 break-all select-all cursor-pointer leading-relaxed tracking-tight py-1"
+            title="Tippen zum Markieren"
+          >
+            {value}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label={copied ? s('copied') : copyAriaLabel}
+          className="shrink-0 min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 active:bg-slate-100 flex items-center justify-center transition-colors shadow-2xs self-center"
+        >
+          <span aria-live="polite">{copied ? s('copied') : s('copy')}</span>
+        </button>
       </div>
-      <button
-        onClick={async () => { try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch { /* */ } }}
-        className="shrink-0 rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-      >
-        {copied ? s('copied') : s('copy')}
-      </button>
+      {errorMsg && (
+        <div role="status" className="mt-2 text-xs font-semibold text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+          {errorMsg}
+        </div>
+      )}
     </div>
   );
 }
@@ -253,7 +501,9 @@ export function CryptoCheckout({
   const [remaining, setRemaining] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [highlightWallet, setHighlightWallet] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
   const [verifying, setVerifying]   = useState(false);
   const [verifyMsg, setVerifyMsg]   = useState('');
   const [verifyMsgType, setVerifyMsgType] = useState<'success' | 'error' | ''>('');
@@ -272,7 +522,7 @@ export function CryptoCheckout({
         if (pollRef.current) clearInterval(pollRef.current);
         setTimeout(() => { window.location.href = data.ref ? `/order?ref=${data.ref}` : '/dashboard'; }, 1500);
       }
-      if (data.status === 'expired') {
+      if (data.status === 'expired' || data.status === 'cancelled' || data.status === 'review') {
         if (pollRef.current) clearInterval(pollRef.current);
       }
     } catch { /* keep polling */ }
@@ -280,19 +530,25 @@ export function CryptoCheckout({
 
   const handleCancel = async () => {
     if (!confirm(s('confirm_cancel'))) return;
+    setCancelError('');
     setCancelling(true);
     try {
       if (pollRef.current) clearInterval(pollRef.current);
-      await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
-    } catch {
-      /* ignore network errors during cancel */
-    } finally {
-      if (typeof window !== 'undefined') {
-        try {
-          sessionStorage.setItem('esim_checkout_cancelled', '1');
-        } catch {}
+      const res = await fetch(`/api/crypto/session/${sessionId}`, { method: 'DELETE' });
+      if (res.ok) {
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('esim_checkout_cancelled', '1');
+          } catch {}
+        }
+        window.location.href = '/cart?cancelled=1';
+      } else {
+        setCancelError(s('cancel_failed'));
+        setCancelling(false);
       }
-      window.location.href = '/cart?cancelled=1';
+    } catch {
+      setCancelError(s('cancel_failed'));
+      setCancelling(false);
     }
   };
 
@@ -305,12 +561,14 @@ export function CryptoCheckout({
       const data = await res.json() as SessionState;
       if (res.ok && data) {
         setSess(data);
-        if (data.status === 'paid' || data.status === 'detected') {
+        if (data.status === 'paid') {
           setVerifyMsgType('success');
-          if (data.status === 'paid') {
-            if (pollRef.current) clearInterval(pollRef.current);
-            window.location.href = data.ref ? `/order?ref=${data.ref}` : '/dashboard';
-          }
+          if (pollRef.current) clearInterval(pollRef.current);
+          window.location.href = data.ref ? `/order?ref=${data.ref}` : '/dashboard';
+        } else if (data.status === 'detected') {
+          setVerifyMsgType('success');
+        } else if (data.status === 'review' || data.status === 'cancelled' || data.status === 'expired') {
+          if (pollRef.current) clearInterval(pollRef.current);
         } else {
           setVerifyMsgType('error');
           setVerifyMsg(s('no_payment_yet'));
@@ -455,8 +713,6 @@ export function CryptoCheckout({
     );
   }
 
-
-
   // ── Terminal states ──
   if (status === 'paid') {
     return (
@@ -467,13 +723,65 @@ export function CryptoCheckout({
       </div>
     );
   }
+  if (status === 'cancelled') {
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-center">
+        <p className="mb-4 text-6xl">🚫</p>
+        <h1 className="mb-2 text-2xl font-bold text-slate-900">{s('cancelled_title')}</h1>
+        <p className="mb-6 text-slate-500">{s('cancelled_sub')}</p>
+        <a
+          href="/cart"
+          className="inline-flex items-center justify-center h-12 min-h-[48px] px-6 rounded-xl font-semibold text-white bg-[#2563eb] hover:bg-blue-700 transition-colors shadow-xs"
+        >
+          {s('back_to_cart')}
+        </a>
+      </div>
+    );
+  }
   if (status === 'expired' || status === 'failed') {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <p className="mb-4 text-6xl">⌛</p>
-        <h1 className="mb-2 text-2xl font-bold text-slate-900">{s('expired')}</h1>
+        <h1 className="mb-2 text-2xl font-bold text-slate-900">{s('expired_title')}</h1>
         <p className="mb-6 text-slate-500">{s('expired_sub')}</p>
-        <a href="/cart" className="rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white hover:bg-brand-700 transition-colors">{s('new_checkout')}</a>
+        <a
+          href="/cart"
+          className="inline-flex items-center justify-center h-12 min-h-[48px] px-6 rounded-xl font-semibold text-white bg-[#2563eb] hover:bg-blue-700 transition-colors shadow-xs"
+        >
+          {s('back_to_cart')}
+        </a>
+      </div>
+    );
+  }
+  if (status === 'review') {
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-center">
+        <p className="mb-4 text-6xl">🔍</p>
+        <h1 className="mb-2 text-2xl font-bold text-slate-900">{s('review_title')}</h1>
+        <p className="mb-4 text-slate-600">{s('review_desc')}</p>
+        {sess?.receivedAmount ? (
+          <p className="mb-6 text-xs font-mono text-slate-500">
+            {sess.receivedAmount} {sess.coin}
+          </p>
+        ) : null}
+        <div className="mb-6">
+          <a
+            href="https://t.me/autoacts"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-50 text-blue-700 font-semibold text-sm border border-blue-200 hover:bg-blue-100 transition-colors"
+          >
+            <span>💬</span> {s('contact_support')}
+          </a>
+        </div>
+        <div>
+          <a
+            href="/cart"
+            className="inline-flex items-center justify-center h-12 min-h-[48px] px-6 rounded-xl font-semibold text-white bg-[#2563eb] hover:bg-blue-700 transition-colors shadow-xs"
+          >
+            {s('back_to_cart')}
+          </a>
+        </div>
       </div>
     );
   }
@@ -546,7 +854,19 @@ export function CryptoCheckout({
             ) : (
               <div className="flex h-[200px] w-[200px] items-center justify-center rounded-xl border border-dashed border-slate-200 text-slate-300">QR</div>
             )}
-            <a href={sess.paymentUri} style={{ color: theme.primary }} className="mt-3 text-xs font-bold hover:opacity-80 transition-opacity">{s('open_wallet')} →</a>
+            <a
+              href={sess.paymentUri}
+              className={`mt-3 w-full max-w-[260px] min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-xs ${
+                highlightWallet
+                  ? 'h-12 min-h-[48px] bg-[#2563eb] text-white ring-2 ring-blue-400 ring-offset-2 scale-105'
+                  : 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+              }`}
+              style={!highlightWallet && theme.primary ? { color: theme.primary, borderColor: theme.borderLight } : undefined}
+            >
+              <span>👛</span>
+              <span>{s('open_wallet')}</span>
+              <span>→</span>
+            </a>
           </div>
         )}
 
@@ -558,10 +878,33 @@ export function CryptoCheckout({
 
             {/* Amount + address + optional memo */}
             <div className="space-y-2">
-              <Copyable label={`${s('amount')} (${sess.coin})`} value={sess.cryptoAmount} s={s} theme={theme} />
-              <Copyable label={s('address')} value={sess.walletAddress} s={s} theme={theme} />
+              <Copyable
+                label={`${s('amount')} (${sess.coin})`}
+                value={sess.cryptoAmount}
+                type="amount"
+                copyAriaLabel={s('copy_amount_aria')}
+                s={s}
+                theme={theme}
+                onCopyFailed={() => setHighlightWallet(true)}
+              />
+              <Copyable
+                label={s('address')}
+                value={sess.walletAddress}
+                type="address"
+                copyAriaLabel={s('copy_address_aria')}
+                s={s}
+                theme={theme}
+                onCopyFailed={() => setHighlightWallet(true)}
+              />
               {sess.paymentMemo && (
-                <Copyable label={s('memo')} value={sess.paymentMemo} s={s} theme={theme} />
+                <Copyable
+                  label={s('memo')}
+                  value={sess.paymentMemo}
+                  type="memo"
+                  copyAriaLabel={s('copy')}
+                  s={s}
+                  theme={theme}
+                />
               )}
             </div>
 
@@ -709,6 +1052,12 @@ export function CryptoCheckout({
           >
             {cancelling ? '...' : s('cancel_btn')}
           </button>
+
+          {cancelError && (
+            <div role="status" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 text-center">
+              {cancelError}
+            </div>
+          )}
 
           <button
             type="button"

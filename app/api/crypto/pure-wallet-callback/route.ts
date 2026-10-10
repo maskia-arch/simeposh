@@ -63,7 +63,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    let effectiveStatus: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' | 'cancelled' = status;
+    const isAlreadyClosed = session.status === 'cancelled' || session.status === 'expired' || session.status === 'review';
+
+    if (isAlreadyClosed) {
+      if (status === 'paid' || received_amount > 0) {
+        // Late payment on cancelled/expired session -> Mark as review, DO NOT FULFILL!
+        await db
+          .from('crypto_sessions')
+          .update({
+            status: 'review',
+            received_amount,
+            tx_hash,
+            paid_at: paid_at || new Date().toISOString(),
+          } as any)
+          .eq('id', order_id);
+
+        const validOrderIds = (session.order_ids || []).filter(isUuid);
+        if (validOrderIds.length > 0) {
+          await db
+            .from('orders')
+            .update({
+              status: 'review',
+              payment_confirmed_at: paid_at || new Date().toISOString(),
+            })
+            .in('id', validOrderIds);
+        }
+
+        console.log(`[pure-wallet Webhook] Late payment on ${session.status} session ${order_id}: marked as 'review' for manual verification. Automatic fulfillment skipped.`);
+        return NextResponse.json({ success: true, status: 'review' });
+      } else {
+        return NextResponse.json({ success: true, status: session.status });
+      }
+    }
+
+    let effectiveStatus: 'pending' | 'paid' | 'partially_paid' | 'expired' | 'detected' | 'cancelled' | 'review' = status;
 
     let minPaymentPct = 98;
     try {
