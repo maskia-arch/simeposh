@@ -18,7 +18,10 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   const { country } = await params;
   const destination = await getDestinationBySlug(country);
   if (!destination) {
-    notFound();
+    return {
+      title: { absolute: '404 – Page Not Found | PureSim' },
+      robots: { index: false, follow: false },
+    };
   }
 
   const locale = await getServerLocale();
