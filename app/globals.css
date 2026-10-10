@@ -9,11 +9,11 @@
   }
 
   html {
-    @apply scroll-smooth overflow-x-hidden max-w-full;
+    @apply scroll-smooth overflow-x-clip max-w-full;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased overflow-x-hidden max-w-full;
+    @apply bg-slate-50 text-slate-900 antialiased overflow-x-clip max-w-full;
   }
 }
 

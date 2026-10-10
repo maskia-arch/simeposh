@@ -288,7 +288,7 @@ export function Navbar() {
           <button
             className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
             onClick={() => setMenu(!menuOpen)}
-            aria-label="Menu"
+            aria-label={t('nav_menu' as any) || 'Menu'}
             aria-expanded={menuOpen}
           >
             <span className={`block h-0.5 w-6 bg-slate-700 transition-all ${menuOpen ? 'translate-y-2 rotate-45' : ''}`} />

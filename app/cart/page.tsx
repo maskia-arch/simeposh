@@ -77,9 +77,10 @@ export default function CartPage() {
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.title = locale === 'de' ? 'Warenkorb | PureSim' : 'Cart | PureSim';
+      const pageTitle = t('cart_title') || (locale === 'de' ? 'Warenkorb' : 'Cart');
+      document.title = `${pageTitle} | PureSim`;
     }
-  }, [locale]);
+  }, [locale, t]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {

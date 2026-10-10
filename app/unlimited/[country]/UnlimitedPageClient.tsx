@@ -100,7 +100,7 @@ export function UnlimitedPageClient({
               <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
                 <span>{isDe ? 'Tagespreis ab' : 'Daily rate from'}</span>
                 <span className="font-bold text-slate-800">
-                  {minPerDay.toFixed(2).replace('.', ',')} € / {t('unit_day' as any) || (isDe ? 'Tag' : 'day')}
+                  <Price eur={minPerDay} /> {t('unit_per_day' as any) || (isDe ? '/ Tag' : '/ day')}
                 </span>
               </div>
             )}
@@ -110,7 +110,7 @@ export function UnlimitedPageClient({
                 href={`${prefix}/esim/${destination.slug}`}
                 className="text-brand-600 hover:text-brand-700 font-medium hover:underline inline-flex items-center gap-1"
               >
-                ← {isDe ? `Alle Tarife für ${countryLabel}` : `All plans for ${countryLabel}`}
+                ← {t('all_plans' as any) || (isDe ? `Alle Tarife für ${countryLabel}` : `All plans for ${countryLabel}`)}
               </Link>
             </div>
           </div>
@@ -184,9 +184,9 @@ export function UnlimitedPageClient({
       {/* ── SEO FAQ Section ── */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-10 shadow-xs">
         <h2 className="text-2xl font-bold text-slate-900 mb-6">
-          {isDe
+          {t('faq_title_unlimited' as any, { country: countryLabel }) || (isDe
             ? `Häufig gestellte Fragen zu Unlimited eSIM für ${countryLabel}`
-            : `Frequently Asked Questions about Unlimited eSIM for ${countryLabel}`}
+            : `Frequently Asked Questions about Unlimited eSIM for ${countryLabel}`)}
         </h2>
 
         <div className="grid gap-6 md:grid-cols-2">

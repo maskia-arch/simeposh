@@ -56,16 +56,16 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
         buttonRef.current?.focus();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setFocusedIndex((prev) => {
-          const next = prev < SUPPORTED_LOCALES.length - 1 ? prev + 1 : 0;
-          return next;
-        });
+        setFocusedIndex((prev) => (prev < SUPPORTED_LOCALES.length - 1 ? prev + 1 : 0));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setFocusedIndex((prev) => {
-          const next = prev > 0 ? prev - 1 : SUPPORTED_LOCALES.length - 1;
-          return next;
-        });
+        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : SUPPORTED_LOCALES.length - 1));
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        setFocusedIndex(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        setFocusedIndex(SUPPORTED_LOCALES.length - 1);
       } else if (e.key === 'Enter' && focusedIndex >= 0) {
         e.preventDefault();
         const selected = SUPPORTED_LOCALES[focusedIndex];
@@ -106,7 +106,7 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
           });
         }}
         onKeyDown={(e) => {
-          if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+          if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             setOpen(true);
             const curIdx = SUPPORTED_LOCALES.findIndex((l) => l.code === locale);
@@ -157,6 +157,7 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
                 <Link
                   key={lang.code}
                   href={targetUrl}
+                  prefetch={false}
                   role="option"
                   aria-selected={isSelected}
                   onClick={(e) => {
@@ -166,11 +167,11 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
                     buttonRef.current?.focus();
                   }}
                   onMouseEnter={() => setFocusedIndex(idx)}
-                  className={`flex min-h-[44px] w-full items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all cursor-pointer outline-none ${
+                  className={`flex min-h-[44px] w-full items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all cursor-pointer outline-none focus:outline-none ${
                     isSelected
                       ? isDark
-                        ? 'bg-brand-600/25 text-brand-400 font-bold border-l-2 border-brand-400 pl-2.5 ring-1 ring-brand-500/50'
-                        : 'bg-brand-50 text-brand-700 font-bold border-l-2 border-brand-600 pl-2.5 ring-1 ring-brand-500/30'
+                        ? 'bg-brand-600/25 text-brand-400 font-bold border-l-2 border-brand-400 pl-2.5' + (isFocused ? ' ring-2 ring-white' : ' ring-1 ring-brand-500/50')
+                        : 'bg-brand-50 text-brand-700 font-bold border-l-2 border-brand-600 pl-2.5' + (isFocused ? ' ring-2 ring-brand-700' : ' ring-1 ring-brand-500/30')
                       : isFocused
                       ? isDark
                         ? 'bg-slate-800 text-white ring-2 ring-brand-500'

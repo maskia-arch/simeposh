@@ -117,7 +117,7 @@ export function CountryPageClient({
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  {tariffs.length} {isDe ? 'verfügbare Tarife' : 'available plans'}
+                  {t('available_plans' as any, { count: tariffs.length }) || (isDe ? `${tariffs.length} verfügbare Tarife` : `${tariffs.length} available plans`)}
                 </span>
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -157,7 +157,7 @@ export function CountryPageClient({
                   <InfinityIcon size={12} className="text-emerald-600" /> Unlimited
                 </span>
                 <span className="font-bold text-emerald-600">
-                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € / {t('unit_day' as any) || (isDe ? 'Tag' : 'day')} →
+                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € {t('unit_per_day' as any) || (isDe ? '/ Tag' : '/ day')} →
                 </span>
               </Link>
             )}
@@ -184,7 +184,7 @@ export function CountryPageClient({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {isDe ? 'Alle Tarife' : 'All Plans'} ({tariffs.length})
+            {t('all_plans' as any) || (isDe ? 'Alle Tarife' : 'All Plans')} ({tariffs.length})
           </button>
 
           {travelTariffs.length > 0 && (
@@ -219,9 +219,9 @@ export function CountryPageClient({
         </div>
 
         <p className="text-xs text-slate-500">
-          {isDe
+          {t('plans_for_country' as any, { count: displayedTariffs.length, country: countryLabel }) || (isDe
             ? `${displayedTariffs.length} Tarife für ${countryLabel}`
-            : `${displayedTariffs.length} plans for ${countryLabel}`}
+            : `${displayedTariffs.length} plans for ${countryLabel}`)}
         </p>
       </section>
 
