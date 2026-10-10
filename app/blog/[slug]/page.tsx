@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { query } from '@/lib/db';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
 import { getOrCreateTranslation } from '@/lib/blog/translation';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
 import type { LocaleCode } from '@/lib/i18n/config';
 
 interface PostResolution {
@@ -228,7 +228,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     openGraph: {
       title: resolvedData.title,
       description: resolvedData.excerpt,
-      locale: isDe ? 'de_DE' : `${locale}_${locale.toUpperCase()}`,
+      locale: getOgLocale(locale),
+      alternateLocale: getOgLocaleAlternates(locale),
       url: `${BASE_URL}${prefix}/blog/${resolvedData.slug}`,
     },
   };

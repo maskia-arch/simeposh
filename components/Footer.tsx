@@ -45,8 +45,7 @@ export function Footer() {
                   type="button"
                   onClick={() => toggleFaq(idx)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between px-6 py-4.5 min-h-[52px] text-left font-semibold text-slate-800 hover:text-brand-650 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                  style={{ paddingTop: '18px', paddingBottom: '18px' }}
+                  className="flex w-full items-center justify-between px-6 py-5 min-h-[52px] text-left font-semibold text-slate-800 hover:text-brand-650 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                 >
                   <span className="text-sm md:text-base pr-4 leading-snug">{faq.q}</span>
                   <span className={`text-slate-400 shrink-0 transform transition-transform duration-300 ${isOpen ? 'rotate-180 text-brand-600' : ''}`}>
@@ -61,7 +60,7 @@ export function Footer() {
                     isOpen ? 'max-h-[250px] border-t border-slate-100' : 'max-h-0'
                   }`}
                 >
-                  <div className="px-6 py-4.5 text-sm text-slate-500 leading-relaxed bg-slate-50/20">
+                  <div className="px-6 py-5 text-sm text-slate-500 leading-relaxed bg-slate-50/20">
                     {faq.a}
                   </div>
                 </div>

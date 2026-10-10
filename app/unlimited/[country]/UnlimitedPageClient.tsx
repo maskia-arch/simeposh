@@ -100,7 +100,7 @@ export function UnlimitedPageClient({
               <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
                 <span>{isDe ? 'Tagespreis ab' : 'Daily rate from'}</span>
                 <span className="font-bold text-slate-800">
-                  {minPerDay.toFixed(2).replace('.', ',')} € / {isDe ? 'Tag' : 'day'}
+                  {minPerDay.toFixed(2).replace('.', ',')} € / {t('unit_day' as any) || (isDe ? 'Tag' : 'day')}
                 </span>
               </div>
             )}

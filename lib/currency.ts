@@ -52,25 +52,53 @@ function trimZeros(s: string, minDecimals = 0): string {
   return out;
 }
 
+const LOCALE_FORMAT_MAP: Record<string, string> = {
+  de: 'de-DE',
+  en: 'en-US',
+  fr: 'fr-FR',
+  es: 'es-ES',
+  it: 'it-IT',
+  nl: 'nl-NL',
+  pl: 'pl-PL',
+  pt: 'pt-PT',
+  tr: 'tr-TR',
+  sv: 'sv-SE',
+  da: 'da-DK',
+  fi: 'fi-FI',
+  cs: 'cs-CZ',
+  ro: 'ro-RO',
+  hu: 'hu-HU',
+};
+
+export function formatCurrencyEuro(amount: number, locale: string = 'de'): string {
+  const intlLocale = LOCALE_FORMAT_MAP[locale] || 'de-DE';
+  return new Intl.NumberFormat(intlLocale, {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+}
+
 /**
  * Format a EUR amount into the selected display currency.
  * Falls back to EUR formatting if the rate is missing/not yet loaded,
  * so prices never render as 0 or NaN.
  */
-export function formatPrice(eurAmount: number, code: CurrencyCode, rates: Rates): string {
+export function formatPrice(eurAmount: number, code: CurrencyCode, rates: Rates, locale: string = 'de'): string {
   const def = currencyDef(code);
   const rate = code === 'EUR' ? 1 : rates[code];
 
+  const intlLocale = LOCALE_FORMAT_MAP[locale] || (locale === 'en' ? 'en-US' : 'de-DE');
+
   if (!rate || rate <= 0) {
     // graceful fallback to EUR
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(eurAmount);
+    return new Intl.NumberFormat(intlLocale, { style: 'currency', currency: 'EUR' }).format(eurAmount);
   }
 
   const amount = eurAmount * rate;
 
   if (def.type === 'fiat') {
     try {
-      return new Intl.NumberFormat(code === 'EUR' ? 'de-DE' : 'en-US', {
+      return new Intl.NumberFormat(code === 'EUR' ? intlLocale : 'en-US', {
         style: 'currency', currency: code,
       }).format(amount);
     } catch {

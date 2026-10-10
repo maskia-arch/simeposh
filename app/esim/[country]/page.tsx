@@ -5,7 +5,8 @@ import { notFound, redirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
+import { formatCurrencyEuro } from '@/lib/currency';
 
 export const revalidate = 600;
 
@@ -33,18 +34,18 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
     ? Math.min(...tariffs.map((t) => t.sale_price_eur))
     : destination.minPrice;
 
-  const minPriceFormatted = minPrice.toFixed(2).replace('.', ',');
+  const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
   const baseUrl = BASE_URL;
 
-  const title = t('meta_country_title' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+  const title = t('meta_country_title' as any, { country: countryLabel, price: minPriceFormatted })
     || (locale === 'de'
-      ? `eSIM ${countryLabel} ab ${minPriceFormatted} € – Highspeed Daten ohne Roaming`
-      : `eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Prepaid Data`);
+      ? `eSIM ${countryLabel} ab ${minPriceFormatted} – Highspeed Daten ohne Roaming`
+      : `eSIM ${countryLabel} from ${minPriceFormatted} – High-Speed Prepaid Data`);
 
-  const description = t('meta_country_desc' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+  const description = t('meta_country_desc' as any, { country: countryLabel, price: minPriceFormatted })
     || (locale === 'de'
-      ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted} €, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`
-      : `Affordable prepaid eSIM for ${countryLabel}. High-speed data from €${minPrice.toFixed(2)}, instant QR code activation, and no roaming fees. Buy now!`);
+      ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted}, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`
+      : `Affordable prepaid eSIM for ${countryLabel}. High-speed data from ${minPriceFormatted}, instant QR code activation, and no roaming fees. Buy now!`);
 
   const prefix = locale === 'de' ? '' : `/${locale}`;
 
@@ -62,6 +63,8 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
       title,
       description,
       type: 'website',
+      locale: getOgLocale(locale),
+      alternateLocale: getOgLocaleAlternates(locale),
       url: `${baseUrl}${prefix}/esim/${destination.slug}`,
       images: [
         {

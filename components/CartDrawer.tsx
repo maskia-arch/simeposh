@@ -211,7 +211,7 @@ export function CartDrawer() {
         {/* Compact Header */}
         <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-white">
           <h2 id="cart-drawer-title" className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
-            <CustomCartIcon className="h-4.5 w-4.5 text-brand-600" />
+            <CustomCartIcon className="h-5 w-5 text-brand-600" />
             <span>{t('cart_title')}</span>
             {count > 0 && (
               <span className="rounded-full bg-brand-100 border border-brand-200 px-2 py-0.5 text-xs font-black text-brand-700">

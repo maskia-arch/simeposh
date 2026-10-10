@@ -100,7 +100,7 @@ export function DaySlider({
     <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-2">
         <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-          {label ?? '3. Laufzeit (Tage)'}
+          {label ?? (t('cfg_step3_duration' as any) || '3. Laufzeit (Tage)')}
         </label>
         
         {/* Interactive Direct Numeric Input */}
@@ -469,8 +469,8 @@ export function UnlimitedConfigurator({
               <div>
                 <h2 className="text-base font-extrabold text-slate-900 leading-tight flex items-center gap-2">
                   <span>{selectedCountryData.name}</span>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full">
-                    {availablePackages.length} Tarife
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    {t('cfg_plans_count' as any, { count: availablePackages.length }) || `${availablePackages.length} plans`}
                   </span>
                 </h2>
               </div>
@@ -632,7 +632,7 @@ export function UnlimitedConfigurator({
                 <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                   2. Tägliches Highspeed-Volumen
                 </label>
-                <span className="text-[10px] text-slate-400">Jeden Tag erneuert</span>
+                <span className="text-[10px] text-slate-400">{t('cfg_renew_daily' as any) || 'Renews every day'}</span>
               </div>
 
               {gbOptions.length === 0 ? (
@@ -679,7 +679,7 @@ export function UnlimitedConfigurator({
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><EcoIcon size={14} /> Eco</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 font-semibold text-violet-700"><BoltIcon size={14} className="text-violet-600" /> Pro</span>
-                    )} · <span className="font-bold text-slate-700">{selectedGb ? formatGb(selectedGb) : '–'} / Tag</span> · {days} Tage
+                    )} · <span className="font-bold text-slate-700">{selectedGb ? `${formatGb(selectedGb)} ${t('unit_per_day' as any) || '/ Tag'}` : '–'}</span> · {days} {days === 1 ? t('cfg_day') : t('cfg_days')}
                   </p>
                 </div>
               </div>
@@ -722,7 +722,7 @@ export function UnlimitedConfigurator({
                   </p>
                   {finalPrice !== null && (
                     <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-                      ({(finalPrice / days).toFixed(2)} € / Tag)
+                      ({(finalPrice / days).toFixed(2)} € {t('unit_per_day' as any) || '/ Tag'})
                     </span>
                   )}
                 </div>

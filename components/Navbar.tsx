@@ -276,7 +276,7 @@ export function Navbar() {
               className={`rounded-lg p-2 transition-colors ${
                 mobileSearchOpen ? 'bg-slate-100 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-brand-700'
               }`}
-              aria-label="Search"
+              aria-label={t('search_aria_label' as any) || 'Search'}
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

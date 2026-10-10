@@ -5,7 +5,7 @@ import { TariffsPageClient } from './TariffsPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
@@ -17,7 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
       : 'Find affordable eSIM plans for over 150 countries worldwide.'),
     alternates: buildAlternates(locale, { dePath: 'tariffs', enPath: 'tariffs' }),
     openGraph: {
-      locale: locale === 'de' ? 'de_DE' : `${locale}_${locale.toUpperCase()}`,
+      locale: getOgLocale(locale),
+      alternateLocale: getOgLocaleAlternates(locale),
     },
   };
 }

@@ -5,6 +5,8 @@ import {
   type CurrencyCode, type Rates, DEFAULT_CURRENCY, isCurrencyCode, formatPrice,
 } from '@/lib/currency';
 
+import { useTranslation } from '@/lib/i18n';
+
 interface CurrencyContextValue {
   currency:    CurrencyCode;
   setCurrency: (code: CurrencyCode) => void;
@@ -24,6 +26,7 @@ function readCookie(): CurrencyCode {
 }
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
+  const { locale } = useTranslation();
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_CURRENCY);
   const [rates,    setRates]         = useState<Rates>({ EUR: 1 });
   const [updatedAt, setUpdatedAt]    = useState<string | null>(null);
@@ -55,8 +58,8 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const format = useCallback(
-    (eurAmount: number) => formatPrice(eurAmount, currency, rates),
-    [currency, rates],
+    (eurAmount: number) => formatPrice(eurAmount, currency, rates, locale),
+    [currency, rates, locale],
   );
 
   return (

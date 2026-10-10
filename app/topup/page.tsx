@@ -393,7 +393,7 @@ export default function TopUpPage() {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-extrabold text-slate-800 text-sm">{pkg.name}</p>
-                          <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-1.5 py-0.2 text-[9px] font-bold text-sky-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[9px] font-bold text-sky-700">
                             🔄 Data Reloadable
                           </span>
                         </div>

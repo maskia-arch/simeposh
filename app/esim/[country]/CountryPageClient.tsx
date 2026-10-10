@@ -121,7 +121,7 @@ export function CountryPageClient({
                 </span>
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {isDe ? `eSIM für ${countryLabel}` : `eSIM for ${countryLabel}`}
+                {t('esim_for_country' as any, { country: countryLabel }) || `eSIM for ${countryLabel}`}
               </h1>
               <p className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl leading-relaxed">
                 {isDe
@@ -157,7 +157,7 @@ export function CountryPageClient({
                   <InfinityIcon size={12} className="text-emerald-600" /> Unlimited
                 </span>
                 <span className="font-bold text-emerald-600">
-                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € / {isDe ? 'Tag' : 'day'} →
+                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € / {t('unit_day' as any) || (isDe ? 'Tag' : 'day')} →
                 </span>
               </Link>
             )}
@@ -247,7 +247,7 @@ export function CountryPageClient({
             href={`${prefix}/unlimited/${destination.slug}`}
             className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-5 text-sm font-semibold text-white shadow-sm transition-colors shrink-0 cursor-pointer"
           >
-            <span>{isDe ? 'Zum Unlimited-Builder' : 'Go to Unlimited Builder'}</span>
+            <span>{t('btn_go_unlimited_builder' as any) || (isDe ? 'Zum Unlimited-Builder' : 'Go to Unlimited Builder')}</span>
             <span aria-hidden="true">→</span>
           </Link>
         </section>

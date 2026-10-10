@@ -46,3 +46,30 @@ export function buildAlternates(
     languages,
   };
 }
+
+export const OG_LOCALES: Record<LocaleCode, string> = {
+  de: 'de_DE',
+  en: 'en_US',
+  fr: 'fr_FR',
+  es: 'es_ES',
+  it: 'it_IT',
+  nl: 'nl_NL',
+  pl: 'pl_PL',
+  pt: 'pt_PT',
+  tr: 'tr_TR',
+  sv: 'sv_SE',
+  da: 'da_DK',
+  fi: 'fi_FI',
+  cs: 'cs_CZ',
+  ro: 'ro_RO',
+  hu: 'hu_HU',
+};
+
+export function getOgLocale(locale: LocaleCode): string {
+  return OG_LOCALES[locale] || 'en_US';
+}
+
+export function getOgLocaleAlternates(locale: LocaleCode): string[] {
+  const currentOg = getOgLocale(locale);
+  return Object.values(OG_LOCALES).filter((og) => og !== currentOg);
+}

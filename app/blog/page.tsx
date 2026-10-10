@@ -2,18 +2,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const t = getServerT(locale);
-  const isDe = locale === 'de';
+  const blogName = t('meta_blog_title' as any) || 'Blog';
+  const guidesName = t('meta_blog_guides' as any) || (locale === 'de' ? 'eSIM Ratgeber' : 'eSIM Guides');
   return {
-    title: `${t('blog_title' as any)} & eSIM ${isDe ? 'Ratgeber' : 'Guides'}`,
+    title: `${blogName} & ${guidesName}`,
     description: t('blog_tagline' as any),
     alternates: buildAlternates(locale, { dePath: 'blog', enPath: 'blog' }),
     openGraph: {
-      locale: isDe ? 'de_DE' : `${locale}_${locale.toUpperCase()}`,
+      locale: getOgLocale(locale),
+      alternateLocale: getOgLocaleAlternates(locale),
     },
   };
 }

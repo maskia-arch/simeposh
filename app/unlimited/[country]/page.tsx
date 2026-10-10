@@ -3,7 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs, getAllDestinations } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
+import { formatCurrencyEuro } from '@/lib/currency';
 import { UnlimitedPageClient } from './UnlimitedPageClient';
 
 export const revalidate = 600;
@@ -32,18 +33,18 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
   const minPrice = unlimited.length > 0
     ? Math.min(...unlimited.map((t) => t.sale_price_eur))
     : destination.minPrice;
-  const minPriceFormatted = minPrice.toFixed(2).replace('.', ',');
+  const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
 
   // Next.js layout template is '%s | PureSim', so title must NOT end with '| PureSim'
-  const title = t('meta_unlimited_title' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+  const title = t('meta_unlimited_title' as any, { country: countryLabel, price: minPriceFormatted })
     || (locale === 'de'
-      ? `Unlimited eSIM ${countryLabel} ab ${minPriceFormatted} € konfigurieren – Highspeed Daten`
-      : `Custom Unlimited eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Data`);
+      ? `Unlimited eSIM ${countryLabel} ab ${minPriceFormatted} konfigurieren – Highspeed Daten`
+      : `Custom Unlimited eSIM ${countryLabel} from ${minPriceFormatted} – High-Speed Data`);
 
-  const description = t('meta_unlimited_desc' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+  const description = t('meta_unlimited_desc' as any, { country: countryLabel, price: minPriceFormatted })
     || (locale === 'de'
-      ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted} €. Sofortige Aktivierung per QR-Code ohne Roaming.`
-      : `Customizable unlimited eSIM for ${countryLabel} with flexible validity (1–365 days) and high-speed data from €${minPrice.toFixed(2)}. Instant QR code activation.`);
+      ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted}. Sofortige Aktivierung per QR-Code ohne Roaming.`
+      : `Customizable unlimited eSIM for ${countryLabel} with flexible validity (1–365 days) and high-speed data from ${minPriceFormatted}. Instant QR code activation.`);
 
   const baseUrl = BASE_URL;
   const prefix = locale === 'de' ? '' : `/${locale}`;
@@ -62,6 +63,8 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
       title,
       description,
       type: 'website',
+      locale: getOgLocale(locale),
+      alternateLocale: getOgLocaleAlternates(locale),
       url: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
       images: [
         {
