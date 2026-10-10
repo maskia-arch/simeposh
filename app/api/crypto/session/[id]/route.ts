@@ -636,18 +636,18 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
   if (currentSession.status === 'cancelled') {
     const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
     if (orderIds.length > 0) {
-      await db.from('orders').update({ status: 'cancelled' }).in('id', orderIds).in('status', ['pending', 'pending_payment']);
+      await db.from('orders').update({ status: 'cancelled' }).in('id', orderIds).eq('status', 'pending');
     }
-    await db.from('orders').update({ status: 'cancelled' }).eq('checkout_ref', id).in('status', ['pending', 'pending_payment']);
+    await db.from('orders').update({ status: 'cancelled' }).eq('checkout_ref', id).eq('status', 'pending');
     return currentSession;
   }
 
   if (currentSession.status === 'expired') {
     const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
     if (orderIds.length > 0) {
-      await db.from('orders').update({ status: 'expired' }).in('id', orderIds).in('status', ['pending', 'pending_payment']);
+      await db.from('orders').update({ status: 'expired' }).in('id', orderIds).eq('status', 'pending');
     }
-    await db.from('orders').update({ status: 'expired' }).eq('checkout_ref', id).in('status', ['pending', 'pending_payment']);
+    await db.from('orders').update({ status: 'expired' }).eq('checkout_ref', id).eq('status', 'pending');
     if (isPastGrace) return currentSession;
   }
 
@@ -664,13 +664,13 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
         .from('orders')
         .update({ status: 'expired' })
         .in('id', orderIds)
-        .in('status', ['pending', 'pending_payment']);
+        .eq('status', 'pending');
     }
     await db
       .from('orders')
       .update({ status: 'expired' })
       .eq('checkout_ref', id)
-      .in('status', ['pending', 'pending_payment']);
+      .eq('status', 'pending');
     currentSession.status = 'expired';
     return currentSession;
   }
@@ -909,13 +909,13 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           .from('orders')
           .update({ status: 'expired' })
           .in('id', orderIds)
-          .in('status', ['pending', 'pending_payment']);
+          .eq('status', 'pending');
       }
       await db
         .from('orders')
         .update({ status: 'expired' })
         .eq('checkout_ref', id)
-        .in('status', ['pending', 'pending_payment']);
+        .eq('status', 'pending');
     }
 
     // Transition to partially_paid: send customer underpayment email alert once
@@ -1181,12 +1181,12 @@ export async function cancelCryptoSessionAndOrders(id: string): Promise<{
     if (s.status === 'cancelled') {
       if (orderIds.length > 0) {
         await client.query(
-          "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status IN ('pending', 'pending_payment')",
+          "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status = 'pending'",
           [orderIds]
         );
       }
       await client.query(
-        "UPDATE orders SET status = 'cancelled' WHERE checkout_ref = $1 AND status IN ('pending', 'pending_payment')",
+        "UPDATE orders SET status = 'cancelled' WHERE checkout_ref = $1 AND status = 'pending'",
         [id]
       );
       await client.query('COMMIT');
@@ -1199,12 +1199,12 @@ export async function cancelCryptoSessionAndOrders(id: string): Promise<{
     // 3. Mark orders as cancelled (both by order_ids and checkout_ref)
     if (orderIds.length > 0) {
       await client.query(
-        "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status IN ('pending', 'pending_payment')",
+        "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status = 'pending'",
         [orderIds]
       );
     }
     await client.query(
-      "UPDATE orders SET status = 'cancelled' WHERE checkout_ref = $1 AND status IN ('pending', 'pending_payment')",
+      "UPDATE orders SET status = 'cancelled' WHERE checkout_ref = $1 AND status = 'pending'",
       [id]
     );
 
@@ -1217,7 +1217,7 @@ export async function cancelCryptoSessionAndOrders(id: string): Promise<{
 
     if (orderIds.length > 0) {
       const verifyOrders = await client.query('SELECT id, status FROM orders WHERE id = ANY($1)', [orderIds]);
-      const stillPending = verifyOrders.rows.some((o: any) => o.status === 'pending' || o.status === 'pending_payment');
+      const stillPending = verifyOrders.rows.some((o: any) => o.status === 'pending');
       if (stillPending) {
         await client.query('ROLLBACK');
         return { ok: false, error: 'Verifizierung der Bestellungs-Stornierung fehlgeschlagen' };

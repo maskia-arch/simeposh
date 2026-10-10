@@ -428,13 +428,13 @@ export async function sweepExpiredSessions(db: any) {
             .from('orders')
             .update({ status: 'expired' })
             .in('id', trulyExpiredOrderIds)
-            .in('status', ['pending', 'pending_payment']);
+            .eq('status', 'pending');
         }
         await db
           .from('orders')
           .update({ status: 'expired' })
           .in('checkout_ref', trulyExpiredIds)
-          .in('status', ['pending', 'pending_payment']);
+          .eq('status', 'pending');
       }
     }
 
@@ -453,9 +453,9 @@ export async function sweepExpiredSessions(db: any) {
         if (Array.isArray(s.order_ids)) expOrderIds.push(...s.order_ids);
       }
       if (expOrderIds.length > 0) {
-        await db.from('orders').update({ status: 'expired' }).in('id', expOrderIds).in('status', ['pending', 'pending_payment']);
+        await db.from('orders').update({ status: 'expired' }).in('id', expOrderIds).eq('status', 'pending');
       }
-      await db.from('orders').update({ status: 'expired' }).in('checkout_ref', expSessionIds).in('status', ['pending', 'pending_payment']);
+      await db.from('orders').update({ status: 'expired' }).in('checkout_ref', expSessionIds).eq('status', 'pending');
     }
 
     // Sweep any cancelled sessions whose orders might still be pending
@@ -473,9 +473,9 @@ export async function sweepExpiredSessions(db: any) {
         if (Array.isArray(s.order_ids)) canOrderIds.push(...s.order_ids);
       }
       if (canOrderIds.length > 0) {
-        await db.from('orders').update({ status: 'cancelled' }).in('id', canOrderIds).in('status', ['pending', 'pending_payment']);
+        await db.from('orders').update({ status: 'cancelled' }).in('id', canOrderIds).eq('status', 'pending');
       }
-      await db.from('orders').update({ status: 'cancelled' }).in('checkout_ref', canSessionIds).in('status', ['pending', 'pending_payment']);
+      await db.from('orders').update({ status: 'cancelled' }).in('checkout_ref', canSessionIds).eq('status', 'pending');
     }
   } catch (err) {
     console.error('[sweepExpiredSessions] Error:', err);
