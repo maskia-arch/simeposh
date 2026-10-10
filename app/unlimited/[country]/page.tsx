@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs, getAllDestinations } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
-import { getServerLocale } from '@/lib/i18n/server';
+import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { UnlimitedPageClient } from './UnlimitedPageClient';
 
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
   }
 
   const locale = await getServerLocale();
-  const isDe = locale === 'de';
+  const t = getServerT(locale);
 
   const countryLabel = displayCountryName(
     { country_code: destination.code, country_name: destination.name, location_codes: null, region: null },
@@ -35,15 +35,18 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
   const minPriceFormatted = minPrice.toFixed(2).replace('.', ',');
 
   // Next.js layout template is '%s | PureSim', so title must NOT end with '| PureSim'
-  const title = isDe
-    ? `Unlimited eSIM ${countryLabel} ab ${minPriceFormatted} € konfigurieren – Highspeed Daten`
-    : `Custom Unlimited eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Data`;
+  const title = t('meta_unlimited_title' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+    || (locale === 'de'
+      ? `Unlimited eSIM ${countryLabel} ab ${minPriceFormatted} € konfigurieren – Highspeed Daten`
+      : `Custom Unlimited eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Data`);
 
-  const description = isDe
-    ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted} €. Sofortige Aktivierung per QR-Code ohne Roaming.`
-    : `Customizable unlimited eSIM for ${countryLabel} with flexible validity (1–365 days) and high-speed data from €${minPrice.toFixed(2)}. Instant QR code activation.`;
+  const description = t('meta_unlimited_desc' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+    || (locale === 'de'
+      ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted} €. Sofortige Aktivierung per QR-Code ohne Roaming.`
+      : `Customizable unlimited eSIM for ${countryLabel} with flexible validity (1–365 days) and high-speed data from €${minPrice.toFixed(2)}. Instant QR code activation.`);
 
   const baseUrl = BASE_URL;
+  const prefix = locale === 'de' ? '' : `/${locale}`;
 
   return {
     title,
@@ -53,14 +56,13 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
       `Unlimited eSIM ${countryLabel}`,
       countryLabel,
       'eSIM Konfigurator',
-      'Unbegrenztes Datenvolumen',
       'PureSim',
     ],
     openGraph: {
-      title: `${title} | PureSim`,
+      title,
       description,
       type: 'website',
-      url: `${baseUrl}${isDe ? '' : '/en'}/unlimited/${destination.slug}`,
+      url: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
       images: [
         {
           url: `${baseUrl}/logo.png`,
@@ -70,7 +72,7 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
         },
       ],
     },
-    alternates: buildAlternates(isDe ? 'de' : 'en', {
+    alternates: buildAlternates(locale, {
       dePath: `unlimited/${destination.slug}`,
       enPath: `unlimited/${destination.slug}`,
     }),
@@ -86,8 +88,8 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
   }
 
   const locale = await getServerLocale();
-  const isDe = locale === 'de';
-  const prefix = isDe ? '' : '/en';
+  const t = getServerT(locale);
+  const prefix = locale === 'de' ? '' : `/${locale}`;
 
   // Canonical redirect if requested via alias or alternate code (e.g. /unlimited/de -> /unlimited/germany)
   if (country.toLowerCase() !== destination.slug) {
@@ -126,9 +128,8 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `Unlimited eSIM ${countryLabel}`,
-    description: isDe
-      ? `Prepaid Unlimited eSIM Datenpakete für ${countryLabel}. Flexible Laufzeit und Highspeed-Volumen nach Wahl.`
-      : `Prepaid Unlimited eSIM data plans for ${countryLabel}. Customizable validity and high-speed data allowance.`,
+    description: t('meta_unlimited_desc' as any, { country: countryLabel, price: minPrice.toFixed(2) })
+      || `Prepaid Unlimited eSIM ${countryLabel}`,
     image: `${baseUrl}/logo.png`,
     brand: {
       '@type': 'Brand',
@@ -140,14 +141,8 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
       lowPrice: minPrice.toFixed(2),
       highPrice: maxPrice.toFixed(2),
       offerCount: unlimitedTariffs.length,
-      offers: unlimitedTariffs.map((t) => ({
-        '@type': 'Offer',
-        name: t.name,
-        price: Number(t.sale_price_eur).toFixed(2),
-        priceCurrency: 'EUR',
-        availability: 'https://schema.org/InStock',
-        url: `${baseUrl}/unlimited/${destination.slug}`,
-      })),
+      url: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
+      availability: 'https://schema.org/InStock',
     },
   };
 
@@ -158,26 +153,26 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
       {
         '@type': 'ListItem',
         position: 1,
-        name: isDe ? 'Startseite' : 'Home',
-        item: baseUrl,
+        name: t('nav_home' as any) || 'Home',
+        item: `${baseUrl}${prefix || '/'}`,
       },
       {
         '@type': 'ListItem',
         position: 2,
-        name: isDe ? 'eSIM Tarife' : 'eSIM Plans',
-        item: `${baseUrl}/tariffs`,
+        name: t('nav_tariffs') || 'eSIM',
+        item: `${baseUrl}${prefix}/tariffs`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: countryLabel,
-        item: `${baseUrl}/esim/${destination.slug}`,
+        item: `${baseUrl}${prefix}/esim/${destination.slug}`,
       },
       {
         '@type': 'ListItem',
         position: 4,
         name: `Unlimited eSIM ${countryLabel}`,
-        item: `${baseUrl}/unlimited/${destination.slug}`,
+        item: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
       },
     ],
   };

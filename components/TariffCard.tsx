@@ -312,15 +312,15 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveFeature(null);
-                setActiveAbbr(activeAbbr?.label === 'Dual-Netz' ? null : {
-                  label: 'Dual-Netz',
+                setActiveAbbr(activeAbbr?.label === t('card_dual_net_pill') ? null : {
+                  label: t('card_dual_net_pill'),
                   text: t('feat_dual_net_desc'),
                 });
               }}
               className="rounded-md bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors"
-              title="Klicken für Erklärung: Wechselt zwischen zwei Netzen"
+              title={t('feat_dual_net_desc')}
             >
-              Dual-Netz ⓘ
+              {t('card_dual_net_pill')} ⓘ
             </button>
           )}
 

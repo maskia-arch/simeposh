@@ -29,7 +29,7 @@ export function UnlimitedPageClient({
 }: UnlimitedPageClientProps) {
   const { t, locale } = useTranslation();
   const isDe = locale === 'de';
-  const prefix = isDe ? '' : '/en';
+  const prefix = isDe ? '' : `/${locale}`;
 
   const [activeCategory, setActiveCategory] = useState<'unlimited_eco' | 'unlimited_pro'>('unlimited_eco');
 
@@ -38,11 +38,11 @@ export function UnlimitedPageClient({
       {/* ── Breadcrumb ── */}
       <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs text-slate-500">
         <Link href={prefix || "/"} className="hover:text-brand-600 transition-colors">
-          {isDe ? 'Startseite' : 'Home'}
+          {t('nav_home' as any) || 'Home'}
         </Link>
         <span>/</span>
         <Link href={`${prefix}/tariffs`} className="hover:text-brand-600 transition-colors">
-          {isDe ? 'eSIM Tarife' : 'eSIM Plans'}
+          {t('nav_tariffs') || 'eSIM'}
         </Link>
         <span>/</span>
         <Link href={`${prefix}/esim/${destination.slug}`} className="hover:text-brand-600 transition-colors">

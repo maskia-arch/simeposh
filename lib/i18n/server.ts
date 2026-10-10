@@ -54,8 +54,9 @@ export async function getServerLocale(explicitLocale?: string): Promise<LocaleCo
     const headerLoc = h.get('x-locale');
     if (headerLoc && isValidLocale(headerLoc)) return headerLoc;
     const pathname = h.get('x-pathname') || '';
-    if (pathname === '/en' || pathname.startsWith('/en/')) {
-      return 'en';
+    const match = pathname.match(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)(?=\/|$)/);
+    if (match && isValidLocale(match[1])) {
+      return match[1];
     }
     if (pathname) {
       return 'de';

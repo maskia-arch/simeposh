@@ -11,9 +11,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${t('blog_title' as any)} & eSIM ${isDe ? 'Ratgeber' : 'Guides'}`,
     description: t('blog_tagline' as any),
-    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'blog', enPath: 'blog' }),
+    alternates: buildAlternates(locale, { dePath: 'blog', enPath: 'blog' }),
     openGraph: {
-      locale: isDe ? 'de_DE' : 'en_US',
+      locale: isDe ? 'de_DE' : `${locale}_${locale.toUpperCase()}`,
     },
   };
 }
@@ -31,7 +31,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 
   const locale = await getServerLocale();
   const t = getServerT(locale);
-  const prefix = locale === 'en' ? '/en' : '';
+  const prefix = locale === 'de' ? '' : `/${locale}`;
   const supabase = await createClient();
 
   // Fetch published posts for the active category

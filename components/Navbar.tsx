@@ -26,6 +26,7 @@ function LocaleCurrencyControls() {
 
 function CartButton() {
   const { count, toggle } = useCart();
+  const { t } = useTranslation();
   const [shouldBounce, setShouldBounce] = useState(false);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ function CartButton() {
       className={`relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-all ${
         shouldBounce ? 'animate-bounce scale-120 text-brand-600' : ''
       }`}
-      aria-label="Warenkorb"
+      aria-label={t('cart_title') || 'Cart'}
     >
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .96-.343 1.087-.835l1.823-6.844a.75.75 0 00-.726-.94H6.106M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -56,7 +57,7 @@ function CartButton() {
   );
 }
 
-function DashboardDropdown({ t }: { t: any }) {
+function DashboardDropdown({ t, prefix }: { t: any; prefix: string }) {
   const [open, setOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -101,7 +102,7 @@ function DashboardDropdown({ t }: { t: any }) {
       {open && (
         <div className="absolute right-0 mt-2 w-64 origin-top-right rounded-2xl border border-slate-200 bg-white p-2.5 shadow-xl ring-1 ring-black/5 transition-all duration-200 animate-in fade-in slide-in-from-top-1">
           <Link
-            href="/dashboard"
+            href={`${prefix}/dashboard`}
             onClick={() => setOpen(false)}
             className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 transition-colors group"
           >
@@ -116,7 +117,7 @@ function DashboardDropdown({ t }: { t: any }) {
             </div>
           </Link>
           <Link
-            href="/dashboard?tab=cash"
+            href={`${prefix}/dashboard?tab=cash`}
             onClick={() => setOpen(false)}
             className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 transition-colors group border-t border-slate-100"
           >

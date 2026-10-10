@@ -225,7 +225,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                   <div className="flex items-center gap-1.5">
                     {ops.length > 1 && (
                       <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                        Dual-Netz (Redundanz)
+                        {t('det_dual_net_redundancy')}
                       </span>
                     )}
                     {breakoutIp && (

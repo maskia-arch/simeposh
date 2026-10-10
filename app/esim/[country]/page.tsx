@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
-import { getServerLocale } from '@/lib/i18n/server';
+import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 
 export const revalidate = 600;
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   }
 
   const locale = await getServerLocale();
-  const isDe = locale === 'de';
+  const t = getServerT(locale);
 
   const countryLabel = displayCountryName(
     { country_code: destination.code, country_name: destination.name, location_codes: null, region: null },
@@ -36,13 +36,17 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   const minPriceFormatted = minPrice.toFixed(2).replace('.', ',');
   const baseUrl = BASE_URL;
 
-  const title = isDe
-    ? `eSIM ${countryLabel} ab ${minPriceFormatted} € – Highspeed Daten ohne Roaming`
-    : `eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Prepaid Data`;
+  const title = t('meta_country_title' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+    || (locale === 'de'
+      ? `eSIM ${countryLabel} ab ${minPriceFormatted} € – Highspeed Daten ohne Roaming`
+      : `eSIM ${countryLabel} from €${minPrice.toFixed(2)} – High-Speed Prepaid Data`);
 
-  const description = isDe
-    ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted} €, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`
-    : `Affordable prepaid eSIM for ${countryLabel}. High-speed data from €${minPrice.toFixed(2)}, instant QR code activation, and no roaming fees. Buy now!`;
+  const description = t('meta_country_desc' as any, { country: countryLabel, price: locale === 'de' ? minPriceFormatted : minPrice.toFixed(2) })
+    || (locale === 'de'
+      ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted} €, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`
+      : `Affordable prepaid eSIM for ${countryLabel}. High-speed data from €${minPrice.toFixed(2)}, instant QR code activation, and no roaming fees. Buy now!`);
+
+  const prefix = locale === 'de' ? '' : `/${locale}`;
 
   return {
     title,
@@ -51,16 +55,14 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
       'eSIM',
       countryLabel,
       `${countryLabel} eSIM`,
-      `eSIM ${countryLabel} kaufen`,
+      `eSIM ${countryLabel}`,
       'PureSim',
-      'Prepaid Daten',
-      'Roaming',
     ],
     openGraph: {
       title,
       description,
       type: 'website',
-      url: `${baseUrl}${isDe ? '' : '/en'}/esim/${destination.slug}`,
+      url: `${baseUrl}${prefix}/esim/${destination.slug}`,
       images: [
         {
           url: `${baseUrl}/logo.png`,
@@ -70,7 +72,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
         },
       ],
     },
-    alternates: buildAlternates(isDe ? 'de' : 'en', {
+    alternates: buildAlternates(locale, {
       dePath: `esim/${destination.slug}`,
       enPath: `esim/${destination.slug}`,
     }),
@@ -86,8 +88,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
   }
 
   const locale = await getServerLocale();
-  const isDe = locale === 'de';
-  const prefix = isDe ? '' : '/en';
+  const t = getServerT(locale);
+  const prefix = locale === 'de' ? '' : `/${locale}`;
 
   // Canonical redirect if requested via alias or alternate code (e.g. /esim/de -> /esim/germany)
   if (country.toLowerCase() !== destination.slug) {
@@ -113,9 +115,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `eSIM ${countryLabel}`,
-    description: isDe
-      ? `Prepaid eSIM Datenpakete für ${countryLabel}. Sofort-Aktivierung per QR-Code.`
-      : `Prepaid eSIM data plans for ${countryLabel}. Instant QR code activation.`,
+    description: t('meta_country_desc' as any, { country: countryLabel, price: Number(minPrice).toFixed(2) })
+      || `Prepaid eSIM ${countryLabel}`,
     image: `${baseUrl}/logo.png`,
     brand: {
       '@type': 'Brand',
@@ -127,14 +128,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
       lowPrice: minPrice.toFixed(2),
       highPrice: maxPrice.toFixed(2),
       offerCount: tariffs.length,
-      offers: tariffs.map((t) => ({
-        '@type': 'Offer',
-        name: t.name,
-        price: Number(t.sale_price_eur).toFixed(2),
-        priceCurrency: 'EUR',
-        availability: 'https://schema.org/InStock',
-        url: `${baseUrl}/tariffs/${t.slug}`,
-      })),
+      availability: 'https://schema.org/InStock',
+      url: `${baseUrl}${prefix}/esim/${destination.slug}`,
     },
   };
 
@@ -145,20 +140,20 @@ export default async function CountryPage({ params }: CountryPageProps) {
       {
         '@type': 'ListItem',
         position: 1,
-        name: isDe ? 'Startseite' : 'Home',
-        item: baseUrl,
+        name: t('nav_home' as any) || 'Home',
+        item: `${baseUrl}${prefix || '/'}`,
       },
       {
         '@type': 'ListItem',
         position: 2,
-        name: isDe ? 'eSIM Tarife' : 'eSIM Plans',
-        item: `${baseUrl}/tariffs`,
+        name: t('nav_tariffs') || 'eSIM',
+        item: `${baseUrl}${prefix}/tariffs`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: countryLabel,
-        item: `${baseUrl}/esim/${destination.slug}`,
+        item: `${baseUrl}${prefix}/esim/${destination.slug}`,
       },
     ],
   };

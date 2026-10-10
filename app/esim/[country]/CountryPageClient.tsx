@@ -25,7 +25,7 @@ export function CountryPageClient({
 }: CountryPageClientProps) {
   const { t, locale } = useTranslation();
   const isDe = locale === 'de';
-  const prefix = isDe ? '' : '/en';
+  const prefix = isDe ? '' : `/${locale}`;
 
   type CategoryTab = 'all' | 'travel' | 'unlimited';
   const [activeTab, setActiveTab] = useState<CategoryTab>('all');
@@ -84,11 +84,11 @@ export function CountryPageClient({
       {/* ── Breadcrumb ── */}
       <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-slate-500">
         <Link href={prefix || "/"} className="hover:text-brand-600 transition-colors">
-          {isDe ? 'Startseite' : 'Home'}
+          {t('nav_home' as any) || 'Home'}
         </Link>
         <span>/</span>
         <Link href={`${prefix}/tariffs`} className="hover:text-brand-600 transition-colors">
-          {isDe ? 'eSIM Tarife' : 'eSIM Plans'}
+          {t('nav_tariffs') || 'eSIM'}
         </Link>
         <span>/</span>
         <span className="font-semibold text-slate-800">{countryLabel}</span>

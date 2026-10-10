@@ -2,11 +2,42 @@ import { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAllDestinations } from '@/lib/destinations';
 import { BASE_URL } from '@/lib/seo';
+import { SUPPORTED_LOCALES, type LocaleCode } from '@/lib/i18n/config';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export async function generateSitemaps() {
+  return SUPPORTED_LOCALES.map((l) => ({ id: l.code }));
+}
+
+export default async function sitemap({
+  id,
+}: {
+  id: string;
+}): Promise<MetadataRoute.Sitemap> {
+  const targetLocale = (SUPPORTED_LOCALES.some((l) => l.code === id) ? id : 'de') as LocaleCode;
   const baseUrl = BASE_URL;
 
-  // 1. Core static routes (German URL at root, English at /en/...)
+  // Helper to build 15-language alternates for any path
+  function buildLanguages(
+    dePath: string,
+    localizedPaths?: Partial<Record<LocaleCode, string>>
+  ): Record<string, string> {
+    const cleanDe = dePath.replace(/^\/+/, '');
+    const langs: Record<string, string> = {};
+
+    for (const { code } of SUPPORTED_LOCALES) {
+      if (code === 'de') {
+        langs.de = `${baseUrl}${cleanDe ? `/${cleanDe}` : ''}`;
+      } else {
+        const slug = localizedPaths?.[code] ?? (code === 'en' ? (localizedPaths?.en ?? cleanDe) : cleanDe);
+        const cleanSlug = slug.replace(/^\/+/, '');
+        langs[code] = `${baseUrl}/${code}${cleanSlug ? `/${cleanSlug}` : ''}`;
+      }
+    }
+    langs['x-default'] = langs.en;
+    return langs;
+  }
+
+  // 1. Core static routes (checkout, cart, order are omitted)
   const routes = [
     '',
     '/tariffs',
@@ -21,91 +52,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const sitemapEntries: MetadataRoute.Sitemap = [];
 
   for (const route of routes) {
-    const deUrl = `${baseUrl}${route}`;
-    const enUrl = `${baseUrl}/en${route}`;
-    const alternates = {
-      languages: {
-        de: deUrl,
-        en: enUrl,
-        'x-default': enUrl,
-      },
-    };
+    const alternatesLanguages = buildLanguages(route);
+    const pageUrl = alternatesLanguages[targetLocale] || alternatesLanguages.de;
 
-    // DE entry
     sitemapEntries.push({
-      url: deUrl,
+      url: pageUrl,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: route === '' ? 1.0 : 0.8,
-      alternates,
-    });
-
-    // EN entry
-    sitemapEntries.push({
-      url: enUrl,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: route === '' ? 1.0 : 0.8,
-      alternates,
+      alternates: { languages: alternatesLanguages },
     });
   }
 
-  // 2. Query destinations (country & region pages)
+  // 2. Query destinations (country & region pages + unlimited configurator)
   try {
     const destinations = await getAllDestinations();
     destinations.forEach((d) => {
       if (d.slug) {
-        const deUrl = `${baseUrl}/esim/${d.slug}`;
-        const enUrl = `${baseUrl}/en/esim/${d.slug}`;
-        const alternates = {
-          languages: {
-            de: deUrl,
-            en: enUrl,
-            'x-default': enUrl,
-          },
-        };
-
+        // eSIM country page
+        const esimLangs = buildLanguages(`/esim/${d.slug}`);
         sitemapEntries.push({
-          url: deUrl,
+          url: esimLangs[targetLocale] || esimLangs.de,
           lastModified: new Date(),
           changeFrequency: 'daily',
           priority: 0.9,
-          alternates,
+          alternates: { languages: esimLangs },
         });
 
+        // Unlimited configurator route
+        const unlLangs = buildLanguages(`/unlimited/${d.slug}`);
         sitemapEntries.push({
-          url: enUrl,
-          lastModified: new Date(),
-          changeFrequency: 'daily',
-          priority: 0.9,
-          alternates,
-        });
-
-        // Unlimited configurator routes
-        const deUnlUrl = `${baseUrl}/unlimited/${d.slug}`;
-        const enUnlUrl = `${baseUrl}/en/unlimited/${d.slug}`;
-        const unlAlternates = {
-          languages: {
-            de: deUnlUrl,
-            en: enUnlUrl,
-            'x-default': enUnlUrl,
-          },
-        };
-
-        sitemapEntries.push({
-          url: deUnlUrl,
+          url: unlLangs[targetLocale] || unlLangs.de,
           lastModified: new Date(),
           changeFrequency: 'daily',
           priority: 0.8,
-          alternates: unlAlternates,
-        });
-
-        sitemapEntries.push({
-          url: enUnlUrl,
-          lastModified: new Date(),
-          changeFrequency: 'daily',
-          priority: 0.8,
-          alternates: unlAlternates,
+          alternates: { languages: unlLangs },
         });
       }
     });
@@ -126,31 +107,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     } else if (tariffs) {
       tariffs.forEach((t) => {
         if (t.slug) {
-          const deUrl = `${baseUrl}/tariffs/${t.slug}`;
-          const enUrl = `${baseUrl}/en/tariffs/${t.slug}`;
-          const alternates = {
-            languages: {
-              de: deUrl,
-              en: enUrl,
-              'x-default': enUrl,
-            },
-          };
+          const tariffLangs = buildLanguages(`/tariffs/${t.slug}`);
           const modTime = t.updated_at ? new Date(t.updated_at) : new Date();
 
           sitemapEntries.push({
-            url: deUrl,
+            url: tariffLangs[targetLocale] || tariffLangs.de,
             lastModified: modTime,
             changeFrequency: 'weekly',
             priority: 0.6,
-            alternates,
-          });
-
-          sitemapEntries.push({
-            url: enUrl,
-            lastModified: modTime,
-            changeFrequency: 'weekly',
-            priority: 0.6,
-            alternates,
+            alternates: { languages: tariffLangs },
           });
         }
       });
@@ -173,34 +138,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     } else if (posts) {
       posts.forEach((p: any) => {
         if (p.slug) {
-          const enTrans = p.post_translations?.find((t: any) => t.locale === 'en');
-          const enSlug = enTrans?.slug || p.slug;
+          const localizedSlugs: Partial<Record<LocaleCode, string>> = {};
+          if (Array.isArray(p.post_translations)) {
+            p.post_translations.forEach((pt: any) => {
+              if (pt.locale && pt.slug) {
+                localizedSlugs[pt.locale as LocaleCode] = `blog/${pt.slug}`;
+              }
+            });
+          }
 
-          const deUrl = `${baseUrl}/blog/${p.slug}`;
-          const enUrl = `${baseUrl}/en/blog/${enSlug}`;
-          const alternates = {
-            languages: {
-              de: deUrl,
-              en: enUrl,
-              'x-default': enUrl,
-            },
-          };
+          const blogLangs = buildLanguages(`blog/${p.slug}`, localizedSlugs);
           const modTime = p.updated_at ? new Date(p.updated_at) : new Date();
 
           sitemapEntries.push({
-            url: deUrl,
+            url: blogLangs[targetLocale] || blogLangs.de,
             lastModified: modTime,
             changeFrequency: 'weekly',
             priority: 0.5,
-            alternates,
-          });
-
-          sitemapEntries.push({
-            url: enUrl,
-            lastModified: modTime,
-            changeFrequency: 'weekly',
-            priority: 0.5,
-            alternates,
+            alternates: { languages: blogLangs },
           });
         }
       });

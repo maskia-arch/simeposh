@@ -56,7 +56,8 @@ export default async function RootLayout({
   // 1. Explicit locale from middleware URL rewrite/detection
   const headerLocale = headerStore.get('x-locale');
   const pathname = headerStore.get('x-pathname') || '';
-  const urlLocale = (pathname === '/en' || pathname.startsWith('/en/')) ? 'en' : null;
+  const urlMatch = pathname.match(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)(?=\/|$)/);
+  const urlLocale = urlMatch ? urlMatch[1] : null;
 
   // 2. Strict URL-driven resolution (URL is authoritative over cookie)
   const resolvedLocale: LocaleCode = (headerLocale && isSupportedLocale(headerLocale))

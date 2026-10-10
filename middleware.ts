@@ -59,9 +59,12 @@ export async function middleware(request: NextRequest) {
   const webhookSecret = process.env.SHOP_WEBHOOK_SECRET;
   const isTrustedM2M = (webhookSecret && authHeader === `Bearer ${webhookSecret}`) || request.headers.has('x-pure-wallet-signature');
 
-  const isEn = pathname === '/en' || pathname.startsWith('/en/');
-  const normalizedPath = isEn ? (pathname.replace(/^\/en/, '') || '/') : pathname;
-  const langPrefix = isEn ? '/en' : '';
+  // Detect language prefix: English (/en) or other 13 supported languages (/fr, /es, /it, /nl, /pl, /pt, /tr, /sv, /da, /fi, /cs, /ro, /hu)
+  const langMatch = pathname.match(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)(?=\/|$)/);
+  const detectedLocale = langMatch ? langMatch[1] : 'de';
+  const isPrefixed = Boolean(langMatch);
+  const normalizedPath = isPrefixed ? (pathname.replace(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/, '') || '/') : pathname;
+  const langPrefix = isPrefixed ? `/${detectedLocale}` : '';
 
   if (!isTrustedM2M && !isPublicMeta) {
     // 1. Block suspicious path probes (e.g. php admin portals, env files)
@@ -255,11 +258,11 @@ export async function middleware(request: NextRequest) {
 
     const pair = BLOG_PAIRS[blogSlug];
     if (pair) {
-      if (isEn && blogSlug !== pair.en) {
+      if (detectedLocale === 'en' && blogSlug !== pair.en) {
         return NextResponse.redirect(new URL(`/en/blog/${pair.en}`, request.url), 301);
       }
-      if (!isEn && blogSlug !== pair.de) {
-        return NextResponse.redirect(new URL(`/en/blog/${pair.en}`, request.url), 301);
+      if (detectedLocale === 'de' && blogSlug !== pair.de) {
+        return NextResponse.redirect(new URL(`/blog/${pair.de}`, request.url), 301);
       }
     }
   }
@@ -303,11 +306,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-locale', isEn ? 'en' : 'de');
+  requestHeaders.set('x-locale', detectedLocale);
   requestHeaders.set('x-pathname', pathname);
 
   let response: NextResponse;
-  if (isEn) {
+  if (isPrefixed) {
     const internalUrl = new URL(normalizedPath + request.nextUrl.search, request.url);
     response = NextResponse.rewrite(internalUrl, {
       request: { headers: requestHeaders },
@@ -332,14 +335,17 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;
   const user = token ? await verifyJwt(token) : null;
 
-  // ── Persist visitor's active language preference to cookie ──
-  const activeLocale = isEn ? 'en' : 'de';
-  if (request.cookies.get('locale')?.value !== activeLocale) {
-    response.cookies.set('locale', activeLocale, {
-      path:     '/',
-      maxAge:   60 * 60 * 24 * 365,
-      sameSite: 'lax',
-    });
+  // ── Persist visitor's active language preference to cookie (only on top-level page navigations, NOT on prefetch or API) ──
+  const isPrefetch = request.headers.get('next-router-prefetch') || request.headers.get('purpose') === 'prefetch';
+  const isApiRequest = pathname.startsWith('/api/');
+  if (!isPrefetch && !isApiRequest) {
+    if (request.cookies.get('locale')?.value !== detectedLocale) {
+      response.cookies.set('locale', detectedLocale, {
+        path:     '/',
+        maxAge:   60 * 60 * 24 * 365,
+        sameSite: 'lax',
+      });
+    }
   }
 
   // Redirect unauthenticated users away from protected routes

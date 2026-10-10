@@ -4,20 +4,20 @@ import { createClient }      from '@/lib/supabase/server';
 import { TariffsPageClient } from './TariffsPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 import { getDestinationBySlug } from '@/lib/destinations';
-import { getServerLocale } from '@/lib/i18n/server';
+import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
-  const isDe = locale === 'de';
+  const t = getServerT(locale);
   return {
-    title: isDe ? 'Tarife & eSIM Pakete' : 'Plans & eSIM Packages',
-    description: isDe
+    title: t('meta_tariffs_title' as any) || (locale === 'de' ? 'Tarife & eSIM Pakete' : 'Plans & eSIM Packages'),
+    description: t('meta_tariffs_desc' as any) || (locale === 'de'
       ? 'Finde günstige eSIM-Tarife für über 150 Länder weltweit.'
-      : 'Find affordable eSIM plans for over 150 countries worldwide.',
-    alternates: buildAlternates(isDe ? 'de' : 'en', { dePath: 'tariffs', enPath: 'tariffs' }),
+      : 'Find affordable eSIM plans for over 150 countries worldwide.'),
+    alternates: buildAlternates(locale, { dePath: 'tariffs', enPath: 'tariffs' }),
     openGraph: {
-      locale: isDe ? 'de_DE' : 'en_US',
+      locale: locale === 'de' ? 'de_DE' : `${locale}_${locale.toUpperCase()}`,
     },
   };
 }
@@ -67,7 +67,7 @@ export default async function TariffsPage({
   searchParams: Promise<{ q?: string; category?: string; tab?: string }>;
 }) {
   const locale = await getServerLocale();
-  const prefix = locale === 'en' ? '/en' : '';
+  const prefix = locale === 'de' ? '' : `/${locale}`;
   const params = await searchParams;
   const q = params.q?.trim();
   if (q) {

@@ -5,11 +5,12 @@ import { query } from '@/lib/db';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
 import { getOrCreateTranslation } from '@/lib/blog/translation';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
+import type { LocaleCode } from '@/lib/i18n/config';
 
 interface PostResolution {
   post: any;
-  deSlug: string;
-  enSlug: string;
+  currentSlug: string;
+  localizedSlugs: Partial<Record<LocaleCode, string>>;
   shouldRedirect: boolean;
   redirectUrl?: string;
   resolvedData: {
@@ -24,9 +25,8 @@ interface PostResolution {
   };
 }
 
-async function getPostAndTranslation(slug: string, locale: string): Promise<PostResolution | null> {
+async function getPostAndTranslation(slug: string, locale: LocaleCode): Promise<PostResolution | null> {
   // 1. Try to find the post where slug matches the main posts table
-  let isGermanSlug = true;
   let postRes = await query('SELECT * FROM posts WHERE slug = $1 AND is_published = true AND status = $2', [slug, 'approved']);
   let post = postRes.rows[0];
 
@@ -37,50 +37,57 @@ async function getPostAndTranslation(slug: string, locale: string): Promise<Post
     if (trans) {
       let mainRes = await query('SELECT * FROM posts WHERE id = $1 AND is_published = true AND status = $2', [trans.post_id, 'approved']);
       post = mainRes.rows[0];
-      isGermanSlug = false;
     }
   }
 
   if (!post) return null;
 
-  const deSlug = post.slug;
-  const transEnRes = await query('SELECT * FROM post_translations WHERE post_id = $1 AND locale = $2', [post.id, 'en']);
-  let enTranslation = transEnRes.rows[0];
+  // 3. Fetch all translations for this post
+  const transAllRes = await query('SELECT locale, title, slug, excerpt, content FROM post_translations WHERE post_id = $1', [post.id]);
+  const allTranslations: Record<string, any> = {};
+  transAllRes.rows.forEach((r: any) => {
+    allTranslations[r.locale] = r;
+  });
 
-  if (!enTranslation && locale === 'en') {
+  // If translation missing for current locale, fallback or generate
+  let currentTrans = allTranslations[locale];
+  if (!currentTrans && locale !== 'de') {
     try {
-      enTranslation = await getOrCreateTranslation(post.id, 'en');
+      currentTrans = await getOrCreateTranslation(post.id, locale);
+      if (currentTrans) allTranslations[locale] = currentTrans;
     } catch (err) {
-      console.error(`[Translation Fallback] Failed to translate post ${post.id} to en:`, err);
+      console.error(`[Translation Fallback] Failed to translate post ${post.id} to ${locale}:`, err);
     }
   }
 
-  const enSlug = enTranslation?.slug || (!isGermanSlug ? slug : post.slug);
+  const localizedSlugs: Partial<Record<LocaleCode, string>> = {
+    de: post.slug,
+  };
+
+  Object.entries(allTranslations).forEach(([loc, tr]) => {
+    if (tr?.slug) {
+      localizedSlugs[loc as LocaleCode] = tr.slug;
+    }
+  });
+
+  const expectedSlug = locale === 'de' ? post.slug : (localizedSlugs[locale] || post.slug);
 
   // Check whether request needs canonical language URL redirect
   let shouldRedirect = false;
   let redirectUrl: string | undefined;
 
-  if (locale === 'de') {
-    // English slug accessed under German URL (/blog/...)
-    if (!isGermanSlug || (slug === enSlug && enSlug !== deSlug)) {
-      shouldRedirect = true;
-      redirectUrl = `/en/blog/${enSlug}`;
-    }
-  } else if (locale === 'en') {
-    // German slug accessed under English URL (/en/blog/...)
-    if (isGermanSlug && enSlug !== deSlug) {
-      shouldRedirect = true;
-      redirectUrl = `/en/blog/${enSlug}`;
-    }
+  if (slug !== expectedSlug) {
+    shouldRedirect = true;
+    const prefix = locale === 'de' ? '' : `/${locale}`;
+    redirectUrl = `${prefix}/blog/${expectedSlug}`;
   }
 
   const isDe = locale === 'de';
   const resolvedData = {
-    title: isDe ? post.title : (enTranslation?.title || post.title),
-    slug: isDe ? post.slug : (enTranslation?.slug || post.slug),
-    excerpt: isDe ? post.excerpt : (enTranslation?.excerpt || post.excerpt),
-    content: isDe ? post.content : (enTranslation?.content || post.content),
+    title: isDe ? post.title : (currentTrans?.title || post.title),
+    slug: expectedSlug,
+    excerpt: isDe ? post.excerpt : (currentTrans?.excerpt || post.excerpt),
+    content: isDe ? post.content : (currentTrans?.content || post.content),
     category: post.category,
     featured_image: post.featured_image,
     published_at: post.published_at,
@@ -89,8 +96,8 @@ async function getPostAndTranslation(slug: string, locale: string): Promise<Post
 
   return {
     post,
-    deSlug,
-    enSlug,
+    currentSlug: expectedSlug,
+    localizedSlugs,
     shouldRedirect,
     redirectUrl,
     resolvedData,
@@ -107,7 +114,6 @@ interface PostPageProps {
 function parseMarkdownToHtml(markdown: string): string {
   if (!markdown) return '';
   
-  // If the content is already HTML, return it directly
   if (markdown.trim().startsWith('<') && markdown.includes('</')) {
     return markdown;
   }
@@ -180,16 +186,9 @@ function parseMarkdownToHtml(markdown: string): string {
 
   let html = processedLines.join('\n');
 
-  // Bold (**text**)
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Italic (*text*)
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-  // Inline Code (`code`)
   html = html.replace(/`(.*?)`/g, '<code class="bg-slate-100 rounded px-1.5 py-0.5 text-sm font-mono text-indigo-600">$1</code>');
-
-  // Links ([text](url))
   html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-brand-600 hover:text-brand-750 hover:underline font-semibold" target="_blank" rel="noopener noreferrer">$1</a>');
 
   return html;
@@ -208,21 +207,29 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     redirect(res.redirectUrl);
   }
 
-  const { deSlug, enSlug, resolvedData } = res;
+  const { resolvedData, localizedSlugs } = res;
   const isDe = locale === 'de';
+
+  const localizedPaths: Partial<Record<LocaleCode, string>> = {};
+  Object.entries(localizedSlugs).forEach(([loc, sl]) => {
+    if (sl) localizedPaths[loc as LocaleCode] = `blog/${sl}`;
+  });
+
+  const prefix = isDe ? '' : `/${locale}`;
 
   return {
     title: resolvedData.title,
     description: resolvedData.excerpt || (isDe ? 'Lies den vollständigen Artikel in unserem Blog.' : 'Read the full article on our blog.'),
-    alternates: buildAlternates(isDe ? 'de' : 'en', {
-      dePath: `blog/${deSlug}`,
-      enPath: `blog/${enSlug}`,
+    alternates: buildAlternates(locale, {
+      dePath: `blog/${localizedSlugs.de}`,
+      enPath: `blog/${localizedSlugs.en || localizedSlugs.de}`,
+      localizedPaths,
     }),
     openGraph: {
       title: resolvedData.title,
       description: resolvedData.excerpt,
-      locale: isDe ? 'de_DE' : 'en_US',
-      url: isDe ? `${BASE_URL}/blog/${deSlug}` : `${BASE_URL}/en/blog/${enSlug}`,
+      locale: isDe ? 'de_DE' : `${locale}_${locale.toUpperCase()}`,
+      url: `${BASE_URL}${prefix}/blog/${resolvedData.slug}`,
     },
   };
 }
@@ -242,7 +249,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
   }
 
   const { resolvedData } = res;
-  const prefix = locale === 'en' ? '/en' : '';
+  const prefix = locale === 'de' ? '' : `/${locale}`;
 
   const formattedDate = resolvedData.published_at
     ? new Date(resolvedData.published_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -256,101 +263,64 @@ export default async function PostDetailPage({ params }: PostPageProps) {
       {/* Navigation Breadcrumb bar */}
       <div className="bg-slate-50 border-b border-slate-200 py-3.5">
         <div className="mx-auto max-w-3xl px-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link href={prefix || '/'} className="hover:text-brand-700 transition-colors">Home</Link>
+          <Link href={prefix || '/'} className="hover:text-brand-700 transition-colors">
+            {t('nav_home' as any) || 'Home'}
+          </Link>
           <span>/</span>
-          <Link href={`${prefix}/blog`} className="hover:text-brand-700 transition-colors">Blog</Link>
+          <Link href={`${prefix}/blog`} className="hover:text-brand-700 transition-colors">
+            {t('nav_blog' as any) || 'Blog'}
+          </Link>
           <span>/</span>
-          <span className="text-slate-800 truncate">{resolvedData.title}</span>
+          <span className="text-slate-800 truncate max-w-[200px] sm:max-w-xs">{resolvedData.title}</span>
         </div>
       </div>
 
-      <article className="mx-auto max-w-3xl px-4 mt-10">
-        {/* Article Meta */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider text-white ${
-            resolvedData.category === 'guide' ? 'bg-brand-600' : 'bg-teal-600'
-          }`}>
-            {resolvedData.category === 'guide' 
-              ? (t('blog_category_guide' as any) || 'eSIM Grundlagen') 
-              : (t('blog_category_news' as any) || 'News')}
-          </span>
-          <span className="text-xs text-slate-400 font-medium">
-            {t('blog_published_at' as any) || 'Veröffentlicht am'} {formattedDate}
+      <article className="mx-auto max-w-3xl px-4 pt-10">
+        <div className="mb-4">
+          <span className="inline-flex items-center rounded-full bg-brand-50 border border-brand-200 px-3 py-1 text-xs font-bold text-brand-700">
+            {resolvedData.category === 'guide' ? t('blog_tab_guides' as any) || 'Ratgeber' : t('blog_tab_news' as any) || 'News'}
           </span>
         </div>
 
-        {/* Title */}
-        <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-6">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6">
           {resolvedData.title}
         </h1>
 
-        {/* Excerpt */}
-        {resolvedData.excerpt && (
-          <p className="text-lg text-slate-500 border-l-4 border-slate-250 pl-4 py-1 italic mb-10 leading-relaxed">
-            {resolvedData.excerpt}
-          </p>
-        )}
+        <div className="flex items-center gap-4 text-xs font-medium text-slate-500 pb-8 border-b border-slate-100 mb-8">
+          <span>{formattedDate}</span>
+          <span>•</span>
+          <span>PureSim Redaktion</span>
+        </div>
 
-        {/* Featured Cover Image */}
-        {resolvedData.featured_image ? (
-          <div className="w-full rounded-2xl overflow-hidden shadow-md border border-slate-200/50 mb-12 aspect-[16/9] relative">
-            <img 
-              src={resolvedData.featured_image} 
+        {resolvedData.featured_image && (
+          <div className="mb-10 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+            <img
+              src={resolvedData.featured_image}
               alt={resolvedData.title}
-              className="w-full h-full object-cover"
+              className="w-full h-auto object-cover max-h-[420px]"
             />
           </div>
-        ) : (
-          <div className={`w-full rounded-2xl aspect-[16/9] shadow-md mb-12 relative flex items-center justify-center text-white bg-gradient-to-br ${
-            resolvedData.category === 'guide' 
-              ? 'from-brand-600 via-brand-700 to-indigo-850' 
-              : 'from-indigo-500 to-brand-500'
-          }`}>
-            <span className="text-7xl">{resolvedData.category === 'guide' ? '📖' : '📡'}</span>
-          </div>
         )}
 
-        {/* Article content parsed from Markdown */}
-        <div 
-          className="prose prose-slate max-w-none mb-16 text-slate-800"
+        <div
+          className="prose prose-slate max-w-none text-slate-800 leading-relaxed space-y-4"
           dangerouslySetInnerHTML={{ __html: parsedContentHtml }}
         />
 
-        {/* Conversion CTA Block */}
-        <div className="rounded-3xl bg-gradient-to-br from-brand-900 to-indigo-950 text-white p-8 md:p-10 shadow-xl relative overflow-hidden mb-16">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent)] pointer-events-none" />
-          <div className="relative z-10 md:flex items-center justify-between gap-6">
-            <div className="max-w-md">
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-200">
-                {t('blog_cta_tagline' as any)}
-              </span>
-              <h3 className="text-xl md:text-2xl font-bold mt-2">
-                {t('blog_cta_title' as any)}
-              </h3>
-              <p className="mt-2 text-brand-100 text-sm leading-relaxed">
-                {t('blog_cta_desc' as any)}
-              </p>
-            </div>
-            <div className="mt-6 md:mt-0 shrink-0">
-              <Link
-                href={`${prefix}/tariffs`}
-                className="inline-block rounded-xl bg-white px-6 py-3 text-sm font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-lg"
-              >
-                {t('footer_browse')}
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Back navigation */}
-        <div className="border-t border-slate-100 pt-8">
+        {/* Back to Blog CTA & eSIM Search */}
+        <div className="mt-14 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link
             href={`${prefix}/blog`}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-850 group transition-colors"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-xs"
           >
-            <span className="transform group-hover:-translate-x-1 transition-transform">
-              {t('blog_back' as any) || '← Zurück zum Blog'}
-            </span>
+            ← {t('blog_tab_guides' as any) ? 'Alle Artikel' : 'All articles'}
+          </Link>
+
+          <Link
+            href={`${prefix}/tariffs`}
+            className="btn-primary !h-12 !px-6 text-sm"
+          >
+            {t('hero_cta_plans')} →
           </Link>
         </div>
       </article>

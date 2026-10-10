@@ -281,7 +281,7 @@ export function TariffsPageClient({
                     ? 'text-amber-100'
                     : 'text-amber-900'
                 }`}>
-                  Dual-Netz • UK IP
+                  {t('card_dual_net_pill')} • UK IP
                 </span>
               </div>
             </div>
