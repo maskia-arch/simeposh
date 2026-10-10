@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { fulfillOrders } from '@/lib/fulfillment';
 import { sendUnderpaymentEmail } from '@/lib/email/mailer';
+import { getPool } from '@/lib/db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -631,10 +632,23 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
     return currentSession;
   }
 
-  // If session is expired or cancelled AND past the grace period:
-  // It is PERMANENTLY CLOSED. Never query blockchain explorers, never revive!
-  if ((currentSession.status === 'expired' || currentSession.status === 'cancelled') && isPastGrace) {
+  // If session is cancelled or expired, ensure associated orders match and do not query chain
+  if (currentSession.status === 'cancelled') {
+    const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
+    if (orderIds.length > 0) {
+      await db.from('orders').update({ status: 'cancelled' }).in('id', orderIds).in('status', ['pending', 'pending_payment']);
+    }
+    await db.from('orders').update({ status: 'cancelled' }).eq('checkout_ref', id).in('status', ['pending', 'pending_payment']);
     return currentSession;
+  }
+
+  if (currentSession.status === 'expired') {
+    const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
+    if (orderIds.length > 0) {
+      await db.from('orders').update({ status: 'expired' }).in('id', orderIds).in('status', ['pending', 'pending_payment']);
+    }
+    await db.from('orders').update({ status: 'expired' }).eq('checkout_ref', id).in('status', ['pending', 'pending_payment']);
+    if (isPastGrace) return currentSession;
   }
 
   // If session is pending and already well past grace period:
@@ -652,6 +666,11 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
         .in('id', orderIds)
         .in('status', ['pending', 'pending_payment']);
     }
+    await db
+      .from('orders')
+      .update({ status: 'expired' })
+      .eq('checkout_ref', id)
+      .in('status', ['pending', 'pending_payment']);
     currentSession.status = 'expired';
     return currentSession;
   }
@@ -875,6 +894,13 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           })
           .in('id', orderIds);
       }
+      await db
+        .from('orders')
+        .update({
+          status: 'review',
+          payment_confirmed_at: paidAt || new Date().toISOString(),
+        })
+        .eq('checkout_ref', id);
       console.log(`[Session Sync] Session ${id} set to 'review'. Orders updated to 'review'. Fulfillment skipped.`);
     } else if (status === 'expired') {
       const orderIds: string[] = Array.isArray(currentSession.order_ids) ? currentSession.order_ids : [];
@@ -883,8 +909,13 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
           .from('orders')
           .update({ status: 'expired' })
           .in('id', orderIds)
-          .in('status', ['pending']);
+          .in('status', ['pending', 'pending_payment']);
       }
+      await db
+        .from('orders')
+        .update({ status: 'expired' })
+        .eq('checkout_ref', id)
+        .in('status', ['pending', 'pending_payment']);
     }
 
     // Transition to partially_paid: send customer underpayment email alert once
@@ -1105,55 +1136,123 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
 }
 
+export async function cancelCryptoSessionAndOrders(id: string): Promise<{
+  ok: boolean;
+  sessionStatus?: string;
+  orderStatus?: string;
+  notFound?: boolean;
+  notCancellable?: boolean;
+  currentStatus?: string;
+  alreadyCancelled?: boolean;
+  error?: string;
+}> {
+  const pool = getPool();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Lock the session row for update
+    const sessRes = await client.query(
+      'SELECT id, status, order_ids, wallet_address FROM crypto_sessions WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+
+    if (sessRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { ok: false, notFound: true, error: 'Session nicht gefunden' };
+    }
+
+    const s = sessRes.rows[0];
+
+    // If order was already fulfilled / paid / in review / detected, refuse cancellation
+    if (s.status === 'paid' || s.status === 'review' || s.status === 'detected') {
+      await client.query('ROLLBACK');
+      return {
+        ok: false,
+        notCancellable: true,
+        currentStatus: s.status,
+        error: `Zahlung kann nicht storniert werden: Status ist ${s.status}`,
+      };
+    }
+
+    const orderIds: string[] = Array.isArray(s.order_ids) ? s.order_ids : [];
+
+    // Idempotent 2nd DELETE: if session is already cancelled, ensure orders are cancelled too and return 200
+    if (s.status === 'cancelled') {
+      if (orderIds.length > 0) {
+        await client.query(
+          "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status IN ('pending', 'pending_payment')",
+          [orderIds]
+        );
+      }
+      await client.query(
+        "UPDATE orders SET status = 'cancelled' WHERE checkout_ref = $1 AND status IN ('pending', 'pending_payment')",
+        [id]
+      );
+      await client.query('COMMIT');
+      return { ok: true, alreadyCancelled: true, sessionStatus: 'cancelled', orderStatus: 'cancelled' };
+    }
+
+    // 2. Mark session as cancelled
+    await client.query("UPDATE crypto_sessions SET status = 'cancelled' WHERE id = $1", [id]);
+
+    // 3. Mark orders as cancelled (both by order_ids and checkout_ref)
+    if (orderIds.length > 0) {
+      await client.query(
+        "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status IN ('pending', 'pending_payment')",
+        [orderIds]
+      );
+    }
+    await client.query(
+      "UPDATE orders SET status = 'cancelled' WHERE checkout_ref = $1 AND status IN ('pending', 'pending_payment')",
+      [id]
+    );
+
+    // 4. Strict atomic verification before COMMIT: verify both session AND orders are cancelled
+    const verifySess = await client.query('SELECT status FROM crypto_sessions WHERE id = $1', [id]);
+    if (verifySess.rows[0]?.status !== 'cancelled') {
+      await client.query('ROLLBACK');
+      return { ok: false, error: 'Verifizierung der Session-Stornierung fehlgeschlagen' };
+    }
+
+    if (orderIds.length > 0) {
+      const verifyOrders = await client.query('SELECT id, status FROM orders WHERE id = ANY($1)', [orderIds]);
+      const stillPending = verifyOrders.rows.some((o: any) => o.status === 'pending' || o.status === 'pending_payment');
+      if (stillPending) {
+        await client.query('ROLLBACK');
+        return { ok: false, error: 'Verifizierung der Bestellungs-Stornierung fehlgeschlagen' };
+      }
+    }
+
+    await client.query('COMMIT');
+    return { ok: true, sessionStatus: 'cancelled', orderStatus: 'cancelled' };
+  } catch (err: any) {
+    await client.query('ROLLBACK');
+    return { ok: false, error: err.message };
+  } finally {
+    client.release();
+  }
+}
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const db = createServiceClient();
+    const res = await cancelCryptoSessionAndOrders(id);
 
-    // 1. Fetch the session
-    const { data: s, error: fetchErr } = await db
-      .from('crypto_sessions')
-      .select('id, status, order_ids, wallet_address, coin, received_amount')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (fetchErr || !s) {
-      return NextResponse.json({ success: true, alreadyCancelled: true, status: 'cancelled' });
+    if (!res.ok) {
+      if (res.notFound) {
+        return NextResponse.json({ error: 'Session nicht gefunden' }, { status: 404 });
+      }
+      if (res.notCancellable) {
+        return NextResponse.json(
+          { error: res.error || 'Stornierung nicht möglich', status: res.currentStatus },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: res.error || 'Stornierung fehlgeschlagen' }, { status: 500 });
     }
 
-    // If order was already fulfilled / paid / detected / in review, refuse cancellation
-    if (s.status === 'paid' || s.status === 'detected' || s.status === 'partially_paid' || s.status === 'review') {
-      return NextResponse.json(
-        { error: 'Zahlung wurde bereits erkannt oder bestätigt. Stornierung nicht möglich.', status: s.status },
-        { status: 400 }
-      );
-    }
-
-    const orderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
-
-    // 2. Mark pending orders as 'cancelled'
-    if (orderIds.length > 0) {
-      await db
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .in('id', orderIds)
-        .in('status', ['pending', 'pending_payment']);
-    }
-
-    // Also cancel any orders linked via checkout_ref if matching session id
-    await db
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('checkout_ref', id)
-      .in('status', ['pending', 'pending_payment']);
-
-    // 3. Update session status to 'cancelled' (frees up wallet address automatically)
-    await db
-      .from('crypto_sessions')
-      .update({ status: 'cancelled' })
-      .eq('id', id);
-
-    // 4. Notify pure-wallet gateway if configured / reachable
+    // Notify pure-wallet gateway if configured / reachable (fire-and-forget)
     try {
       const urls = getPureWalletUrls();
       for (const base of urls) {
@@ -1167,7 +1266,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     } catch {}
 
     console.log(`[crypto/session/cancel] Session ${id} and associated orders marked as 'cancelled'.`);
-    return NextResponse.json({ success: true, status: 'cancelled' });
+    return NextResponse.json({
+      success: true,
+      status: 'cancelled',
+      sessionStatus: res.sessionStatus,
+      orderStatus: res.orderStatus,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[crypto/session/cancel] Error:', msg);

@@ -430,7 +430,52 @@ export async function sweepExpiredSessions(db: any) {
             .in('id', trulyExpiredOrderIds)
             .in('status', ['pending', 'pending_payment']);
         }
+        await db
+          .from('orders')
+          .update({ status: 'expired' })
+          .in('checkout_ref', trulyExpiredIds)
+          .in('status', ['pending', 'pending_payment']);
       }
+    }
+
+    // Sweep any expired sessions whose orders might still be pending
+    const { data: expiredSessionsWithoutUpdatedOrders } = await db
+      .from('crypto_sessions')
+      .select('id, order_ids')
+      .eq('status', 'expired')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (expiredSessionsWithoutUpdatedOrders && expiredSessionsWithoutUpdatedOrders.length > 0) {
+      const expSessionIds = expiredSessionsWithoutUpdatedOrders.map((s: any) => s.id);
+      const expOrderIds: string[] = [];
+      for (const s of expiredSessionsWithoutUpdatedOrders) {
+        if (Array.isArray(s.order_ids)) expOrderIds.push(...s.order_ids);
+      }
+      if (expOrderIds.length > 0) {
+        await db.from('orders').update({ status: 'expired' }).in('id', expOrderIds).in('status', ['pending', 'pending_payment']);
+      }
+      await db.from('orders').update({ status: 'expired' }).in('checkout_ref', expSessionIds).in('status', ['pending', 'pending_payment']);
+    }
+
+    // Sweep any cancelled sessions whose orders might still be pending
+    const { data: cancelledSessionsWithoutUpdatedOrders } = await db
+      .from('crypto_sessions')
+      .select('id, order_ids')
+      .eq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (cancelledSessionsWithoutUpdatedOrders && cancelledSessionsWithoutUpdatedOrders.length > 0) {
+      const canSessionIds = cancelledSessionsWithoutUpdatedOrders.map((s: any) => s.id);
+      const canOrderIds: string[] = [];
+      for (const s of cancelledSessionsWithoutUpdatedOrders) {
+        if (Array.isArray(s.order_ids)) canOrderIds.push(...s.order_ids);
+      }
+      if (canOrderIds.length > 0) {
+        await db.from('orders').update({ status: 'cancelled' }).in('id', canOrderIds).in('status', ['pending', 'pending_payment']);
+      }
+      await db.from('orders').update({ status: 'cancelled' }).in('checkout_ref', canSessionIds).in('status', ['pending', 'pending_payment']);
     }
   } catch (err) {
     console.error('[sweepExpiredSessions] Error:', err);

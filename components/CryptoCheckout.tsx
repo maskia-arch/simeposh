@@ -1030,8 +1030,7 @@ export function CryptoCheckout({
             <button
               onClick={handleVerify}
               disabled={verifying || cancelling}
-              style={{ backgroundColor: theme.primary }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white hover:opacity-90 active:scale-[0.99] disabled:opacity-60 transition-all shadow-md"
+              className="flex w-full h-12 min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#2563eb] py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-[0.99] disabled:opacity-60 transition-all shadow-md cursor-pointer"
             >
               {verifying ? (
                 <>

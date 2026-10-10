@@ -33,4 +33,5 @@ lh_test.json
 scripts/*
 !scripts/test_tariff_mapper.mjs
 !scripts/check-public-payload.mjs
+!scripts/cleanup-cancelled-expired-orders.mjs
 
