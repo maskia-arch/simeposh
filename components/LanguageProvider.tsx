@@ -1,21 +1,23 @@
 import React from 'react';
 import type { LocaleCode } from '@/lib/i18n/config';
 
-import { LanguageProviderDe } from '@/components/i18n/LanguageProviderDe';
-import { LanguageProviderEn } from '@/components/i18n/LanguageProviderEn';
-import { LanguageProviderFr } from '@/components/i18n/LanguageProviderFr';
-import { LanguageProviderEs } from '@/components/i18n/LanguageProviderEs';
-import { LanguageProviderIt } from '@/components/i18n/LanguageProviderIt';
-import { LanguageProviderNl } from '@/components/i18n/LanguageProviderNl';
-import { LanguageProviderPl } from '@/components/i18n/LanguageProviderPl';
-import { LanguageProviderPt } from '@/components/i18n/LanguageProviderPt';
-import { LanguageProviderTr } from '@/components/i18n/LanguageProviderTr';
-import { LanguageProviderSv } from '@/components/i18n/LanguageProviderSv';
-import { LanguageProviderDa } from '@/components/i18n/LanguageProviderDa';
-import { LanguageProviderFi } from '@/components/i18n/LanguageProviderFi';
-import { LanguageProviderCs } from '@/components/i18n/LanguageProviderCs';
-import { LanguageProviderRo } from '@/components/i18n/LanguageProviderRo';
-import { LanguageProviderHu } from '@/components/i18n/LanguageProviderHu';
+import dynamic from 'next/dynamic';
+
+const LanguageProviderDe = dynamic(() => import('@/components/i18n/LanguageProviderDe').then((m) => m.LanguageProviderDe));
+const LanguageProviderEn = dynamic(() => import('@/components/i18n/LanguageProviderEn').then((m) => m.LanguageProviderEn));
+const LanguageProviderFr = dynamic(() => import('@/components/i18n/LanguageProviderFr').then((m) => m.LanguageProviderFr));
+const LanguageProviderEs = dynamic(() => import('@/components/i18n/LanguageProviderEs').then((m) => m.LanguageProviderEs));
+const LanguageProviderIt = dynamic(() => import('@/components/i18n/LanguageProviderIt').then((m) => m.LanguageProviderIt));
+const LanguageProviderNl = dynamic(() => import('@/components/i18n/LanguageProviderNl').then((m) => m.LanguageProviderNl));
+const LanguageProviderPl = dynamic(() => import('@/components/i18n/LanguageProviderPl').then((m) => m.LanguageProviderPl));
+const LanguageProviderPt = dynamic(() => import('@/components/i18n/LanguageProviderPt').then((m) => m.LanguageProviderPt));
+const LanguageProviderTr = dynamic(() => import('@/components/i18n/LanguageProviderTr').then((m) => m.LanguageProviderTr));
+const LanguageProviderSv = dynamic(() => import('@/components/i18n/LanguageProviderSv').then((m) => m.LanguageProviderSv));
+const LanguageProviderDa = dynamic(() => import('@/components/i18n/LanguageProviderDa').then((m) => m.LanguageProviderDa));
+const LanguageProviderFi = dynamic(() => import('@/components/i18n/LanguageProviderFi').then((m) => m.LanguageProviderFi));
+const LanguageProviderCs = dynamic(() => import('@/components/i18n/LanguageProviderCs').then((m) => m.LanguageProviderCs));
+const LanguageProviderRo = dynamic(() => import('@/components/i18n/LanguageProviderRo').then((m) => m.LanguageProviderRo));
+const LanguageProviderHu = dynamic(() => import('@/components/i18n/LanguageProviderHu').then((m) => m.LanguageProviderHu));
 
 export function LanguageProvider({
   children,

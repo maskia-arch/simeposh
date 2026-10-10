@@ -3,7 +3,21 @@ import { cookies, headers } from 'next/headers';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { LanguageProvider } from '@/components/LanguageProvider';
+import { LanguageProviderDe } from '@/components/i18n/LanguageProviderDe';
+import { LanguageProviderEn } from '@/components/i18n/LanguageProviderEn';
+import { LanguageProviderFr } from '@/components/i18n/LanguageProviderFr';
+import { LanguageProviderEs } from '@/components/i18n/LanguageProviderEs';
+import { LanguageProviderIt } from '@/components/i18n/LanguageProviderIt';
+import { LanguageProviderNl } from '@/components/i18n/LanguageProviderNl';
+import { LanguageProviderPl } from '@/components/i18n/LanguageProviderPl';
+import { LanguageProviderPt } from '@/components/i18n/LanguageProviderPt';
+import { LanguageProviderTr } from '@/components/i18n/LanguageProviderTr';
+import { LanguageProviderSv } from '@/components/i18n/LanguageProviderSv';
+import { LanguageProviderDa } from '@/components/i18n/LanguageProviderDa';
+import { LanguageProviderFi } from '@/components/i18n/LanguageProviderFi';
+import { LanguageProviderCs } from '@/components/i18n/LanguageProviderCs';
+import { LanguageProviderRo } from '@/components/i18n/LanguageProviderRo';
+import { LanguageProviderHu } from '@/components/i18n/LanguageProviderHu';
 import { CartProvider } from '@/components/CartProvider';
 import { CartDrawer } from '@/components/CartDrawer';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
@@ -11,6 +25,28 @@ import { TicketProvider } from '@/components/TicketContext';
 import { ChatWidgetLoader } from '@/components/ChatWidgetLoader';
 import { detectLocale, countryFromHeaders, isSupportedLocale } from '@/lib/i18n/detect';
 import type { LocaleCode } from '@/lib/i18n';
+
+function RenderLanguageProvider({ locale, children }: { locale: LocaleCode; children: React.ReactNode }) {
+  switch (locale) {
+    case 'en': return <LanguageProviderEn>{children}</LanguageProviderEn>;
+    case 'fr': return <LanguageProviderFr>{children}</LanguageProviderFr>;
+    case 'es': return <LanguageProviderEs>{children}</LanguageProviderEs>;
+    case 'it': return <LanguageProviderIt>{children}</LanguageProviderIt>;
+    case 'nl': return <LanguageProviderNl>{children}</LanguageProviderNl>;
+    case 'pl': return <LanguageProviderPl>{children}</LanguageProviderPl>;
+    case 'pt': return <LanguageProviderPt>{children}</LanguageProviderPt>;
+    case 'tr': return <LanguageProviderTr>{children}</LanguageProviderTr>;
+    case 'sv': return <LanguageProviderSv>{children}</LanguageProviderSv>;
+    case 'da': return <LanguageProviderDa>{children}</LanguageProviderDa>;
+    case 'fi': return <LanguageProviderFi>{children}</LanguageProviderFi>;
+    case 'cs': return <LanguageProviderCs>{children}</LanguageProviderCs>;
+    case 'ro': return <LanguageProviderRo>{children}</LanguageProviderRo>;
+    case 'hu': return <LanguageProviderHu>{children}</LanguageProviderHu>;
+    case 'de':
+    default:
+      return <LanguageProviderDe>{children}</LanguageProviderDe>;
+  }
+}
 
 import { SkipLink } from '@/components/SkipLink';
 import { BASE_URL } from '@/lib/seo';
@@ -83,11 +119,11 @@ export default async function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-          <LanguageProvider initialLocale={locale}>
+          <RenderLanguageProvider locale={locale}>
             <TicketProvider>
               <main className="min-h-screen flex flex-col">{children}</main>
             </TicketProvider>
-          </LanguageProvider>
+          </RenderLanguageProvider>
         </body>
       </html>
     );
@@ -104,7 +140,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="flex min-h-screen flex-col">
-        <LanguageProvider initialLocale={locale}>
+        <RenderLanguageProvider locale={locale}>
           <SkipLink />
           <CurrencyProvider>
             <CartProvider>
@@ -117,7 +153,7 @@ export default async function RootLayout({
               </TicketProvider>
             </CartProvider>
           </CurrencyProvider>
-        </LanguageProvider>
+        </RenderLanguageProvider>
       </body>
     </html>
   );

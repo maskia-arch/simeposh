@@ -776,7 +776,7 @@ export function UnlimitedConfigurator({
               }}
               className="h-12 rounded-xl border border-brand-200 bg-brand-50 px-3.5 text-xs font-bold text-brand-700 cursor-pointer"
             >
-              {added ? '✓' : '+ Warenkorb'}
+              {added ? t('cfg_added') : t('cfg_add_cart')}
             </button>
             <button
               type="button"

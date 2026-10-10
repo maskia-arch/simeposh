@@ -335,8 +335,12 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;
   const user = token ? await verifyJwt(token) : null;
 
-  // ── Persist visitor's active language preference to cookie (only on top-level page navigations, NOT on prefetch or API) ──
-  const isPrefetch = request.headers.get('next-router-prefetch') || request.headers.get('purpose') === 'prefetch';
+  // ── Persist visitor's active language preference to cookie (only on top-level page navigations, NOT on prefetch, RSC, or API) ──
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') ||
+    request.headers.get('purpose') === 'prefetch' ||
+    request.headers.get('rsc') === '1' ||
+    request.nextUrl.searchParams.has('_rsc');
   const isApiRequest = pathname.startsWith('/api/');
   if (!isPrefetch && !isApiRequest) {
     if (request.cookies.get('locale')?.value !== detectedLocale) {
