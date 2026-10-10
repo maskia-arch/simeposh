@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
-  title: '404 – Page Not Found | PureSim',
+  title: {
+    absolute: '404 – Page Not Found | PureSim',
+  },
   robots: {
     index: false,
     follow: false,

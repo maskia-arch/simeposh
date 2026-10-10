@@ -135,8 +135,10 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
 
       {open && (
         <div
+          id="lang-listbox"
           role="listbox"
           aria-label={t('lang_select')}
+          aria-activedescendant={open && focusedIndex >= 0 ? `lang-opt-${SUPPORTED_LOCALES[focusedIndex]?.code}` : undefined}
           className={`absolute right-0 z-[100] mt-2 w-56 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl transition-all animate-fadeIn ${
             isDark
               ? 'border border-slate-800 bg-slate-900/95 text-slate-100 shadow-slate-950/80'
@@ -156,6 +158,7 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
               return (
                 <Link
                   key={lang.code}
+                  id={`lang-opt-${lang.code}`}
                   href={targetUrl}
                   prefetch={false}
                   role="option"
@@ -170,21 +173,21 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
                   className={`flex min-h-[44px] w-full items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all cursor-pointer outline-none focus:outline-none ${
                     isSelected
                       ? isDark
-                        ? 'bg-brand-600/25 text-brand-400 font-bold border-l-2 border-brand-400 pl-2.5' + (isFocused ? ' ring-2 ring-white' : ' ring-1 ring-brand-500/50')
-                        : 'bg-brand-50 text-brand-700 font-bold border-l-2 border-brand-600 pl-2.5' + (isFocused ? ' ring-2 ring-brand-700' : ' ring-1 ring-brand-500/30')
+                        ? 'bg-brand-600/25 text-brand-400 font-bold border-l-2 border-brand-400 pl-2.5' + (isFocused ? ' ring-2 ring-[#2563eb] bg-slate-800' : '')
+                        : 'bg-[#eff6ff] text-blue-700 font-bold border-l-2 border-[#2563eb] pl-2.5' + (isFocused ? ' ring-2 ring-[#2563eb]' : '')
                       : isFocused
                       ? isDark
-                        ? 'bg-slate-800 text-white ring-2 ring-brand-500'
-                        : 'bg-slate-100 text-slate-900 ring-2 ring-brand-600'
+                        ? 'bg-slate-800 text-white ring-2 ring-[#2563eb]'
+                        : 'bg-[#f1f5f9] text-slate-900 ring-2 ring-[#2563eb]'
                       : isDark
                       ? 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      : 'text-slate-700 hover:bg-[#f1f5f9]'
                   }`}
                 >
                   <span className="text-base select-none shrink-0">{lang.flag}</span>
                   <span className="flex-1 text-left truncate">{lang.label}</span>
                   {isSelected && (
-                    <svg className={`h-3.5 w-3.5 shrink-0 ${isDark ? 'text-brand-400' : 'text-brand-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <svg className={`h-3.5 w-3.5 shrink-0 ${isDark ? 'text-brand-400' : 'text-[#2563eb]'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <path d="M5 13l4 4L19 7"/>
                     </svg>
                   )}

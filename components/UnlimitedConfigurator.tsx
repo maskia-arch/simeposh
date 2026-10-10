@@ -128,15 +128,17 @@ export function DaySlider({
       </div>
 
       {/* Quick Day Presets */}
-      <div className="flex flex-wrap gap-1">
+      <div role="radiogroup" aria-label={t('cfg_duration')} className="flex flex-wrap gap-1">
         {presets.map((p) => (
           <button
             key={p}
             type="button"
+            role="radio"
+            aria-checked={days === p}
             onClick={() => onChange(p)}
             className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
               days === p
-                ? 'bg-brand-600 text-white shadow-xs'
+                ? 'bg-brand-600 text-white shadow-xs ring-2 ring-brand-600 ring-offset-1'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -567,17 +569,19 @@ export function UnlimitedConfigurator({
 
             {/* 1. Speed & Quality (Segmented Switch) */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                1. Geschwindigkeit & Qualität
+              <label id="cfg-speed-label" className="block text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                {t('cfg_step1_speed' as any) || (isStandaloneRoute ? '1. Speed & Quality' : '1. Geschwindigkeit & Qualität')}
               </label>
 
               {availableSpeedTypes.length === 0 ? (
                 <p className="text-xs text-red-500 font-medium">Keine Unlimited-Tarife verfügbar.</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div role="radiogroup" aria-labelledby="cfg-speed-label" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {availableSpeedTypes.includes('unlimited_eco') && (
                     <button
                       type="button"
+                      role="radio"
+                      aria-checked={tariffType === 'unlimited_eco'}
                       onClick={() => {
                         setTariffType('unlimited_eco');
                         onTariffTypeChange?.('unlimited_eco');
@@ -592,7 +596,7 @@ export function UnlimitedConfigurator({
                         <EcoIcon size={20} className="shrink-0" />
                         <div>
                           <span className="block font-extrabold text-slate-900 text-xs">Unlimited Eco</span>
-                          <span className="block text-[10px] text-slate-500">Nach Limit: 512 kbps</span>
+                          <span className="block text-[10px] text-slate-500">{t('cfg_after_limit_eco' as any) || 'Nach Limit: 512 kbps'}</span>
                         </div>
                       </div>
                       {tariffType === 'unlimited_eco' && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
@@ -602,6 +606,8 @@ export function UnlimitedConfigurator({
                   {availableSpeedTypes.includes('unlimited_pro') && (
                     <button
                       type="button"
+                      role="radio"
+                      aria-checked={tariffType === 'unlimited_pro'}
                       onClick={() => {
                         setTariffType('unlimited_pro');
                         onTariffTypeChange?.('unlimited_pro');
@@ -616,7 +622,7 @@ export function UnlimitedConfigurator({
                         <BoltIcon size={20} className="text-violet-600 shrink-0" />
                         <div>
                           <span className="block font-extrabold text-slate-900 text-xs">Unlimited Pro</span>
-                          <span className="block text-[10px] text-slate-500">Nach Limit: ≥ 1 Mbps</span>
+                          <span className="block text-[10px] text-slate-500">{t('cfg_after_limit_pro' as any) || 'Nach Limit: ≥ 1 Mbps'}</span>
                         </div>
                       </div>
                       {tariffType === 'unlimited_pro' && <span className="h-2 w-2 rounded-full bg-violet-500" />}
@@ -629,8 +635,8 @@ export function UnlimitedConfigurator({
             {/* 2. Daily Data Volume Pills */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                  2. Tägliches Highspeed-Volumen
+                <label id="cfg-volume-label" className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                  {t('cfg_step2_volume' as any) || '2. Tägliches Highspeed-Volumen'}
                 </label>
                 <span className="text-[10px] text-slate-400">{t('cfg_renew_daily' as any) || 'Renews every day'}</span>
               </div>
@@ -638,15 +644,17 @@ export function UnlimitedConfigurator({
               {gbOptions.length === 0 ? (
                 <p className="text-xs text-slate-400">Keine spezifischen Optionen verfügbar.</p>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
+                <div role="radiogroup" aria-labelledby="cfg-volume-label" className="flex flex-wrap gap-1.5">
                   {gbOptions.map((gb) => (
                     <button
                       key={gb}
                       type="button"
+                      role="radio"
+                      aria-checked={selectedGb === gb}
                       onClick={() => setSelectedGb(gb)}
                       className={`rounded-xl border px-3.5 py-2 font-extrabold text-xs transition-all cursor-pointer ${
                         selectedGb === gb
-                          ? 'border-brand-600 bg-brand-600 text-white shadow-xs'
+                          ? 'border-brand-600 bg-brand-600 text-white shadow-xs ring-2 ring-brand-600 ring-offset-1'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50'
                       }`}
                     >
@@ -679,7 +687,7 @@ export function UnlimitedConfigurator({
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><EcoIcon size={14} /> Eco</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 font-semibold text-violet-700"><BoltIcon size={14} className="text-violet-600" /> Pro</span>
-                    )} · <span className="font-bold text-slate-700">{selectedGb ? `${formatGb(selectedGb)} ${t('unit_per_day' as any) || '/ Tag'}` : '–'}</span> · {days} {days === 1 ? t('cfg_day') : t('cfg_days')}
+                    )} · <span className="font-bold text-slate-700">{selectedGb ? `${formatGb(selectedGb)} ${t('unit_per_day')}` : '–'}</span> · {days} {days === 1 ? t('cfg_day') : t('cfg_days')}
                   </p>
                 </div>
               </div>
@@ -688,7 +696,7 @@ export function UnlimitedConfigurator({
               <div className="py-3 border-b border-slate-100 space-y-2">
                 {ops.length > 0 && (
                   <div className="flex items-center justify-between text-xs text-slate-600">
-                    <span className="flex items-center gap-1"><NetworkIcon size={12} className="text-slate-400" /> Mobilfunknetz:</span>
+                    <span className="flex items-center gap-1"><NetworkIcon size={12} className="text-slate-400" /> {t('cfg_network' as any) || (isStandaloneRoute ? 'Network:' : 'Mobilfunknetz:')}</span>
                     <span className="font-bold text-slate-800 truncate max-w-[150px]">{ops.map((o) => o.name).join(' · ')}</span>
                   </div>
                 )}
@@ -711,7 +719,7 @@ export function UnlimitedConfigurator({
               {/* Price & Per-Day Rate */}
               <div className="py-3 flex items-baseline justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gesamtpreis</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}</span>
                   {discount > 0 && priceBeforeDiscount !== null && (
                     <Price eur={priceBeforeDiscount} className="text-xs text-slate-400 line-through block" />
                   )}
@@ -722,7 +730,7 @@ export function UnlimitedConfigurator({
                   </p>
                   {finalPrice !== null && (
                     <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-                      ({(finalPrice / days).toFixed(2)} € {t('unit_per_day' as any) || '/ Tag'})
+                      (<Price eur={finalPrice / days} /> {t('unit_per_day')})
                     </span>
                   )}
                 </div>
@@ -763,7 +771,7 @@ export function UnlimitedConfigurator({
       {syntheticTariff && finalPrice !== null && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 shadow-2xl flex items-center justify-between gap-3">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">Gesamt ({days}d)</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total' : 'Gesamt')} ({days}{days === 1 ? (t('cfg_day') || 'd') : (t('cfg_days') || 'd')})</span>
             <Price eur={finalPrice} className="text-lg font-black text-slate-900" />
           </div>
           <div className="flex gap-2">

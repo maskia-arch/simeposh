@@ -109,9 +109,9 @@ export async function getDestinationBySlug(rawSlug: string): Promise<Destination
     if (match) return match;
   }
 
-  // 5. Fallback: name contains slug or slug contains name
+  // 5. Fallback: exact match of slugified destination name
   const nameMatch = destinations.find(
-    (d) => slugify(d.name) === slug || slug.includes(slugify(d.name))
+    (d) => slugify(d.name) === slug
   );
   if (nameMatch) return nameMatch;
 

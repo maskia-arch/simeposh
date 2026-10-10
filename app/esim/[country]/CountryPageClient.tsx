@@ -156,8 +156,8 @@ export function CountryPageClient({
                 <span className="flex items-center gap-1 font-semibold text-emerald-700 group-hover:underline">
                   <InfinityIcon size={12} className="text-emerald-600" /> Unlimited
                 </span>
-                <span className="font-bold text-emerald-600">
-                  ab {minUnlimitedPerDay.toFixed(2).replace('.', ',')} € {t('unit_per_day' as any) || (isDe ? '/ Tag' : '/ day')} →
+                <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
+                  <span>{isDe ? 'ab ' : 'from '}</span><Price eur={minUnlimitedPerDay} /> {t('unit_per_day')} →
                 </span>
               </Link>
             )}

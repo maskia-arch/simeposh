@@ -200,7 +200,10 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   const res = await getPostAndTranslation(slug, locale);
 
   if (!res) {
-    return { title: 'Artikel nicht gefunden' };
+    return {
+      title: { absolute: '404 – Page Not Found | PureSim' },
+      robots: { index: false, follow: false },
+    };
   }
 
   if (res.shouldRedirect && res.redirectUrl) {

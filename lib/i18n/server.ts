@@ -42,6 +42,13 @@ export function getServerT(locale: LocaleCode): ServerT {
   };
 }
 
+export function getServerDict(locale: LocaleCode): Record<string, string> {
+  const dict = DICTS[locale] ?? DICTS.de;
+  const fallbk = DICTS.en;
+  return { ...fallbk, ...dict };
+}
+
+
 import { headers } from 'next/headers';
 
 /** Read the active locale: from x-locale / x-pathname header, passed override, or cookie fallback. */

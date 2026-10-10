@@ -133,7 +133,7 @@ export function UnlimitedPageClient({
               <p className="font-semibold text-slate-800 flex items-center gap-1.5">
                 <span>{t('tp_eco_title')}</span>
                 {activeCategory === 'unlimited_eco' && (
-                  <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Aktiv</span>
+                  <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">{isDe ? 'Aktiv' : 'Active'}</span>
                 )}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">{t('tp_eco_desc', { speed: '512 kbps' })}</p>
@@ -153,7 +153,7 @@ export function UnlimitedPageClient({
               <p className="font-semibold text-slate-800 flex items-center gap-1.5">
                 <span>{t('tp_pro_title')}</span>
                 {activeCategory === 'unlimited_pro' && (
-                  <span className="text-xs font-bold bg-violet-100 text-violet-800 px-2.5 py-0.5 rounded-full">Aktiv</span>
+                  <span className="text-xs font-bold bg-violet-100 text-violet-800 px-2.5 py-0.5 rounded-full">{isDe ? 'Aktiv' : 'Active'}</span>
                 )}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">{t('tp_pro_desc')}</p>

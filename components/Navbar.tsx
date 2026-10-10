@@ -211,7 +211,7 @@ export function Navbar() {
 
   return (
     <div className="sticky top-0 z-50 w-full shadow-sm">
-      <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+      <nav className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
         <Link href={prefix || '/'} className="flex items-center gap-2 font-bold text-lg shrink-0">
