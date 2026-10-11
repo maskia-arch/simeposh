@@ -678,7 +678,7 @@ const es = {
   "tab_travel_data": "Tarifas de datos Travel",
   "builder_callout_title": "¿Prefieres datos ilimitados con duración flexible?",
   "builder_callout_desc": "En el Unlimited Builder puedes personalizar tu paquete de 1 a 365 días con el volumen diario de alta velocidad que elijas.",
-  "faq_country_title": "Preguntas frecuentes sobre la eSIM para {country}",
+  "faq_country_title": "eSIM {country} – Preguntas frecuentes",
   "faq_country_q1": "¿Cómo activo la eSIM en {country}?",
   "faq_country_a1": "Tras la compra, recibirás al instante un código QR por correo y en tu panel. Solo debes escanearlo desde Ajustes > Datos móviles > Añadir eSIM.",
   "faq_country_q2": "¿Qué redes se utilizan en {country}?",
@@ -695,7 +695,7 @@ const es = {
   "daily_price_from": "Tarifa diaria desde",
   "all_plans_country": "Todos los planes para {country}",
   "badge_active": "Activo",
-  "faq_unlimited_title": "Preguntas frecuentes sobre la eSIM Unlimited para {country}",
+  "faq_unlimited_title": "Unlimited eSIM {country} – Preguntas frecuentes",
   "faq_unlimited_q1": "¿Cómo funciona el volumen diario de alta velocidad?",
   "faq_unlimited_a1": "Eliges tu cupo diario (p. ej. 1 GB, 2 GB o 3 GB). Al agotarlo, sigues navegando de forma ilimitada a 512 kbps. El cupo de alta velocidad se renueva cada medianoche.",
   "faq_unlimited_q2": "¿Puedo elegir libremente la duración?",
@@ -704,6 +704,7 @@ const es = {
   "faq_unlimited_a3": "Sí, la función de zona wifi o hotspot es compatible en todos los dispositivos admitidos.",
   "faq_unlimited_q4": "¿Hay cargos de roaming adicionales?",
   "faq_unlimited_a4": "No, todas las tarifas son 100% prepago sin renovación automática ni costes imprevistos.",
+  "btn_close": "Cerrar"
 } as const;
 
 export default es;

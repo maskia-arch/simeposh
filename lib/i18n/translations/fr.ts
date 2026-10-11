@@ -678,7 +678,7 @@ const fr = {
   "tab_travel_data": "Forfaits de données Travel",
   "builder_callout_title": "Besoin de données illimitées avec durée sur mesure ?",
   "builder_callout_desc": "Composez votre forfait de 1 à 365 jours avec le quota quotidien de votre choix dans l'Unlimited Builder.",
-  "faq_country_title": "Questions fréquentes sur l'eSIM pour {country}",
+  "faq_country_title": "{country} : questions fréquentes sur l'eSIM",
   "faq_country_q1": "Comment activer l'eSIM en {country} ?",
   "faq_country_a1": "Dès l'achat, vous recevez un code QR par e-mail et dans votre espace client. Scannez-le simplement dans Réglages > Données cellulaires > Ajouter une eSIM.",
   "faq_country_q2": "Quels réseaux sont utilisés en {country} ?",
@@ -695,7 +695,7 @@ const fr = {
   "daily_price_from": "Tarif journalier dès",
   "all_plans_country": "Tous les forfaits pour {country}",
   "badge_active": "Actif",
-  "faq_unlimited_title": "Questions fréquentes sur l'eSIM Unlimited pour {country}",
+  "faq_unlimited_title": "{country} : questions fréquentes sur l'eSIM Unlimited",
   "faq_unlimited_q1": "Comment fonctionne le volume quotidien haut débit ?",
   "faq_unlimited_a1": "Vous choisissez votre quota quotidien (ex. 1 Go, 2 Go ou 3 Go). Une fois atteint, vous continuez à surfer en illimité à 512 kbps. Le quota se réinitialise chaque jour à minuit.",
   "faq_unlimited_q2": "Puis-je choisir librement la durée du forfait ?",
@@ -704,6 +704,7 @@ const fr = {
   "faq_unlimited_a3": "Oui, le partage de connexion est entièrement pris en charge sur tous les appareils compatibles.",
   "faq_unlimited_q4": "Y a-t-il des frais d'itinérance supplémentaires ?",
   "faq_unlimited_a4": "Non, tous nos forfaits sont 100% prépayés sans renouvellement automatique ni coûts cachés.",
+  "btn_close": "Fermer"
 } as const;
 
 export default fr;

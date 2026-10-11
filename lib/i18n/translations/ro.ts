@@ -678,7 +678,7 @@ const ro = {
   "tab_travel_data": "Tarife de date Travel",
   "builder_callout_title": "Preferați date nelimitate cu durată flexibilă?",
   "builder_callout_desc": "În Unlimited Builder vă puteți configura pachetul de la 1 la 365 de zile cu volumul zilnic de mare viteză dorit.",
-  "faq_country_title": "Întrebări frecvente despre eSIM pentru {country}",
+  "faq_country_title": "eSIM {country} – Întrebări frecvente",
   "faq_country_q1": "Cum activez eSIM-ul în {country}?",
   "faq_country_a1": "Imediat după achiziție primiți un cod QR prin e-mail și în contul de utilizator. Scanați-l în Configurări > Conexiune celulară > Adăugați eSIM.",
   "faq_country_q2": "Ce rețele sunt utilizate în {country}?",
@@ -695,7 +695,7 @@ const ro = {
   "daily_price_from": "Tarif zilnic de la",
   "all_plans_country": "Toate planurile pentru {country}",
   "badge_active": "Activ",
-  "faq_unlimited_title": "Întrebări frecvente despre Unlimited eSIM pentru {country}",
+  "faq_unlimited_title": "Unlimited eSIM {country} – Întrebări frecvente",
   "faq_unlimited_q1": "Cum funcționează volumul zilnic de mare viteză?",
   "faq_unlimited_a1": "Alegeți o cotă zilnică (de ex. 1 GB, 2 GB sau 3 GB). După epuizare, navigați nelimitat la 512 kbps. Cota se resetează la miezul nopții.",
   "faq_unlimited_q2": "Pot alege durata în mod flexibil?",
@@ -704,6 +704,7 @@ const ro = {
   "faq_unlimited_a3": "Da, funcția de hotspot personal este pe deplin acceptată pe dispozitivele compatibile.",
   "faq_unlimited_q4": "Există costuri ascunse sau de roaming?",
   "faq_unlimited_a4": "Nu, toate tarifele sunt 100% preplătite, fără reînnoire automată sau comisioane ascunse.",
+  "btn_close": "Închide"
 } as const;
 
 export default ro;

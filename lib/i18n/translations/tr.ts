@@ -704,6 +704,7 @@ const tr = {
   "faq_unlimited_a3": "Evet, uyumlu cihazlarda kişisel erişim noktası ve internet paylaşımı tamamen desteklenir.",
   "faq_unlimited_q4": "Ek dolaşım veya gizli ücret var mı?",
   "faq_unlimited_a4": "Hayır, tüm paketler %100 ön ödemelidir; otomatik yenileme veya gizli masraflar bulunmaz.",
+  "btn_close": "Kapat"
 } as const;
 
 export default tr;

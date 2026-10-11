@@ -107,13 +107,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 301);
   }
 
-  // ── 301 Permanent Redirect /de or /de/* to root / or /* ──
+  // ── 308 Permanent Redirect /de or /de/* to root / or /* ──
   if (pathname === '/de') {
-    return NextResponse.redirect(new URL('/' + request.nextUrl.search, request.url), 301);
+    return NextResponse.redirect(new URL('/' + request.nextUrl.search, request.url), 308);
   }
   if (pathname.startsWith('/de/')) {
     const deTarget = pathname.replace(/^\/de/, '') || '/';
-    return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
+    return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 308);
   }
 
 
@@ -337,6 +337,7 @@ export async function middleware(request: NextRequest) {
   const isApiRequest = pathname.startsWith('/api/');
   const isRscOrPrefetch =
     Boolean(request.headers.get('next-router-prefetch')) ||
+    Boolean(request.headers.get('next-router-state-tree')) ||
     Boolean(request.headers.get('next-url')) ||
     request.headers.get('purpose') === 'prefetch' ||
     request.headers.get('sec-purpose') === 'prefetch' ||
@@ -349,7 +350,9 @@ export async function middleware(request: NextRequest) {
   const isNeutralOrExcludedPath =
     normalizedPath === '/topup' ||
     normalizedPath === '/login' ||
-    normalizedPath === '/register';
+    normalizedPath === '/register' ||
+    normalizedPath === '/reviews' ||
+    normalizedPath === '/notfound';
 
   if (isPrefixed && isStandardUserRoute && !isRscOrPrefetch && !isApiRequest && !isNeutralOrExcludedPath && !pathname.includes('.')) {
     if (request.cookies.get('locale')?.value !== detectedLocale) {

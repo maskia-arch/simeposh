@@ -34,6 +34,8 @@ scripts/*
 !scripts/test_tariff_mapper.mjs
 !scripts/check-public-payload.mjs
 !scripts/check-client-keys.mjs
+!scripts/generate-route-keys.mjs
+!scripts/check-production-texts.mjs
 !scripts/cleanup-cancelled-expired-orders.mjs
 !scripts/test-cancellation-and-expiry.mjs
 

@@ -704,6 +704,7 @@ const nl = {
   "faq_unlimited_a3": "Ja, persoonlijke hotspot en tethering worden op alle ondersteunde toestellen mogelijk gemaakt.",
   "faq_unlimited_q4": "Zijn er extra roamingkosten?",
   "faq_unlimited_a4": "Nee, alle tarieven zijn 100% prepaid zonder stilzwijgende verlenging of verborgen kosten.",
+  "btn_close": "Sluiten"
 } as const;
 
 export default nl;

@@ -678,7 +678,7 @@ const pt = {
   "tab_travel_data": "Planos de dados Travel",
   "builder_callout_title": "Prefere dados ilimitados com duração flexível?",
   "builder_callout_desc": "No Unlimited Builder pode personalizar o seu pacote de 1 a 365 dias com o volume diário de alta velocidade à sua escolha.",
-  "faq_country_title": "Perguntas frequentes sobre eSIM para {country}",
+  "faq_country_title": "eSIM {country} – perguntas frequentes",
   "faq_country_q1": "Como ativo o eSIM em {country}?",
   "faq_country_a1": "Após a compra, recebe imediatamente um código QR por e-mail e no seu painel. Basta digitalizá-lo em Definições > Rede móvel > Adicionar eSIM.",
   "faq_country_q2": "Que redes são utilizadas em {country}?",
@@ -695,7 +695,7 @@ const pt = {
   "daily_price_from": "Tarifa diária a partir de",
   "all_plans_country": "Todos os planos para {country}",
   "badge_active": "Ativo",
-  "faq_unlimited_title": "Perguntas frequentes sobre o Unlimited eSIM para {country}",
+  "faq_unlimited_title": "Unlimited eSIM {country} – perguntas frequentes",
   "faq_unlimited_q1": "Como funciona o volume diário de alta velocidade?",
   "faq_unlimited_a1": "Escolhe a sua franquia diária (ex. 1 GB, 2 GB ou 3 GB). Após esgotada, continua a navegar de forma ilimitada a 512 kbps. Renova-se diariamente à meia-noite.",
   "faq_unlimited_q2": "Posso escolher livremente a duração?",
@@ -704,6 +704,7 @@ const pt = {
   "faq_unlimited_a3": "Sim, a partilha de ligação (hotspot/tethering) é totalmente suportada nos dispositivos compatíveis.",
   "faq_unlimited_q4": "Existem custos de roaming adicionais?",
   "faq_unlimited_a4": "Não, todas as tarifas são 100% pré-pagas sem renovação automática nem taxas ocultas.",
+  "btn_close": "Fechar"
 } as const;
 
 export default pt;

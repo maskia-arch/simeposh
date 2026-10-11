@@ -184,7 +184,7 @@ export function CartDrawer() {
     }
   }, [isOpen, close]);
 
-  const closeLabel = locale === 'de' ? 'Schließen' : 'Close';
+  const closeLabel = t('btn_close' as any) || (locale === 'de' ? 'Schließen' : 'Close');
 
   if (!isOpen) {
     return null;

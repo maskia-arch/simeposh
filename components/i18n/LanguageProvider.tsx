@@ -45,7 +45,7 @@ export function LanguageProvider({
         if (process.env.NODE_ENV === 'development') {
           console.warn(`[i18n] Missing client translation key "${key}" for locale "${locale}"`);
         }
-        return '';
+        str = String(key);
       }
       if (vars) {
         Object.entries(vars).forEach(([k, v]) => {

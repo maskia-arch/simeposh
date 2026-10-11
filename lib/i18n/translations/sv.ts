@@ -704,6 +704,7 @@ const sv = {
   "faq_unlimited_a3": "Ja, personlig surfzon och internetdelning stöds fullt ut på kompatibla enheter.",
   "faq_unlimited_q4": "Tillkommer några extra roamingavgifter?",
   "faq_unlimited_a4": "Nej, alla planer är 100 % förbetalda utan automatisk förlängning eller dolda avgifter.",
+  "btn_close": "Stäng"
 } as const;
 
 export default sv;

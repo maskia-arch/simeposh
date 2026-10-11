@@ -19,6 +19,9 @@ const ROUTE_KEY_SLICES = {
   country: extractSet('country'),
   unlimited: extractSet('unlimited'),
   tariffs: extractSet('tariffs'),
+  topup: extractSet('topup'),
+  login: extractSet('login'),
+  register: extractSet('register'),
   cart: extractSet('cart'),
   checkout: extractSet('checkout'),
   blog: extractSet('blog'),
@@ -101,6 +104,12 @@ const routeChecks = [
   { name: 'home', files: ['components/HomePageClient.tsx', 'components/HeroSearch.tsx'] },
   { name: 'country', files: ['app/esim/[country]/CountryPageClient.tsx', 'components/TariffCard.tsx', 'components/TariffDetailModal.tsx'] },
   { name: 'unlimited', files: ['app/unlimited/[country]/UnlimitedPageClient.tsx', 'components/UnlimitedConfigurator.tsx', 'components/TariffCard.tsx'] },
+  { name: 'tariffs', files: ['app/tariffs/page.tsx', 'components/TariffCard.tsx', 'components/TariffDetailModal.tsx'] },
+  { name: 'topup', files: ['app/topup/page.tsx', 'components/UnlimitedConfigurator.tsx'] },
+  { name: 'login', files: ['app/login/page.tsx'] },
+  { name: 'register', files: ['app/register/page.tsx'] },
+  { name: 'cart', files: ['app/cart/page.tsx', 'components/CartDrawer.tsx'] },
+  { name: 'notfound', files: ['app/not-found.tsx'] },
 ];
 
 let routeErrors = 0;

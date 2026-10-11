@@ -678,7 +678,7 @@ const cs = {
   "tab_travel_data": "Datové tarify Travel",
   "builder_callout_title": "Dáváte přednost neomezeným datům s flexibilní dobou platnosti?",
   "builder_callout_desc": "V Unlimited Builderu si sestavíte balíček od 1 do 365 dní s volitelným denním objemem vysokorychlostních dat.",
-  "faq_country_title": "Často kladené otázky o eSIM pro {country}",
+  "faq_country_title": "eSIM {country} – Často kladené otázky",
   "faq_country_q1": "Jak aktivuji eSIM v zemi {country}?",
   "faq_country_a1": "Ihned po zakoupení obdržíte QR kód e-mailem a ve svém profilu. Naskenujte jej v Nastavení > Mobilní data > Přidat eSIM.",
   "faq_country_q2": "Které sítě se v {country} využívají?",
@@ -695,7 +695,7 @@ const cs = {
   "daily_price_from": "Denní sazba od",
   "all_plans_country": "Všechny tarify pro {country}",
   "badge_active": "Aktivní",
-  "faq_unlimited_title": "Často kladené otázky o Unlimited eSIM pro {country}",
+  "faq_unlimited_title": "Unlimited eSIM {country} – Často kladené otázky",
   "faq_unlimited_q1": "Jak funguje denní limit vysokorychlostních dat?",
   "faq_unlimited_a1": "Zvolíte si denní limit (např. 1 GB, 2 GB nebo 3 GB). Po jeho vyčerpání pokračujete neomezeně rychlostí 512 kbps. Limit se obnovuje o půlnoci.",
   "faq_unlimited_q2": "Mohu si libovolně zvolit počet dní?",
@@ -704,6 +704,7 @@ const cs = {
   "faq_unlimited_a3": "Ano, sdílení internetu (hotspot) je na kompatibilních zařízeních plně podporováno.",
   "faq_unlimited_q4": "Účtují se nějaké další roamingové poplatky?",
   "faq_unlimited_a4": "Ne, všechny tarify jsou 100% předplacené bez automatického prodlužování nebo skrytých poplatků.",
+  "btn_close": "Zavřít"
 } as const;
 
 export default cs;

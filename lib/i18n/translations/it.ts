@@ -678,7 +678,7 @@ const it = {
   "tab_travel_data": "Tariffe dati Travel",
   "builder_callout_title": "Preferisci dati illimitati con durata flessibile?",
   "builder_callout_desc": "Nell'Unlimited Builder puoi configurare il tuo pacchetto da 1 a 365 giorni con il volume giornaliero ad alta velocità desiderato.",
-  "faq_country_title": "Domande frequenti sull'eSIM per {country}",
+  "faq_country_title": "eSIM {country} – Domande frequenti",
   "faq_country_q1": "Come attivo l'eSIM in {country}?",
   "faq_country_a1": "Subito dopo l'acquisto ricevi un codice QR via email e nella dashboard. Basta scansionarlo in Impostazioni > Cellulare > Aggiungi eSIM.",
   "faq_country_q2": "Quali reti vengono utilizzate in {country}?",
@@ -695,7 +695,7 @@ const it = {
   "daily_price_from": "Tariffa giornaliera da",
   "all_plans_country": "Tutti i piani per {country}",
   "badge_active": "Attivo",
-  "faq_unlimited_title": "Domande frequenti sull'eSIM Unlimited per {country}",
+  "faq_unlimited_title": "Unlimited eSIM {country} – Domande frequenti",
   "faq_unlimited_q1": "Come funziona la soglia giornaliera ad alta velocità?",
   "faq_unlimited_a1": "Scegli il tuo pacchetto giornaliero (es. 1 GB, 2 GB o 3 GB). Una volta esaurito, navighi illimitatamente a 512 kbps. La quota si rinnova a mezzanotte.",
   "faq_unlimited_q2": "Posso scegliere liberamente la durata?",
@@ -704,6 +704,7 @@ const it = {
   "faq_unlimited_a3": "Sì, l'hotspot e il tethering sono supportati su tutti i dispositivi compatibili.",
   "faq_unlimited_q4": "Ci sono costi di roaming aggiuntivi?",
   "faq_unlimited_a4": "No, tutte le tariffe sono al 100% prepagate senza rinnovo automatico né costi nascosti.",
+  "btn_close": "Chiudi"
 } as const;
 
 export default it;

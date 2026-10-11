@@ -704,6 +704,7 @@ const fi = {
   "faq_unlimited_a3": "Kyllä, yhteyspisteen jakaminen on täysin tuettu yhteensopivilla laitteilla.",
   "faq_unlimited_q4": "Onko piilokuluja tai verkkovierailumaksuja?",
   "faq_unlimited_a4": "Ei, kaikki liittymät ovat 100 % prepaid-paketteja ilman automaattista uusimista tai ylimääräisiä kuluja.",
+  "btn_close": "Sulje"
 } as const;
 
 export default fi;

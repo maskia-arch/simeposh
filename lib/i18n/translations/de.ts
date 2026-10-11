@@ -704,6 +704,7 @@ const de = {
   "faq_unlimited_a3": "Ja, Hotspot und Tethering werden auf kompatiblen Endgeräten vollständig unterstützt, sodass du Laptop oder Begleiter mitversorgen kannst.",
   "faq_unlimited_q4": "Fallen zusätzliche Roaming-Kosten an?",
   "faq_unlimited_a4": "Nein, alle Tarife sind 100% Prepaid ohne automatische Verlängerung, versteckte Gebühren oder Roaming-Zuschläge.",
+  "btn_close": "Schließen"
 } as const;
 
 export default de;

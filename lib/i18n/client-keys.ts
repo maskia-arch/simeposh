@@ -694,5 +694,6 @@ export const CLIENT_DICT_KEYS = new Set<string>([
   "unit_day",
   "unit_days",
   "unit_per_day",
-  "unlimited_hero_desc"
+  "unlimited_hero_desc",
+  "btn_close"
 ]);

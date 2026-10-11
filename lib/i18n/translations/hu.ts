@@ -704,6 +704,7 @@ const hu = {
   "faq_unlimited_a3": "Igen, az internetmegosztás (hotspot) teljes mértékben támogatott kompatibilis készülékeken.",
   "faq_unlimited_q4": "Vannak rejtett roaming költségek?",
   "faq_unlimited_a4": "Nem, minden csomag 100%-ban előre kifizetett, automatikus megújulás és rejtett díjak nélkül.",
+  "btn_close": "Bezárás"
 } as const;
 
 export default hu;

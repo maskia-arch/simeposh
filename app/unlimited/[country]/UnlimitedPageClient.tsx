@@ -100,7 +100,7 @@ export function UnlimitedPageClient({
               <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
                 <span>{t('daily_price_from' as any) || (isDe ? 'Tagespreis ab' : 'Daily rate from')}</span>
                 <span className="font-bold text-slate-800">
-                  <Price eur={minPerDay} /> {t('unit_per_day' as any) || (isDe ? '/ Tag' : '/ day')}
+                  <Price eur={minPerDay} /> {t('unit_per_day' as any)}
                 </span>
               </div>
             )}

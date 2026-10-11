@@ -704,6 +704,7 @@ const en = {
   "faq_unlimited_a3": "Yes, personal hotspot and tethering are supported on all compatible devices.",
   "faq_unlimited_q4": "Are there any hidden roaming fees?",
   "faq_unlimited_a4": "No, all plans are 100% prepaid with no auto-renewal, no contracts, and zero roaming charges.",
+  "btn_close": "Close"
 } as const;
 
 export default en;

@@ -704,6 +704,7 @@ const da = {
   "faq_unlimited_a3": "Ja, internetdeling understøttes fuldt ud på kompatible telefoner.",
   "faq_unlimited_q4": "Er der ekstra roamingomkostninger?",
   "faq_unlimited_a4": "Nej, alle pakker er 100% forudbetalte uden automatisk fornyelse eller skjulte gebyrer.",
+  "btn_close": "Luk"
 } as const;
 
 export default da;

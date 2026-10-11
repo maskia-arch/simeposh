@@ -107,7 +107,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={onClose} />;
   }
 
-  const closeLabel = locale === 'de' ? 'Schließen' : 'Close';
+  const closeLabel = t('btn_close' as any) || (locale === 'de' ? 'Schließen' : 'Close');
 
   return (
     <div

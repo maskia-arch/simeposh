@@ -678,7 +678,7 @@ const pl = {
   "tab_travel_data": "Pakiety danych Travel",
   "builder_callout_title": "Wolisz nielimitowany internet z elastycznym czasem trwania?",
   "builder_callout_desc": "W Unlimited Builder skonfigurujesz pakiet od 1 do 365 dni z wybranym dziennym limitem szybkiego transferu.",
-  "faq_country_title": "Często zadawane pytania o eSIM dla {country}",
+  "faq_country_title": "eSIM {country} – najczęstsze pytania",
   "faq_country_q1": "Jak aktywować eSIM w {country}?",
   "faq_country_a1": "Zaraz po zakupie otrzymasz kod QR e-mailem oraz w panelu klienta. Zeskanuj go w Ustawienia > Sieć komórkowa > Dodaj eSIM.",
   "faq_country_q2": "Z jakich sieci korzysta eSIM w {country}?",
@@ -695,7 +695,7 @@ const pl = {
   "daily_price_from": "Cena za dzień od",
   "all_plans_country": "Wszystkie pakiety dla {country}",
   "badge_active": "Aktywny",
-  "faq_unlimited_title": "Często zadawane pytania o Unlimited eSIM dla {country}",
+  "faq_unlimited_title": "Unlimited eSIM {country} – najczęstsze pytania",
   "faq_unlimited_q1": "Jak działa dzienny limit szybkiego transferu?",
   "faq_unlimited_a1": "Wybierasz dzienny pakiet (np. 1 GB, 2 GB lub 3 GB). Po jego wykorzystaniu surfujesz bez limitu z prędkością 512 kbps. Pakiet odnawia się każdej nocy o północy.",
   "faq_unlimited_q2": "Czy mogę dowolnie wybrać liczbę dni?",
@@ -704,6 +704,7 @@ const pl = {
   "faq_unlimited_a3": "Tak, udostępnianie internetu (tethering/hotspot) jest w pełni obsługiwane na kompatybilnych telefonach.",
   "faq_unlimited_q4": "Czy występują dodatkowe opłaty roamingowe?",
   "faq_unlimited_a4": "Nie, wszystkie oferty są w 100% przedpłacone bez automatycznego odnawiania i ukrytych kosztów.",
+  "btn_close": "Zamknij"
 } as const;
 
 export default pl;
