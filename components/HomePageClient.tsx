@@ -403,10 +403,10 @@ export function HomePageClient({
                   <div className="p-5 md:p-6 flex-1 flex flex-col justify-between">
                     <div>
                       <p className="text-[10px] md:text-xs text-slate-400 font-medium">{fallback.date}</p>
-                      <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
+                      <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors break-words hyphens-auto">
                         {fallback.title}
                       </h3>
-                      <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3">
+                      <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3 break-words hyphens-auto">
                         {fallback.excerpt}
                       </p>
                     </div>
@@ -465,10 +465,10 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
         <div className="p-5 md:p-6 flex-1 flex flex-col justify-between">
           <div>
             <p className="text-[10px] md:text-xs text-slate-400 font-medium">{formattedDate}</p>
-            <h3 className="mt-1 md:mt-2 text-base md:text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-700 transition-colors">
+            <h3 className="mt-1 md:mt-2 text-base md:text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-700 transition-colors break-words hyphens-auto">
               {post.title}
             </h3>
-            <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3">
+            <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3 break-words hyphens-auto">
               {post.excerpt}
             </p>
           </div>
@@ -513,10 +513,10 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
       <div className="p-5 md:p-6 flex-1 flex flex-col justify-between">
         <div>
           <p className="text-[10px] md:text-xs text-slate-400 font-medium">{formattedDate}</p>
-          <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors">
+          <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors break-words hyphens-auto">
             {post.title}
           </h3>
-          <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3">
+          <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3 break-words hyphens-auto">
             {post.excerpt}
           </p>
         </div>

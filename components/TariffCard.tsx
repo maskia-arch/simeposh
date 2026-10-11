@@ -296,7 +296,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
               {ops.length > 1 && (
-                <span className="text-slate-400 font-normal">({ops.length} Netze)</span>
+                <span className="text-slate-400 font-normal">{t('card_network_count' as any, { count: ops.length }) || `(${ops.length})`}</span>
               )}
             </span>
           ) : (

@@ -49,11 +49,13 @@ export function getServerDict(locale: LocaleCode): Record<string, string> {
 }
 
 import { CLIENT_DICT_KEYS } from './client-keys';
+import { getRouteKeys } from './route-keys';
 
-export function getClientDict(locale: LocaleCode): Record<string, string> {
+export function getClientDict(locale: LocaleCode, pathname?: string): Record<string, string> {
   const fullDict = getServerDict(locale);
   const clientDict: Record<string, string> = {};
-  CLIENT_DICT_KEYS.forEach((key) => {
+  const allowedKeys = pathname ? getRouteKeys(pathname) : CLIENT_DICT_KEYS;
+  allowedKeys.forEach((key) => {
     if (fullDict[key] !== undefined) {
       clientDict[key] = fullDict[key];
     }

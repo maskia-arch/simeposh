@@ -16,10 +16,6 @@ type TariffLike = Pick<
 export function isoName(code: string, locale = 'en'): string {
   if (!code || code.length !== 2) return code;
   const upper = code.toUpperCase();
-  // Polish grammar: "dla" requires genitive case ("Niemiec" instead of "Niemcy")
-  if (locale === 'pl' && upper === 'DE') {
-    return 'Niemiec';
-  }
   try {
     return new Intl.DisplayNames([locale], { type: 'region' }).of(upper) ?? code;
   } catch {

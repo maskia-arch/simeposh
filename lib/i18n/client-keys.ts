@@ -1,6 +1,7 @@
 // Auto-generated client dictionary keys set to minimize RSC flight payload weight
 export const CLIENT_DICT_KEYS = new Set<string>([
   "ai_badge",
+  "aria_breadcrumb",
   "ai_copied",
   "ai_copy_url",
   "ai_hero_sub",

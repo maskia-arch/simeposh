@@ -113,6 +113,7 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
             setFocusedIndex(curIdx >= 0 ? curIdx : 0);
           }
         }}
+        role="combobox"
         aria-label={t('lang_select')}
         aria-expanded={open}
         aria-haspopup="listbox"

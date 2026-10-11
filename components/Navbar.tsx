@@ -269,20 +269,28 @@ export function Navbar() {
         {/* Desktop search bar */}
         {showSearch && destinations.length > 0 && (
           <div
-            className={`mx-8 hidden max-w-xs flex-1 md:block motion-reduce:transition-none ${
+            ref={(el) => {
+              if (el) {
+                if (hideHeaderSearch) {
+                  el.setAttribute('inert', '');
+                } else {
+                  el.removeAttribute('inert');
+                }
+              }
+            }}
+            className={`mx-8 hidden max-w-xs flex-1 lg:block motion-reduce:transition-none motion-reduce:!duration-0 ${
               hideHeaderSearch
                 ? 'opacity-0 scale-95 pointer-events-none invisible transition-all duration-150 ease-out'
                 : 'opacity-100 scale-100 visible transition-all duration-200 ease-in'
             }`}
             aria-hidden={hideHeaderSearch ? true : undefined}
-            inert={hideHeaderSearch ? true : undefined}
           >
             <HeaderSearch destinations={destinations} />
           </div>
         )}
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-4 text-sm font-medium md:flex">
+        <div className="hidden items-center gap-4 text-sm font-medium lg:flex">
           <Link href={`${prefix}/blog`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_blog' as any) || 'Blog'}
           </Link>
@@ -323,8 +331,8 @@ export function Navbar() {
           <LocaleCurrencyControls />
         </div>
 
-        {/* Mobile: cart + lang/currency + hamburger */}
-        <div className="flex items-center gap-1 md:hidden">
+        {/* Mobile: cart + lang + hamburger */}
+        <div className="flex items-center gap-1 lg:hidden">
           {showSearch && destinations.length > 0 && !hideHeaderSearch && (
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
@@ -339,7 +347,7 @@ export function Navbar() {
             </button>
           )}
           <CartButton />
-          <LocaleCurrencyControls />
+          <LanguageSwitcher />
           <button
             className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
             onClick={() => setMenu(!menuOpen)}
@@ -355,7 +363,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="border-t border-slate-100 bg-white px-4 pb-4 md:hidden">
+        <div className="border-t border-slate-100 bg-white px-4 pb-4 lg:hidden">
           <div className="flex flex-col gap-3 pt-3 text-sm font-medium">
             <Link href={`${prefix}/blog`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
             <Link href={`${prefix}/tariffs`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
@@ -381,6 +389,11 @@ export function Navbar() {
                 <Link href={`${prefix}/login`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
               </>
             )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{t('cur_title')}</span>
+              <CurrencySwitcher />
+            </div>
 
             <div className="pt-2 border-t border-slate-100">
               <a

@@ -74,14 +74,14 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
 
   function goToDest(d: Destination) {
     const slug = countryCodeToSlug(d.code, d.name);
-    const prefix = locale === 'en' ? '/en' : '';
+    const prefix = locale === 'de' ? '' : `/${locale}`;
     router.push(`${prefix}/esim/${slug}`);
     onSearchClose?.();
   }
 
   function go(query: string) {
     const term = query.trim();
-    const prefix = locale === 'en' ? '/en' : '';
+    const prefix = locale === 'de' ? '' : `/${locale}`;
     if (!term) { router.push(`${prefix}/tariffs`); onSearchClose?.(); return; }
 
     const termLow = term.toLowerCase();

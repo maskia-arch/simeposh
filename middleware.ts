@@ -28,8 +28,6 @@ const BLACKLIST_BOT_PATTERNS = [
   /headlesschrome/i, /selenium/i, /puppeteer/i, /playwright/i, /phantomjs/i, /jsdom/i, /node-fetch/i, /axios/i, /got/i, /superagent/i,
   // Other language clients
   /guzzle/i, /go-http-client/i, /okhttp/i, /rest-client/i, /faraday/i, /mechanize/i, /libwww/i, /httpclient/i, /http-client/i,
-  // Command line downloaders
-  /curl/i, /wget/i,
   // Aggressive SEO/LLM crawlers that scrape content
   /ahrefsbot/i, /semrushbot/i, /mj12bot/i, /dotbot/i, /petalbot/i, /bytespider/i, /coccocbot/i, /megaindex/i, /blexbot/i, /serpstatbot/i, /ltx71/i, /zoominfobot/i, /amazonbot/i
 ];
@@ -66,6 +64,13 @@ export async function middleware(request: NextRequest) {
   const normalizedPath = isPrefixed ? (pathname.replace(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/, '') || '/') : pathname;
   const langPrefix = isPrefixed ? `/${detectedLocale}` : '';
 
+  const isStandardUserRoute =
+    normalizedPath === '/' ||
+    /^\/(cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(normalizedPath) ||
+    pathname.startsWith('/api/crypto') ||
+    pathname.startsWith('/api/order') ||
+    pathname.startsWith('/api/tariffs');
+
   if (!isTrustedM2M && !isPublicMeta) {
     // 1. Block suspicious path probes (e.g. php admin portals, env files)
     const isSuspiciousPath = SUSPICIOUS_PATH_PATTERNS.some(p => p.test(pathname));
@@ -73,14 +78,6 @@ export async function middleware(request: NextRequest) {
       console.warn(`[Bot Blocked] Suspicious path access: "${pathname}" | UA: "${userAgent}"`);
       return new NextResponse('Forbidden', { status: 403 });
     }
-
-    // Standard user shop and checkout routes (never block human shoppers for User-Agent quirks or privacy browsers)
-    const isStandardUserRoute =
-      normalizedPath === '/' ||
-      /^\/(cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(normalizedPath) ||
-      pathname.startsWith('/api/crypto') ||
-      pathname.startsWith('/api/order') ||
-      pathname.startsWith('/api/tariffs');
 
     if (!isStandardUserRoute) {
       // 2. Block requests with empty/missing User-Agent on non-user routes
@@ -308,6 +305,7 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-locale', detectedLocale);
   requestHeaders.set('x-pathname', pathname);
+  requestHeaders.set('x-is-404', isStandardUserRoute ? '0' : '1');
 
   let response: NextResponse;
   if (isPrefixed) {
@@ -345,14 +343,15 @@ export async function middleware(request: NextRequest) {
     request.headers.get('x-middleware-prefetch') === '1' ||
     request.headers.get('rsc') === '1' ||
     request.headers.get('accept')?.includes('text/x-component') ||
-    request.nextUrl.searchParams.has('_rsc');
+    request.nextUrl.searchParams.has('_rsc') ||
+    request.url.includes('_rsc=');
 
   const isNeutralOrExcludedPath =
     normalizedPath === '/topup' ||
     normalizedPath === '/login' ||
     normalizedPath === '/register';
 
-  if (!isRscOrPrefetch && !isApiRequest && !isNeutralOrExcludedPath && !pathname.includes('.')) {
+  if (isPrefixed && isStandardUserRoute && !isRscOrPrefetch && !isApiRequest && !isNeutralOrExcludedPath && !pathname.includes('.')) {
     if (request.cookies.get('locale')?.value !== detectedLocale) {
       response.cookies.set('locale', detectedLocale, {
         path:     '/',

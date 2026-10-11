@@ -82,7 +82,7 @@ export function CountryPageClient({
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
       {/* ── Breadcrumb ── */}
-      <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-slate-500">
+      <nav aria-label={t('aria_breadcrumb' as any) || 'Breadcrumb'} className="mb-6 flex items-center gap-2 text-xs text-slate-500">
         <Link href={prefix || "/"} className="hover:text-brand-600 transition-colors">
           {t('nav_home' as any) || 'Home'}
         </Link>
@@ -113,7 +113,7 @@ export function CountryPageClient({
                 </span>
                 {has5G && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
-                    5G Highspeed
+                    {t('feat_5g_badge' as any) || '5G Highspeed'}
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
