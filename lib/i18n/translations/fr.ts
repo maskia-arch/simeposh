@@ -62,7 +62,7 @@ const fr = {
   "blog_title_guides": "Bases et Guides eSIM",
   "blog_title_news": "Actualités et Mises à jour",
   "btn_add_to_cart": "+ Ajouter au panier",
-  "btn_go_unlimited_builder": "Accéder au configurateur Unlimited",
+  "btn_go_unlimited_builder": "Vers l'Unlimited Builder",
   "btn_in_cart": "✓ Dans le panier",
   "card_add_cart": "Panier",
   "card_best_network": "Meilleurs réseaux disponibles",

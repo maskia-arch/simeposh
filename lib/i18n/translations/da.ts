@@ -62,7 +62,7 @@ const da = {
   "blog_title_guides": "eSIM Grundlagen & Guides",
   "blog_title_news": "Nyheder & Opdateringer",
   "btn_add_to_cart": "+ Læg i kurv",
-  "btn_go_unlimited_builder": "Gå til Unlimited-byggeren",
+  "btn_go_unlimited_builder": "Gå til Unlimited Builder",
   "btn_in_cart": "✓ I kurven",
   "card_add_cart": "Indkøbskurv",
   "card_best_network": "Bedste tilgængelige netværk",

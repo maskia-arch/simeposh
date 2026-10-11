@@ -336,6 +336,7 @@ export async function middleware(request: NextRequest) {
   const user = token ? await verifyJwt(token) : null;
 
   // ── Persist visitor's active language preference to cookie (only on top-level user page navigations to a prefixed URL, NEVER on prefetch, RSC, API, or un-prefixed routes) ──
+  const isApiRequest = pathname.startsWith('/api/');
   const isPrefetch =
     Boolean(request.headers.get('next-router-prefetch')) ||
     Boolean(request.headers.get('next-url')) ||
@@ -345,8 +346,7 @@ export async function middleware(request: NextRequest) {
     request.headers.get('rsc') === '1' ||
     request.headers.get('accept')?.includes('text/x-component') ||
     request.nextUrl.searchParams.has('_rsc');
-  const isApiRequest = pathname.startsWith('/api/');
-  if (isPrefixed && !isPrefetch && !isApiRequest) {
+  if (!isPrefetch && !isApiRequest && !pathname.includes('.')) {
     if (request.cookies.get('locale')?.value !== detectedLocale) {
       response.cookies.set('locale', detectedLocale, {
         path:     '/',

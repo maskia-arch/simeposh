@@ -55,7 +55,7 @@ const STR: Record<string, Record<string, string>> = {
   },
 };
 
-export function HeroSearch({ destinations }: { destinations: Destination[] }) {
+export function HeroSearch({ destinations: initialDestinations }: { destinations?: Destination[] }) {
   const router = useRouter();
   const { locale } = useTranslation();
   const s = (k: keyof typeof STR) => STR[k][locale] ?? STR[k].en;
@@ -63,6 +63,21 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
   const [open, setOpen]   = useState(false);
   const [active, setActive] = useState(0);
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const [destinations, setDestinations] = useState<Destination[]>(initialDestinations || []);
+
+  useEffect(() => {
+    if (initialDestinations && initialDestinations.length > 0) {
+      setDestinations(initialDestinations);
+      return;
+    }
+    // Fetch destinations client-side if not preloaded
+    fetch('/api/destinations')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.destinations) setDestinations(d.destinations);
+      })
+      .catch((e) => console.error('Failed to load destinations:', e));
+  }, [initialDestinations]);
 
   // Close on outside click
   useEffect(() => {
@@ -136,13 +151,14 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
 
   function goToDest(d: Destination) {
     const slug = countryCodeToSlug(d.code, d.name);
-    const prefix = locale === 'en' ? '/en' : '';
+    const prefix = locale === 'de' ? '' : `/${locale}`;
     router.push(`${prefix}/esim/${slug}`);
   }
 
   function go(query: string) {
     const term = query.trim();
-    if (!term) { router.push('/tariffs'); return; }
+    const prefix = locale === 'de' ? '' : `/${locale}`;
+    if (!term) { router.push(`${prefix}/tariffs`); return; }
 
     const termLow = term.toLowerCase();
     const matchedCode = aliasToCode(termLow) || aliasToRegion(termLow) || termLow.toUpperCase();
@@ -155,7 +171,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
       return;
     }
 
-    router.push(`/tariffs?q=${encodeURIComponent(term)}`);
+    router.push(`${prefix}/tariffs?q=${encodeURIComponent(term)}`);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -179,7 +195,7 @@ export function HeroSearch({ destinations }: { destinations: Destination[] }) {
   const showSuggest = q.trim().length > 0;
 
   return (
-    <div ref={boxRef} className="relative mx-auto w-full max-w-2xl text-left">
+    <div id="hero-search-container" ref={boxRef} className="relative mx-auto w-full max-w-2xl text-left">
       {/* Search field */}
       <div className="flex items-center rounded-xl bg-white p-1.5 pl-4 pr-1.5 shadow-md border border-slate-200 transition-all focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-200">
         <svg className="h-5 w-5 shrink-0 text-slate-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

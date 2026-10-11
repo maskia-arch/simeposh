@@ -109,7 +109,7 @@ export function CountryPageClient({
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                  ⚡ {isDe ? 'Sofort-Aktivierung' : 'Instant QR Code'}
+                  ⚡ {t('badge_instant_activation' as any) || (isDe ? 'Sofort-Aktivierung' : 'Instant QR Code')}
                 </span>
                 {has5G && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
@@ -124,9 +124,9 @@ export function CountryPageClient({
                 {t('esim_for_country' as any, { country: countryLabel }) || `eSIM for ${countryLabel}`}
               </h1>
               <p className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl leading-relaxed">
-                {isDe
+                {t('country_hero_desc' as any, { country: countryLabel }) || (isDe
                   ? `Prepaid Highspeed-Datenvolumen für deine Reise nach ${countryLabel}. Keine Roaming-Gebühren, kein SIM-Kartenwechsel und transparente Festpreise.`
-                  : `Prepaid high-speed data for your travel to ${countryLabel}. Zero roaming fees, no physical SIM swap, and fair fixed rates.`}
+                  : `Prepaid high-speed data for your travel to ${countryLabel}. Zero roaming fees, no physical SIM swap, and fair fixed rates.`)}
               </p>
             </div>
           </div>
@@ -135,14 +135,14 @@ export function CountryPageClient({
           <div className="flex flex-col sm:flex-row md:flex-col gap-3 rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs shrink-0 min-w-[220px]">
             <div className="flex items-baseline justify-between md:justify-start md:gap-3">
               <span className="text-xs text-slate-500 font-medium">
-                {isDe ? 'Tarife ab' : 'Starting from'}
+                {t('starting_from' as any) || (isDe ? 'Tarife ab' : 'Starting from')}
               </span>
               <Price eur={minPrice} className="text-2xl font-black text-brand-600" />
             </div>
 
             {minTravelTariff && (
               <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
-                <span>{formatGb(minTravelTariff.data_gb)} ({minTravelTariff.validity_days} {isDe ? 'Tage' : 'Days'})</span>
+                <span>{formatGb(minTravelTariff.data_gb)} ({minTravelTariff.validity_days} {t('unit_days' as any) || (isDe ? 'Tage' : 'Days')})</span>
                 <span className="font-bold text-slate-800"><Price eur={minTravelTariff.sale_price_eur} /></span>
               </div>
             )}
@@ -157,7 +157,7 @@ export function CountryPageClient({
                   <InfinityIcon size={12} className="text-emerald-600" /> Unlimited
                 </span>
                 <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
-                  <span>{isDe ? 'ab ' : 'from '}</span><Price eur={minUnlimitedPerDay} /> {t('unit_per_day')} →
+                  <span>{t('from_prefix' as any) || (isDe ? 'ab ' : 'from ')}</span><Price eur={minUnlimitedPerDay} /> {t('unit_per_day')} →
                 </span>
               </Link>
             )}
@@ -198,7 +198,7 @@ export function CountryPageClient({
               }`}
             >
               <TravelGlobeIcon size={14} className="currentColor" />
-              <span>{isDe ? 'Datenpakete' : 'Travel Data'}</span> ({travelTariffs.length})
+              <span>{t('tab_travel_data' as any) || (isDe ? 'Datenpakete' : 'Travel Data')}</span> ({travelTariffs.length})
             </button>
           )}
 
@@ -232,14 +232,14 @@ export function CountryPageClient({
             <span className="text-2xl shrink-0 mt-0.5"><EcoIcon size={24} /></span>
             <div>
               <h2 className="text-sm md:text-base font-bold text-slate-900">
-                {isDe
+                {t('builder_callout_title' as any, { country: countryLabel }) || (isDe
                   ? `Eigenen Unlimited-Tarif für ${countryLabel} zusammenstellen`
-                  : `Build your custom Unlimited plan for ${countryLabel}`}
+                  : `Build your custom Unlimited plan for ${countryLabel}`)}
               </h2>
               <p className="text-xs text-slate-600 mt-0.5 max-w-xl">
-                {isDe
+                {t('builder_callout_desc' as any, { country: countryLabel }) || (isDe
                   ? `Wähle dein tägliches Highspeed-Volumen und die genaue Reisedauer von 1 bis 365 Tagen im PureSim Unlimited-Builder für ${countryLabel}.`
-                  : `Choose your daily high-speed volume and exact trip length from 1 to 365 days in the PureSim Unlimited builder for ${countryLabel}.`}
+                  : `Choose your daily high-speed volume and exact trip length from 1 to 365 days in the PureSim Unlimited builder for ${countryLabel}.`)}
               </p>
             </div>
           </div>
@@ -261,65 +261,65 @@ export function CountryPageClient({
       {/* ── SEO & FAQ Section ── */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-10 shadow-xs">
         <h2 className="text-2xl font-bold text-slate-900 mb-6">
-          {isDe
+          {t('faq_country_title' as any, { country: countryLabel }) || (isDe
             ? `Häufig gestellte Fragen zur eSIM für ${countryLabel}`
-            : `Frequently Asked Questions about ${countryLabel} eSIM`}
+            : `Frequently Asked Questions about eSIM for ${countryLabel}`)}
         </h2>
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {isDe
+              {t('faq_country_q1' as any, { country: countryLabel }) || (isDe
                 ? `Wie aktiviere ich die eSIM in ${countryLabel}?`
-                : `How do I activate the eSIM in ${countryLabel}?`}
+                : `How do I activate the eSIM in ${countryLabel}?`)}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {isDe
+              {t('faq_country_a1' as any) || (isDe
                 ? 'Nach dem Kauf erhältst du sofort einen QR-Code per E-Mail und in deinem Dashboard. Scanne den Code einfach mit deiner Smartphone-Kamera unter Einstellungen > Mobilfunk > eSIM hinzufügen.'
-                : 'Immediately after purchase, you will receive a QR code via email and in your dashboard. Simply scan it under Settings > Cellular/Mobile > Add eSIM.'}
+                : 'Immediately after purchase, you will receive a QR code via email and in your dashboard. Simply scan it under Settings > Cellular/Mobile > Add eSIM.')}
             </p>
           </div>
 
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {isDe
+              {t('faq_country_q2' as any, { country: countryLabel }) || (isDe
                 ? `Welche Netze werden in ${countryLabel} genutzt?`
-                : `Which networks are used in ${countryLabel}?`}
+                : `Which networks are used in ${countryLabel}?`)}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
               {operators.length > 0
-                ? isDe
+                ? t('faq_country_a2_ops' as any, { operators: operators.join(', ') }) || (isDe
                   ? `PureSim verbindet sich automatisch mit den führenden lokalen Mobilfunknetzen (${operators.join(', ')}), um dir stets die beste Signalstärke und höchste Bandbreite (LTE/5G) zu bieten.`
-                  : `PureSim connects automatically to leading local carriers (${operators.join(', ')}), providing optimal coverage and high-speed data.`
-                : isDe
+                  : `PureSim connects automatically to leading local carriers (${operators.join(', ')}), providing optimal coverage and high-speed data.`)
+                : t('faq_country_a2_fallback' as any) || (isDe
                   ? 'PureSim verbindet sich automatisch mit den stärksten lokalen Mobilfunkpartnern vor Ort.'
-                  : 'PureSim connects automatically to local top-tier carriers.'}
+                  : 'PureSim connects automatically to local top-tier carriers.')}
             </p>
           </div>
 
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {isDe
+              {t('faq_country_q3' as any) || (isDe
                 ? 'Wann beginnt die Gültigkeit des Tarifs?'
-                : 'When does the validity period start?'}
+                : 'When does the validity period start?')}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {isDe
+              {t('faq_country_a3' as any) || (isDe
                 ? 'Bei PureSim beginnt die gebuchte Laufzeit erst in dem Moment, in dem sich deine eSIM zum ersten Mal mit einem Mobilfunknetz vor Ort verbindet.'
-                : 'With PureSim, your plan validity only starts when your eSIM first connects to a supported cellular network at your destination.'}
+                : 'With PureSim, your plan validity only starts when your eSIM first connects to a supported cellular network at your destination.')}
             </p>
           </div>
 
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {isDe
+              {t('faq_country_q4' as any) || (isDe
                 ? 'Behalte ich meine gewohnte WhatsApp-Nummer?'
-                : 'Can I keep my existing WhatsApp number?'}
+                : 'Can I keep my existing WhatsApp number?')}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {isDe
+              {t('faq_country_a4' as any) || (isDe
                 ? 'Ja! Deine eSIM dient als reine Datenverbindung. Alle Messenger-Dienste wie WhatsApp, Telegram und Signal funktionieren unverändert mit deiner gewohnten Rufnummer weiter.'
-                : 'Yes! Your eSIM handles mobile data. All apps including WhatsApp, Telegram, and iMessage continue working with your existing phone number.'}
+                : 'Yes! Your eSIM handles mobile data. All apps including WhatsApp, Telegram, and iMessage continue working with your existing phone number.')}
             </p>
           </div>
         </div>

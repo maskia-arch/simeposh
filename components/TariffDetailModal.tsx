@@ -99,7 +99,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const isUnlimited  = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
-  const features     = getTariffSpecialFeatures(tariff);
+  const features     = getTariffSpecialFeatures(tariff, locale);
   const reloadInfo   = getReloadabilityInfo(tariff);
   const cleanedTitle = cleanTariffName(tariff.name);
 
@@ -284,11 +284,11 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                 </span>
               </div>
               <div className="text-[11px] text-sky-900/90 space-y-1">
-                <p><strong>Netzabdeckung:</strong> {t('turkey_standard_coverage_text' as any)}</p>
-                <p><strong>Routing & Latenz:</strong> {t('turkey_standard_routing_text' as any)}</p>
+                <p><strong>{t('turkey_standard_coverage_label' as any)}:</strong> {t('turkey_standard_coverage_text' as any)}</p>
+                <p><strong>{t('turkey_standard_routing_label' as any)}:</strong> {t('turkey_standard_routing_text' as any)}</p>
               </div>
               <div className="mt-1 pt-1.5 border-t border-sky-200/60 text-[10px] text-sky-800 leading-tight">
-                💡 <em>Tipp:</em> Für maximale Ausfallsicherheit in abgelegeneren Regionen oder bei Netzausfall gibt es auch <strong>Travel Premium</strong> mit 2 Netzen (Vodafone + Türk Telekom) und UK-Routing.
+                💡 {t('det_turkey_tip' as any)}
               </div>
             </div>
           )}

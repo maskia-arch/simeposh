@@ -347,6 +347,24 @@ export function getReloadabilityInfo(tariff: {
 /**
  * Extract all active special features for a tariff.
  */
+const DUAL_NETWORK_LABEL: Record<string, string> = {
+  de: '(2 Netze)',
+  en: '(2 Networks)',
+  fr: '(2 Réseaux)',
+  es: '(2 Redes)',
+  it: '(2 Reti)',
+  nl: '(2 Netwerken)',
+  pl: '(2 Sieci)',
+  pt: '(2 Redes)',
+  tr: '(2 Ağ)',
+  sv: '(2 Nätverk)',
+  da: '(2 Netværk)',
+  fi: '(2 Verkkoa)',
+  cs: '(2 Sítě)',
+  ro: '(2 Rețele)',
+  hu: '(2 Hálózat)',
+};
+
 export function getTariffSpecialFeatures(
   tariff: {
     name?: string | null;
@@ -365,6 +383,7 @@ export function getTariffSpecialFeatures(
     location_codes?: string[] | null;
     activates_on_arrival?: boolean | null;
   },
+  locale: string = 'en',
 ): TariffSpecialFeature[] {
   const features: TariffSpecialFeature[] = [];
 
@@ -372,6 +391,7 @@ export function getTariffSpecialFeatures(
   if (isPremiumTariff(tariff)) {
     const isTR = isTurkeyTariff(tariff as any);
     const ip = getTariffBreakoutIp(tariff);
+    const dualLabel = DUAL_NETWORK_LABEL[locale] || DUAL_NETWORK_LABEL.en;
     features.push({
       id: 'travel_premium',
       badgeKey: 'feat_travel_premium_badge',
@@ -381,7 +401,7 @@ export function getTariffSpecialFeatures(
       icon: '👑',
       cls: 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 font-bold',
       extra: isTR
-        ? 'Vodafone & Türk Telekom/Avea (2 Netze) · Breakout IP: UK'
+        ? `Vodafone & Türk Telekom/Avea ${dualLabel} · Breakout IP: UK`
         : (ip ? `Breakout IP: ${ip}` : undefined),
     });
   }

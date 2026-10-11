@@ -136,7 +136,7 @@ export function DaySlider({
             role="radio"
             aria-checked={days === p}
             onClick={() => onChange(p)}
-            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
               days === p
                 ? 'bg-brand-600 text-white shadow-xs ring-2 ring-brand-600 ring-offset-1'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -268,6 +268,7 @@ export function UnlimitedConfigurator({
   const [added, setAdded]                     = useState(false);
   const { addItem, open }                     = useCart();
   const { t, locale }                         = useTranslation();
+  const isDe                                  = locale === 'de';
 
   // ── Step 1: Extract available countries ──────────────────────────────────
   type CountryEntry = {
@@ -278,9 +279,23 @@ export function UnlimitedConfigurator({
     covers: Set<string>;
   };
 
+  const [extraDestinations, setExtraDestinations] = useState<any[]>([]);
+  useEffect(() => {
+    if (isChangingCountry && (!allDestinations || allDestinations.length === 0) && extraDestinations.length === 0) {
+      fetch('/api/destinations')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.destinations) setExtraDestinations(data.destinations);
+        })
+        .catch(() => {});
+    }
+  }, [isChangingCountry, allDestinations, extraDestinations.length]);
+
+  const activeDestinations = (allDestinations && allDestinations.length > 0) ? allDestinations : extraDestinations;
+
   const countries = useMemo(() => {
-    if (allDestinations && allDestinations.length > 0) {
-      return allDestinations.map((d) => ({
+    if (activeDestinations && activeDestinations.length > 0) {
+      return activeDestinations.map((d) => ({
         name:   d.name,
         flag:   d.flag ?? '',
         code:   d.code,
@@ -305,14 +320,14 @@ export function UnlimitedConfigurator({
       for (const l of locs) entry.covers.add(l.toUpperCase());
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [tariffs, allDestinations]);
+  }, [tariffs, activeDestinations]);
 
   const handleSelectCountry = (code: string) => {
     if (isStandaloneRoute) {
       const match = countries.find((c) => c.code === code);
       const slug = match?.slug || code.toLowerCase();
-      const isDe = locale === 'de';
-      router.push(`${isDe ? '' : '/en'}/unlimited/${slug}`);
+      const prefix = locale === 'de' ? '' : `/${locale}`;
+      router.push(`${prefix}/unlimited/${slug}`);
       setIsChangingCountry(false);
       return;
     }
@@ -596,7 +611,7 @@ export function UnlimitedConfigurator({
                         <EcoIcon size={20} className="shrink-0" />
                         <div>
                           <span className="block font-extrabold text-slate-900 text-xs">Unlimited Eco</span>
-                          <span className="block text-[10px] text-slate-500">{t('cfg_after_limit_eco' as any) || 'Nach Limit: 512 kbps'}</span>
+                          <span className="block text-[10px] text-slate-500">{t('cfg_after_limit_eco' as any) || (isDe ? 'Nach Limit: 512 kbps' : 'After limit: 512 kbps')}</span>
                         </div>
                       </div>
                       {tariffType === 'unlimited_eco' && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
@@ -652,7 +667,7 @@ export function UnlimitedConfigurator({
                       role="radio"
                       aria-checked={selectedGb === gb}
                       onClick={() => setSelectedGb(gb)}
-                      className={`rounded-xl border px-3.5 py-2 font-extrabold text-xs transition-all cursor-pointer ${
+                      className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl border px-3.5 py-2 font-extrabold text-xs transition-all cursor-pointer ${
                         selectedGb === gb
                           ? 'border-brand-600 bg-brand-600 text-white shadow-xs ring-2 ring-brand-600 ring-offset-1'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50'

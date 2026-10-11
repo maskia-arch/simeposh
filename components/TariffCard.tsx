@@ -34,6 +34,7 @@ interface TariffCardProps {
 
 export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: TariffCardProps) {
   const { t, locale } = useTranslation();
+  const isDe = locale === 'de';
   const { addItem, open } = useCart();
   const [showCountryList, setShowCountryList] = useState(false);
   const [activeFeature, setActiveFeature] = useState<TariffSpecialFeature | null>(null);
@@ -48,7 +49,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
-  const features     = getTariffSpecialFeatures(tariff);
+  const features     = getTariffSpecialFeatures(tariff, locale);
   const cleanedTitle = cleanTariffName(tariff.name);
 
   // Determine abbreviations
@@ -273,13 +274,13 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         {tariff.tariff_type === 'unlimited_eco' && (
           <p className="mb-2 flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1 leading-tight">
             <EcoIcon size={14} />
-            <span>Nach Limit: 512 kbps</span>
+            <span>{t('cfg_after_limit_eco' as any) || (isDe ? 'Nach Limit: 512 kbps' : 'After limit: 512 kbps')}</span>
           </p>
         )}
         {tariff.tariff_type === 'unlimited_pro' && (
           <p className="mb-2 flex items-center gap-1 text-xs text-violet-700 bg-violet-50 rounded-lg px-2.5 py-1 leading-tight">
             <BoltIcon size={12} className="text-violet-700" />
-            <span>Nach Limit: ≥ 1 Mbps</span>
+            <span>{t('cfg_after_limit_pro' as any) || (isDe ? 'Nach Limit: ≥ 1 Mbps' : 'After limit: ≥ 1 Mbps')}</span>
           </p>
         )}
 

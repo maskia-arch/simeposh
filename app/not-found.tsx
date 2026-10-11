@@ -16,9 +16,12 @@ export default async function NotFound() {
   const locale = await getServerLocale();
   const t = getServerT(locale);
   const prefix = locale === 'de' ? '' : `/${locale}`;
+  const translatedTitle = `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} | PureSim`;
 
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center px-4 py-16 font-sans text-slate-100">
+    <>
+      <title>{translatedTitle}</title>
+      <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center px-4 py-16 font-sans text-slate-100">
       <div className="max-w-md mx-auto space-y-6">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-brand-600/20 border border-brand-500/30 text-brand-400">
           <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -55,5 +58,6 @@ export default async function NotFound() {
         </div>
       </div>
     </main>
+    </>
   );
 }

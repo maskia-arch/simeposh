@@ -203,16 +203,16 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 text-xs text-sky-900/90">
                   <div className="bg-white/80 rounded-xl p-3 border border-sky-200/60">
-                    <p className="font-bold text-sky-950">Netzabdeckung:</p>
+                    <p className="font-bold text-sky-950">{t('turkey_standard_coverage_label' as any)}</p>
                     <p className="mt-0.5">{t('turkey_standard_coverage_text' as any)}</p>
                   </div>
                   <div className="bg-white/80 rounded-xl p-3 border border-sky-200/60">
-                    <p className="font-bold text-sky-950">Routing & Latenz:</p>
+                    <p className="font-bold text-sky-950">{t('turkey_standard_routing_label' as any)}</p>
                     <p className="mt-0.5">{t('turkey_standard_routing_text' as any)}</p>
                   </div>
                 </div>
                 <p className="text-xs text-sky-800 pt-1">
-                  💡 <em>Tipp:</em> Benötigst du maximale Ausfallsicherheit in abgelegeneren Gebieten oder bei regionalen Störungen? Wähle unsere <strong>Travel Premium</strong> Tarife mit 2 Netzen (Vodafone + Türk Telekom) und UK-Routing.
+                  💡 {t('det_turkey_tip' as any)}
                 </p>
               </div>
             )}

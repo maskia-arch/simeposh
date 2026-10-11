@@ -62,7 +62,7 @@ const es = {
   "blog_title_guides": "Fundamentos y Guías de eSIM",
   "blog_title_news": "Noticias y Actualizaciones",
   "btn_add_to_cart": "+ Añadir al carrito",
-  "btn_go_unlimited_builder": "Ir al creador Unlimited",
+  "btn_go_unlimited_builder": "Ir al Unlimited Builder",
   "btn_in_cart": "✓ En el carrito",
   "card_add_cart": "Carrito",
   "card_best_network": "Mejores redes disponibles",

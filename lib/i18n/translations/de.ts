@@ -556,7 +556,7 @@ const de = {
   "register_success_sub": "Wir haben einen Bestätigungslink an {email} gesendet. Klicke darauf, um dein Konto zu aktivieren.",
   "register_success_title": "E-Mail bestätigen",
   "register_title": "Konto erstellen",
-  "search_aria_label": "Suchen",
+  "search_aria_label": "Suche",
   "section_popular": "Beliebte Reiseziele",
   "section_popular_sub": "Top-Ziele zu den besten Einstiegspreisen",
   "section_view_all": "Alle ansehen →",

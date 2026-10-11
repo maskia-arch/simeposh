@@ -142,11 +142,52 @@ export function Navbar() {
   const [menuOpen, setMenu] = useState(false);
   const supabase            = createClient();
   const { t, locale }       = useTranslation();
-  const prefix              = locale === 'en' ? '/en' : '';
+  const prefix              = locale === 'de' ? '' : `/${locale}`;
   const pathname            = usePathname();
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Observer to hide header search when hero search is visible on homepages
+  const isHomepage = pathname === '/' || /^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)\/?$/.test(pathname);
+  const [heroSearchInView, setHeroSearchInView] = useState(false);
+
+  useEffect(() => {
+    if (!isHomepage) {
+      setHeroSearchInView(false);
+      return;
+    }
+
+    const checkAndObserve = () => {
+      const heroEl = document.getElementById('hero-search-container');
+      if (!heroEl) {
+        setHeroSearchInView(false);
+        return null;
+      }
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          setHeroSearchInView(entry.isIntersecting);
+        },
+        { rootMargin: '-89px 0px 0px 0px', threshold: 0 }
+      );
+
+      observer.observe(heroEl);
+      return observer;
+    };
+
+    let obs = checkAndObserve();
+    const timer = setTimeout(() => {
+      if (!obs) obs = checkAndObserve();
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      obs?.disconnect();
+    };
+  }, [isHomepage, pathname]);
+
+  const hideHeaderSearch = isHomepage && heroSearchInView;
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
@@ -211,10 +252,10 @@ export function Navbar() {
 
   return (
     <div className="sticky top-0 z-50 w-full shadow-sm">
-      <nav className="border-b border-slate-200 bg-white">
+      <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm supports-[not(backdrop-filter:blur(1px))]:bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
-        <Link href={prefix || '/'} className="flex items-center gap-2 font-bold text-lg shrink-0">
+        <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0">
           <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
           <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
             PureSim
@@ -223,26 +264,35 @@ export function Navbar() {
 
         {/* Desktop search bar */}
         {showSearch && destinations.length > 0 && (
-          <div className="mx-8 hidden max-w-xs flex-1 md:block animate-in fade-in zoom-in-95 duration-200">
+          <div
+            className={`mx-8 hidden max-w-xs flex-1 md:block transition-all duration-200 motion-reduce:transition-none ${
+              hideHeaderSearch
+                ? 'opacity-0 scale-95 pointer-events-none invisible'
+                : 'opacity-100 scale-100 visible'
+            }`}
+            aria-hidden={hideHeaderSearch ? true : undefined}
+            inert={hideHeaderSearch ? true : undefined}
+          >
             <HeaderSearch destinations={destinations} />
           </div>
         )}
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 text-sm font-medium md:flex">
-          <Link href={`${prefix}/blog`} className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/blog`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_blog' as any) || 'Blog'}
           </Link>
-          <Link href={`${prefix}/tariffs`} className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/tariffs`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_tariffs')}
           </Link>
-          <Link href={`${prefix}/topup`} className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_topup')}
           </Link>
           {user ? (
             <>
               <Link
                 href={`${prefix}/dashboard`}
+                prefetch={false}
                 className="btn-primary !h-12 !px-5"
               >
                 {t('nav_dashboard')}
@@ -258,6 +308,7 @@ export function Navbar() {
             <>
               <Link
                 href={`${prefix}/login`}
+                prefetch={false}
                 className="btn-primary !h-12 !px-5"
               >
                 {t('nav_login')}
@@ -270,10 +321,10 @@ export function Navbar() {
 
         {/* Mobile: cart + lang/currency + hamburger */}
         <div className="flex items-center gap-1 md:hidden">
-          {showSearch && destinations.length > 0 && (
+          {showSearch && destinations.length > 0 && !hideHeaderSearch && (
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className={`rounded-lg p-2 transition-colors ${
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 transition-colors ${
                 mobileSearchOpen ? 'bg-slate-100 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-brand-700'
               }`}
               aria-label={t('search_aria_label' as any) || 'Search'}
@@ -302,20 +353,20 @@ export function Navbar() {
       {menuOpen && (
         <div className="border-t border-slate-100 bg-white px-4 pb-4 md:hidden">
           <div className="flex flex-col gap-3 pt-3 text-sm font-medium">
-            <Link href={`${prefix}/blog`} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
-            <Link href={`${prefix}/tariffs`} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
-            <Link href={`${prefix}/topup`}   onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
+            <Link href={`${prefix}/blog`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
+            <Link href={`${prefix}/tariffs`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
+            <Link href={`${prefix}/topup`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
             {user ? (
               <>
  
                 <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
-                  <Link href={`${prefix}/dashboard`} onClick={() => setMenu(false)} className="text-slate-800 font-bold hover:text-brand-700 transition-colors text-sm">
+                  <Link href={`${prefix}/dashboard`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-800 font-bold hover:text-brand-700 transition-colors text-sm">
                     {t('nav_dashboard')}
                   </Link>
-                  <Link href={`${prefix}/dashboard`} onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
+                  <Link href={`${prefix}/dashboard`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     📱 {t('nav_my_esims')}
                   </Link>
-                  <Link href={`${prefix}/dashboard?tab=cash`} onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
+                  <Link href={`${prefix}/dashboard?tab=cash`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700 flex items-center gap-2 hover:text-brand-700 transition-colors font-medium">
                     💰 {t('nav_esim_cash' as any) || 'eSIM Cash'}
                   </Link>
                 </div>
@@ -323,7 +374,7 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link href={`${prefix}/login`}    onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
+                <Link href={`${prefix}/login`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
               </>
             )}
 
@@ -338,7 +389,7 @@ export function Navbar() {
                 <svg className="h-5 w-5 shrink-0 text-[#24A1DE]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
                 </svg>
-                <span>Kontakt über Telegram</span>
+                <span>{t('nav_contact_telegram' as any) || 'Kontakt über Telegram'}</span>
               </a>
             </div>
           </div>

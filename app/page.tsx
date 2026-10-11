@@ -245,9 +245,8 @@ async function getFeedbackStats() {
 
 export default async function HomePage() {
   const locale = await getServerLocale();
-  const [popularDestinations, destinations, blogData, feedbackStats] = await Promise.all([
+  const [popularDestinations, blogData, feedbackStats] = await Promise.all([
     getFeaturedDestinations(),
-    getDestinations(),
     getBlogPosts(locale),
     getFeedbackStats(),
   ]);
@@ -288,7 +287,6 @@ export default async function HomePage() {
       />
       <HomePageClient
         popularDestinations={popularDestinations}
-        destinations={destinations}
         featuredGuide={blogData.featuredGuide}
         latestNews={blogData.latestNews}
         averageRating={feedbackStats.averageRating}

@@ -48,6 +48,19 @@ export function getServerDict(locale: LocaleCode): Record<string, string> {
   return { ...fallbk, ...dict };
 }
 
+import { CLIENT_DICT_KEYS } from './client-keys';
+
+export function getClientDict(locale: LocaleCode): Record<string, string> {
+  const fullDict = getServerDict(locale);
+  const clientDict: Record<string, string> = {};
+  CLIENT_DICT_KEYS.forEach((key) => {
+    if (fullDict[key] !== undefined) {
+      clientDict[key] = fullDict[key];
+    }
+  });
+  return clientDict;
+}
+
 
 import { headers } from 'next/headers';
 

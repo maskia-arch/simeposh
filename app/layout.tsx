@@ -4,7 +4,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { LanguageProvider } from '@/components/i18n/LanguageProvider';
-import { getServerDict } from '@/lib/i18n/server';
+import { getClientDict } from '@/lib/i18n/server';
 import { CartProvider } from '@/components/CartProvider';
 import { CartDrawer } from '@/components/CartDrawer';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
@@ -69,7 +69,7 @@ export default async function RootLayout({
     : 'de';
 
   const locale = resolvedLocale;
-  const dict = getServerDict(locale);
+  const dict = getClientDict(locale);
 
   const host = (headerStore.get('host') || '').toLowerCase();
   const isEsimDomain = host.startsWith('esim.');

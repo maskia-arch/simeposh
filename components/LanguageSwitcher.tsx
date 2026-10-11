@@ -116,6 +116,8 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
         aria-label={t('lang_select')}
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-controls={open ? 'lang-listbox' : undefined}
+        aria-activedescendant={open && focusedIndex >= 0 ? `lang-opt-${SUPPORTED_LOCALES[focusedIndex]?.code}` : undefined}
         className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 sm:gap-1.5 rounded-lg px-1.5 sm:px-2.5 py-2 text-xs font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
           isDark
             ? 'text-slate-200 hover:bg-slate-800/80 hover:text-white active:bg-slate-900'

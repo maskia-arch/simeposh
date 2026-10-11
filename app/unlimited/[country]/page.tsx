@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { getDestinationBySlug, getCountryTariffs, getAllDestinations } from '@/lib/destinations';
+import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
@@ -111,14 +111,6 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
     notFound();
   }
 
-  const allDestinations = await getAllDestinations();
-  const destinationList = allDestinations.map((d) => ({
-    code: d.code,
-    name: d.name,
-    flag: d.flag,
-    slug: d.slug,
-  }));
-
   const countryLabel = displayCountryName(
     { country_code: destination.code, country_name: destination.name, location_codes: null, region: null },
     locale
@@ -197,7 +189,6 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
         destination={destination}
         tariffs={unlimitedTariffs}
         countryLabel={countryLabel}
-        allDestinations={destinationList}
         minPrice={minPrice}
         minPerDay={minPerDay}
       />

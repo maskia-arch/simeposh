@@ -23,7 +23,7 @@ interface PopularDestination {
 
 export function HomePageClient({
   popularDestinations,
-  destinations,
+  destinations = [],
   featuredGuide,
   latestNews,
   averageRating = 5.0,
@@ -31,7 +31,7 @@ export function HomePageClient({
   recentReviews = [],
 }: {
   popularDestinations: PopularDestination[];
-  destinations: Destination[];
+  destinations?: Destination[];
   featuredGuide: any;
   latestNews: any[];
   averageRating?: number;
@@ -39,7 +39,7 @@ export function HomePageClient({
   recentReviews?: any[];
 }) {
   const { t, locale } = useTranslation();
-  const prefix = locale === 'en' ? '/en' : '';
+  const prefix = locale === 'de' ? '' : `/${locale}`;
 
   const features = [
     {
