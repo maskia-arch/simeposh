@@ -40,7 +40,7 @@ function CartButton() {
   return (
     <button
       onClick={toggle}
-      className={`relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-all ${
+      className={`relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-all ${
         shouldBounce ? 'animate-bounce scale-120 text-brand-600' : ''
       }`}
       aria-label={t('cart_title') || 'Cart'}
@@ -49,7 +49,7 @@ function CartButton() {
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .96-.343 1.087-.835l1.823-6.844a.75.75 0 00-.726-.94H6.106M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
       </svg>
       {count > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
+        <span className="absolute top-0 right-0 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
           {count > 99 ? '99+' : count}
         </span>
       )}
@@ -212,20 +212,24 @@ export function Navbar() {
   }, [menuOpen]);
 
   useEffect(() => {
-    fetch('/api/destinations')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.destinations) setDestinations(data.destinations);
-      })
-      .catch((err) => console.error('Error loading destinations:', err));
+    import('@/lib/client-destinations').then(({ getClientDestinations }) => {
+      getClientDestinations()
+        .then((dists) => {
+          if (dists && dists.length > 0) setDestinations(dists);
+        })
+        .catch((err) => console.error('Error loading destinations:', err));
+    });
   }, []);
 
   useEffect(() => {
-    // Hide search entirely on checkout, success, callback, and admin routes
+    // Hide search entirely on checkout, login, register, success, callback, and admin routes
+    const pathNoLocale = pathname.replace(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)(?=\/|$)/, '') || '/';
     const isExemptRoute =
-      pathname.startsWith('/checkout') ||
-      pathname.startsWith('/success') ||
-      pathname.startsWith('/auth/callback');
+      pathNoLocale.startsWith('/checkout') ||
+      pathNoLocale === '/login' ||
+      pathNoLocale === '/register' ||
+      pathNoLocale.startsWith('/success') ||
+      pathNoLocale.startsWith('/auth');
 
     if (isExemptRoute) {
       setShowSearch(false);
@@ -265,10 +269,10 @@ export function Navbar() {
         {/* Desktop search bar */}
         {showSearch && destinations.length > 0 && (
           <div
-            className={`mx-8 hidden max-w-xs flex-1 md:block transition-all duration-200 motion-reduce:transition-none ${
+            className={`mx-8 hidden max-w-xs flex-1 md:block motion-reduce:transition-none ${
               hideHeaderSearch
-                ? 'opacity-0 scale-95 pointer-events-none invisible'
-                : 'opacity-100 scale-100 visible'
+                ? 'opacity-0 scale-95 pointer-events-none invisible transition-all duration-150 ease-out'
+                : 'opacity-100 scale-100 visible transition-all duration-200 ease-in'
             }`}
             aria-hidden={hideHeaderSearch ? true : undefined}
             inert={hideHeaderSearch ? true : undefined}

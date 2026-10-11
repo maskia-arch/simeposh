@@ -40,7 +40,13 @@ export function LanguageProvider({
 
   const t = useCallback(
     (key: TranslationKeys, vars?: Record<string, string | number>): string => {
-      let str = dict[key] ?? key;
+      let str = dict[key];
+      if (str === undefined) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[i18n] Missing client translation key "${key}" for locale "${locale}"`);
+        }
+        return '';
+      }
       if (vars) {
         Object.entries(vars).forEach(([k, v]) => {
           str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
@@ -48,7 +54,7 @@ export function LanguageProvider({
       }
       return str;
     },
-    [dict]
+    [dict, locale]
   );
 
   return (

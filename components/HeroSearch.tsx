@@ -70,13 +70,12 @@ export function HeroSearch({ destinations: initialDestinations }: { destinations
       setDestinations(initialDestinations);
       return;
     }
-    // Fetch destinations client-side if not preloaded
-    fetch('/api/destinations')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.destinations) setDestinations(d.destinations);
-      })
-      .catch((e) => console.error('Failed to load destinations:', e));
+    // Fetch destinations client-side via in-memory cached helper
+    import('@/lib/client-destinations').then(({ getClientDestinations }) => {
+      getClientDestinations().then((d) => {
+        if (d && d.length > 0) setDestinations(d);
+      });
+    });
   }, [initialDestinations]);
 
   // Close on outside click

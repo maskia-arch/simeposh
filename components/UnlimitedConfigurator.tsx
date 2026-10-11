@@ -282,12 +282,11 @@ export function UnlimitedConfigurator({
   const [extraDestinations, setExtraDestinations] = useState<any[]>([]);
   useEffect(() => {
     if (isChangingCountry && (!allDestinations || allDestinations.length === 0) && extraDestinations.length === 0) {
-      fetch('/api/destinations')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.destinations) setExtraDestinations(data.destinations);
-        })
-        .catch(() => {});
+      import('@/lib/client-destinations').then(({ getClientDestinations }) => {
+        getClientDestinations().then((dists) => {
+          if (dists && dists.length > 0) setExtraDestinations(dists);
+        });
+      });
     }
   }, [isChangingCountry, allDestinations, extraDestinations.length]);
 

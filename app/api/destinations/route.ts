@@ -36,7 +36,14 @@ export async function GET() {
       if (data.length < PAGE) break;
     }
 
-    return NextResponse.json({ destinations: Array.from(seen.values()) });
+    return NextResponse.json(
+      { destinations: Array.from(seen.values()) },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        },
+      }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });

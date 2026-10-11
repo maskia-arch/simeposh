@@ -209,10 +209,14 @@ async function getBlogPosts(locale: string) {
     if (!post) return null;
     const translation = post.post_translations?.find((tr: any) => tr.locale === locale);
     return {
-      ...post,
+      id: post.id,
       title: translation?.title || post.title,
       slug: translation?.slug || post.slug,
       excerpt: translation?.excerpt || post.excerpt,
+      category: post.category,
+      featured_image: post.featured_image || null,
+      published_at: post.published_at || null,
+      created_at: post.created_at || null,
     };
   };
 

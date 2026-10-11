@@ -181,6 +181,7 @@ export function HomePageClient({
               <Link
                 key={dest.country_code}
                 href={`${prefix}/esim/${slug}`}
+                prefetch={false}
                 className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-1 shrink-0 w-[280px] snap-start sm:w-auto sm:shrink"
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-brand-50 transition-colors duration-300 overflow-hidden border border-slate-100">
@@ -431,7 +432,7 @@ export function HomePageClient({
 
 function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean; t: any }) {
   const { locale } = useTranslation();
-  const prefix = locale === 'en' ? '/en' : '';
+  const prefix = locale === 'de' ? '' : `/${locale}`;
   const formattedDate = post.published_at 
     ? new Date(post.published_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
     : new Date(post.created_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -473,6 +474,7 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
           </div>
           <Link
             href={`${prefix}/blog/${post.slug}`}
+            prefetch={false}
             className="mt-4 md:mt-6 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
           >
             <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>
@@ -520,6 +522,7 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
         </div>
         <Link
           href={`${prefix}/blog/${post.slug}`}
+          prefetch={false}
           className="mt-4 inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-850 text-xs md:text-sm group"
         >
           <span>{t('blog_read_more' as any) || 'Artikel lesen'}</span>

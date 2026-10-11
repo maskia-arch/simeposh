@@ -140,7 +140,6 @@ export function LanguageSwitcher({ variant = 'light', className = '' }: Language
           id="lang-listbox"
           role="listbox"
           aria-label={t('lang_select')}
-          aria-activedescendant={open && focusedIndex >= 0 ? `lang-opt-${SUPPORTED_LOCALES[focusedIndex]?.code}` : undefined}
           className={`absolute right-0 z-[100] mt-2 w-56 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl transition-all animate-fadeIn ${
             isDark
               ? 'border border-slate-800 bg-slate-900/95 text-slate-100 shadow-slate-950/80'

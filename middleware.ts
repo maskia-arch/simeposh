@@ -335,9 +335,9 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;
   const user = token ? await verifyJwt(token) : null;
 
-  // ── Persist visitor's active language preference to cookie (only on top-level user page navigations to a prefixed URL, NEVER on prefetch, RSC, API, or un-prefixed routes) ──
+  // ── Persist visitor's active language preference to cookie (only on top-level user page navigations, NEVER on prefetch, RSC, API, 404, or language-neutral pages) ──
   const isApiRequest = pathname.startsWith('/api/');
-  const isPrefetch =
+  const isRscOrPrefetch =
     Boolean(request.headers.get('next-router-prefetch')) ||
     Boolean(request.headers.get('next-url')) ||
     request.headers.get('purpose') === 'prefetch' ||
@@ -346,7 +346,13 @@ export async function middleware(request: NextRequest) {
     request.headers.get('rsc') === '1' ||
     request.headers.get('accept')?.includes('text/x-component') ||
     request.nextUrl.searchParams.has('_rsc');
-  if (!isPrefetch && !isApiRequest && !pathname.includes('.')) {
+
+  const isNeutralOrExcludedPath =
+    normalizedPath === '/topup' ||
+    normalizedPath === '/login' ||
+    normalizedPath === '/register';
+
+  if (!isRscOrPrefetch && !isApiRequest && !isNeutralOrExcludedPath && !pathname.includes('.')) {
     if (request.cookies.get('locale')?.value !== detectedLocale) {
       response.cookies.set('locale', detectedLocale, {
         path:     '/',
@@ -371,10 +377,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${langPrefix}/dashboard`, request.url));
   }
 
-  // ── Security Headers ──
+  // ── Security Headers & Response Hygiene ──
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Strip internal next.js middleware cookie header from public responses
+  if (response.headers.has('x-middleware-set-cookie')) {
+    response.headers.delete('x-middleware-set-cookie');
+  }
 
   return response;
 }

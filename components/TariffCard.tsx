@@ -83,11 +83,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
       <div className="p-5 flex flex-col flex-1">
 
         {/* ── Flag + Country + Badges ── */}
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0 max-w-full">
             <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={40} />
-            <div>
-              <p className="font-bold text-slate-800 leading-tight">{countryLabel}</p>
+            <div className="min-w-0">
+              <p className="font-bold text-slate-800 leading-tight break-words" title={countryLabel}>{countryLabel}</p>
               {coverage && (
                 <div className="relative inline-flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
                   <span>🌍 {coverage}</span>

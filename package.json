@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/check-client-keys.mjs && next build",
     "postbuild": "node scripts/check-public-payload.mjs",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
