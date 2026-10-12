@@ -395,11 +395,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           {onDetail && (
             <button
               onClick={(e) => { e.stopPropagation(); onDetail(tariff); }}
-              className="h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="relative h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:inset-0 after:content-[''] after:z-10"
               title={t('card_details')}
               aria-label={t('card_details')}
             >
-              <span>{t('card_details')}</span> <span className="ml-1 opacity-70">ⓘ</span>
+              <span className="relative z-20">{t('card_details')}</span> <span className="ml-1 opacity-70 relative z-20">ⓘ</span>
             </button>
           )}
         </div>
