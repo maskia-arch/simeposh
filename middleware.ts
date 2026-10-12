@@ -302,10 +302,20 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  let isKnownCountryOrRegion = true;
+  if (normalizedPath.startsWith('/esim/') || normalizedPath.startsWith('/unlimited/')) {
+    const slug = normalizedPath.replace(/^\/(esim|unlimited)\//, '').split('/')[0].trim();
+    if (!slug || !resolveCountryOrRegionCode(slug)) {
+      isKnownCountryOrRegion = false;
+    }
+  }
+
+  const is404Route = !isStandardUserRoute || !isKnownCountryOrRegion;
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-locale', detectedLocale);
   requestHeaders.set('x-pathname', pathname);
-  requestHeaders.set('x-is-404', isStandardUserRoute ? '0' : '1');
+  requestHeaders.set('x-is-404', is404Route ? '1' : '0');
 
   let response: NextResponse;
   if (isPrefixed) {
@@ -365,15 +375,6 @@ export async function middleware(request: NextRequest) {
     normalizedPath === '/reviews' ||
     normalizedPath === '/notfound' ||
     normalizedPath === '/404';
-
-  // Check destination validity for /esim/[country] or /unlimited/[country] so 404s never get a locale cookie
-  let isKnownCountryOrRegion = true;
-  if (normalizedPath.startsWith('/esim/') || normalizedPath.startsWith('/unlimited/')) {
-    const slug = normalizedPath.replace(/^\/(esim|unlimited)\//, '').split('/')[0].trim();
-    if (!slug || !resolveCountryOrRegionCode(slug)) {
-      isKnownCountryOrRegion = false;
-    }
-  }
 
   // Must be an explicit top-level HTML document navigation
   const isHtmlNavigation =

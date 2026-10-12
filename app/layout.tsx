@@ -4,7 +4,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { LanguageProvider } from '@/components/i18n/LanguageProvider';
-import { getClientDict } from '@/lib/i18n/server';
+import { getServerDict, getClientDict } from '@/lib/i18n/server';
 import { CartProvider } from '@/components/CartProvider';
 import { CartDrawer } from '@/components/CartDrawer';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
@@ -13,39 +13,64 @@ import { ChatWidgetLoader } from '@/components/ChatWidgetLoader';
 import { isSupportedLocale } from '@/lib/i18n/detect';
 import type { LocaleCode } from '@/lib/i18n/config';
 
-
 import { SkipLink } from '@/components/SkipLink';
 import { BASE_URL } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
-  title: {
-    default:  'PureSim – Günstige eSIMs weltweit',
-    template: '%s | PureSim',
-  },
-  description:
-    'Kaufe sofort einsatzbereite eSIMs für über 150 Länder. Günstiger Tarif, einfache Aktivierung, kein Aufpreis.',
-  keywords: ['eSIM', 'Reise SIM', 'Datenpaket', 'Roaming', 'eSIM kaufen', 'PureSim'],
-  icons: {
-    icon: '/icon.png',
-    shortcut: '/favicon.ico',
-    apple: '/apple-icon.png',
-  },
-  openGraph: {
-    type:   'website',
-    locale: 'de_DE',
-    title:  'PureSim',
-    description: 'eSIMs für über 150 Länder – sofort verfügbar.',
-  },
-  alternates: {
-    canonical: BASE_URL,
-    languages: {
-      de: BASE_URL,
-      en: `${BASE_URL}/en`,
-      'x-default': `${BASE_URL}/en`,
+export async function generateMetadata(): Promise<Metadata> {
+  const headerStore = await headers();
+  const is404 = headerStore.get('x-is-404') === '1';
+  const headerLocale = headerStore.get('x-locale');
+  const pathname = headerStore.get('x-pathname') || '';
+  const urlMatch = pathname.match(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)(?=\/|$)/);
+  const urlLocale = urlMatch ? urlMatch[1] : null;
+  const locale: LocaleCode = (headerLocale && isSupportedLocale(headerLocale))
+    ? (headerLocale as LocaleCode)
+    : (urlLocale && isSupportedLocale(urlLocale))
+    ? (urlLocale as LocaleCode)
+    : 'de';
+  const dict = getServerDict(locale);
+
+  if (is404) {
+    const notFoundTitle = `${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`;
+    return {
+      title: notFoundTitle,
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  return {
+    metadataBase: new URL(BASE_URL),
+    title: {
+      default:  'PureSim – Günstige eSIMs weltweit',
+      template: '%s | PureSim',
     },
-  },
-};
+    description:
+      dict.meta_home_desc || 'Kaufe sofort einsatzbereite eSIMs für über 150 Länder. Günstiger Tarif, einfache Aktivierung, kein Aufpreis.',
+    keywords: ['eSIM', 'Reise SIM', 'Datenpaket', 'Roaming', 'eSIM kaufen', 'PureSim'],
+    icons: {
+      icon: '/icon.png',
+      shortcut: '/favicon.ico',
+      apple: '/apple-icon.png',
+    },
+    openGraph: {
+      type:   'website',
+      locale: locale === 'en' ? 'en_US' : `${locale}_${locale.toUpperCase()}`,
+      title:  'PureSim',
+      description: dict.meta_home_desc || 'eSIMs für über 150 Länder – sofort verfügbar.',
+    },
+    alternates: {
+      canonical: BASE_URL,
+      languages: {
+        de: BASE_URL,
+        en: `${BASE_URL}/en`,
+        'x-default': `${BASE_URL}/en`,
+      },
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -77,22 +102,10 @@ export default async function RootLayout({
 
   // Standalone Minimal Shell for 404 Not Found pages (keeps HTML < 21 KB, no bloated JS/DOM)
   if (is404) {
-    const notFoundTitle = `404 – ${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} | PureSim`;
     return (
       <html lang={locale}>
-        <head>
-          <title>{notFoundTitle}</title>
-          <meta name="robots" content="noindex, nofollow" />
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-            rel="stylesheet"
-          />
-        </head>
         <body className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-          <LanguageProvider locale={locale} dict={dict}>
-            <main className="min-h-screen flex flex-col">{children}</main>
-          </LanguageProvider>
+          {children}
         </body>
       </html>
     );

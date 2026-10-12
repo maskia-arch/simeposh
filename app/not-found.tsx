@@ -1,16 +1,5 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
-
-export const metadata: Metadata = {
-  title: {
-    absolute: '404 – Page Not Found | PureSim',
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
 
 export default async function NotFound() {
   const locale = await getServerLocale();
@@ -28,7 +17,7 @@ export default async function NotFound() {
 
         <div className="space-y-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
-            404 – {t('page_not_found_title' as any) || 'Page Not Found'}
+            {t('page_not_found_title' as any) || 'Page Not Found'}
           </h1>
           <p className="text-sm text-slate-400">
             {t('page_not_found_desc' as any) || 'The requested page is not available at this address.'}
@@ -38,19 +27,12 @@ export default async function NotFound() {
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href={prefix || '/'}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 active:bg-brand-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/20 transition-all cursor-pointer"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 active:bg-brand-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/20 transition-all cursor-pointer"
           >
             <span>{t('page_not_found_btn' as any) || 'Back to PureSim Webshop'}</span>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-          </Link>
-
-          <Link
-            href={`${prefix}/dashboard?tab=tickets`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-300 transition-all"
-          >
-            <span>🎫</span> {t('esim_open_ticket_btn' as any) || 'Support-Ticket'}
           </Link>
         </div>
       </div>
