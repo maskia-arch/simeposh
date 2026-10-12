@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
+import { render404Html, UNLIMITED_ENABLED_CODES } from '@/lib/not-found-html';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard'];
@@ -303,14 +304,38 @@ export async function middleware(request: NextRequest) {
   }
 
   let isKnownCountryOrRegion = true;
-  if (normalizedPath.startsWith('/esim/') || normalizedPath.startsWith('/unlimited/')) {
-    const slug = normalizedPath.replace(/^\/(esim|unlimited)\//, '').split('/')[0].trim();
+  if (normalizedPath.startsWith('/esim/')) {
+    const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim();
     if (!slug || !resolveCountryOrRegionCode(slug)) {
+      isKnownCountryOrRegion = false;
+    }
+  } else if (normalizedPath.startsWith('/unlimited/')) {
+    const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim();
+    const code = slug ? resolveCountryOrRegionCode(slug) : null;
+    if (!code || !UNLIMITED_ENABLED_CODES.has(code)) {
       isKnownCountryOrRegion = false;
     }
   }
 
   const is404Route = !isStandardUserRoute || !isKnownCountryOrRegion;
+
+  if (is404Route) {
+    const isRsc = request.headers.has('rsc') ||
+                  request.headers.has('next-router-prefetch') ||
+                  request.headers.has('next-router-state-tree') ||
+                  (request.headers.get('accept') || '').includes('text/x-component');
+
+    if (!isRsc) {
+      return new NextResponse(render404Html(detectedLocale), {
+        status: 404,
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+          'x-robots-tag': 'noindex, nofollow',
+        },
+      });
+    }
+  }
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-locale', detectedLocale);

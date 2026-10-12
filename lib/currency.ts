@@ -80,6 +80,23 @@ export function formatCurrencyEuro(amount: number, locale: string = 'de'): strin
 }
 
 /**
+ * Replaces any price occurrences (e.g. "0,59 €", "€0,59", "9,99 €") in arbitrary text
+ * with the strictly unified format for the specified locale.
+ */
+export function formatPricesInText(text: string, locale: string = 'de'): string {
+  if (!text) return text;
+  return text.replace(/(?:€\s*(\d+[.,]\d{2})|(\d+[.,]\d{2})\s*€)/g, (match, p1, p2) => {
+    const rawNum = (p1 || p2).replace(',', '.');
+    const val = parseFloat(rawNum);
+    if (!isNaN(val)) {
+      return formatCurrencyEuro(val, locale);
+    }
+    return match;
+  });
+}
+
+
+/**
  * Format a EUR amount into the selected display currency.
  * Falls back to EUR formatting if the rate is missing/not yet loaded,
  * so prices never render as 0 or NaN.

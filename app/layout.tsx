@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
   if (is404) {
     const notFoundTitle = `${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`;
     return {
-      title: notFoundTitle,
+      title: { absolute: notFoundTitle },
       robots: {
         index: false,
         follow: false,

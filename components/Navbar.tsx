@@ -294,7 +294,12 @@ export function Navbar() {
           <Link href={`${prefix}/blog`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
             {t('nav_blog' as any) || 'Blog'}
           </Link>
-          <Link href={`${prefix}/tariffs`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link
+            href={`${prefix}/tariffs`}
+            prefetch={false}
+            data-testid="nav-tariffs-link"
+            className="relative inline-flex items-center min-h-[44px] py-2 px-1 text-slate-600 hover:text-brand-700 transition-colors after:absolute after:-inset-y-1 after:-inset-x-2 after:content-['']"
+          >
             {t('nav_tariffs')}
           </Link>
           <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">

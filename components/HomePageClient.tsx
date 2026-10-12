@@ -6,6 +6,7 @@ import { HeroSearch, type Destination } from '@/components/HeroSearch';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
+import { formatPricesInText } from '@/lib/currency';
 import { displayCountryName } from '@/lib/tariff-display';
 import { countryCodeToSlug } from '@/lib/destinations-shared';
 import { SearchIcon, CreditCardIcon, CameraIcon, GlobeIcon, BookIcon, NetworkIcon, CheckCircleIcon, ScalesIcon } from '@/components/Icons';
@@ -406,10 +407,10 @@ export function HomePageClient({
                     <div>
                       <p className="text-[10px] md:text-xs text-slate-400 font-medium">{fallback.date}</p>
                       <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors break-words hyphens-auto">
-                        {fallback.title}
+                        {formatPricesInText(fallback.title, locale)}
                       </h3>
                       <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3 break-words hyphens-auto">
-                        {fallback.excerpt}
+                        {formatPricesInText(fallback.excerpt, locale)}
                       </p>
                     </div>
                     <Link
@@ -468,10 +469,10 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
           <div>
             <p className="text-[10px] md:text-xs text-slate-400 font-medium">{formattedDate}</p>
             <h3 className="mt-1 md:mt-2 text-base md:text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-700 transition-colors break-words hyphens-auto">
-              {post.title}
+              {formatPricesInText(post.title, locale)}
             </h3>
             <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3 break-words hyphens-auto">
-              {post.excerpt}
+              {formatPricesInText(post.excerpt, locale)}
             </p>
           </div>
           <Link
@@ -516,10 +517,10 @@ function BlogTeaserCard({ post, isPrimary, t }: { post: any; isPrimary: boolean;
         <div>
           <p className="text-[10px] md:text-xs text-slate-400 font-medium">{formattedDate}</p>
           <h3 className="mt-1 md:mt-2 text-base md:text-lg font-bold text-slate-800 line-clamp-2 hover:text-brand-600 transition-colors break-words hyphens-auto">
-            {post.title}
+            {formatPricesInText(post.title, locale)}
           </h3>
           <p className="mt-1.5 md:mt-2 text-slate-500 text-xs md:text-sm leading-relaxed line-clamp-3 break-words hyphens-auto">
-            {post.excerpt}
+            {formatPricesInText(post.excerpt, locale)}
           </p>
         </div>
         <Link

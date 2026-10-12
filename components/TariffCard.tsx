@@ -295,15 +295,29 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             </span>
           )}
           {ops.length > 0 ? (
-            <span className="flex items-center gap-1 text-xs text-slate-700 truncate font-medium">
+            <button
+              type="button"
+              data-testid="network-coverage-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveFeature(null);
+                const covLabel = t('det_coverage_label').replace(/:$/, '').trim();
+                setActiveAbbr(activeAbbr?.label === covLabel ? null : {
+                  label: covLabel,
+                  text: ops.map((o) => o.name).join(' · '),
+                });
+              }}
+              aria-label={`${t('det_coverage_label').replace(/:$/, '').trim()}: ${ops.map((o) => o.name).join(' · ')}`}
+              className="relative min-h-[44px] flex items-center gap-1 text-xs text-slate-700 truncate font-medium hover:text-brand-700 cursor-pointer text-left transition-colors"
+            >
               <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
               {ops.length > 1 && (
                 <span className="text-slate-400 font-normal">{t('card_network_count' as any, { count: ops.length }) || `(${ops.length})`}</span>
               )}
-            </span>
+            </button>
           ) : (
-            <span className="flex items-center gap-1 text-xs text-slate-500">
+            <span className="min-h-[44px] flex items-center gap-1 text-xs text-slate-500">
               <NetworkIcon size={13} className="text-slate-400" />
               <span>{t('card_best_network')}</span>
             </span>
@@ -313,6 +327,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           {isDualNet && (
             <button
               type="button"
+              data-testid="dual-net-pill"
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveFeature(null);
@@ -321,10 +336,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                   text: t('feat_dual_net_desc'),
                 });
               }}
-              className="rounded-md bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors"
+              aria-label={t('card_dual_net_aria') || `${t('card_dual_net_pill')} - ${t('feat_dual_net_desc')}`}
+              className="dual-net-pill relative min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-emerald-50 border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors shadow-xs after:absolute after:-inset-1 after:content-['']"
               title={t('feat_dual_net_desc')}
             >
-              {t('card_dual_net_pill')} ⓘ
+              <span>{t('card_dual_net_pill')} ⓘ</span>
             </button>
           )}
 
@@ -391,7 +407,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         {/* ── CTAs: Add to cart + Buy now ── */}
         <div className="mt-3 flex gap-2 items-center">
           <button
-            onClick={(e) => { e.stopPropagation(); addItem(tariff); }}
+            onClick={(e) => { e.stopPropagation(); addItem(tariff); open(); }}
             className="flex flex-1 h-12 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:border-brand-300 active:scale-95 cursor-pointer"
             title={t('det_add_cart')}
             aria-label={t('card_add_cart_aria')}

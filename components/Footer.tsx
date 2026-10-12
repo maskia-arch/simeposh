@@ -91,7 +91,12 @@ export function Footer() {
               <div>
                 <p className="font-semibold text-slate-800 mb-3">{t('footer_nav_title')}</p>
                 <ul className="space-y-2 text-sm text-slate-500">
-                  <li><Link href={`${prefix}/tariffs`} prefetch={false} className="hover:text-brand-700 transition-colors">{t('footer_browse')}</Link></li>
+                  <li><Link
+                    href={`${prefix}/tariffs`}
+                    prefetch={false}
+                    data-testid="footer-browse-tariffs-link"
+                    className="relative inline-flex items-center min-h-[44px] py-2 hover:text-brand-700 transition-colors after:absolute after:-inset-y-2 after:-inset-x-2 after:content-['']"
+                  >{t('footer_browse')}</Link></li>
                   <li><Link href={`${prefix}/topup`}     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
                   <li><Link href={`${prefix}/dashboard`} className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
                   <li><Link href={`${prefix}/blog`}      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>

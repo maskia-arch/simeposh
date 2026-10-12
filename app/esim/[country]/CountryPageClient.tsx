@@ -87,7 +87,11 @@ export function CountryPageClient({
           {t('nav_home' as any) || 'Home'}
         </Link>
         <span>/</span>
-        <Link href={`${prefix}/tariffs`} className="hover:text-brand-600 transition-colors">
+        <Link
+          href={`${prefix}/tariffs`}
+          data-testid="breadcrumb-tariffs-link"
+          className="relative inline-flex items-center min-h-[44px] py-2 px-1 hover:text-brand-600 transition-colors after:absolute after:-inset-y-2 after:-inset-x-2 after:content-['']"
+        >
           {t('nav_tariffs') || 'eSIM'}
         </Link>
         <span>/</span>

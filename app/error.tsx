@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useTranslation } from '@/lib/i18n';
+import { ERROR_I18N, detectErrorLocale } from '@/lib/error-i18n';
 
 export default function ErrorBoundary({
   error,
@@ -11,16 +11,27 @@ export default function ErrorBoundary({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale, setLocale] = useState('de');
+
   useEffect(() => {
     console.error('[Global Error]', error);
+    const loc = detectErrorLocale();
+    setLocale(loc);
+    document.documentElement.lang = loc;
+
+    let meta = document.querySelector('meta[name="robots"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'robots');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', 'noindex, nofollow');
+
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.remove();
   }, [error]);
 
-  let locale = 'de';
-  try {
-    const tctx = useTranslation();
-    if (tctx?.locale) locale = tctx.locale;
-  } catch {}
-
+  const t = ERROR_I18N[locale] || ERROR_I18N.de;
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
 
@@ -46,12 +57,10 @@ export default function ErrorBoundary({
 
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            {isDe ? 'Ein Fehler ist aufgetreten' : 'Something went wrong'}
+            {t.title}
           </h1>
           <p className="text-sm text-slate-400">
-            {isDe
-              ? 'Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu oder kehren Sie zur Startseite zurück.'
-              : 'An unexpected error occurred. Please try again or return to the shop.'}
+            {t.desc}
           </p>
         </div>
 
@@ -61,13 +70,13 @@ export default function ErrorBoundary({
             onClick={() => reset()}
             className="w-full sm:w-auto inline-flex min-h-[48px] items-center justify-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 px-6 py-3 text-sm font-semibold text-slate-200 transition-colors cursor-pointer"
           >
-            {isDe ? 'Erneut versuchen' : 'Try again'}
+            {t.retry}
           </button>
           <a
             href={prefix || '/'}
             className="w-full sm:w-auto inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 active:bg-brand-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/20 transition-all cursor-pointer"
           >
-            <span>{isDe ? 'Zurück zum Shop' : 'Back to PureSim Webshop'}</span>
+            <span>{t.backHome}</span>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
@@ -77,3 +86,4 @@ export default function ErrorBoundary({
     </div>
   );
 }
+

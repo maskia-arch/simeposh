@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
 
   if (!destination) {
     return {
-      title: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`,
+      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
       robots: { index: false, follow: false },
     };
   }
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   const tariffs = await getCountryTariffs(destination.code);
   if (tariffs.length === 0) {
     return {
-      title: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`,
+      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
       robots: { index: false, follow: false },
     };
   }

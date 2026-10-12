@@ -194,7 +194,7 @@ export function CartDrawer() {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs transition-opacity duration-300 motion-reduce:transition-none ${
           isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={close}
@@ -206,7 +206,7 @@ export function CartDrawer() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"
-        className="fixed right-0 top-0 z-[61] flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 translate-x-0"
+        className="fixed right-0 top-0 z-[61] flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 motion-reduce:transition-none translate-x-0"
       >
         {/* Compact Header */}
         <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-white">

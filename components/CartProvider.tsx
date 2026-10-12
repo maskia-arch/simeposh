@@ -142,11 +142,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, item];
     });
 
-    const msg = locale === 'de' 
-      ? 'Möchtest du zum Warenkorb wechseln oder weiter shoppen?' 
-      : 'Would you like to go to your cart or continue shopping?';
-    setToast({ show: true, message: msg });
-  }, [locale]);
+    setIsOpen(true);
+  }, []);
 
   const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => i.key !== key));

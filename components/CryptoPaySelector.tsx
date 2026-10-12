@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n';
 import { validateEmail } from '@/lib/validation/email';
 import { OpenChatButton } from '@/components/OpenChatButton';
 import { useCart } from '@/components/CartProvider';
+import { formatCurrencyEuro } from '@/lib/currency';
 
 interface CoinOption {
   code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number; minOrderEur?: number;
@@ -399,7 +400,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
                 const netLabel = COIN_NETWORK_LABEL[c.code] || c.code;
                 const coinFee = c.surchargePct > 0
                   ? `+${c.surchargePct}%`
-                  : c.surchargeFixedEur > 0 ? `+${c.surchargeFixedEur.toFixed(2)} €` : '0%';
+                  : c.surchargeFixedEur > 0 ? `+${formatCurrencyEuro(c.surchargeFixedEur, locale)}` : '0%';
                 
                 return (
                   <button
@@ -488,7 +489,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
             <div className="flex items-center justify-between text-slate-800 font-bold">
               <span>{t('pay_cash_balance_label')}</span>
               <span className={hasEnoughBalance ? 'text-emerald-700 font-extrabold' : 'text-amber-600'}>
-                {user ? `${balance.toFixed(2)} €` : t('pay_not_logged_in')}
+                {user ? formatCurrencyEuro(balance, locale) : t('pay_not_logged_in')}
               </span>
             </div>
             {!user && (
@@ -505,12 +506,12 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         <div className="space-y-0.5">
           <div className="flex items-baseline justify-between text-xs text-slate-500">
             <span>{t('pay_subtotal')}</span>
-            <span className="tabular-nums font-semibold">{total.toFixed(2)} €</span>
+            <span className="tabular-nums font-semibold">{formatCurrencyEuro(total, locale)}</span>
           </div>
           {fee > 0 ? (
             <div className="flex items-baseline justify-between text-xs text-amber-700 font-semibold">
               <span>{t('pay_fee_label')} ({selectedMethod})</span>
-              <span className="tabular-nums">+{fee.toFixed(2)} €</span>
+              <span className="tabular-nums">+{formatCurrencyEuro(fee, locale)}</span>
             </div>
           ) : (
             <div className="flex items-baseline justify-between text-[11px] text-emerald-600 font-semibold">
@@ -520,7 +521,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
           )}
           <div className="flex items-baseline justify-between pt-1 border-t border-slate-100">
             <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">{t('checkout_total')}</span>
-            <span className="text-xl font-extrabold text-slate-900 tabular-nums">{finalTotal.toFixed(2)} €</span>
+            <span className="text-xl font-extrabold text-slate-900 tabular-nums">{formatCurrencyEuro(finalTotal, locale)}</span>
           </div>
         </div>
 
@@ -624,7 +625,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
           ) : (
             <span className="flex items-center gap-1.5">
               <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-              <span>{t('pay_now')} ({finalTotal.toFixed(2)} €)</span>
+              <span>{t('pay_now')} ({formatCurrencyEuro(finalTotal, locale)})</span>
             </span>
           )}
         </button>

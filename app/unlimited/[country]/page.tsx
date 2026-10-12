@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
 
   if (!destination) {
     return {
-      title: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`,
+      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
       robots: { index: false, follow: false },
     };
   }
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
   const unlimited = tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0);
   if (unlimited.length === 0) {
     return {
-      title: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`,
+      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
       robots: { index: false, follow: false },
     };
   }

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
 import { buildAlternates, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
+import { formatPricesInText } from '@/lib/currency';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
@@ -168,10 +169,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                     <div>
                       <p className="text-xs text-slate-400 font-medium">{t('blog_published_at' as any) || 'Veröffentlicht am'} {formattedDate}</p>
                       <h2 className="mt-2 text-xl font-bold text-slate-800 line-clamp-2 group-hover:text-brand-600 transition-colors leading-tight">
-                        <Link href={`${prefix}/blog/${post.slug}`}>{post.title}</Link>
+                        <Link href={`${prefix}/blog/${post.slug}`}>{formatPricesInText(post.title, locale)}</Link>
                       </h2>
                       <p className="mt-2 text-slate-500 text-sm leading-relaxed line-clamp-3">
-                        {post.excerpt}
+                        {formatPricesInText(post.excerpt, locale)}
                       </p>
                     </div>
                     <Link

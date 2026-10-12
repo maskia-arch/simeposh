@@ -122,21 +122,67 @@ export async function getDestinationBySlug(rawSlug: string): Promise<Destination
   return null;
 }
 
+// In-memory cache for country tariffs
+interface TariffCacheEntry {
+  data: PublicTariff[];
+  timestamp: number;
+}
+const countryTariffsCache = new Map<string, TariffCacheEntry>();
+const inFlightTariffQueries = new Map<string, Promise<PublicTariff[]>>();
+const COUNTRY_TARIFF_TTL = 10 * 60 * 1000; // 10 minutes
+
 /**
  * Fetch strictly public, sanitized tariffs for a specific country or region.
  * NEVER selects sensitive internal columns (ek_price_usd, usd_eur_rate).
+ * Cached in-memory with singleflight deduplication and stale fallback on DB error.
  */
 export async function getCountryTariffs(countryCode: string): Promise<PublicTariff[]> {
   const upperCode = countryCode.toUpperCase().trim();
-  const { rows } = await query(
-    `SELECT id, package_code, slug, name, description, country_code, country_name, region,
-            flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
-            speed_kbps, label, is_top_up_eligible, raw_data
-     FROM tariffs
-     WHERE is_active = true AND country_code = $1
-     ORDER BY sale_price_eur ASC`,
-    [upperCode]
-  );
+  if (!upperCode) return [];
 
-  return rows.map(toPublicTariff);
+  const now = Date.now();
+  const cached = countryTariffsCache.get(upperCode);
+  if (cached && now - cached.timestamp < COUNTRY_TARIFF_TTL) {
+    return cached.data;
+  }
+
+  // Deduplicate concurrent requests for the exact same country code
+  const existingPromise = inFlightTariffQueries.get(upperCode);
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const queryPromise = (async () => {
+    try {
+      const { rows } = await query(
+        `SELECT id, package_code, slug, name, description, country_code, country_name, region,
+                flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
+                speed_kbps, label, is_top_up_eligible, raw_data
+         FROM tariffs
+         WHERE is_active = true AND country_code = $1
+         ORDER BY sale_price_eur ASC`,
+        [upperCode]
+      );
+
+      const tariffs = rows.map(toPublicTariff);
+      countryTariffsCache.set(upperCode, {
+        data: tariffs,
+        timestamp: Date.now(),
+      });
+      return tariffs;
+    } catch (err: any) {
+      console.error(`[getCountryTariffs] DB error fetching tariffs for ${upperCode}:`, err?.message || err);
+      // Return stale cache if available, preventing 500 error boundary
+      if (cached?.data) {
+        return cached.data;
+      }
+      return [];
+    } finally {
+      inFlightTariffQueries.delete(upperCode);
+    }
+  })();
+
+  inFlightTariffQueries.set(upperCode, queryPromise);
+  return queryPromise;
 }
+
