@@ -358,6 +358,7 @@ export async function middleware(request: NextRequest) {
 
   const isRscOrPrefetch =
     rscHeader === '1' ||
+    Boolean(request.headers.get('rsc')) ||
     Boolean(nextRouterPrefetch) ||
     Boolean(nextRouterStateTree) ||
     Boolean(nextUrl) ||
@@ -366,7 +367,9 @@ export async function middleware(request: NextRequest) {
     xMiddlewarePrefetch ||
     acceptHeader.includes('text/x-component') ||
     request.nextUrl.searchParams.has('_rsc') ||
-    request.url.includes('_rsc=');
+    request.nextUrl.search.includes('_rsc=') ||
+    request.url.includes('_rsc=') ||
+    pathname.includes('_rsc=');
 
   const isNeutralOrExcludedPath =
     normalizedPath === '/topup' ||
@@ -378,7 +381,7 @@ export async function middleware(request: NextRequest) {
 
   // Must be an explicit top-level HTML document navigation
   const isHtmlNavigation =
-    (secFetchMode === 'navigate' || secFetchDest === 'document' || acceptHeader.includes('text/html')) &&
+    (secFetchMode === 'navigate' || secFetchDest === 'document') &&
     !isRscOrPrefetch;
 
   if (
