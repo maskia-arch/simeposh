@@ -44,7 +44,7 @@ export function UnlimitedPageClient({
         <Link
           href={`${prefix}/tariffs`}
           data-testid="breadcrumb-tariffs-link"
-          className="relative inline-flex items-center min-h-[44px] py-2 px-1 hover:text-brand-600 transition-colors after:absolute after:-inset-y-2 after:-inset-x-2 after:content-['']"
+          className="relative inline-flex items-center text-xs text-slate-500 hover:text-brand-600 transition-colors after:absolute after:-inset-y-[14px] after:-inset-x-2 after:content-['']"
         >
           {t('nav_tariffs') || 'eSIM'}
         </Link>
@@ -196,12 +196,12 @@ export function UnlimitedPageClient({
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_unlimited_q1' as any) || (isDe
+              {t('faq_unlimited_q1' as any, { country: countryLabel }) || (isDe
                 ? 'Wie funktioniert das tägliche Highspeed-Volumen?'
                 : 'How does the daily high-speed data allowance work?')}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_unlimited_a1' as any) || (isDe
+              {t('faq_unlimited_a1' as any, { country: countryLabel }) || (isDe
                 ? 'Du erhältst jeden Kalendertag dein gewähltes Highspeed-Volumen (z. B. 1 GB, 2 GB oder 3 GB). Das Volumen setzt sich alle 24 Stunden automatisch zurück. Versteckte Kosten oder Roaming-Aufpreise gibt es nicht.'
                 : 'You receive your chosen high-speed allowance every day (e.g. 1 GB, 2 GB, or 3 GB). It resets automatically every 24 hours with zero roaming fees or extra costs.')}
             </p>
@@ -209,12 +209,12 @@ export function UnlimitedPageClient({
 
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_unlimited_q2' as any) || (isDe
+              {t('faq_unlimited_q2' as any, { country: countryLabel }) || (isDe
                 ? 'Was passiert nach Verbrauch des täglichen Volumens?'
                 : 'What happens after using up daily high-speed data?')}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_unlimited_a2' as any) || (isDe
+              {t('faq_unlimited_a2' as any, { country: countryLabel }) || (isDe
                 ? 'Deine Internetverbindung bricht niemals ab. Bei Unlimited Eco surfst du mit 512 kbps unbegrenzt weiter – ideal für WhatsApp, Google Maps und E-Mails. Bei Unlimited Pro beträgt die Drosselung mindestens 1 Mbps.'
                 : 'Your connection never cuts off. With Unlimited Eco, you continue browsing unlimited at 512 kbps — perfect for messaging and navigation. With Unlimited Pro, speed remains at least 1 Mbps.')}
             </p>
@@ -227,7 +227,7 @@ export function UnlimitedPageClient({
                 : `How do I activate the eSIM in ${countryLabel}?`)}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_unlimited_a3' as any) || (isDe
+              {t('faq_unlimited_a3' as any, { country: countryLabel }) || (isDe
                 ? 'Direkt nach der Bestellung erhältst du deinen QR-Code per E-Mail und im Kundenbereich. Scanne ihn einfach mit deiner Kamera unter Einstellungen > Mobilfunk > eSIM hinzufügen.'
                 : 'Right after checkout, you receive your QR code via email and in your customer dashboard. Simply scan it in Settings > Cellular/Mobile > Add eSIM.')}
             </p>
@@ -235,12 +235,12 @@ export function UnlimitedPageClient({
 
           <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
             <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_unlimited_q4' as any) || (isDe
+              {t('faq_unlimited_q4' as any, { country: countryLabel }) || (isDe
                 ? 'Wann beginnt die Gültigkeit der gewählten Laufzeit?'
                 : 'When does the selected validity period start?')}
             </h3>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_unlimited_a4' as any) || (isDe
+              {t('faq_unlimited_a4' as any, { country: countryLabel }) || (isDe
                 ? 'Deine gebuchte Laufzeit (z. B. 7 oder 14 Tage) beginnt erst in dem Augenblick, in dem sich die eSIM zum ersten Mal in ein unterstütztes Mobilfunknetz vor Ort einbucht.'
                 : 'Your booked validity period only starts counting down when your eSIM first connects to a supported carrier network at your destination.')}
             </p>

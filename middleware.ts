@@ -50,8 +50,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const userAgent = request.headers.get('user-agent') || '';
 
-  // Public metadata endpoints (robots.txt, sitemap.xml) should never trigger bot warning logs
-  const isPublicMeta = pathname === '/robots.txt' || pathname === '/sitemap.xml' || pathname === '/favicon.ico' || pathname === '/apple-icon.png';
+  // Public metadata endpoints (robots.txt, sitemap.xml, llms.txt, etc.) should never trigger bot warning logs
+  const isPublicMeta =
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname.startsWith('/sitemap/') ||
+    pathname === '/llms.txt' ||
+    pathname === '/favicon.ico' ||
+    pathname === '/apple-icon.png' ||
+    pathname === '/icon.png';
 
   // Bypass all bot checks for trusted machine-to-machine integrations (e.g. the wallet) and public metadata
   const authHeader = request.headers.get('authorization');
@@ -67,10 +74,9 @@ export async function middleware(request: NextRequest) {
 
   const isStandardUserRoute =
     normalizedPath === '/' ||
-    /^\/(cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)(\/|$)/i.test(normalizedPath) ||
-    pathname.startsWith('/api/crypto') ||
-    pathname.startsWith('/api/order') ||
-    pathname.startsWith('/api/tariffs');
+    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)(\/|$)/i.test(normalizedPath) ||
+    /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath) ||
+    pathname.startsWith('/api/');
 
   if (!isTrustedM2M && !isPublicMeta) {
     // 1. Block suspicious path probes (e.g. php admin portals, env files)
@@ -303,6 +309,23 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 404 detection strictly for page routes
+  const isExemptFrom404 =
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/') ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname.startsWith('/sitemap/') ||
+    pathname === '/llms.txt' ||
+    pathname.includes('.');
+
+  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)(\/|$)/i;
+
+  const isValidPageRoute =
+    normalizedPath === '/' ||
+    VALID_PAGE_ROUTE_REGEX.test(normalizedPath) ||
+    /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath);
+
   let isKnownCountryOrRegion = true;
   if (normalizedPath.startsWith('/esim/')) {
     const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim();
@@ -317,13 +340,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const is404Route = !isStandardUserRoute || !isKnownCountryOrRegion;
+  const is404Route = !isExemptFrom404 && (!isValidPageRoute || !isKnownCountryOrRegion);
 
   if (is404Route) {
     const isRsc = request.headers.has('rsc') ||
                   request.headers.has('next-router-prefetch') ||
                   request.headers.has('next-router-state-tree') ||
-                  (request.headers.get('accept') || '').includes('text/x-component');
+                  (request.headers.get('accept') || '').includes('text/x-component') ||
+                  request.nextUrl.searchParams.has('_rsc') ||
+                  request.url.includes('_rsc=');
 
     if (!isRsc) {
       return new NextResponse(render404Html(detectedLocale), {
@@ -454,8 +479,6 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
-  response.headers.set('CDN-Cache-Control', 'no-store');
 
   // Strip internal next.js middleware cookie header from public responses
   if (response.headers.has('x-middleware-set-cookie')) {

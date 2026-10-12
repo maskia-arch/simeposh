@@ -82,6 +82,8 @@ const nl = {
   "card_unlimited": "Onbeperkt",
   "card_validity": "Geldigheid",
   "cart_available_balance": "Beschikbaar saldo: {balance}",
+  "cart_pay_crypto": "Crypto",
+  "cart_payment_method": "Betaalmethode",
   "cart_cashback_applied": "Cashback toegepast",
   "cart_checkout": "Afrekenen",
   "cart_clear": "Leeg winkelwagen",

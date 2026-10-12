@@ -1,6 +1,6 @@
 import { query } from '@/lib/db';
 import { isRegionCode, regionLabel, isoName } from '@/lib/tariff-display';
-import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
+import { COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 import {
   type Destination,
@@ -100,16 +100,11 @@ export async function getDestinationBySlug(rawSlug: string): Promise<Destination
     if (match) return match;
   }
 
-  // 4. i18n aliases lookup
-  const i18nCode = aliasToCode(slug);
-  if (i18nCode) {
-    const match = destinations.find((d) => d.code === i18nCode.toUpperCase());
-    if (match) return match;
-  }
-
-  const i18nRegion = aliasToRegion(slug);
-  if (i18nRegion) {
-    const match = destinations.find((d) => d.code === i18nRegion.toUpperCase());
+  // 4. i18n aliases exact lookup ONLY (no prefix or substring matching)
+  const withSpaces = slug.replace(/-/g, ' ');
+  const exactCode = COUNTRY_ALIASES[slug] || COUNTRY_ALIASES[withSpaces] || REGION_ALIASES[slug] || REGION_ALIASES[withSpaces];
+  if (exactCode) {
+    const match = destinations.find((d) => d.code === exactCode.toUpperCase());
     if (match) return match;
   }
 

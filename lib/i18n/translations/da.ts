@@ -82,6 +82,8 @@ const da = {
   "card_unlimited": "Ubegrænset",
   "card_validity": "Gyldighed",
   "cart_available_balance": "Tilgængelig saldo: {balance}",
+  "cart_pay_crypto": "Krypto",
+  "cart_payment_method": "Betalingsmetode",
   "cart_cashback_applied": "Cashback anvendt",
   "cart_checkout": "Gå til kassen",
   "cart_clear": "Tøm kurv",

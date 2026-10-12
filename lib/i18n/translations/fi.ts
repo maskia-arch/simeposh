@@ -82,6 +82,8 @@ const fi = {
   "card_unlimited": "Rajaton",
   "card_validity": "Voimassaolo",
   "cart_available_balance": "Käytettävissä: {balance} €",
+  "cart_pay_crypto": "Krypto",
+  "cart_payment_method": "Maksutapa",
   "cart_cashback_applied": "eSIM Cash -alennus",
   "cart_checkout": "Kassalle",
   "cart_clear": "Tyhjennä ostoskori",

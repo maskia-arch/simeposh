@@ -146,6 +146,54 @@ export function cleanTariffName(name: string | null | undefined): string {
 }
 
 /**
+ * Localizes the tariff title by substituting the English country name
+ * with the localized country name, and localizing /Day suffixes.
+ */
+export function formatLocalizedTariffName(
+  tariffName: string | null | undefined,
+  countryLabel: string,
+  englishCountryName?: string,
+  locale = 'de'
+): string {
+  if (!tariffName) return '';
+  let name = cleanTariffName(tariffName);
+  const enName = (englishCountryName || '').trim();
+
+  // If name starts with English country name, replace it with the localized country name
+  if (enName && countryLabel && enName.toLowerCase() !== countryLabel.toLowerCase()) {
+    const regex = new RegExp(`^${enName}\\b`, 'i');
+    if (regex.test(name)) {
+      name = name.replace(regex, countryLabel);
+    }
+  }
+
+  // Localize "/Day" suffix
+  if (/\b(?:per\s+day|\/day)\b/i.test(name)) {
+    const dayWords: Record<string, string> = {
+      de: '/Tag',
+      fr: '/jour',
+      es: '/día',
+      it: '/giorno',
+      nl: '/dag',
+      pl: '/dzień',
+      pt: '/dia',
+      tr: '/gün',
+      sv: '/dag',
+      da: '/dag',
+      fi: '/päivä',
+      cs: '/den',
+      ro: '/zi',
+      hu: '/nap',
+      en: '/day',
+    };
+    const dayWord = dayWords[locale] || '/day';
+    name = name.replace(/\b(?:per\s+day|\/day)\b/gi, dayWord);
+  }
+
+  return name;
+}
+
+/**
  * Checks if a tariff has Non-HK IP routing.
  */
 export function isNonHkIpTariff(tariff: {

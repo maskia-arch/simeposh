@@ -82,6 +82,8 @@ const it = {
   "card_unlimited": "Illimitato",
   "card_validity": "Validità",
   "cart_available_balance": "Saldo disponibile: {balance}",
+  "cart_pay_crypto": "Cripto",
+  "cart_payment_method": "Metodo di pagamento",
   "cart_cashback_applied": "Cashback applicato",
   "cart_checkout": "Procedi al pagamento",
   "cart_clear": "Svuota carrello",

@@ -82,6 +82,8 @@ const pl = {
   "card_unlimited": "Bez limitu",
   "card_validity": "Ważność",
   "cart_available_balance": "Available: {balance} €",
+  "cart_pay_crypto": "Krypto",
+  "cart_payment_method": "Metoda płatności",
   "cart_cashback_applied": "eSIM Cash discount",
   "cart_checkout": "Checkout",
   "cart_clear": "Clear cart",

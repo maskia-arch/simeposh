@@ -82,6 +82,8 @@ const hu = {
   "card_unlimited": "Korlátlan",
   "card_validity": "Érvényesség",
   "cart_available_balance": "Elérhető: {balance} €",
+  "cart_pay_crypto": "Kripto",
+  "cart_payment_method": "Fizetési mód",
   "cart_cashback_applied": "eSIM Cash kedvezmény",
   "cart_checkout": "Fizetéshez",
   "cart_clear": "Kosár ürítése",

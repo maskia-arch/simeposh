@@ -82,6 +82,8 @@ const fr = {
   "card_unlimited": "Illimité",
   "card_validity": "Validité",
   "cart_available_balance": "Solde disponible : {balance}",
+  "cart_pay_crypto": "Crypto",
+  "cart_payment_method": "Moyen de paiement",
   "cart_cashback_applied": "Cashback appliqué",
   "cart_checkout": "Passer à la caisse",
   "cart_clear": "Vider le panier",

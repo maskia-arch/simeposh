@@ -347,7 +347,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
       {/* 1. Sleek Compact Segmented Payment Tab Switch */}
       <div className="space-y-1.5">
         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Zahlungsart
+          {t('cart_payment_method' as any) || 'Zahlungsart'}
         </label>
         
         <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
@@ -368,7 +368,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
             }`}
           >
             <BitcoinIcon className="h-4 w-4 shrink-0" />
-            <span>Krypto</span>
+            <span>{t('cart_pay_crypto' as any) || 'Krypto'}</span>
           </button>
 
           <button

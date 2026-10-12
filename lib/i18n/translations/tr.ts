@@ -82,6 +82,8 @@ const tr = {
   "card_unlimited": "Sınırsız",
   "card_validity": "Geçerlilik",
   "cart_available_balance": "Available: {balance} €",
+  "cart_pay_crypto": "Kripto",
+  "cart_payment_method": "Ödeme Yöntemi",
   "cart_cashback_applied": "eSIM Cash discount",
   "cart_checkout": "Checkout",
   "cart_clear": "Clear cart",

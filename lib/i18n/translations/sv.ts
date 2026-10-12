@@ -82,6 +82,8 @@ const sv = {
   "card_unlimited": "Obegränsad",
   "card_validity": "Giltighet",
   "cart_available_balance": "Available: {balance} €",
+  "cart_pay_crypto": "Krypto",
+  "cart_payment_method": "Betalningsmetod",
   "cart_cashback_applied": "eSIM Cash discount",
   "cart_checkout": "Checkout",
   "cart_clear": "Clear cart",

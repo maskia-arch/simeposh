@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, formatLocalizedTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
@@ -101,7 +101,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const coverage     = coverageLabel(tariff, locale);
   const features     = getTariffSpecialFeatures(tariff, locale);
   const reloadInfo   = getReloadabilityInfo(tariff);
-  const cleanedTitle = cleanTariffName(tariff.name);
+  const cleanedTitle = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
 
   if (showCheckout) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={onClose} />;

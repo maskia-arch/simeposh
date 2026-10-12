@@ -1,7 +1,6 @@
 import { CountryPageClient } from './CountryPageClient';
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
@@ -103,7 +102,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
   // Canonical redirect if requested via alias or alternate code (e.g. /esim/de -> /esim/germany)
   if (country.toLowerCase() !== destination.slug) {
-    redirect(`${prefix}/esim/${destination.slug}`);
+    permanentRedirect(`${prefix}/esim/${destination.slug}`);
   }
 
   const tariffs = await getCountryTariffs(destination.code);
@@ -168,6 +167,45 @@ export default async function CountryPage({ params }: CountryPageProps) {
     ],
   };
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: t('faq_country_q1' as any, { country: countryLabel }) || `Wie aktiviere ich die eSIM in ${countryLabel}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_country_a1' as any, { country: countryLabel }) || 'Nach dem Kauf erhältst du sofort einen QR-Code per E-Mail und in deinem Dashboard.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: t('faq_country_q2' as any, { country: countryLabel }) || `Welche Netze werden in ${countryLabel} genutzt?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_country_a2_fallback' as any, { country: countryLabel }) || 'PureSim verbindet sich automatisch mit den stärksten lokalen Mobilfunkpartnern vor Ort.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: t('faq_country_q3' as any, { country: countryLabel }) || 'Wann beginnt die Gültigkeit des Tarifs?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_country_a3' as any, { country: countryLabel }) || 'Die gebuchte Laufzeit beginnt erst, wenn sich deine eSIM zum ersten Mal mit dem lokalen Netz verbindet.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: t('faq_country_q4' as any, { country: countryLabel }) || 'Behalte ich meine gewohnte WhatsApp-Nummer?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_country_a4' as any, { country: countryLabel }) || 'Ja! Deine eSIM dient als reine Datenverbindung.',
+        },
+      },
+    ],
+  };
+
   return (
     <>
       <script
@@ -177,6 +215,10 @@ export default async function CountryPage({ params }: CountryPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <CountryPageClient
         destination={destination}

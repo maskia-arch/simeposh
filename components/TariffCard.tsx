@@ -308,7 +308,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 });
               }}
               aria-label={`${t('det_coverage_label').replace(/:$/, '').trim()}: ${ops.map((o) => o.name).join(' · ')}`}
-              className="relative min-h-[44px] flex items-center gap-1 text-xs text-slate-700 truncate font-medium hover:text-brand-700 cursor-pointer text-left transition-colors"
+              className="relative h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-700 truncate font-medium hover:text-brand-700 cursor-pointer text-left transition-colors after:absolute after:-inset-y-[11px] after:-inset-x-1 after:content-[''] after:z-10"
             >
               <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
@@ -317,7 +317,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               )}
             </button>
           ) : (
-            <span className="min-h-[44px] flex items-center gap-1 text-xs text-slate-500">
+            <span className="h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-500">
               <NetworkIcon size={13} className="text-slate-400" />
               <span>{t('card_best_network')}</span>
             </span>
@@ -337,7 +337,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 });
               }}
               aria-label={t('card_dual_net_aria') || `${t('card_dual_net_pill')} - ${t('feat_dual_net_desc')}`}
-              className="dual-net-pill relative min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-emerald-50 border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors shadow-xs after:absolute after:-inset-1 after:content-['']"
+              className="dual-net-pill relative h-[22px] inline-flex items-center justify-center rounded-md bg-emerald-50 border border-emerald-300 px-2 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors shadow-2xs after:absolute after:-inset-y-[11px] after:-inset-x-1.5 after:content-[''] after:z-10"
               title={t('feat_dual_net_desc')}
             >
               <span>{t('card_dual_net_pill')} ⓘ</span>
@@ -395,11 +395,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           {onDetail && (
             <button
               onClick={(e) => { e.stopPropagation(); onDetail(tariff); }}
-              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-2 py-2 text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               title={t('card_details')}
               aria-label={t('card_details')}
             >
-              <span>{t('card_details')}</span> <span className="ml-1 opacity-70">ℹ️</span>
+              <span>{t('card_details')}</span> <span className="ml-1 opacity-70">ⓘ</span>
             </button>
           )}
         </div>

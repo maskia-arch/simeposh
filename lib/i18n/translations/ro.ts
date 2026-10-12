@@ -82,6 +82,8 @@ const ro = {
   "card_unlimited": "Nelimitat",
   "card_validity": "Valabilitate",
   "cart_available_balance": "Available: {balance} €",
+  "cart_pay_crypto": "Cripto",
+  "cart_payment_method": "Metodă de plată",
   "cart_cashback_applied": "eSIM Cash discount",
   "cart_checkout": "Checkout",
   "cart_clear": "Clear cart",

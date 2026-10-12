@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
@@ -103,7 +103,7 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
 
   // Canonical redirect if requested via alias or alternate code (e.g. /unlimited/de -> /unlimited/germany)
   if (country.toLowerCase() !== destination.slug) {
-    redirect(`${prefix}/unlimited/${destination.slug}`);
+    permanentRedirect(`${prefix}/unlimited/${destination.slug}`);
   }
 
   const allTariffs = await getCountryTariffs(destination.code);
@@ -179,6 +179,45 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
     ],
   };
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: t('faq_unlimited_q1' as any, { country: countryLabel }) || 'Wie funktioniert das tägliche Highspeed-Volumen?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_unlimited_a1' as any, { country: countryLabel }) || 'Du erhältst jeden Kalendertag dein gewähltes Highspeed-Volumen.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: t('faq_unlimited_q2' as any, { country: countryLabel }) || 'Was passiert nach Verbrauch des täglichen Volumens?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_unlimited_a2' as any, { country: countryLabel }) || 'Deine Internetverbindung bricht niemals ab.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: t('faq_unlimited_q3' as any, { country: countryLabel }) || `Wie aktiviere ich die eSIM in ${countryLabel}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_unlimited_a3' as any, { country: countryLabel }) || 'Direkt nach der Bestellung erhältst du deinen QR-Code per E-Mail und im Kundenbereich.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: t('faq_unlimited_q4' as any, { country: countryLabel }) || 'Wann beginnt die Gültigkeit der gewählten Laufzeit?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: t('faq_unlimited_a4' as any, { country: countryLabel }) || 'Deine gebuchte Laufzeit beginnt erst, wenn sich die eSIM zum ersten Mal im Netz einbucht.',
+        },
+      },
+    ],
+  };
+
   return (
     <>
       <script
@@ -188,6 +227,10 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <UnlimitedPageClient
         destination={destination}

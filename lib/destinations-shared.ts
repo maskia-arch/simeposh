@@ -1,5 +1,5 @@
-import { isRegionCode, regionLabel, isoName } from '@/lib/tariff-display';
-import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
+import { COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
+import { isoName } from '@/lib/tariff-display';
 
 export interface Destination {
   code: string;
@@ -213,10 +213,10 @@ export function resolveCountryOrRegionCode(term: string): string | null {
   // 5. Slug with spaces fallback for country aliases (e.g. "south africa", "saint lucia")
   const withSpaces = q.replace(/-/g, ' ');
 
-  // 6. i18n aliases lookup
-  const code = aliasToCode(q) || aliasToCode(withSpaces) || aliasToRegion(q) || aliasToRegion(withSpaces);
-  if (code) {
-    return code.toUpperCase();
+  // 6. i18n aliases exact lookup ONLY (no prefix or substring matching)
+  const exactCode = COUNTRY_ALIASES[q] || COUNTRY_ALIASES[withSpaces] || REGION_ALIASES[q] || REGION_ALIASES[withSpaces];
+  if (exactCode) {
+    return exactCode.toUpperCase();
   }
 
   return null;

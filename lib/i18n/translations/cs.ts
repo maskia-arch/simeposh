@@ -82,6 +82,8 @@ const cs = {
   "card_unlimited": "Neomezený",
   "card_validity": "Platnost",
   "cart_available_balance": "Available: {balance} €",
+  "cart_pay_crypto": "Krypto",
+  "cart_payment_method": "Způsob platby",
   "cart_cashback_applied": "eSIM Cash discount",
   "cart_checkout": "Checkout",
   "cart_clear": "Clear cart",
