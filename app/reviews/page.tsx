@@ -23,13 +23,12 @@ interface Stats {
 }
 
 function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
+  const { t } = useTranslation();
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [translatedText, setTranslatedText] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(true);
   const [err, setErr] = useState('');
-
-  const isDe = locale === 'de';
 
   const handleTranslate = async () => {
     if (!item.comment) return;
@@ -108,7 +107,7 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
               
               {item.is_verified && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
-                  ✓ {isDe ? 'Verifizierter Kauf' : 'Verified Purchase'}
+                  ✓ {t('reviews_verified_badge')}
                 </span>
               )}
               
@@ -118,8 +117,9 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
                   <button
                     type="button"
                     onClick={() => setIsInfoOpen(!isInfoOpen)}
-                    className="text-slate-400 hover:text-brand-600 transition-colors p-0.5 focus:outline-none cursor-pointer flex items-center"
-                    title={isDe ? 'Herkunft Info' : 'Source Info'}
+                    className="text-slate-400 hover:text-brand-600 transition-colors p-0.5 focus:outline-none cursor-pointer flex items-center min-w-[24px] min-h-[24px] justify-center"
+                    title={t('reviews_source_info_btn')}
+                    aria-label={t('reviews_source_info_btn')}
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -129,12 +129,10 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
                   {isInfoOpen && (
                     <div className="absolute left-0 top-6 z-20 w-64 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xl text-[11px] text-slate-600 animate-fade-in leading-relaxed">
                       <p className="font-bold text-slate-800 flex items-center gap-1">
-                        <span>ℹ️</span> {isDe ? 'Herkunft der Bewertung' : 'Review Source'}
+                        <span>ℹ️</span> {t('reviews_source_info_title')}
                       </p>
                       <p className="mt-1.5 text-slate-500">
-                        {isDe 
-                          ? 'Synchronisierte Feedbacks von ValueShop25.com' 
-                          : 'Synchronized feedbacks from ValueShop25.com'}
+                        {t('reviews_source_info_desc')}
                       </p>
                     </div>
                   )}
@@ -142,7 +140,7 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
               )}
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {new Date(item.created_at).toLocaleDateString(isDe ? 'de-DE' : 'en-US', {
+              {new Date(item.created_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -167,17 +165,21 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
               <span className="inline-block animate-spin h-3.5 w-3.5 rounded-full border-2 border-brand-500 border-t-transparent"></span>
             ) : showOriginal ? (
               <button
+                type="button"
                 onClick={handleTranslate}
-                className="text-[10px] font-bold text-brand-600 hover:text-brand-850 cursor-pointer flex items-center gap-1 bg-brand-50 hover:bg-brand-100/70 px-2.5 py-1 rounded-lg transition-all"
+                aria-label={t('reviews_translate_btn')}
+                className="text-[10px] font-bold text-brand-600 hover:text-brand-850 cursor-pointer flex items-center gap-1 bg-brand-50 hover:bg-brand-100/70 px-2.5 py-1 rounded-lg transition-all min-h-[32px]"
               >
-                🌐 {isDe ? 'Übersetzen' : 'Translate'}
+                🌐 {t('reviews_translate_btn')}
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => setShowOriginal(true)}
-                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1 bg-slate-100 hover:bg-slate-205 px-2.5 py-1 rounded-lg transition-all"
+                aria-label={t('reviews_show_original')}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1 bg-slate-100 hover:bg-slate-205 px-2.5 py-1 rounded-lg transition-all min-h-[32px]"
               >
-                ↩ {isDe ? 'Original anzeigen' : 'Show Original'}
+                ↩ {t('reviews_show_original')}
               </button>
             )}
             {err && <span className="text-[10px] text-red-500">{err}</span>}
@@ -190,11 +192,11 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
         <div className="mt-5 ml-0 md:ml-13 border-t border-slate-100 pt-4 pl-4 border-l-2 border-l-brand-600 bg-brand-50/20 p-4 rounded-r-2xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-brand-900 flex items-center gap-1.5">
-              💬 {isDe ? 'Antwort von PureSim Support' : 'Reply from PureSim Support'}
+              💬 {t('reviews_support_reply')}
             </span>
             {item.replied_at && (
               <span className="text-[10px] text-slate-400">
-                {new Date(item.replied_at).toLocaleDateString(isDe ? 'de-DE' : 'en-US', {
+                {new Date(item.replied_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
@@ -212,7 +214,7 @@ function FeedbackCard({ item, locale }: { item: Feedback; locale: string }) {
 }
 
 export default function ReviewsPage() {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalCount: 0,
@@ -248,8 +250,6 @@ export default function ReviewsPage() {
     fetchFeedbacks();
   }, []);
 
-  const isDe = locale === 'de';
-
   const renderStars = (rating: number, size = 'h-4 w-4') => {
     return (
       <div className="flex gap-0.5">
@@ -280,13 +280,11 @@ export default function ReviewsPage() {
       {/* Header */}
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
-          {isDe ? 'Kundenbewertungen & ' : 'Customer Reviews & '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-850">Feedback</span>
+          {t('reviews_heading')}{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-850">{t('reviews_heading_highlight')}</span>
         </h1>
         <p className="mt-3 text-slate-500 max-w-2xl mx-auto text-sm leading-relaxed">
-          {isDe
-            ? 'Entdecke die echten Erfahrungen unserer Reisenden. Jede Bewertung mit dem Label "Verifizierter Kauf" stammt von Kunden, die unsere eSIMs in über 150 Ländern aktiv nutzen.'
-            : 'Explore genuine experiences from our travelers. Every review labeled "Verified Purchase" is linked to customers actively using our eSIMs in over 150 countries.'}
+          {t('reviews_sub_text')}
         </p>
       </div>
 
@@ -307,7 +305,7 @@ export default function ReviewsPage() {
           <div className="md:col-span-2 space-y-3.5 flex flex-col justify-center motion-safe:animate-pulse">
             {[5, 4, 3, 2, 1].map((stars) => (
               <div key={stars} className="flex items-center gap-3.5 text-xs font-semibold text-slate-400">
-                <span className="w-14 shrink-0 text-right">{stars} {isDe ? 'Sterne' : 'stars'}</span>
+                <span className="w-14 shrink-0 text-right">{stars} {t('reviews_stars_word')}</span>
                 <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden" />
                 <div className="w-8 h-3 rounded bg-slate-100 shrink-0" />
               </div>
@@ -321,9 +319,7 @@ export default function ReviewsPage() {
             <p className="text-6xl font-black text-slate-900 tracking-tight">{stats.averageRating}</p>
             <div className="mt-3">{renderStars(Math.round(stats.averageRating), 'h-5 w-5')}</div>
             <p className="mt-3 text-xs font-semibold text-slate-400">
-              {isDe
-                ? `Basierend auf ${stats.totalCount} Stimmen`
-                : `Based on ${stats.totalCount} ratings`}
+              {t('reviews_based_on').replace('{count}', String(stats.totalCount))}
             </p>
           </div>
 
@@ -335,7 +331,7 @@ export default function ReviewsPage() {
               return (
                 <div key={stars} className="flex items-center gap-3.5 text-xs font-semibold text-slate-600">
                   <span className="w-14 shrink-0 text-right">
-                    {stars} {isDe ? 'Sterne' : 'stars'}
+                    {stars} {t('reviews_stars_word')}
                   </span>
                   <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
                     <div
@@ -356,17 +352,19 @@ export default function ReviewsPage() {
         {/* Filter chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-            {isDe ? 'Filter:' : 'Filter:'}
+            Filter:
           </span>
           <div className="flex gap-2">
             {ratingChips.map((chip) => {
               const isActive = ratingFilter === chip;
-              const label = chip === 'all' ? (isDe ? 'Alle' : 'All') : `${chip} ★`;
+              const label = chip === 'all' ? t('reviews_filter_all') : `${chip} ★`;
               return (
                 <button
                   key={chip}
+                  type="button"
                   onClick={() => setRatingFilter(chip)}
-                  className={`rounded-full px-4 py-1.5 text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${isActive ? 'bg-brand-600 border-brand-600 text-white shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  aria-label={chip === 'all' ? t('reviews_filter_all') : `${chip} ${t('reviews_stars_word')}`}
+                  className={`rounded-full px-4 py-1.5 text-xs font-bold border transition-all cursor-pointer whitespace-nowrap min-h-[32px] ${isActive ? 'bg-brand-600 border-brand-600 text-white shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {label}
                 </button>
@@ -381,20 +379,18 @@ export default function ReviewsPage() {
         <span className="text-base leading-none">🔒</span>
         <div>
           <p className="font-bold text-slate-800 mb-0.5">
-            {isDe ? 'Echte Bewertungen durch Verifizierung' : 'Verified Genuine Reviews'}
+            {t('reviews_verified_title')}
           </p>
           <p className="leading-relaxed text-slate-500">
-            {isDe 
-              ? 'Um gefälschte Kundenstimmen auszuschließen, können Bewertungen ausschließlich über einen persönlichen Einladungslink abgegeben werden. Diesen erhältst du nach der Aktivierung deiner eSIM automatisch per E-Mail.' 
-              : 'To eliminate fake ratings, feedback can only be submitted via a personal invitation link. You will receive this link automatically by email after activating your eSIM.'}
+            {t('reviews_verified_desc')}
           </p>
         </div>
       </div>
 
       {/* Feedbacks List */}
       {loading ? (
-        <div className="space-y-5" aria-busy="true" aria-label={isDe ? 'Bewertungen laden...' : 'Loading reviews...'}>
-          <span className="sr-only">{isDe ? 'Bewertungen laden…' : 'Loading reviews…'}</span>
+        <div className="space-y-5" aria-busy="true" aria-label={t('reviews_loading')}>
+          <span className="sr-only">{t('reviews_loading')}</span>
           {[1, 2, 3, 4].map((idx) => (
             <div
               key={idx}
@@ -421,13 +417,14 @@ export default function ReviewsPage() {
       ) : filteredFeedbacks.length === 0 ? (
         <div className="text-center py-16 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl">
           <p className="text-slate-500 font-medium">
-            {isDe ? 'Keine Bewertungen für diesen Filter.' : 'No reviews match this filter.'}
+            {t('reviews_empty_filter')}
           </p>
           <button
+            type="button"
             onClick={() => setRatingFilter('all')}
-            className="text-xs font-bold text-brand-600 mt-2 hover:underline cursor-pointer"
+            className="text-xs font-bold text-brand-600 mt-2 hover:underline cursor-pointer min-h-[32px] inline-flex items-center justify-center px-3"
           >
-            {isDe ? 'Alle Filter zurücksetzen' : 'Reset filters'}
+            {t('reviews_reset_filter')}
           </button>
         </div>
       ) : (

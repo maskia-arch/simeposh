@@ -30,16 +30,16 @@ function checkHtmlHygiene(url, html) {
     issues.push('Empty <h1> tag content');
   }
 
-  // Check 3: Raw dictionary key leak patterns (e.g., "badge_eco", "lbl_", "btn_")
-  const rawKeyMatches = html.match(/\b(badge_[a-z0-9_]+|btn_[a-z0-9_]+|lbl_[a-z0-9_]+|nav_[a-z0-9_]+)\b/g);
+  // Check 3: Raw dictionary key leak patterns in visible DOM (excluding script and style tags)
+  const domHtml = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  const rawKeyMatches = domHtml.match(/\b(badge_[a-z0-9_]+|btn_[a-z0-9_]+|lbl_[a-z0-9_]+|nav_[a-z0-9_]+)\b/g);
   if (rawKeyMatches) {
-    // filter false positives if any, but in production HTML no raw keys should appear
     const uniqueKeys = Array.from(new Set(rawKeyMatches));
-    issues.push(`Raw translation keys detected: ${uniqueKeys.join(', ')}`);
+    issues.push(`Raw translation keys detected in visible DOM: ${uniqueKeys.join(', ')}`);
   }
 
   // Check 4: Unlabeled buttons
-  const emptyBtnMatches = html.match(/<button[^>]*>\s*<\/button>/gi);
+  const emptyBtnMatches = domHtml.match(/<button[^>]*>\s*<\/button>/gi);
   if (emptyBtnMatches) {
     issues.push(`Found empty <button></button> without text or aria-label`);
   }

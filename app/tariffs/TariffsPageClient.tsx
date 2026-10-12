@@ -406,8 +406,10 @@ export function TariffsPageClient({
             />
             {q && (
               <button
+                type="button"
                 onClick={() => setQ('')}
-                className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                aria-label={t('btn_search_clear')}
+                className="absolute inset-y-0 right-3 flex items-center justify-center text-slate-400 hover:text-slate-600 min-w-[32px] min-h-[32px] cursor-pointer"
               >
                 ✕
               </button>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTranslation } from '@/lib/i18n';
-import { NetworkIcon, MailIcon } from '@/components/Icons';
+import { NetworkIcon, MailIcon, EyeIcon, EyeOffIcon } from '@/components/Icons';
 
 function LoginForm() {
   const router       = useRouter();
@@ -17,6 +17,7 @@ function LoginForm() {
 
   const [email,            setEmail]            = useState('');
   const [password,         setPassword]         = useState('');
+  const [showPw,           setShowPw]           = useState(false);
   const [loading,          setLoading]          = useState(false);
   const [error,            setError]            = useState('');
   const [isUnverified,     setIsUnverified]     = useState(false);
@@ -41,7 +42,7 @@ function LoginForm() {
       if (msg === 'email_not_verified' || msg.includes('bestätigt') || msg.includes('not verified')) {
         setIsUnverified(true);
         setUnverifiedEmail(email);
-        setError('Deine E-Mail-Adresse wurde noch nicht bestätigt.');
+        setError(t('login_unverified_title'));
       } else {
         setError(msg);
       }
@@ -76,12 +77,12 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setResendError(data.error || 'Fehler beim Senden der Aktivierungs-E-Mail.');
+        setResendError(data.error || t('login_resend_error'));
       } else {
-        setResendSuccess(`✓ Ein neuer Bestätigungslink wurde an ${targetEmail} gesendet! Bitte überprüfe deinen Posteingang und Spam-Ordner.`);
+        setResendSuccess(t('login_resend_success').replace('{email}', targetEmail));
       }
     } catch (err: any) {
-      setResendError('Netzwerkfehler. Bitte versuche es später erneut.');
+      setResendError(t('login_resend_network_error'));
     } finally {
       setResending(false);
     }
@@ -101,7 +102,7 @@ function LoginForm() {
         {/* Verification Success Toast */}
         {isVerifiedParam && (
           <div className="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-semibold text-emerald-800 text-center animate-fadeIn shadow-sm">
-            ✓ E-Mail-Adresse erfolgreich bestätigt! Du kannst dich jetzt einloggen.
+            {t('login_verified_toast')}
           </div>
         )}
 
@@ -110,10 +111,10 @@ function LoginForm() {
           <div className="mb-5 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs space-y-3 animate-fadeIn shadow-sm text-slate-800">
             <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
               <MailIcon size={20} className="text-amber-600 shrink-0" />
-              <span>Konto noch nicht aktiviert</span>
+              <span>{t('login_unverified_title')}</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
-              Deine E-Mail-Adresse (<strong>{unverifiedEmail}</strong>) ist noch nicht bestätigt. Bitte klicke auf den Bestätigungslink in deiner Aktivierungs-E-Mail.
+              {t('login_unverified_desc').replace('{email}', unverifiedEmail)}
             </p>
 
             {resendSuccess ? (
@@ -129,14 +130,14 @@ function LoginForm() {
                   type="button"
                   onClick={handleResendEmail}
                   disabled={resending}
-                  className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-2.5 px-3 font-semibold text-white transition-colors disabled:opacity-60 text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-2.5 px-3 font-semibold text-white transition-colors disabled:opacity-60 text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
                 >
                   {resending ? (
-                    <span>Sende E-Mail...</span>
+                    <span>{t('login_resending')}</span>
                   ) : (
                     <>
                       <span>✉️</span>
-                      <span>Aktivierungs-E-Mail erneut senden</span>
+                      <span>{t('login_resend_btn')}</span>
                     </>
                   )}
                 </button>
@@ -147,26 +148,41 @@ function LoginForm() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('login_email')}</label>
+            <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">{t('login_email')}</label>
             <input
+              id="login-email"
               type="email"
               required
               autoComplete="email"
+              placeholder={t('register_email_ph')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('login_password')}</label>
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-            />
+            <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">{t('login_password')}</label>
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPw ? 'text' : 'password'}
+                required
+                autoComplete="current-password"
+                placeholder={t('register_pw_ph')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 pr-10 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                aria-label={showPw ? t('pw_toggle_hide') : t('pw_toggle_show')}
+                aria-pressed={showPw}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm flex items-center justify-center p-1 cursor-pointer min-w-[24px] min-h-[24px]"
+              >
+                {showPw ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+              </button>
+            </div>
           </div>
 
           {error && !isUnverified && (

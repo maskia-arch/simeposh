@@ -66,7 +66,7 @@ export async function middleware(request: NextRequest) {
 
   const isStandardUserRoute =
     normalizedPath === '/' ||
-    /^\/(cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)/i.test(normalizedPath) ||
+    /^\/(cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)(\/|$)/i.test(normalizedPath) ||
     pathname.startsWith('/api/crypto') ||
     pathname.startsWith('/api/order') ||
     pathname.startsWith('/api/tariffs');
@@ -333,17 +333,28 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session_token')?.value;
   const user = token ? await verifyJwt(token) : null;
 
-  // ── Persist visitor's active language preference to cookie (only on top-level user page navigations, NEVER on prefetch, RSC, API, 404, or language-neutral pages) ──
+  // ── Persist visitor's active language preference to cookie (only on true top-level HTML document navigations, NEVER on prefetch, RSC, API, 404, or language-neutral pages) ──
   const isApiRequest = pathname.startsWith('/api/');
+  const rscHeader = (request.headers.get('rsc') || '').toLowerCase();
+  const nextRouterPrefetch = (request.headers.get('next-router-prefetch') || '').toLowerCase();
+  const nextRouterStateTree = (request.headers.get('next-router-state-tree') || '').toLowerCase();
+  const nextUrl = (request.headers.get('next-url') || '').toLowerCase();
+  const purpose = (request.headers.get('purpose') || '').toLowerCase();
+  const secPurpose = (request.headers.get('sec-purpose') || '').toLowerCase();
+  const xMiddlewarePrefetch = request.headers.get('x-middleware-prefetch') === '1';
+  const acceptHeader = (request.headers.get('accept') || '').toLowerCase();
+  const secFetchMode = (request.headers.get('sec-fetch-mode') || '').toLowerCase();
+  const secFetchDest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
+
   const isRscOrPrefetch =
-    Boolean(request.headers.get('next-router-prefetch')) ||
-    Boolean(request.headers.get('next-router-state-tree')) ||
-    Boolean(request.headers.get('next-url')) ||
-    request.headers.get('purpose') === 'prefetch' ||
-    request.headers.get('sec-purpose') === 'prefetch' ||
-    request.headers.get('x-middleware-prefetch') === '1' ||
-    request.headers.get('rsc') === '1' ||
-    request.headers.get('accept')?.includes('text/x-component') ||
+    rscHeader === '1' ||
+    Boolean(nextRouterPrefetch) ||
+    Boolean(nextRouterStateTree) ||
+    Boolean(nextUrl) ||
+    purpose.includes('prefetch') ||
+    secPurpose.includes('prefetch') ||
+    xMiddlewarePrefetch ||
+    acceptHeader.includes('text/x-component') ||
     request.nextUrl.searchParams.has('_rsc') ||
     request.url.includes('_rsc=');
 
@@ -352,9 +363,32 @@ export async function middleware(request: NextRequest) {
     normalizedPath === '/login' ||
     normalizedPath === '/register' ||
     normalizedPath === '/reviews' ||
-    normalizedPath === '/notfound';
+    normalizedPath === '/notfound' ||
+    normalizedPath === '/404';
 
-  if (isPrefixed && isStandardUserRoute && !isRscOrPrefetch && !isApiRequest && !isNeutralOrExcludedPath && !pathname.includes('.')) {
+  // Check destination validity for /esim/[country] or /unlimited/[country] so 404s never get a locale cookie
+  let isKnownCountryOrRegion = true;
+  if (normalizedPath.startsWith('/esim/') || normalizedPath.startsWith('/unlimited/')) {
+    const slug = normalizedPath.replace(/^\/(esim|unlimited)\//, '').split('/')[0].trim();
+    if (!slug || !resolveCountryOrRegionCode(slug)) {
+      isKnownCountryOrRegion = false;
+    }
+  }
+
+  // Must be an explicit top-level HTML document navigation
+  const isHtmlNavigation =
+    (secFetchMode === 'navigate' || secFetchDest === 'document' || acceptHeader.includes('text/html')) &&
+    !isRscOrPrefetch;
+
+  if (
+    isPrefixed &&
+    isStandardUserRoute &&
+    isKnownCountryOrRegion &&
+    isHtmlNavigation &&
+    !isApiRequest &&
+    !isNeutralOrExcludedPath &&
+    !pathname.includes('.')
+  ) {
     if (request.cookies.get('locale')?.value !== detectedLocale) {
       response.cookies.set('locale', detectedLocale, {
         path:     '/',

@@ -69,7 +69,7 @@ export default async function RootLayout({
     : 'de';
 
   const locale = resolvedLocale;
-  const dict = getClientDict(locale, pathname);
+  const dict = getClientDict(locale);
 
   const host = (headerStore.get('host') || '').toLowerCase();
   const isEsimDomain = host.startsWith('esim.');
@@ -77,9 +77,12 @@ export default async function RootLayout({
 
   // Standalone Minimal Shell for 404 Not Found pages (keeps HTML < 21 KB, no bloated JS/DOM)
   if (is404) {
+    const notFoundTitle = `404 – ${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} | PureSim`;
     return (
       <html lang={locale}>
         <head>
+          <title>{notFoundTitle}</title>
+          <meta name="robots" content="noindex, nofollow" />
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"

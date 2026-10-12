@@ -139,8 +139,9 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm flex items-center justify-center"
-                tabIndex={-1}
+                aria-label={showPw ? t('pw_toggle_hide') : t('pw_toggle_show')}
+                aria-pressed={showPw}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm flex items-center justify-center p-1 cursor-pointer min-w-[24px] min-h-[24px]"
               >
                 {showPw ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
               </button>

@@ -250,12 +250,12 @@ export function CartDrawer() {
             {/* Section 1: Item List */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Ausgewählte eSIMs</span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{t('cart_selected_esims')}</span>
                 <button
                   onClick={handleClearConfirm}
                   className="min-h-[44px] min-w-[44px] text-xs font-bold text-[#475569] hover:text-red-600 inline-flex items-center justify-center gap-1 cursor-pointer transition-colors px-2 py-1 rounded-lg"
                 >
-                  <span>🗑️ Leeren</span>
+                  <span>🗑️ {t('cart_empty_btn')}</span>
                 </button>
               </div>
 
@@ -293,7 +293,7 @@ export function CartDrawer() {
                           <button
                             onClick={() => removeItem(i.key)}
                             className="shrink-0 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer text-xs font-bold"
-                            aria-label={locale === 'de' ? 'Position entfernen' : 'Remove item'}
+                            aria-label={t('cart_remove_item')}
                           >
                             ✕
                           </button>
@@ -315,13 +315,13 @@ export function CartDrawer() {
                           <button
                             onClick={() => setQuantity(i.key, i.quantity - 1)}
                             className="min-h-[44px] min-w-[44px] flex items-center justify-center text-sm font-bold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-                            aria-label={locale === 'de' ? 'Menge verringern' : 'Decrease quantity'}
+                            aria-label={t('cart_decrease_qty')}
                           >−</button>
                           <span className="min-w-[1.25rem] text-center text-xs font-extrabold tabular-nums text-slate-800 px-1">{i.quantity}</span>
                           <button
                             onClick={() => setQuantity(i.key, i.quantity + 1)}
                             className="min-h-[44px] min-w-[44px] flex items-center justify-center text-sm font-bold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-                            aria-label={locale === 'de' ? 'Menge erhöhen' : 'Increase quantity'}
+                            aria-label={t('cart_increase_qty')}
                           >+</button>
                         </div>
                         <Price eur={i.priceEur * i.quantity} className="text-xs font-black text-slate-900 tabular-nums" />
@@ -358,12 +358,12 @@ export function CartDrawer() {
                     </span>
                   ) : (
                     <span>
-                      <span className="font-bold">Bis zu 15% Cashback</span> ·{' '}
+                      <span className="font-bold">{t('cart_cashback_up_to')}</span> ·{' '}
                       <a
                         href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
                         className="font-bold text-brand-600 underline"
                       >
-                        Einloggen
+                        {t('cart_login_link')}
                       </a>
                     </span>
                   )}

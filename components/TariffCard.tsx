@@ -97,10 +97,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                       e.stopPropagation();
                       setShowCountryList(true);
                     }}
-                    className="inline-flex items-center justify-center rounded-full p-0.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none"
+                    className="inline-flex items-center justify-center rounded-full p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none min-w-[44px] min-h-[44px] cursor-pointer"
                     title={t('det_show_countries')}
+                    aria-label={t('det_show_countries')}
                   >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </button>
@@ -199,7 +200,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                   e.stopPropagation();
                   setActiveFeature(null);
                 }}
-                className="text-indigo-400 hover:text-indigo-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors"
+                aria-label={t('btn_close')}
+                className="text-indigo-400 hover:text-indigo-700 text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -232,7 +234,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                   e.stopPropagation();
                   setActiveAbbr(null);
                 }}
-                className="text-slate-400 hover:text-slate-700 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"
+                aria-label={t('btn_close')}
+                className="text-slate-400 hover:text-slate-700 text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -338,7 +341,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 });
               }}
               className="rounded-md bg-indigo-50 border border-indigo-300 px-1.5 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
-              title="Klicken für Erklärung: Ohne Umweg über Hongkong"
+              title={t('feat_non_hk_ip_desc')}
             >
               Non-HK IP ⓘ
             </button>
@@ -354,7 +357,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 });
               }}
               className="rounded-md bg-slate-100 border border-slate-300 px-1.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
-              title="Klicken für Erklärung: Internet läuft über Hongkong"
+              title={t('feat_hk_ip_desc')}
             >
               HK IP ⓘ
             </button>
@@ -390,6 +393,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             onClick={(e) => { e.stopPropagation(); addItem(tariff); }}
             className="flex flex-1 h-12 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:border-brand-300 active:scale-95 cursor-pointer"
             title={t('det_add_cart')}
+            aria-label={t('card_add_cart_aria')}
           >
             <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .96-.343 1.087-.835l1.823-6.844a.75.75 0 00-.726-.94H6.106M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -421,7 +425,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 e.stopPropagation();
                 setShowCountryList(false);
               }}
-              className="text-slate-500 hover:text-slate-700 text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+              className="text-slate-500 hover:text-slate-700 text-xs font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label={t('btn_close')}
             >
               ✕
             </button>
