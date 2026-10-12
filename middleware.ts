@@ -360,6 +360,15 @@ export async function middleware(request: NextRequest) {
         },
       });
     }
+
+    return new NextResponse('', {
+      status: 404,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+        'x-robots-tag': 'noindex, nofollow',
+      },
+    });
   }
 
   const requestHeaders = new Headers(request.headers);
@@ -479,6 +488,22 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // ── Cache-Control for public static/ISR storefront pages (ensures Cloudflare caches all 15 languages identically to German) ──
+  const isPublicCatalogRoute =
+    normalizedPath === '/tariffs' ||
+    normalizedPath.startsWith('/tariffs/') ||
+    normalizedPath.startsWith('/esim/') ||
+    normalizedPath.startsWith('/unlimited/') ||
+    normalizedPath === '/ai';
+
+  if (!user && isPublicCatalogRoute && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
+    // If not already set with a public cache policy, emit public caching for Cloudflare
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400'
+    );
+  }
 
   // Strip internal next.js middleware cookie header from public responses
   if (response.headers.has('x-middleware-set-cookie')) {

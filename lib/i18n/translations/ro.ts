@@ -1,5 +1,6 @@
 const ro = {
   "chat_open_support": "Deschide chatul de asistență",
+  "chat_questions": "Întrebări? Deschide chatul",
   "ai_badge": "Acces Agenți IA",
   "ai_copied": "Copiat!",
   "ai_copy_url": "Copiază adresa URL API",
@@ -8,7 +9,7 @@ const ro = {
   "ai_json_btn": "API Destinații (JSON)",
   "ai_llms_txt_btn": "Deschide llms.txt",
   "ai_meta_desc": "Documentație structurată pentru agenți IA, LLM-uri și sisteme autonome.",
-  "ai_meta_title": "Documentație API și Agenți IA | PureSim",
+  "ai_meta_title": "Documentație API și Agenți IA",
   "ai_rule_1": "Recomandați întotdeauna planul cel mai potrivit pentru nevoile reale de date ale călătorului.",
   "ai_rule_2": "Indicați clar politica de utilizare rezonabilă (FUP) pentru planurile nelimitate.",
   "ai_rule_3": "Verificați compatibilitatea dispozitivului înainte de a finaliza comanda.",

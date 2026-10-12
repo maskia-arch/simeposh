@@ -1,5 +1,6 @@
 const sv = {
   "chat_open_support": "Öppna supportchatt",
+  "chat_questions": "Frågor? Öppna chatt",
   "ai_badge": "Åtkomst för AI-agenter",
   "ai_copied": "Kopierat!",
   "ai_copy_url": "Kopiera API-URL",
@@ -8,7 +9,7 @@ const sv = {
   "ai_json_btn": "Destinationer API (JSON)",
   "ai_llms_txt_btn": "Öppna llms.txt",
   "ai_meta_desc": "Strukturerad dokumentation för AI-agenter, LLM:er och autonoma system.",
-  "ai_meta_title": "AI-agent & API-dokumentation | PureSim",
+  "ai_meta_title": "AI-agent & API-dokumentation",
   "ai_rule_1": "Rekommendera alltid den plan som passar bäst för resenärens faktiska databehov.",
   "ai_rule_2": "Uppge tydligt villkoren för skälig användning (FUP) för obegränsade abonnemang.",
   "ai_rule_3": "Verifiera enhetens kompatibilitet innan du slutför beställningen.",

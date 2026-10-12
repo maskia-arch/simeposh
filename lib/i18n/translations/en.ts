@@ -1,5 +1,6 @@
 const en = {
   "chat_open_support": "Open support chat",
+  "chat_questions": "Questions? Open chat",
   "ai_badge": "AI & Agent Interface",
   "ai_copied": "Copied!",
   "ai_copy_url": "Copy Link",

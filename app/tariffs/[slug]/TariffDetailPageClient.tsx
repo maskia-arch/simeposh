@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
+import { formatCurrencyEuro } from '@/lib/currency';
 import type { PublicTariff } from '@/lib/tariffs';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
@@ -62,9 +63,13 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
       <div className="mx-auto max-w-5xl">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          <Link href="/" className="hover:text-brand-600 transition-colors">Home</Link>
+          <Link href={locale === 'de' ? '/' : `/${locale}`} className="hover:text-brand-600 transition-colors">
+            {t('nav_home')}
+          </Link>
           <span>/</span>
-          <Link href="/tariffs" className="hover:text-brand-600 transition-colors">eSIM Tariffs</Link>
+          <Link href={locale === 'de' ? '/tariffs' : `/${locale}/tariffs`} className="hover:text-brand-600 transition-colors">
+            {t('nav_tariffs')}
+          </Link>
           <span>/</span>
           <span className="text-slate-600 font-bold">{countryLabel}</span>
         </nav>
@@ -272,7 +277,9 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
           {/* Right Column: Checkout Pricing Widget */}
           <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-md space-y-6 lg:sticky lg:top-8">
-            <h2 className="text-xl font-extrabold text-slate-900 border-b border-slate-100 pb-4">Tariff Details</h2>
+            <h2 className="text-xl font-extrabold text-slate-900 border-b border-slate-100 pb-4">
+              {t('card_details')}
+            </h2>
 
             {/* Specs Summary Grid */}
             <div className="grid grid-cols-2 gap-3">
@@ -298,7 +305,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/60 flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-500 font-semibold uppercase">{t('det_price')}</p>
-                <p className="text-xs text-slate-400 mt-0.5">~ {perDayEur(tariff).toFixed(2)}€ / Tag</p>
+                <p className="text-xs text-slate-400 mt-0.5">~ {formatCurrencyEuro(perDayEur(tariff), locale)} {t('unit_per_day')}</p>
               </div>
               <Price eur={tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />
             </div>

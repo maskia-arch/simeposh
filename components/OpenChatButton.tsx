@@ -8,7 +8,7 @@ interface OpenChatButtonProps {
 }
 
 export function OpenChatButton({ className = '' }: OpenChatButtonProps) {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
 
   const handleClick = () => {
     loadChatScript(() => {
@@ -20,13 +20,15 @@ export function OpenChatButton({ className = '' }: OpenChatButtonProps) {
     });
   };
 
+  const chatLabel = t('chat_questions') || (locale === 'de' ? 'Fragen? Chat öffnen' : 'Questions? Open chat');
+
   return (
     <button
       type="button"
       onClick={handleClick}
       data-testid="open-chat-button"
       className={`group inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-1 rounded-lg py-1 px-2.5 cursor-pointer ${className}`}
-      aria-label={locale === 'de' ? 'Chat mit Support öffnen' : 'Open chat with support'}
+      aria-label={t('chat_open_support') || (locale === 'de' ? 'Chat mit Support öffnen' : 'Open chat with support')}
     >
       <svg
         className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0"
@@ -43,7 +45,7 @@ export function OpenChatButton({ className = '' }: OpenChatButtonProps) {
         />
       </svg>
       <span className="underline decoration-slate-300 group-hover:decoration-slate-500 underline-offset-2">
-        {locale === 'de' ? 'Fragen? Chat öffnen' : 'Questions? Open chat'}
+        {chatLabel}
       </span>
     </button>
   );

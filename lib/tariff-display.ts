@@ -23,17 +23,53 @@ export function isoName(code: string, locale = 'en'): string {
   }
 }
 
-/** Localised label for our virtual region codes. */
+/** Localised label for our virtual region codes across all 15 supported languages. */
 const REGION_LABELS: Record<string, Record<string, string>> = {
-  EU:   { en: 'Europe',         de: 'Europa',          fr: 'Europe',          es: 'Europa' },
-  AS:   { en: 'Asia',           de: 'Asien',           fr: 'Asie',            es: 'Asia' },
-  SEA:  { en: 'Southeast Asia', de: 'Südostasien',     fr: 'Asie du Sud-Est', es: 'Sudeste Asiático' },
-  ME:   { en: 'Middle East',    de: 'Naher Osten',     fr: 'Moyen-Orient',    es: 'Oriente Medio' },
-  NA:   { en: 'North America',  de: 'Nordamerika',     fr: 'Amérique du Nord',es: 'Norteamérica' },
-  LA:   { en: 'Latin America',  de: 'Lateinamerika',   fr: 'Amérique latine', es: 'Latinoamérica' },
-  OC:   { en: 'Oceania',        de: 'Ozeanien',        fr: 'Océanie',         es: 'Oceanía' },
-  AF:   { en: 'Africa',         de: 'Afrika',          fr: 'Afrique',         es: 'África' },
-  GLOB: { en: 'Global',         de: 'Weltweit',        fr: 'Mondial',         es: 'Global' },
+  EU: {
+    en: 'Europe', de: 'Europa', fr: 'Europe', es: 'Europa', it: 'Europa',
+    nl: 'Europa', pl: 'Europa', pt: 'Europa', tr: 'Avrupa', sv: 'Europa',
+    da: 'Europa', fi: 'Eurooppa', cs: 'Evropa', ro: 'Europa', hu: 'Európa'
+  },
+  AS: {
+    en: 'Asia', de: 'Asien', fr: 'Asie', es: 'Asia', it: 'Asia',
+    nl: 'Azië', pl: 'Azja', pt: 'Ásia', tr: 'Asya', sv: 'Asien',
+    da: 'Asien', fi: 'Aasia', cs: 'Asie', ro: 'Asia', hu: 'Ázsia'
+  },
+  SEA: {
+    en: 'Southeast Asia', de: 'Südostasien', fr: 'Asie du Sud-Est', es: 'Sudeste Asiático', it: 'Sud-est asiatico',
+    nl: 'Zuidoost-Azië', pl: 'Azja Południowo-Wschodnia', pt: 'Sudeste Asiático', tr: 'Güneydoğu Asya', sv: 'Sydostasien',
+    da: 'Sydøstasien', fi: 'Kaakkois-Aasia', cs: 'Jihovýchodní Asie', ro: 'Asia de Sud-Est', hu: 'Délkelet-Ázsia'
+  },
+  ME: {
+    en: 'Middle East', de: 'Naher Osten', fr: 'Moyen-Orient', es: 'Oriente Medio', it: 'Medio Oriente',
+    nl: 'Midden-Oosten', pl: 'Bliski Wschód', pt: 'Oriente Médio', tr: 'Orta Doğu', sv: 'Mellanöstern',
+    da: 'Mellemøsten', fi: 'Lähi-itä', cs: 'Blízký východ', ro: 'Orientul Mijlociu', hu: 'Közel-Kelet'
+  },
+  NA: {
+    en: 'North America', de: 'Nordamerika', fr: 'Amérique du Nord', es: 'Norteamérica', it: 'Nord America',
+    nl: 'Noord-Amerika', pl: 'Ameryka Północna', pt: 'América do Norte', tr: 'Kuzey Amerika', sv: 'Nordamerika',
+    da: 'Nordamerika', fi: 'Pohjois-Amerikka', cs: 'Severní Amerika', ro: 'America de Nord', hu: 'Észak-Amerika'
+  },
+  LA: {
+    en: 'Latin America', de: 'Lateinamerika', fr: 'Amérique latine', es: 'Latinoamérica', it: 'America Latina',
+    nl: 'Latijns-Amerika', pl: 'Ameryka Łacińska', pt: 'América Latina', tr: 'Latin Amerika', sv: 'Latinamerika',
+    da: 'Latinamerika', fi: 'Latinalainen Amerikka', cs: 'Latinská Amerika', ro: 'America Latină', hu: 'Latin-Amerika'
+  },
+  OC: {
+    en: 'Oceania', de: 'Ozeanien', fr: 'Océanie', es: 'Oceanía', it: 'Oceania',
+    nl: 'Oceanië', pl: 'Oceania', pt: 'Oceania', tr: 'Okyanusya', sv: 'Oceanien',
+    da: 'Oceanien', fi: 'Oseania', cs: 'Oceánie', ro: 'Oceania', hu: 'Óceánia'
+  },
+  AF: {
+    en: 'Africa', de: 'Afrika', fr: 'Afrique', es: 'África', it: 'Africa',
+    nl: 'Afrika', pl: 'Afryka', pt: 'África', tr: 'Afrika', sv: 'Afrika',
+    da: 'Afrika', fi: 'Afrikka', cs: 'Afrika', ro: 'Africa', hu: 'Afrika'
+  },
+  GLOB: {
+    en: 'Global', de: 'Weltweit', fr: 'Mondial', es: 'Global', it: 'Globale',
+    nl: 'Wereldwijd', pl: 'Globalny', pt: 'Global', tr: 'Küresel', sv: 'Global',
+    da: 'Global', fi: 'Maailmanlaajuinen', cs: 'Globální', ro: 'Global', hu: 'Globális'
+  },
 };
 
 /** True if the code is one of our virtual region codes (EU, AS, ME, …). */
@@ -124,11 +160,12 @@ export function bestNetworkType(ops: TariffOperator[]): string | null {
 export function coverageLabel(t: TariffLike, locale = 'en'): string | null {
   const codes = t.location_codes ?? [];
   if (codes.length <= 1) return null;
-  const word =
-    locale === 'de' ? 'Länder' :
-    locale === 'fr' ? 'pays'   :
-    locale === 'es' ? 'países' :
-    'countries';
+  const words: Record<string, string> = {
+    de: 'Länder', en: 'countries', fr: 'pays', es: 'países', it: 'paesi',
+    nl: 'landen', pl: 'krajów', pt: 'países', tr: 'ülke', sv: 'länder',
+    da: 'lande', fi: 'maata', cs: 'zemí', ro: 'țări', hu: 'ország'
+  };
+  const word = words[locale] || 'countries';
   return `${codes.length} ${word}`;
 }
 

@@ -1,5 +1,6 @@
 const cs = {
   "chat_open_support": "Otevřít chat podpory",
+  "chat_questions": "Otázky? Otevřít chat",
   "ai_badge": "Přístup pro AI agenty",
   "ai_copied": "Zkopírováno!",
   "ai_copy_url": "Kopírovat URL rozhraní API",
@@ -8,7 +9,7 @@ const cs = {
   "ai_json_btn": "API destinací (JSON)",
   "ai_llms_txt_btn": "Otevřít llms.txt",
   "ai_meta_desc": "Strukturovaná dokumentace pro agenty AI, LLM a autonomní systémy.",
-  "ai_meta_title": "Dokumentace API a AI agentů | PureSim",
+  "ai_meta_title": "Dokumentace API a AI agentů",
   "ai_rule_1": "Vždy doporučujte tarif, který nejlépe odpovídá skutečným datovým potřebám cestovatele.",
   "ai_rule_2": "U neomezených tarifů jasně uvádějte zásady férového využívání (FUP).",
   "ai_rule_3": "Před dokončením objednávky ověřte kompatibilitu zařízení.",

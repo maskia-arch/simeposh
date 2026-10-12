@@ -12,39 +12,72 @@ import { formatGb } from '@/lib/utils';
 
 const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, raw_data';
 
+const tariffDetailCache = new Map<string, { data: PublicTariff | null; timestamp: number }>();
+const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();
+const TARIFF_DETAIL_TTL = 10 * 60 * 1000; // 10 minutes
+
 async function getTariff(slug: string): Promise<PublicTariff | null> {
-  const supabase = await createClient();
-  
-  // 1. Try slug match
-  let { data } = await supabase
-    .from('tariffs')
-    .select(PUBLIC_SELECT_FIELDS)
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .maybeSingle();
+  const normalizedSlug = slug.toLowerCase();
+  const cached = tariffDetailCache.get(normalizedSlug);
+  if (cached && Date.now() - cached.timestamp < TARIFF_DETAIL_TTL) {
+    return cached.data;
+  }
 
-  if (data) return toPublicTariff(data);
+  if (inFlightTariffPromises.has(normalizedSlug)) {
+    return inFlightTariffPromises.get(normalizedSlug)!;
+  }
 
-  // 2. Try package_code match (case-insensitive fallback)
-  const codeTry = slug.replace(/-/g, '_').toUpperCase();
-  const { data: dataCode } = await supabase
-    .from('tariffs')
-    .select(PUBLIC_SELECT_FIELDS)
-    .eq('package_code', codeTry)
-    .eq('is_active', true)
-    .maybeSingle();
+  const promise = (async () => {
+    try {
+      const supabase = await createClient();
+      
+      // 1. Try slug match
+      let { data } = await supabase
+        .from('tariffs')
+        .select(PUBLIC_SELECT_FIELDS)
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .maybeSingle();
 
-  if (dataCode) return toPublicTariff(dataCode);
+      if (data) {
+        const res = toPublicTariff(data);
+        tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
+        return res;
+      }
 
-  // 3. Try original slug as package_code directly
-  const { data: dataCodeDirect } = await supabase
-    .from('tariffs')
-    .select(PUBLIC_SELECT_FIELDS)
-    .eq('package_code', slug.toUpperCase())
-    .eq('is_active', true)
-    .maybeSingle();
+      // 2. Try package_code match (case-insensitive fallback)
+      const codeTry = slug.replace(/-/g, '_').toUpperCase();
+      const { data: dataCode } = await supabase
+        .from('tariffs')
+        .select(PUBLIC_SELECT_FIELDS)
+        .eq('package_code', codeTry)
+        .eq('is_active', true)
+        .maybeSingle();
 
-  return dataCodeDirect ? toPublicTariff(dataCodeDirect) : null;
+      if (dataCode) {
+        const res = toPublicTariff(dataCode);
+        tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
+        return res;
+      }
+
+      // 3. Try original slug as package_code directly
+      const { data: dataCodeDirect } = await supabase
+        .from('tariffs')
+        .select(PUBLIC_SELECT_FIELDS)
+        .eq('package_code', slug.toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const res = dataCodeDirect ? toPublicTariff(dataCodeDirect) : null;
+      tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
+      return res;
+    } finally {
+      inFlightTariffPromises.delete(normalizedSlug);
+    }
+  })();
+
+  inFlightTariffPromises.set(normalizedSlug, promise);
+  return promise;
 }
 
 export async function generateMetadata({
@@ -73,16 +106,51 @@ export async function generateMetadata({
       ? 'Unlimited'
       : formatGb(tariff.data_gb);
 
-  const daysLabelDe = tariff.validity_days === 1 ? '1 Tag' : `${tariff.validity_days} Tage`;
-  const daysLabelEn = tariff.validity_days === 1 ? '1 Day' : `${tariff.validity_days} Days`;
+  const daysSuffixMap: Record<string, { one: string; other: string }> = {
+    de: { one: '1 Tag', other: `${tariff.validity_days} Tage` },
+    en: { one: '1 Day', other: `${tariff.validity_days} Days` },
+    fr: { one: '1 jour', other: `${tariff.validity_days} jours` },
+    es: { one: '1 día', other: `${tariff.validity_days} días` },
+    it: { one: '1 giorno', other: `${tariff.validity_days} giorni` },
+    nl: { one: '1 dag', other: `${tariff.validity_days} dagen` },
+    pl: { one: '1 dzień', other: `${tariff.validity_days} dni` },
+    pt: { one: '1 dia', other: `${tariff.validity_days} dias` },
+    tr: { one: '1 gün', other: `${tariff.validity_days} gün` },
+    sv: { one: '1 dag', other: `${tariff.validity_days} dagar` },
+    da: { one: '1 dag', other: `${tariff.validity_days} dage` },
+    fi: { one: '1 päivä', other: `${tariff.validity_days} päivää` },
+    cs: { one: '1 den', other: `${tariff.validity_days} dní` },
+    ro: { one: '1 zi', other: `${tariff.validity_days} zile` },
+    hu: { one: '1 nap', other: `${tariff.validity_days} nap` },
+  };
 
-  const title = isDe
-    ? `eSIM ${country} ${dataLabel} (${daysLabelDe}) kaufen`
-    : `Buy eSIM ${country} ${dataLabel} (${daysLabelEn})`;
+  const daysLabel = tariff.validity_days === 1
+    ? (daysSuffixMap[locale]?.one || `${tariff.validity_days} Day`)
+    : (daysSuffixMap[locale]?.other || `${tariff.validity_days} Days`);
+
+  const buyPrefixMap: Record<string, string> = {
+    de: `eSIM ${country} ${dataLabel} (${daysLabel}) kaufen`,
+    en: `Buy eSIM ${country} ${dataLabel} (${daysLabel})`,
+    fr: `Acheter eSIM ${country} ${dataLabel} (${daysLabel})`,
+    es: `Comprar eSIM ${country} ${dataLabel} (${daysLabel})`,
+    it: `Acquista eSIM ${country} ${dataLabel} (${daysLabel})`,
+    nl: `Koop eSIM ${country} ${dataLabel} (${daysLabel})`,
+    pl: `Kup eSIM ${country} ${dataLabel} (${daysLabel})`,
+    pt: `Comprar eSIM ${country} ${dataLabel} (${daysLabel})`,
+    tr: `eSIM Satın Al ${country} ${dataLabel} (${daysLabel})`,
+    sv: `Köp eSIM ${country} ${dataLabel} (${daysLabel})`,
+    da: `Køb eSIM ${country} ${dataLabel} (${daysLabel})`,
+    fi: `Osta eSIM ${country} ${dataLabel} (${daysLabel})`,
+    cs: `Koupit eSIM ${country} ${dataLabel} (${daysLabel})`,
+    ro: `Cumpără eSIM ${country} ${dataLabel} (${daysLabel})`,
+    hu: `eSIM vásárlás ${country} ${dataLabel} (${daysLabel})`,
+  };
+
+  const title = buyPrefixMap[locale] || `Buy eSIM ${country} ${dataLabel} (${daysLabel})`;
 
   const description = isDe
-    ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${daysLabelDe}. Sofort-Aktivierung per QR-Code.`
-    : `Affordable prepaid eSIM for ${country}. Enjoy ${dataLabel} high-speed data for ${daysLabelEn.toLowerCase()}. Instant activation via QR code.`;
+    ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${daysLabel}. Sofort-Aktivierung per QR-Code.`
+    : `Affordable prepaid eSIM for ${country}. Enjoy ${dataLabel} high-speed data for ${daysLabel.toLowerCase()}. Instant activation via QR code.`;
 
   const baseUrl = BASE_URL;
 
@@ -101,7 +169,7 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      url: `${baseUrl}${isDe ? '' : '/en'}/tariffs/${tariff.slug}`,
+      url: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}`,
       images: [
         {
           url: `${baseUrl}/logo.png`,
@@ -111,7 +179,7 @@ export async function generateMetadata({
         },
       ],
     },
-    alternates: buildAlternates(isDe ? 'de' : 'en', {
+    alternates: buildAlternates(locale, {
       dePath: `tariffs/${tariff.slug}`,
       enPath: `tariffs/${tariff.slug}`,
     }),
@@ -126,7 +194,7 @@ export default async function TariffDetailPage({
   const { slug } = await params;
   const locale = await getServerLocale();
   const isDe = locale === 'de';
-  const prefix = isDe ? '' : '/en';
+  const prefix = isDe ? '' : `/${locale}`;
 
   const tariff = await getTariff(slug);
 

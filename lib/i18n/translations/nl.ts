@@ -1,5 +1,6 @@
 const nl = {
   "chat_open_support": "Ondersteuningschat openen",
+  "chat_questions": "Vragen? Open chat",
   "ai_badge": "AI Agent Toegang",
   "ai_copied": "Gekopieerd!",
   "ai_copy_url": "API-URL kopiëren",
@@ -8,7 +9,7 @@ const nl = {
   "ai_json_btn": "Bestemmingen API (JSON)",
   "ai_llms_txt_btn": "llms.txt openen",
   "ai_meta_desc": "Gestructureerde documentatie voor AI-agents, LLM’s en autonome systemen.",
-  "ai_meta_title": "AI Agent & API Documentatie | PureSim",
+  "ai_meta_title": "AI Agent & API Documentatie",
   "ai_rule_1": "Adviseer altijd het abonnement dat het beste past bij het werkelijke dataverbruik van de reiziger.",
   "ai_rule_2": "Vermeld duidelijk het fair-use-beleid (FUP) bij onbeperkte data-abonnementen.",
   "ai_rule_3": "Controleer de apparaatcompatibiliteit voordat de bestelling wordt afgerond.",

@@ -288,7 +288,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         )}
 
         {/* ── Network operators & Routing Line (Differentiates same-price cards) ── */}
-        <div className="mb-3 flex flex-wrap items-center gap-1.5 min-h-[24px]">
+        <div className="my-2.5 flex flex-wrap items-center gap-1.5 min-h-[26px]">
           {network && (
             <span className={`rounded-md px-1.5 py-0.5 text-xs font-bold ${NET_COLOR[network] ?? ''}`}>
               {network}

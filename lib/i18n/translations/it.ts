@@ -1,5 +1,6 @@
 const it = {
   "chat_open_support": "Apri chat di supporto",
+  "chat_questions": "Domande? Apri chat",
   "ai_badge": "Accesso Agenti IA",
   "ai_copied": "Copiato!",
   "ai_copy_url": "Copia URL API",
@@ -8,7 +9,7 @@ const it = {
   "ai_json_btn": "API Destinazioni (JSON)",
   "ai_llms_txt_btn": "Apri llms.txt",
   "ai_meta_desc": "Documentazione strutturata per agenti IA, LLM e sistemi autonomi.",
-  "ai_meta_title": "Documentazione API e Agenti IA | PureSim",
+  "ai_meta_title": "Documentazione API e Agenti IA",
   "ai_rule_1": "Consiglia sempre il piano più adatto alle effettive esigenze di dati dell’utente.",
   "ai_rule_2": "Indica chiaramente la politica di utilizzo corretto (FUP) per i piani illimitati.",
   "ai_rule_3": "Verifica la compatibilità del dispositivo prima di completare l’ordine.",

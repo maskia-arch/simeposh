@@ -1,5 +1,6 @@
 const es = {
   "chat_open_support": "Abrir chat de soporte",
+  "chat_questions": "¿Preguntas? Abrir chat",
   "ai_badge": "Acceso para Agentes IA",
   "ai_copied": "¡Copiado!",
   "ai_copy_url": "Copiar URL de la API",
@@ -8,7 +9,7 @@ const es = {
   "ai_json_btn": "API de Destinos (JSON)",
   "ai_llms_txt_btn": "Abrir llms.txt",
   "ai_meta_desc": "Documentación estructurada para agentes de IA, LLMs y sistemas autónomos.",
-  "ai_meta_title": "Documentación API y Agentes IA | PureSim",
+  "ai_meta_title": "Documentación API y Agentes IA",
   "ai_rule_1": "Recomienda siempre el plan más adecuado para las necesidades de datos del viajero.",
   "ai_rule_2": "Indica claramente la política de uso razonable (FUP) para los planes ilimitados.",
   "ai_rule_3": "Verifica la compatibilidad del dispositivo antes de finalizar el pedido.",

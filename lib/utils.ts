@@ -13,7 +13,7 @@ export function isUuid(str: unknown): boolean {
 
 export function formatEur(amount: number | string | null | undefined): string {
   const val = typeof amount === 'number' ? amount : Number(amount || 0);
-  if (isNaN(val)) return '0,00 €';
+  if (isNaN(val)) return '0,00\u00A0€';
   return new Intl.NumberFormat('de-DE', {
     style:    'currency',
     currency: 'EUR',

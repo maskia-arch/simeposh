@@ -1,5 +1,6 @@
 const da = {
   "chat_open_support": "Åbn supportchat",
+  "chat_questions": "Spørgsmål? Åbn chat",
   "ai_badge": "AI Agent Adgang",
   "ai_copied": "Kopieret!",
   "ai_copy_url": "Kopier API-URL",
@@ -8,7 +9,7 @@ const da = {
   "ai_json_btn": "Destinationer API (JSON)",
   "ai_llms_txt_btn": "Åbn llms.txt",
   "ai_meta_desc": "Struktureret dokumentation for AI-agenter, LLM’er og autonome systemer.",
-  "ai_meta_title": "AI Agent & API Dokumentation | PureSim",
+  "ai_meta_title": "AI Agent & API Dokumentation",
   "ai_rule_1": "Anbefal altid det abonnement, der passer bedst til den rejsendes faktiske databehov.",
   "ai_rule_2": "Angiv tydeligt politikken for rimelig brug (FUP) for ubegrænsede planer.",
   "ai_rule_3": "Bekræft enhedens kompatibilitet, før bestillingen afsluttes.",

@@ -1,5 +1,6 @@
 const fi = {
   "chat_open_support": "Avaa tukichat",
+  "chat_questions": "Kysyttävää? Avaa chat",
   "ai_badge": "Tekoälyagentin pääsy",
   "ai_copied": "Kopioitu!",
   "ai_copy_url": "Kopioi API-osoite",
@@ -8,7 +9,7 @@ const fi = {
   "ai_json_btn": "Kohteet API (JSON)",
   "ai_llms_txt_btn": "Avaa llms.txt",
   "ai_meta_desc": "Jäsennelty dokumentaatio tekoälyagenteille, LLM-malleille ja autonomisille järjestelmille.",
-  "ai_meta_title": "Tekoälyagentti ja API-dokumentaatio | PureSim",
+  "ai_meta_title": "Tekoälyagentti ja API-dokumentaatio",
   "ai_rule_1": "Suosittele aina liittymää, joka parhaiten vastaa matkailijan todellista datantarvetta.",
   "ai_rule_2": "Ilmoita selkeästi kohtuullisen käytön periaatteet (FUP) rajattomille liittymille.",
   "ai_rule_3": "Varmista laitteen yhteensopivuus ennen tilauksen tekemistä.",

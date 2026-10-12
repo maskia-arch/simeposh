@@ -1,5 +1,6 @@
 const pl = {
   "chat_open_support": "Otwórz czat pomocy",
+  "chat_questions": "Pytania? Otwórz czat",
   "ai_badge": "Dostęp dla Agentów AI",
   "ai_copied": "Skopiowano!",
   "ai_copy_url": "Kopiuj adres URL API",
@@ -8,7 +9,7 @@ const pl = {
   "ai_json_btn": "API Miejsc Docelowych (JSON)",
   "ai_llms_txt_btn": "Otwórz llms.txt",
   "ai_meta_desc": "Ustrukturyzowana dokumentacja dla agentów AI, modeli LLM i systemów autonomicznych.",
-  "ai_meta_title": "Dokumentacja API i Agentów AI | PureSim",
+  "ai_meta_title": "Dokumentacja API i Agentów AI",
   "ai_rule_1": "Zawsze polecaj plan najlepiej dopasowany do rzeczywistego zapotrzebowania podróżnego na dane.",
   "ai_rule_2": "Jasno informuj o zasadach uczciwego użytkowania (FUP) dla planów nielimitowanych.",
   "ai_rule_3": "Sprawdź kompatybilność urządzenia przed złożeniem zamówienia.",

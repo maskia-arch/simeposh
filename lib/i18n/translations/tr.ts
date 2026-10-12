@@ -1,5 +1,6 @@
 const tr = {
   "chat_open_support": "Destek sohbetini aç",
+  "chat_questions": "Sorularınız mı var? Sohbeti açın",
   "ai_badge": "Yapay Zeka Ajan Erişimi",
   "ai_copied": "Kopyalandı!",
   "ai_copy_url": "API URL’sini Kopyala",
@@ -8,7 +9,7 @@ const tr = {
   "ai_json_btn": "Hedefler API’si (JSON)",
   "ai_llms_txt_btn": "llms.txt dosyasını aç",
   "ai_meta_desc": "Yapay zeka ajanları, LLM’ler ve otonom sistemler için yapılandırılmış belgeler.",
-  "ai_meta_title": "Yapay Zeka Ajanı ve API Belgeleri | PureSim",
+  "ai_meta_title": "Yapay Zeka Ajanı ve API Belgeleri",
   "ai_rule_1": "Her zaman gezginin gerçek veri ihtiyaçlarına en uygun planı önerin.",
   "ai_rule_2": "Sınırsız planlar için adil kullanım politikasını (AKK/FUP) net bir şekilde belirtin.",
   "ai_rule_3": "Siparişi tamamlamadan önce cihazın eSIM uyumluluğunu doğrulayın.",

@@ -1,5 +1,6 @@
 const de = {
   "chat_open_support": "Support-Chat öffnen",
+  "chat_questions": "Fragen? Chat öffnen",
   "ai_badge": "KI & Agenten-Schnittstelle",
   "ai_copied": "Kopiert!",
   "ai_copy_url": "Link kopieren",

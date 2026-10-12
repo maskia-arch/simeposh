@@ -41,7 +41,150 @@ const LABELS: Record<string, {
     bestPrice: 'Best Price!',
     loading: 'Loading price history...',
     error: 'Error loading',
-  }
+  },
+  fr: {
+    title: 'Évolution du prix',
+    subtitle: 'Transparence des prix pour ce forfait',
+    current: 'Actuel',
+    highest: 'Le plus haut',
+    lowest: 'Le plus bas',
+    stability: 'Stabilité des prix : aucun changement',
+    bestPrice: 'Meilleur prix !',
+    loading: 'Chargement de l’historique des prix...',
+    error: 'Erreur lors du chargement',
+  },
+  es: {
+    title: 'Historial de precios',
+    subtitle: 'Transparencia de precios para este plan',
+    current: 'Actual',
+    highest: 'Más alto',
+    lowest: 'Más bajo',
+    stability: 'Estabilidad de precios: sin variaciones',
+    bestPrice: '¡Mejor precio!',
+    loading: 'Cargando historial de precios...',
+    error: 'Error al cargar',
+  },
+  it: {
+    title: 'Cronologia prezzi',
+    subtitle: 'Trasparenza dei prezzi per questa tariffa',
+    current: 'Attuale',
+    highest: 'Più alto',
+    lowest: 'Più basso',
+    stability: 'Stabilità dei prezzi: nessuna variazione',
+    bestPrice: 'Miglior prezzo!',
+    loading: 'Caricamento cronologia prezzi...',
+    error: 'Errore durante il caricamento',
+  },
+  nl: {
+    title: 'Prijsontwikkeling',
+    subtitle: 'Prijstransparantie voor dit tarief',
+    current: 'Huidig',
+    highest: 'Hoogste',
+    lowest: 'Laagste',
+    stability: 'Prijsstabiliteit: geen prijswijzigingen',
+    bestPrice: 'Beste prijs!',
+    loading: 'Prijsgeschiedenis laden...',
+    error: 'Fout bij het laden',
+  },
+  pl: {
+    title: 'Historia cen',
+    subtitle: 'Przejrzystość cenowa dla tej taryfy',
+    current: 'Aktualna',
+    highest: 'Najwyższa',
+    lowest: 'Najniższa',
+    stability: 'Stabilność cen: brak zmian cen',
+    bestPrice: 'Najlepsza cena!',
+    loading: 'Ładowanie historii cen...',
+    error: 'Błąd podczas ładowania',
+  },
+  pt: {
+    title: 'Histórico de preços',
+    subtitle: 'Transparência de preços para este plano',
+    current: 'Atual',
+    highest: 'Mais alto',
+    lowest: 'Mais baixo',
+    stability: 'Estabilidade de preços: sem alterações',
+    bestPrice: 'Melhor preço!',
+    loading: 'A carregar histórico de preços...',
+    error: 'Erro ao carregar',
+  },
+  tr: {
+    title: 'Fiyat Geçmişi',
+    subtitle: 'Bu tarife için fiyat şeffaflığı',
+    current: 'Mevcut',
+    highest: 'En Yüksek',
+    lowest: 'En Düşük',
+    stability: 'Fiyat istikrarı: Fiyat değişikliği yok',
+    bestPrice: 'En İyi Fiyat!',
+    loading: 'Fiyat geçmişi yükleniyor...',
+    error: 'Yükleme hatası',
+  },
+  sv: {
+    title: 'Prishistorik',
+    subtitle: 'Pristransparens för detta abonnemang',
+    current: 'Aktuellt',
+    highest: 'Högsta',
+    lowest: 'Lägsta',
+    stability: 'Prisstabilitet: inga prisändringar',
+    bestPrice: 'Bästa pris!',
+    loading: 'Laddar prishistorik...',
+    error: 'Fel vid inläsning',
+  },
+  da: {
+    title: 'Prishistorik',
+    subtitle: 'Gennemskuelige priser for dette abonnement',
+    current: 'Aktuel',
+    highest: 'Højeste',
+    lowest: 'Laveste',
+    stability: 'Prisstabilitet: ingen prisændringer',
+    bestPrice: 'Bedste pris!',
+    loading: 'Indlæser prishistorik...',
+    error: 'Fejl under indlæsning',
+  },
+  fi: {
+    title: 'Hintahistoria',
+    subtitle: 'Hintojen läpinäkyvyys tälle liittymälle',
+    current: 'Nykyinen',
+    highest: 'Korkein',
+    lowest: 'Alhaisin',
+    stability: 'Hintavakaus: ei hintamuutoksia',
+    bestPrice: 'Paras hinta!',
+    loading: 'Ladataan hintahistoriaa...',
+    error: 'Virhe ladattaessa',
+  },
+  cs: {
+    title: 'Historie cen',
+    subtitle: 'Cenová transparentnost pro tento tarif',
+    current: 'Aktuální',
+    highest: 'Nejvyšší',
+    lowest: 'Nejnižší',
+    stability: 'Cenová stabilita: beze změn cen',
+    bestPrice: 'Nejlepší cena!',
+    loading: 'Načítání historie cen...',
+    error: 'Chyba při načítání',
+  },
+  ro: {
+    title: 'Istoric prețuri',
+    subtitle: 'Transparență a prețurilor pentru acest tarif',
+    current: 'Actual',
+    highest: 'Cel mai mare',
+    lowest: 'Cel mai mic',
+    stability: 'Stabilitate a prețurilor: fără modificări de preț',
+    bestPrice: 'Cel mai bun preț!',
+    loading: 'Se încarcă istoricul prețurilor...',
+    error: 'Eroare la încărcare',
+  },
+  hu: {
+    title: 'Ártörténet',
+    subtitle: 'Átlátható árazás ehhez a tarifához',
+    current: 'Jelenlegi',
+    highest: 'Legmagasabb',
+    lowest: 'Legalacsonyabb',
+    stability: 'Árstabilitás: nincs árváltozás',
+    bestPrice: 'Legjobb ár!',
+    loading: 'Ártörténet betöltése...',
+    error: 'Hiba a betöltéskor',
+  },
 };
 
 interface Props {
@@ -51,8 +194,7 @@ interface Props {
 
 export function PriceChart({ tariffId, currentPrice }: Props) {
   const { locale } = useTranslation();
-  const lang = (locale === 'de' ? 'de' : 'en') as 'de' | 'en';
-  const labels = LABELS[lang];
+  const labels = LABELS[locale] || LABELS.en;
 
   const [history, setHistory] = useState<PriceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +279,7 @@ export function PriceChart({ tariffId, currentPrice }: Props) {
         y = paddingY + (1 - (Number(entry.price_eur) - minPrice) / range) * (height - 2 * paddingY);
       }
       const date = new Date(entry.recorded_at);
-      const dateStr = date.toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', {
+      const dateStr = date.toLocaleDateString(locale || 'en', {
         month: 'short',
         year: 'numeric'
       });

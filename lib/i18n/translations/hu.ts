@@ -1,5 +1,6 @@
 const hu = {
   "chat_open_support": "Támogatási csevegés megnyitása",
+  "chat_questions": "Kérdése van? Nyissa meg a chatet",
   "ai_badge": "AI ágens hozzáférés",
   "ai_copied": "Másolva!",
   "ai_copy_url": "API URL másolása",
@@ -8,7 +9,7 @@ const hu = {
   "ai_json_btn": "Úti célok API (JSON)",
   "ai_llms_txt_btn": "llms.txt megnyitása",
   "ai_meta_desc": "Strukturált dokumentáció AI ágensek, LLM-ek és autonóm rendszerek számára.",
-  "ai_meta_title": "AI ágens és API dokumentáció | PureSim",
+  "ai_meta_title": "AI ágens és API dokumentáció",
   "ai_rule_1": "Mindig az utazó valós adatigényének leginkább megfelelő csomagot ajánlja.",
   "ai_rule_2": "Világosan jelezze a méltányos használati feltételeket (FUP) a korlátlan csomagoknál.",
   "ai_rule_3": "A megrendelés véglegesítése előtt ellenőrizze az eszköz kompatibilitását.",
