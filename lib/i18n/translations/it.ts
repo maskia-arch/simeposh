@@ -1,4 +1,5 @@
 const it = {
+  "chat_open_support": "Apri chat di supporto",
   "ai_badge": "Accesso Agenti IA",
   "ai_copied": "Copiato!",
   "ai_copy_url": "Copia URL API",

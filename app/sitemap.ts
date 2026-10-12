@@ -79,15 +79,17 @@ export default async function sitemap({
           alternates: { languages: esimLangs },
         });
 
-        // Unlimited configurator route
-        const unlLangs = buildLanguages(`/unlimited/${d.slug}`);
-        sitemapEntries.push({
-          url: unlLangs[targetLocale] || unlLangs.de,
-          lastModified: new Date(),
-          changeFrequency: 'daily',
-          priority: 0.8,
-          alternates: { languages: unlLangs },
-        });
+        // Unlimited configurator route (only if destination offers unlimited tariffs)
+        if (d.hasUnlimited) {
+          const unlLangs = buildLanguages(`/unlimited/${d.slug}`);
+          sitemapEntries.push({
+            url: unlLangs[targetLocale] || unlLangs.de,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.8,
+            alternates: { languages: unlLangs },
+          });
+        }
       }
     });
   } catch (err) {

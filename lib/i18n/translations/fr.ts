@@ -1,4 +1,5 @@
 const fr = {
+  "chat_open_support": "Ouvrir le chat d'assistance",
   "ai_badge": "Accès Agents IA",
   "ai_copied": "Copié !",
   "ai_copy_url": "Copier l’URL de l’API",
@@ -663,7 +664,7 @@ const fr = {
   "unit_per_day": "/ jour",
 
   "cash_max_tier": "Maximum",
-  "nav_contact_telegram": "Contact via Telegram",
+  "nav_contact_telegram": "Contacter via Telegram",
   "cfg_after_limit_eco": "Après la limite : 512 kbps",
   "cfg_after_limit_pro": "Après la limite : ≥ 1 Mbps",
   "cfg_step1_speed": "1. Choisissez la catégorie de vitesse",

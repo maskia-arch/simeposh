@@ -15,16 +15,16 @@ interface UnlimitedPageProps {
 
 export async function generateMetadata({ params }: UnlimitedPageProps): Promise<Metadata> {
   const { country } = await params;
+  const locale = await getServerLocale();
+  const t = getServerT(locale);
   const destination = await getDestinationBySlug(country);
+
   if (!destination) {
     return {
-      title: { absolute: '404 – Page Not Found | PureSim' },
+      title: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`,
       robots: { index: false, follow: false },
     };
   }
-
-  const locale = await getServerLocale();
-  const t = getServerT(locale);
 
   const countryLabel = displayCountryName(
     { country_code: destination.code, country_name: destination.name, location_codes: null, region: null },
@@ -33,9 +33,13 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
 
   const tariffs = await getCountryTariffs(destination.code);
   const unlimited = tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0);
-  const minPrice = unlimited.length > 0
-    ? Math.min(...unlimited.map((t) => t.sale_price_eur))
-    : destination.minPrice;
+  if (unlimited.length === 0) {
+    return {
+      title: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`,
+      robots: { index: false, follow: false },
+    };
+  }
+  const minPrice = Math.min(...unlimited.map((t) => t.sale_price_eur));
   const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
 
   // Next.js layout template is '%s | PureSim', so title must NOT end with '| PureSim'

@@ -127,6 +127,7 @@ export function HomePageClient({
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link
               href={`${prefix}/tariffs`}
+              prefetch={false}
               className="btn-primary shadow-md"
             >
               {t('hero_cta_plans')}
@@ -167,6 +168,7 @@ export function HomePageClient({
           </div>
           <Link
             href={`${prefix}/tariffs`}
+            prefetch={false}
             className="text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
           >
             {t('section_view_all')}

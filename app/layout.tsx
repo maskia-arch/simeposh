@@ -100,12 +100,14 @@ export default async function RootLayout({
   const isEsimDomain = host.startsWith('esim.');
   const is404 = headerStore.get('x-is-404') === '1';
 
-  // Standalone Minimal Shell for 404 Not Found pages (keeps HTML < 21 KB, no bloated JS/DOM)
+  // Standalone Minimal Shell for 404 Not Found pages (keeps HTML < 8 KB, safe against any useTranslation crash)
   if (is404) {
     return (
       <html lang={locale}>
         <body className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-          {children}
+          <LanguageProvider locale={locale} dict={{}}>
+            {children}
+          </LanguageProvider>
         </body>
       </html>
     );

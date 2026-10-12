@@ -26,7 +26,8 @@ export async function getAllDestinations(): Promise<Destination[]> {
   }
 
   const { rows } = await query(
-    `SELECT country_code, country_name, flag_emoji, count(*) as count, min(sale_price_eur) as min_price
+    `SELECT country_code, country_name, flag_emoji, count(*) as count, min(sale_price_eur) as min_price,
+            COUNT(*) FILTER (WHERE tariff_type LIKE 'unlimited%' OR data_gb = 0) as unlimited_count
      FROM tariffs
      WHERE is_active = true AND country_code IS NOT NULL
      GROUP BY country_code, country_name, flag_emoji
@@ -43,6 +44,7 @@ export async function getAllDestinations(): Promise<Destination[]> {
     const slug = countryCodeToSlug(code, r.country_name);
     const count = parseInt(String(r.count), 10) || 0;
     const minPrice = parseFloat(String(r.min_price)) || 0;
+    const hasUnlimited = (parseInt(String(r.unlimited_count), 10) || 0) > 0;
 
     // Region name or canonical English name
     const name = isRegion ? regionLabel(code, 'en') : (isoName(code, 'en') || r.country_name || code);
@@ -50,6 +52,7 @@ export async function getAllDestinations(): Promise<Destination[]> {
     const existing = destMap.get(code);
     if (existing) {
       existing.count += count;
+      if (hasUnlimited) existing.hasUnlimited = true;
       if (minPrice > 0 && (existing.minPrice === 0 || minPrice < existing.minPrice)) {
         existing.minPrice = minPrice;
       }
@@ -62,6 +65,7 @@ export async function getAllDestinations(): Promise<Destination[]> {
         isRegion,
         count,
         minPrice,
+        hasUnlimited,
       });
     }
   }

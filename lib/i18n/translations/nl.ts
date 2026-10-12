@@ -1,4 +1,5 @@
 const nl = {
+  "chat_open_support": "Ondersteuningschat openen",
   "ai_badge": "AI Agent Toegang",
   "ai_copied": "Gekopieerd!",
   "ai_copy_url": "API-URL kopiëren",

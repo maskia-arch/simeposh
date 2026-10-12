@@ -349,6 +349,9 @@ export async function middleware(request: NextRequest) {
   const nextRouterPrefetch = (request.headers.get('next-router-prefetch') || '').toLowerCase();
   const nextRouterStateTree = (request.headers.get('next-router-state-tree') || '').toLowerCase();
   const nextUrl = (request.headers.get('next-url') || '').toLowerCase();
+  const xIsRsc = (request.headers.get('x-is-rsc') || '').toLowerCase();
+  const xNextPrefetch = (request.headers.get('x-next-prefetch') || '').toLowerCase();
+  const xNextState = (request.headers.get('x-next-state') || '').toLowerCase();
   const purpose = (request.headers.get('purpose') || '').toLowerCase();
   const secPurpose = (request.headers.get('sec-purpose') || '').toLowerCase();
   const xMiddlewarePrefetch = request.headers.get('x-middleware-prefetch') === '1';
@@ -359,8 +362,12 @@ export async function middleware(request: NextRequest) {
   const isRscOrPrefetch =
     rscHeader === '1' ||
     Boolean(request.headers.get('rsc')) ||
+    xIsRsc === '1' ||
+    Boolean(request.headers.get('x-is-rsc')) ||
     Boolean(nextRouterPrefetch) ||
+    Boolean(xNextPrefetch) ||
     Boolean(nextRouterStateTree) ||
+    Boolean(xNextState) ||
     Boolean(nextUrl) ||
     purpose.includes('prefetch') ||
     secPurpose.includes('prefetch') ||
@@ -381,7 +388,8 @@ export async function middleware(request: NextRequest) {
 
   // Must be an explicit top-level HTML document navigation
   const isHtmlNavigation =
-    (secFetchMode === 'navigate' || secFetchDest === 'document') &&
+    (secFetchMode === 'navigate' || secFetchDest === 'document' || !secFetchMode) &&
+    acceptHeader.includes('text/html') &&
     !isRscOrPrefetch;
 
   if (
@@ -421,6 +429,8 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+  response.headers.set('CDN-Cache-Control', 'no-store');
 
   // Strip internal next.js middleware cookie header from public responses
   if (response.headers.has('x-middleware-set-cookie')) {

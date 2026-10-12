@@ -38,4 +38,6 @@ scripts/*
 !scripts/check-production-texts.mjs
 !scripts/cleanup-cancelled-expired-orders.mjs
 !scripts/test-cancellation-and-expiry.mjs
+fix*.txt
+
 

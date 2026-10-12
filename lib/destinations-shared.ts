@@ -9,6 +9,7 @@ export interface Destination {
   isRegion: boolean;
   count: number;
   minPrice: number;
+  hasUnlimited?: boolean;
 }
 
 export function slugify(text: string): string {
@@ -51,12 +52,15 @@ export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
   DO: 'dominican-republic',
   ZA: 'south-africa',
   CZ: 'czech-republic',
+  XK: 'kosovo',
 };
 
 /**
  * Known custom aliases for instant slug lookup.
  */
 export const CUSTOM_ALIASES: Record<string, string> = {
+  kosovo: 'XK',
+  xk: 'XK',
   usa: 'US',
   us: 'US',
   uk: 'GB',
@@ -139,17 +143,81 @@ export function countryCodeToSlug(code: string, fallbackName?: string): string {
 }
 
 /**
+ * Complete ISO 3166-1 alpha-2 country code list (+ XK for Kosovo).
+ */
+export const ALL_ISO_CODES = [
+  'AD','AE','AF','AG','AI','AL','AM','AO','AQ','AR','AS','AT','AU','AW','AX','AZ',
+  'BA','BB','BD','BE','BF','BG','BH','BI','BJ','BL','BM','BN','BO','BQ','BR','BS',
+  'BT','BV','BW','BY','BZ','CA','CC','CD','CF','CG','CH','CI','CK','CL','CM','CN',
+  'CO','CR','CU','CV','CW','CX','CY','CZ','DE','DJ','DK','DM','DO','DZ','EC','EE',
+  'EG','EH','ER','ES','ET','FI','FJ','FK','FM','FO','FR','GA','GB','GD','GE','GF',
+  'GG','GH','GI','GL','GM','GN','GP','GQ','GR','GS','GT','GU','GW','GY','HK','HM',
+  'HN','HR','HT','HU','ID','IE','IL','IM','IN','IO','IQ','IR','IS','IT','JE','JM',
+  'JO','JP','KE','KG','KH','KI','KM','KN','KP','KR','KW','KY','KZ','LA','LB','LC',
+  'LI','LK','LR','LS','LT','LU','LV','LY','MA','MC','MD','ME','MF','MG','MH','MK',
+  'ML','MM','MN','MO','MP','MQ','MR','MS','MT','MU','MV','MW','MX','MY','MZ','NA',
+  'NC','NE','NF','NG','NI','NL','NO','NP','NR','NU','NZ','OM','PA','PE','PF','PG',
+  'PH','PK','PL','PM','PN','PR','PS','PT','PW','PY','QA','RE','RO','RS','RU','RW',
+  'SA','SB','SC','SD','SE','SG','SH','SI','SJ','SK','SL','SM','SN','SO','SR','SS',
+  'ST','SV','SX','SY','SZ','TC','TD','TF','TG','TH','TJ','TK','TL','TM','TN','TO',
+  'TR','TT','TV','TW','TZ','UA','UG','UM','US','UY','UZ','VA','VC','VE','VG','VI',
+  'VN','VU','WF','WS','XK','YE','YT','ZA','ZM','ZW'
+];
+
+/**
+ * Precomputed map from all canonical slugs to their ISO or region code.
+ */
+export const CANONICAL_SLUG_TO_CODE: Record<string, string> = {};
+
+for (const code of ALL_ISO_CODES) {
+  const slug = countryCodeToSlug(code);
+  if (slug) {
+    CANONICAL_SLUG_TO_CODE[slug] = code;
+  }
+}
+for (const [code, slug] of Object.entries(CODE_TO_SLUG_OVERRIDES)) {
+  CANONICAL_SLUG_TO_CODE[slug] = code;
+}
+for (const [region, slug] of Object.entries(REGION_SLUGS)) {
+  CANONICAL_SLUG_TO_CODE[slug] = region;
+}
+
+/**
  * Resolves any query, alias, or slug to an ISO or region code.
  */
 export function resolveCountryOrRegionCode(term: string): string | null {
   const q = slugify(term);
   if (!q) return null;
-  if (CUSTOM_ALIASES[q]) return CUSTOM_ALIASES[q];
+
+  // 1. Direct match in precomputed canonical slug dictionary (100% of ISO codes & regions)
+  if (CANONICAL_SLUG_TO_CODE[q]) {
+    return CANONICAL_SLUG_TO_CODE[q];
+  }
+
+  // 2. Direct 2-letter ISO code match (e.g. "de", "fr", "us")
   const directUpper = q.toUpperCase();
-  if (REGION_SLUGS[directUpper]) return directUpper;
-  const regionSlugMatch = Object.entries(REGION_SLUGS).find(([_, s]) => s === q);
-  if (regionSlugMatch) return regionSlugMatch[0];
-  const code = aliasToCode(q) || aliasToRegion(q);
-  if (code) return code.toUpperCase();
+  if (directUpper.length === 2 && ALL_ISO_CODES.includes(directUpper)) {
+    return directUpper;
+  }
+
+  // 3. Region code direct match
+  if (REGION_SLUGS[directUpper]) {
+    return directUpper;
+  }
+
+  // 4. Custom alias match
+  if (CUSTOM_ALIASES[q]) {
+    return CUSTOM_ALIASES[q];
+  }
+
+  // 5. Slug with spaces fallback for country aliases (e.g. "south africa", "saint lucia")
+  const withSpaces = q.replace(/-/g, ' ');
+
+  // 6. i18n aliases lookup
+  const code = aliasToCode(q) || aliasToCode(withSpaces) || aliasToRegion(q) || aliasToRegion(withSpaces);
+  if (code) {
+    return code.toUpperCase();
+  }
+
   return null;
 }

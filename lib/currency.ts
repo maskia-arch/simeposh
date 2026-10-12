@@ -75,6 +75,7 @@ export function formatCurrencyEuro(amount: number, locale: string = 'de'): strin
   return new Intl.NumberFormat(intlLocale, {
     style: 'currency',
     currency: 'EUR',
+    currencyDisplay: 'narrowSymbol',
   }).format(amount);
 }
 
@@ -84,22 +85,26 @@ export function formatCurrencyEuro(amount: number, locale: string = 'de'): strin
  * so prices never render as 0 or NaN.
  */
 export function formatPrice(eurAmount: number, code: CurrencyCode, rates: Rates, locale: string = 'de'): string {
-  const def = currencyDef(code);
-  const rate = code === 'EUR' ? 1 : rates[code];
+  if (code === 'EUR' || !code) {
+    return formatCurrencyEuro(eurAmount, locale);
+  }
 
+  const def = currencyDef(code);
+  const rate = rates[code];
   const intlLocale = LOCALE_FORMAT_MAP[locale] || (locale === 'en' ? 'en-US' : 'de-DE');
 
   if (!rate || rate <= 0) {
-    // graceful fallback to EUR
-    return new Intl.NumberFormat(intlLocale, { style: 'currency', currency: 'EUR' }).format(eurAmount);
+    return formatCurrencyEuro(eurAmount, locale);
   }
 
   const amount = eurAmount * rate;
 
   if (def.type === 'fiat') {
     try {
-      return new Intl.NumberFormat(code === 'EUR' ? intlLocale : 'en-US', {
-        style: 'currency', currency: code,
+      return new Intl.NumberFormat(intlLocale, {
+        style: 'currency',
+        currency: code,
+        currencyDisplay: 'narrowSymbol',
       }).format(amount);
     } catch {
       return `${def.symbol}${amount.toFixed(2)}`;

@@ -1,4 +1,5 @@
 const da = {
+  "chat_open_support": "Åbn supportchat",
   "ai_badge": "AI Agent Adgang",
   "ai_copied": "Kopieret!",
   "ai_copy_url": "Kopier API-URL",
