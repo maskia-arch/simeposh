@@ -34,7 +34,7 @@ export function CartDrawer() {
   const { items, isOpen, close, total, count, setQuantity, removeItem, clear } = useCart();
   
   useEffect(() => {
-    if (pathname?.startsWith('/checkout/crypto/')) {
+    if (pathname?.includes('/checkout/crypto/')) {
       close();
     }
   }, [pathname, close]);

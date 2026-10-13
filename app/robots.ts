@@ -17,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           '/dashboard',
           '/checkout',
+          '/*/checkout',
           '/cart',
           '/order',
           '/success',

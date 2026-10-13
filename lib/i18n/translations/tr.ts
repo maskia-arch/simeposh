@@ -528,7 +528,7 @@ const tr = {
   "pay_ssl_notice": "Uçtan uca SSL şifreli ödeme",
   "pay_starting": "Starting…",
   "pay_subtotal": "Ara Toplam",
-  "pay_title": "İle öde",
+  "pay_title": "{coin} ile öde",
   "pay_to_address": "bu adrese",
   "pay_underpayment": "Kısmi ödeme algılandı: {received} {coin} alındı, ancak {expected} {coin} gereklidir. Lütfen kalan {remaining} {coin} tutarını gönderin.",
   "pay_waiting": "Ödeme bekleniyor…",

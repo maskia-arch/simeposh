@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { useTranslation } from '@/lib/i18n';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
@@ -435,46 +436,91 @@ export function CryptoCheckout({
   const openCancelModal = () => {
     setCancelError('');
     setShowCancelModal(true);
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ cancelModalOpen: true }, '');
+    }
   };
 
-  const closeCancelModal = () => {
+  const closeCancelModal = useCallback((fromPopstate = false) => {
     setShowCancelModal(false);
     setCancelError('');
+    if (!fromPopstate && typeof window !== 'undefined' && window.history.state?.cancelModalOpen) {
+      window.history.back();
+    }
     setTimeout(() => {
       cancelTriggerBtnRef.current?.focus();
     }, 50);
-  };
+  }, []);
 
+  // Browser back button (popstate) closes modal without cancelling session
   useEffect(() => {
-    if (showCancelModal) {
-      dismissBtnRef.current?.focus();
-    }
-  }, [showCancelModal]);
+    const handlePopState = (e: PopStateEvent) => {
+      if (showCancelModal) {
+        closeCancelModal(true);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [showCancelModal, closeCancelModal]);
 
-  const handleModalKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeCancelModal();
-      return;
-    }
-    if (e.key === 'Tab') {
-      const focusable = [dismissBtnRef.current, confirmCancelBtnRef.current].filter(Boolean) as HTMLElement[];
-      if (focusable.length < 2) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
+  // Global document keydown listener for Escape & Strict Focus Trap across Chrome, WebKit, Telegram
+  useEffect(() => {
+    if (!showCancelModal) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Move initial focus to the back button inside modal
+    const focusTimer = setTimeout(() => {
+      dismissBtnRef.current?.focus();
+    }, 30);
+
+    const handleDocumentKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeCancelModal(false);
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const modalContainer = document.getElementById('cancel-modal-container');
+        if (!modalContainer) return;
+
+        const focusables = Array.from(
+          modalContainer.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+        if (focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !modalContainer.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !modalContainer.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
         }
       }
-    }
-  };
+    };
+
+    document.addEventListener('keydown', handleDocumentKeyDown, true);
+    return () => {
+      clearTimeout(focusTimer);
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener('keydown', handleDocumentKeyDown, true);
+    };
+  }, [showCancelModal, closeCancelModal]);
 
   const handleConfirmCancel = async () => {
     setCancelError('');
@@ -767,7 +813,9 @@ export function CryptoCheckout({
             {theme.logo && (
               <img src={theme.logo} alt={sess.coin} className="h-6 w-6 object-contain" />
             )}
-            <h1 className="text-base font-bold text-slate-900">{s('title')} {sess.coinName}</h1>
+            <h1 className="text-base font-bold text-slate-900">
+              {s('title').includes('{coin}') ? s('title').replace('{coin}', sess.coinName) : `${s('title')} ${sess.coinName}`}
+            </h1>
           </div>
           {status === 'detected' ? (
             <span className="rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-bold animate-pulse">
@@ -843,17 +891,17 @@ export function CryptoCheckout({
               isAmountMajor={true}
             />
 
-            {/* Wallet button: Main action on mobile (<768px), secondary on desktop/tablet. Omitted for TRX. */}
+            {/* Wallet button: Secondary outline button on both mobile and desktop. Omitted for TRX. */}
             {sess.coin !== 'TRX' && (
               <div>
                 <a
                   href={sess.paymentUri}
                   onClick={handleOpenWalletTap}
-                  className="w-full h-12 min-h-[48px] max-h-12 flex items-center justify-center gap-2 px-4 rounded-xl font-semibold text-[14px] sm:text-[15px] transition-colors shadow-2xs cursor-pointer bg-[#2563eb] text-white hover:bg-blue-700 hover:border hover:border-blue-800 md:bg-white md:text-slate-800 md:border md:border-slate-300 md:hover:bg-slate-50 md:hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+                  className="w-full min-h-[48px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-[14px] sm:text-[15px] transition-colors shadow-2xs cursor-pointer bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
                 >
-                  <span className="shrink-0">👛</span>
-                  <span className="truncate">{s('open_wallet_app')}</span>
-                  <span className="shrink-0">→</span>
+                  <span className="shrink-0 text-base">👛</span>
+                  <span className="whitespace-normal line-clamp-2 text-center leading-snug">{s('open_wallet_app')}</span>
+                  <span className="shrink-0 text-base">→</span>
                 </a>
 
                 {/* Coin, Network and explicit ERC-20 note directly under the button */}
@@ -863,23 +911,22 @@ export function CryptoCheckout({
               </div>
             )}
 
-            {/* Fixed pre-reserved fallback notice row (44px min-height, 0px CLS) */}
+            {/* Fixed pre-reserved fallback notice row (min-h-[60px], 0px CLS) */}
             <div
-              className="min-h-[44px] flex flex-col justify-center items-center text-center px-1"
+              id="wallet-fallback-notice-row"
+              className="min-h-[60px] flex flex-col justify-center items-center text-center px-1 py-1"
               aria-live="polite"
             >
-              {walletFallbackTriggered ? (
-                <>
-                  <p className="text-[14px] font-medium text-amber-900 leading-snug">
-                    {s('wallet_fallback_notice')}
-                  </p>
-                  {isTelegram && (
-                    <p className="text-xs text-slate-600 font-medium mt-0.5">
-                      {isTelegramIos ? s('telegram_safari_notice') : s('telegram_chrome_notice')}
-                    </p>
-                  )}
-                </>
-              ) : null}
+              {isTelegram && (
+                <p className="text-xs text-slate-600 font-medium leading-tight">
+                  {isTelegramIos ? s('telegram_safari_notice') : s('telegram_chrome_notice')}
+                </p>
+              )}
+              {walletFallbackTriggered && (
+                <p className="text-[13px] sm:text-[14px] font-medium text-amber-900 leading-tight mt-0.5">
+                  {s('wallet_fallback_notice')}
+                </p>
+              )}
             </div>
 
             {/* Address and optional TON Memo copy fields */}
@@ -1031,15 +1078,15 @@ export function CryptoCheckout({
             <button
               onClick={handleVerify}
               disabled={verifying || cancelling}
-              className="flex w-full h-12 min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#2563eb] py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+              className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#2563eb] py-3 px-4 text-sm font-bold text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 transition-colors shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
             >
               {verifying ? (
                 <>
                   <Spinner color="#ffffff" />
-                  {s('checking_payment')}
+                  <span className="whitespace-normal line-clamp-2 text-center leading-snug">{s('checking_payment')}</span>
                 </>
               ) : (
-                s('i_paid_btn')
+                <span className="whitespace-normal line-clamp-2 text-center leading-snug">{s('i_paid_btn')}</span>
               )}
             </button>
           )}
@@ -1050,9 +1097,11 @@ export function CryptoCheckout({
             type="button"
             onClick={openCancelModal}
             disabled={cancelling}
-            className="w-full h-12 min-h-[48px] rounded-xl border-2 border-slate-300 bg-white py-2.5 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 disabled:opacity-50 transition-colors flex items-center justify-center cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+            className="w-full min-h-[48px] rounded-xl border border-slate-300 bg-white py-2.5 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 disabled:opacity-50 transition-colors flex items-center justify-center cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
           >
-            {cancelling ? '...' : s('cancel_btn')}
+            <span className="whitespace-normal line-clamp-2 text-center leading-snug">
+              {cancelling ? '...' : s('cancel_btn')}
+            </span>
           </button>
 
           {cancelError && !showCancelModal && (
@@ -1096,17 +1145,25 @@ export function CryptoCheckout({
         )}
       </div>
 
-      {/* Accessible Custom Cancellation Modal Dialog */}
-      {showCancelModal && (
+      {/* Accessible Custom Cancellation Modal Dialog mounted directly into document.body */}
+      {showCancelModal && typeof document !== 'undefined' && createPortal(
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-modal-title"
-          aria-describedby="cancel-modal-desc"
+          id="cancel-modal-backdrop"
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity"
-          onKeyDown={handleModalKeyDown}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeCancelModal(false);
+            }
+          }}
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div
+            id="cancel-modal-container"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-modal-title"
+            aria-describedby="cancel-modal-desc"
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4"
+          >
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-lg">
                 ⚠️
@@ -1133,22 +1190,27 @@ export function CryptoCheckout({
                 type="button"
                 onClick={handleConfirmCancel}
                 disabled={cancelling}
-                className="w-full h-12 min-h-[48px] max-h-12 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 active:bg-red-800 disabled:opacity-50 transition-colors shadow-xs flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2"
+                className="w-full min-h-[48px] rounded-xl bg-red-600 py-2.5 px-4 text-white font-semibold text-sm hover:bg-red-700 active:bg-red-800 disabled:opacity-50 transition-colors shadow-xs flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2"
               >
-                {cancelling ? '...' : s('modal_cancel_confirm')}
+                <span className="whitespace-normal line-clamp-2 text-center leading-snug">
+                  {cancelling ? '...' : s('modal_cancel_confirm')}
+                </span>
               </button>
               <button
                 ref={dismissBtnRef}
                 type="button"
-                onClick={closeCancelModal}
+                onClick={() => closeCancelModal(false)}
                 disabled={cancelling}
-                className="w-full h-12 min-h-[48px] max-h-12 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+                className="w-full min-h-[48px] rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-slate-700 font-semibold text-sm hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
               >
-                {s('modal_cancel_back')}
+                <span className="whitespace-normal line-clamp-2 text-center leading-snug">
+                  {s('modal_cancel_back')}
+                </span>
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

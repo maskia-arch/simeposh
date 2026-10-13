@@ -528,7 +528,7 @@ const hu = {
   "pay_ssl_notice": "Végpontok közötti SSL titkosított fizetés",
   "pay_starting": "Starting…",
   "pay_subtotal": "Részösszeg",
-  "pay_title": "Fizetés ezzel",
+  "pay_title": "{coin} fizetés",
   "pay_to_address": "erre a címre",
   "pay_underpayment": "Részfizetés észlelve: {received} {coin} érkezett, de {expected} {coin} szükséges. Kérjük, küldje el a fennmaradó {remaining} {coin} összeget.",
   "pay_waiting": "Fizetésre várva…",
