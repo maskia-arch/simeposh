@@ -2,7 +2,17 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { CryptoCheckout } from '@/components/CryptoCheckout';
 
-export const metadata: Metadata = { title: 'Crypto Payment' };
+export const metadata: Metadata = {
+  title: 'Crypto Payment · PureSim',
+  robots: {
+    index: false,
+    follow: false,
+  },
+  alternates: {
+    canonical: undefined,
+    languages: undefined,
+  },
+};
 export const dynamic = 'force-dynamic';
 
 export default async function CryptoCheckoutPage({

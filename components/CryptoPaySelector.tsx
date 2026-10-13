@@ -321,7 +321,10 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         setLoading(null);
         throw new Error(data.error ?? t('pay_error'));
       }
-      window.location.href = `/checkout/crypto/${data.sessionId}`;
+      const checkoutUrl = locale === 'de'
+        ? `/checkout/crypto/${data.sessionId}`
+        : `/${locale}/checkout/crypto/${data.sessionId}`;
+      window.location.href = checkoutUrl;
     } catch (err) {
       submittingRef.current = false;
       setLoading(null);

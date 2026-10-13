@@ -73,7 +73,16 @@ export async function getCoin(code: string): Promise<CoinConfig | null> {
   return coinConfig;
 }
 
+import { buildPaymentUri as buildUriHelper } from './paymentUri';
+
 /** Build a native crypto payment URI. */
-export function buildPaymentUri(coin: CoinConfig, amount: string, memo?: string | null): string {
-  return `${coin.uri_scheme}:${coin.walletAddress}?amount=${amount}`;
+export function buildPaymentUri(coin: CoinConfig, amount: string, memo?: string | null, orderNumber?: string | null): string {
+  return buildUriHelper({
+    coin: coin.code,
+    address: coin.walletAddress,
+    amount,
+    memo,
+    orderNumber,
+  });
 }
+

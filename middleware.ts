@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
+import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
 import { render404Html, UNLIMITED_ENABLED_CODES } from '@/lib/not-found-html';
@@ -371,8 +372,16 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  let effectiveLocale = detectedLocale;
+  if (!isPrefixed && normalizedPath.startsWith('/checkout/crypto/')) {
+    const qLoc = request.nextUrl.searchParams.get('lang') || request.nextUrl.searchParams.get('locale');
+    const cLoc = request.cookies.get('locale')?.value;
+    if (qLoc && isValidLocale(qLoc)) effectiveLocale = qLoc;
+    else if (cLoc && isValidLocale(cLoc)) effectiveLocale = cLoc;
+  }
+
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-locale', detectedLocale);
+  requestHeaders.set('x-locale', effectiveLocale);
   requestHeaders.set('x-pathname', pathname);
   requestHeaders.set('x-is-404', is404Route ? '1' : '0');
 
@@ -386,6 +395,10 @@ export async function middleware(request: NextRequest) {
     response = NextResponse.next({
       request: { headers: requestHeaders },
     });
+  }
+
+  if (normalizedPath.startsWith('/checkout')) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 
   // ── Affiliate Referral Link cookie tracker ──

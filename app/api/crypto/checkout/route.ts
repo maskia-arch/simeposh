@@ -20,6 +20,9 @@ import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
 import { calculateSalePrice }  from '@/lib/pricing';
 import { validateEmail }        from '@/lib/validation/email';
+import { isValidLocale }        from '@/lib/i18n/config';
+import { getServerDict }        from '@/lib/i18n/server';
+import { formatCurrencyEuro }   from '@/lib/currency';
 
 export const runtime = 'nodejs';
 
@@ -183,11 +186,6 @@ export async function POST(request: Request) {
       }
     }
 
-    const userClient = await createClient();
-    const { data: { user } } = await userClient.auth.getUser();
-    const userId = await resolveCustomer(service, user, normalizedEmail);
-    const ref = crypto.randomUUID();
-
     // 1. Calculate total base amount
     let totalBaseEur = 0;
     for (const line of lines) {
@@ -203,18 +201,38 @@ export async function POST(request: Request) {
       totalBaseEur += unit * line.quantity;
     }
 
+    const cookieStore = await cookies();
+    const cookieLocale = cookieStore.get('locale')?.value;
+    const rawLocale = body.customerLocale || body.locale || request.headers.get('x-locale') || cookieLocale || request.headers.get('accept-language')?.slice(0, 2) || 'de';
+    const customerLocale = isValidLocale(rawLocale) ? rawLocale : 'de';
+
     // 2. Process checkouts based on payment method
     if (coin !== 'ESIM_CASH') {
       const coinCfg = await getCoin(coin);
       if (!coinCfg) {
-        return NextResponse.json({ error: `Coin ${coin} ist nicht verfügbar` }, { status: 400 });
+        const dict = getServerDict(customerLocale);
+        const errMsg = (dict.pay_coin_unavailable || 'Coin {coin} ist nicht verfügbar').replace('{coin}', coin);
+        return NextResponse.json({ error: errMsg }, { status: 400 });
       }
-      if (coinCfg.min_order_eur > 0 && totalBaseEur < coinCfg.min_order_eur) {
-        return NextResponse.json({
-          error: `Mindestbestellwert für ${coinCfg.code} ist ${coinCfg.min_order_eur.toFixed(2)} € (Ihr Warenkorb: ${totalBaseEur.toFixed(2)} €)`
-        }, { status: 400 });
+      const minOrderEur = Number(coinCfg.min_order_eur || 0);
+      if (minOrderEur > 0 && totalBaseEur < minOrderEur) {
+        const dict = getServerDict(customerLocale);
+        const formattedMin = formatCurrencyEuro(minOrderEur, customerLocale);
+        const formattedCart = formatCurrencyEuro(totalBaseEur, customerLocale);
+        const coinName = coinCfg.name || coinCfg.code;
+        const template = dict.pay_min_order_error || 'Mindestbestellwert für {coin} ist {min} (Ihr Warenkorb: {cart})';
+        const errorMsg = template
+          .replace('{coin}', coinName)
+          .replace('{min}', formattedMin)
+          .replace('{cart}', formattedCart);
+        return NextResponse.json({ error: errorMsg }, { status: 400 });
       }
     }
+
+    const userClient = await createClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    const userId = await resolveCustomer(service, user, normalizedEmail);
+    const ref = crypto.randomUUID();
 
     if (coin === 'ESIM_CASH') {
       if (!userId) {
@@ -313,10 +331,6 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ ref });
     } else {
-      const cookieStore = await cookies();
-      const cookieLocale = cookieStore.get('locale')?.value;
-      const customerLocale = body.locale || cookieLocale || request.headers.get('accept-language')?.slice(0, 2) || 'de';
-
       // Standard Crypto Checkout
       const orderRows: Array<Record<string, unknown>> = [];
       for (const line of lines) {
@@ -360,7 +374,7 @@ export async function POST(request: Request) {
       const orderIds = inserted.map((o) => o.id);
 
       const session = await createCryptoSession({
-        orderIds, email: normalizedEmail, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale,
+        orderIds, email: normalizedEmail, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale, orderRef: ref,
       });
 
       // Save newsletter consent & locale asynchronously (non-blocking)

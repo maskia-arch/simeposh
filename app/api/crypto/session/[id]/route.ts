@@ -7,9 +7,12 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { fulfillOrders } from '@/lib/fulfillment';
 import { sendUnderpaymentEmail } from '@/lib/email/mailer';
 import { getPool } from '@/lib/db';
+import { buildPaymentUri, generateSolanaPayReference } from '@/lib/crypto/paymentUri';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 async function checkBtcLtcAddress(
   address: string,
@@ -367,7 +370,7 @@ async function checkEthAddress(address: string, coinCode: string = 'ETH'): Promi
   };
 }
 
-async function checkSolAddress(address: string, coinCode: string = 'SOL'): Promise<ChainCheckResult> {
+async function checkSolAddress(address: string, coinCode: string = 'SOL', reference?: string | null): Promise<ChainCheckResult> {
   const upperCoin = coinCode.toUpperCase();
   if (upperCoin === 'USDT' || upperCoin === 'USDC') {
     const mints: Record<string, string> = {
@@ -390,6 +393,20 @@ async function checkSolAddress(address: string, coinCode: string = 'SOL'): Promi
         txid: totalAmount > 0 ? `sol_spl_${upperCoin.toLowerCase()}_check` : null,
       };
     }
+  }
+
+  // If a Solana Pay reference was provided, check if a transaction with that reference exists
+  if (reference) {
+    try {
+      const sigs = await callJsonRpc(SOLANA_FALLBACK_RPCS, 'getSignaturesForAddress', [reference, { limit: 1 }]);
+      if (Array.isArray(sigs) && sigs.length > 0 && sigs[0]?.signature) {
+        return {
+          received: 1, // Transaction confirmed on-chain
+          confirmations: 1,
+          txid: sigs[0].signature,
+        };
+      }
+    } catch {}
   }
 
   const data = await callJsonRpc(SOLANA_FALLBACK_RPCS, 'getBalance', [address]);
@@ -560,7 +577,7 @@ export async function checkAddressOnChain(
     rawRes = await checkTrxAddress(cleanAddr, upperCoin);
   } else if (cleanAddr.length >= 32 && cleanAddr.length <= 44 && !cleanAddr.startsWith('0x') && (upperCoin === 'SOL' || upperCoin === 'USDC' || upperCoin === 'USDT')) {
     // 3. Solana address (Base58, 32-44 chars without 0x/T)
-    rawRes = await checkSolAddress(cleanAddr, upperCoin);
+    rawRes = await checkSolAddress(cleanAddr, upperCoin, paymentMemo);
   } else if (upperCoin === 'TON' || cleanAddr.startsWith('EQ') || cleanAddr.startsWith('UQ')) {
     // 4. TON address
     return checkTonAddress(cleanAddr, paymentMemo, createdAfter, expiresAt);
@@ -570,7 +587,7 @@ export async function checkAddressOnChain(
   } else if (cleanAddr.startsWith('0x')) {
     rawRes = await checkEthAddress(cleanAddr, upperCoin);
   } else {
-    rawRes = await checkSolAddress(cleanAddr, upperCoin);
+    rawRes = await checkSolAddress(cleanAddr, upperCoin, paymentMemo);
   }
 
   // Account-based coins: deduct initial_balance that existed prior to session creation
@@ -819,6 +836,22 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
     currentSession.tx_hash !== txHash ||
     currentSession.confirmations !== confirmations
   ) {
+    // Double-check current database status to prevent race condition (e.g. user cancelled while chain check was running)
+    const { data: latestCheck } = await db
+      .from('crypto_sessions')
+      .select('status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (latestCheck?.status === 'cancelled') {
+      console.log(`[Session Sync] Session ${id} was cancelled by user; preserving cancelled state.`);
+      currentSession.status = 'cancelled';
+      return currentSession;
+    }
+    if (latestCheck?.status === 'paid' && status !== 'paid') {
+      return currentSession;
+    }
+
     const updatePayload: Record<string, unknown> = {
       status,
       received_amount: receivedAmount,
@@ -831,7 +864,8 @@ export async function syncSessionWithGateway(id: string, db: any): Promise<any> 
       .from('crypto_sessions')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update(updatePayload as any)
-      .eq('id', id);
+      .eq('id', id)
+      .neq('status', 'cancelled');
 
     // When session is paid, ensure all associated orders are fulfilled (fire-and-forget to avoid blocking the GET/POST handler)
     if (status === 'paid' && currentSession.status !== 'cancelled' && currentSession.status !== 'expired' && currentSession.status !== 'review') {
@@ -1000,6 +1034,12 @@ export async function syncAllActiveCryptoSessions(db: any): Promise<number> {
   }
 }
 
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = createServiceClient();
@@ -1011,35 +1051,76 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .eq('id', id)
     .single();
 
-  if (error || !s) return NextResponse.json({ error: 'not found' }, { status: 404 });
-
-  const now = Date.now();
-  const createdMs = s.created_at ? new Date(s.created_at).getTime() : now;
-  const ageMs = now - createdMs;
-
-  // For freshly created pending sessions (< 15 seconds old), no transaction can possibly have confirmed yet.
-  // Returning the freshly inserted DB session directly avoids blocking the user on slow external explorers/RPCS,
-  // making the initial GET response virtually instant (<100ms)!
-  // For older sessions or verification polling, perform gateway / blockchain sync.
-  if (s.status !== 'pending' || ageMs >= 15000) {
-    await syncSessionWithGateway(id, db);
-  }
+  if (error || !s) return NextResponse.json({ error: 'not found' }, { status: 404, headers: NO_CACHE_HEADERS });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
-  const decimalLimit = coin?.decimals ?? 8;
-  const amount = Number(s.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
-  let paymentUri = `${coin?.uri_scheme || 'litecoin'}:${s.wallet_address}?amount=${amount}`;
-  if (s.payment_memo) {
-    paymentUri += `&text=${encodeURIComponent(s.payment_memo)}&memo=${encodeURIComponent(s.payment_memo)}`;
-  }
 
-  // Resolve checkout_ref
+  // Resolve checkout_ref early
   let ref: string | null = null;
   if (s.order_ids?.length) {
     const { data: ord } = await db.from('orders').select('checkout_ref').eq('id', s.order_ids[0]).single();
     ref = ord?.checkout_ref ?? null;
   }
+
+  // If already cancelled or expired: DO NOT sync on-chain, DO NOT expose address, paymentUri, or QR data!
+  if (s.status === 'cancelled' || s.status === 'expired') {
+    return NextResponse.json({
+      id:                 s.id,
+      coin:               s.coin,
+      coinName:           coin?.name ?? s.coin,
+      status:             s.status,
+      walletAddress:      '',
+      cryptoAmount:       '',
+      paymentUri:         '',
+      amountEur:          Number(s.amount_eur),
+      baseEur:            Number(s.base_eur),
+      surchargePct:       Number(s.surcharge_pct),
+      surchargeFixedEur:  Number(s.surcharge_fixed_eur),
+      confirmations:      s.confirmations || 0,
+      confirmationsRequired: s.confirmations_required,
+      txHash:             s.tx_hash,
+      remainingMs:        0,
+      expiresAt:          s.expires_at,
+      ref,
+      paymentMemo:        null,
+      receivedAmount:     Number(s.received_amount || 0),
+    }, { headers: NO_CACHE_HEADERS });
+  }
+
+  const now = Date.now();
+  const createdMs = s.created_at ? new Date(s.created_at).getTime() : now;
+  const ageMs = now - createdMs;
+
+  // Only perform gateway / blockchain sync for active sessions needing verification
+  if ((s.status === 'pending' && ageMs >= 15000) || s.status === 'detected' || s.status === 'partially_paid') {
+    const updated = await syncSessionWithGateway(id, db);
+    if (updated) {
+      s.status = updated.status;
+      s.received_amount = updated.received_amount;
+      s.tx_hash = updated.tx_hash;
+      s.confirmations = updated.confirmations;
+    }
+  }
+
+  // Ensure SOL reference exists
+  let paymentMemo = s.payment_memo;
+  if (s.coin === 'SOL' && !paymentMemo) {
+    paymentMemo = generateSolanaPayReference();
+    await db.from('crypto_sessions').update({ payment_memo: paymentMemo }).eq('id', id);
+  }
+
+  const decimalLimit = coin?.decimals ?? 8;
+  const amount = Number(s.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
+
+  const paymentUri = buildPaymentUri({
+    coin: s.coin,
+    address: s.wallet_address,
+    amount: s.crypto_amount,
+    orderNumber: ref || (s.order_ids && s.order_ids[0]) || s.id,
+    memo: paymentMemo,
+    reference: s.coin === 'SOL' ? paymentMemo : null,
+  });
 
   const expiresMs = new Date(s.expires_at).getTime();
   let status = s.status;
@@ -1058,7 +1139,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  // If cancelled or expired: DO NOT expose address, paymentUri, or QR data!
+  // If cancelled or expired during late check:
   if (status === 'cancelled' || status === 'expired') {
     return NextResponse.json({
       id:                 s.id,
@@ -1080,7 +1161,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       ref,
       paymentMemo:        null,
       receivedAmount:     Number(s.received_amount || 0),
-    });
+    }, { headers: NO_CACHE_HEADERS });
   }
 
   if (status === 'review') {
@@ -1105,7 +1186,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       paymentMemo:        null,
       receivedAmount:     Number(s.received_amount || 0),
       paidAt:             s.paid_at,
-    });
+    }, { headers: NO_CACHE_HEADERS });
   }
 
   // Timer only applies to 'pending'. Once 'detected', 'partially_paid', or 'paid', timer is ended (0 remaining).
@@ -1131,9 +1212,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     remainingMs,
     expiresAt:          s.expires_at,
     ref,
-    paymentMemo:        s.payment_memo || null,
+    paymentMemo:        s.coin === 'SOL' ? null : (paymentMemo || null),
     receivedAmount:     Number(s.received_amount || 0),
-  });
+  }, { headers: NO_CACHE_HEADERS });
 }
 
 export async function cancelCryptoSessionAndOrders(id: string): Promise<{
@@ -1181,7 +1262,7 @@ export async function cancelCryptoSessionAndOrders(id: string): Promise<{
     if (s.status === 'cancelled') {
       if (orderIds.length > 0) {
         await client.query(
-          "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status = 'pending'",
+          "UPDATE orders SET status = 'cancelled' WHERE id::text = ANY($1) AND status = 'pending'",
           [orderIds]
         );
       }
@@ -1199,7 +1280,7 @@ export async function cancelCryptoSessionAndOrders(id: string): Promise<{
     // 3. Mark orders as cancelled (both by order_ids and checkout_ref)
     if (orderIds.length > 0) {
       await client.query(
-        "UPDATE orders SET status = 'cancelled' WHERE id = ANY($1) AND status = 'pending'",
+        "UPDATE orders SET status = 'cancelled' WHERE id::text = ANY($1) AND status = 'pending'",
         [orderIds]
       );
     }
@@ -1216,7 +1297,7 @@ export async function cancelCryptoSessionAndOrders(id: string): Promise<{
     }
 
     if (orderIds.length > 0) {
-      const verifyOrders = await client.query('SELECT id, status FROM orders WHERE id = ANY($1)', [orderIds]);
+      const verifyOrders = await client.query('SELECT id, status FROM orders WHERE id::text = ANY($1)', [orderIds]);
       const stillPending = verifyOrders.rows.some((o: any) => o.status === 'pending');
       if (stillPending) {
         await client.query('ROLLBACK');
@@ -1271,7 +1352,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       status: 'cancelled',
       sessionStatus: res.sessionStatus,
       orderStatus: res.orderStatus,
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[crypto/session/cancel] Error:', msg);
@@ -1296,20 +1377,31 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     if (error || !s) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
-    const decimalLimit = coin?.decimals ?? 8;
-    const amount = Number(s.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
-    let paymentUri = `${coin?.uri_scheme || 'litecoin'}:${s.wallet_address}?amount=${amount}`;
-    if (s.payment_memo) {
-      paymentUri += `&text=${encodeURIComponent(s.payment_memo)}&memo=${encodeURIComponent(s.payment_memo)}`;
-    }
-
     let ref: string | null = null;
     if (s.order_ids?.length) {
       const { data: ord } = await db.from('orders').select('checkout_ref').eq('id', s.order_ids[0]).single();
       ref = ord?.checkout_ref ?? null;
     }
+
+    let paymentMemo = s.payment_memo;
+    if (s.coin === 'SOL' && !paymentMemo) {
+      paymentMemo = generateSolanaPayReference();
+      await db.from('crypto_sessions').update({ payment_memo: paymentMemo }).eq('id', id);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const coin = (s as any).crypto_coins as { name: string; uri_scheme: string; decimals: number } | null;
+    const decimalLimit = coin?.decimals ?? 8;
+    const amount = Number(s.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
+
+    const paymentUri = buildPaymentUri({
+      coin: s.coin,
+      address: s.wallet_address,
+      amount: s.crypto_amount,
+      orderNumber: ref || (s.order_ids && s.order_ids[0]) || s.id,
+      memo: paymentMemo,
+      reference: s.coin === 'SOL' ? paymentMemo : null,
+    });
 
     const now = Date.now();
     const expiresMs = new Date(s.expires_at).getTime();
@@ -1401,7 +1493,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       remainingMs,
       expiresAt:          s.expires_at,
       ref,
-      paymentMemo:        s.payment_memo || null,
+      paymentMemo:        s.coin === 'SOL' ? null : (paymentMemo || null),
       receivedAmount:     Number(s.received_amount || 0),
     });
   } catch (err) {

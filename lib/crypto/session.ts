@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getCoin, type CoinConfig } from '@/lib/crypto/coins';
 import { getCoinEurRate } from '@/lib/crypto/rates';
 import { queueAddressSync } from '@/lib/crypto/syncQueue';
+import { buildPaymentUri, generateSolanaPayReference } from '@/lib/crypto/paymentUri';
 
 export interface CryptoSession {
   id:            string;
@@ -64,6 +65,7 @@ export async function createCryptoSession(opts: {
   baseEur:  number;
   coinCode: string;
   locale?:   string;
+  orderRef?: string;
 }): Promise<CryptoSession> {
   const coin = await getCoin(opts.coinCode);
   if (!coin) throw new Error(`Coin ${opts.coinCode} is not available`);
@@ -90,10 +92,14 @@ export async function createCryptoSession(opts: {
         
         const decimalLimit = coin.decimals || 8;
         const amount = Number(existing.crypto_amount).toFixed(decimalLimit).replace(/0+$/, '').replace(/\.$/, '');
-        let paymentUri = `${coin.uri_scheme}:${existing.wallet_address}?amount=${amount}`;
-        if (existing.payment_memo) {
-          paymentUri += `&text=${encodeURIComponent(existing.payment_memo)}&memo=${encodeURIComponent(existing.payment_memo)}`;
-        }
+        const paymentUri = buildPaymentUri({
+          coin: existing.coin,
+          address: existing.wallet_address,
+          amount,
+          orderNumber: opts.orderRef || opts.orderIds?.[0] || existing.id,
+          memo: existing.payment_memo,
+          reference: existing.coin === 'SOL' ? (existing.payment_memo || null) : null,
+        });
 
         return {
           id: existing.id,
@@ -210,7 +216,11 @@ export async function createCryptoSession(opts: {
         const rate = await getCoinEurRate(coin.coingecko_id || coinCode);
         const decimals = coin.decimals || 8;
         const amountLtc = Math.round((amountEur / rate) * Math.pow(10, decimals)) / Math.pow(10, decimals);
-        const memo = coinCode === 'TON' ? sessionId.slice(-8).toUpperCase() : null;
+        const memo = coinCode === 'TON'
+          ? sessionId.slice(-8).toUpperCase()
+          : coinCode === 'SOL'
+            ? generateSolanaPayReference()
+            : null;
 
         walletRes = {
           address: entry.address,
@@ -274,7 +284,11 @@ export async function createCryptoSession(opts: {
     const randomSatoshis = Math.floor(Math.random() * 900) + 100;
     const amountLtcBase = amountEur / rate;
     const amountLtc = Math.round((amountLtcBase + (randomSatoshis / Math.pow(10, decimals))) * Math.pow(10, decimals)) / Math.pow(10, decimals);
-    const memo = coinCode === 'TON' ? sessionId.slice(-8).toUpperCase() : null;
+    const memo = coinCode === 'TON'
+      ? sessionId.slice(-8).toUpperCase()
+      : coinCode === 'SOL'
+        ? generateSolanaPayReference()
+        : null;
 
     walletRes = {
       address: fallbackAddress,
@@ -341,11 +355,15 @@ export async function createCryptoSession(opts: {
     }
   } catch {}
 
-  // Build URI scheme
-  let paymentUri = `${coin.uri_scheme}:${walletRes.address}?amount=${walletRes.amount_ltc}`;
-  if (walletRes.payment_memo) {
-    paymentUri += `&text=${encodeURIComponent(walletRes.payment_memo)}&memo=${encodeURIComponent(walletRes.payment_memo)}`;
-  }
+  // Build standard-compliant URI scheme
+  const paymentUri = buildPaymentUri({
+    coin: coin.code,
+    address: walletRes.address,
+    amount: walletRes.amount_ltc,
+    orderNumber: opts.orderRef || opts.orderIds?.[0] || sessionId,
+    memo: walletRes.payment_memo,
+    reference: coinCode === 'SOL' ? (walletRes.payment_memo || null) : null,
+  });
 
   return {
     id: sessionId,
