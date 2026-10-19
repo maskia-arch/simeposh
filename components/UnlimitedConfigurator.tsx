@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { roundToX9, getDiscountPct, discountLabel, formatGb } from '@/lib/utils';
+import { formatGb } from '@/lib/utils';
+import type { UnlimitedPriceTable, ClientTier } from '@/lib/pricing';
 import { Price } from '@/components/Price';
 import type { PublicTariff } from '@/lib/tariffs';
 import { CheckoutModal } from '@/components/CheckoutModal';
@@ -20,11 +21,6 @@ type TariffType = 'unlimited_eco' | 'unlimited_pro';
 
 export function perDayEur(t: { sale_price_eur: number; validity_days: number }): number {
   return t.sale_price_eur / (t.validity_days || 1);
-}
-
-export function computePrice(baseRate: number, days: number): number {
-  const raw = baseRate * days * (1 - getDiscountPct(days));
-  return roundToX9(raw);
 }
 
 // ── Day slider mapping ──────────────────────────────────────────────────────
@@ -58,15 +54,21 @@ export function DaySlider({
   days,
   onChange,
   label,
+  tiers,
+  currentDiscountPct = 0,
 }: {
   days: number;
   onChange: (d: number) => void;
   label?: string;
+  tiers?: ClientTier[];
+  currentDiscountPct?: number;
 }) {
   const { t } = useTranslation();
-  const { pct, nextAt, nextPct } = discountLabel(days);
   const lastIdx = DAY_MARKS.length - 1;
   const presets = [1, 3, 7, 14, 30, 90];
+
+  // Dynamic next tier resolution
+  const nextTier = (tiers || []).find((tier) => tier.minDays > days && tier.discountPct > currentDiscountPct);
 
   const [inputValue, setInputValue] = useState<string>(String(days));
 
@@ -180,16 +182,20 @@ export function DaySlider({
         </div>
       </div>
 
-      {/* Discount Hint */}
+      {/* Dynamic Discount Hint */}
       <div className="min-h-[18px]">
-        {pct > 0 ? (
+        {currentDiscountPct > 0 ? (
           <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1">
-            <span>🎁 {t('cfg_disc_incl', { pct })}</span>
-            {nextAt && <span className="text-emerald-600 font-normal"> · {t('cfg_disc_next', { days: nextAt, pct: nextPct })}</span>}
+            <span>🎁 {t('cfg_disc_incl', { pct: currentDiscountPct })}</span>
+            {nextTier && (
+              <span className="text-emerald-600 font-normal">
+                {' '}· {t('cfg_disc_next', { days: nextTier.minDays, pct: nextTier.discountPct })}
+              </span>
+            )}
           </p>
-        ) : nextAt ? (
+        ) : nextTier ? (
           <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1">
-            <span>💡 {t('cfg_disc_hint', { days: nextAt, pct: nextPct })}</span>
+            <span>💡 {t('cfg_disc_hint', { days: nextTier.minDays, pct: nextTier.discountPct })}</span>
           </p>
         ) : null}
       </div>
@@ -207,6 +213,7 @@ interface Props {
   initialCountryCode?: string;
   allDestinations?: Array<{ code: string; name: string; flag?: string | null; slug: string }>;
   isStandaloneRoute?: boolean;
+  priceTables?: Record<string, UnlimitedPriceTable>;
 }
 
 export function UnlimitedConfigurator({
@@ -217,10 +224,19 @@ export function UnlimitedConfigurator({
   initialCountryCode,
   allDestinations,
   isStandaloneRoute = false,
+  priceTables,
 }: Props) {
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const changeCountryBtnRef = useRef<HTMLButtonElement>(null);
+
+  const [activePriceTables, setActivePriceTables] = useState<Record<string, UnlimitedPriceTable>>(priceTables || {});
+
+  useEffect(() => {
+    if (priceTables) {
+      setActivePriceTables((prev) => ({ ...prev, ...priceTables }));
+    }
+  }, [priceTables]);
 
   const [countrySearch, setCountrySearch]     = useState('');
   const [selectedCountry, setSelectedCountry] = useState<string | null>(initialCountryCode ?? 'DE');
@@ -444,17 +460,38 @@ export function UnlimitedConfigurator({
     return bestPackage ? perDayEur(bestPackage) : null;
   }, [bestPackage]);
 
-  const finalPrice = useMemo(() => {
-    if (!bestPerDay) return null;
-    return computePrice(bestPerDay, days);
-  }, [bestPerDay, days]);
+  // Fetch price table dynamically if not preloaded (e.g. in /tariffs when switching countries)
+  useEffect(() => {
+    if (!bestPackage) return;
+    const code = bestPackage.package_code;
+    if (activePriceTables[code]) return;
 
-  const priceBeforeDiscount = useMemo(() => {
-    if (!bestPerDay) return null;
-    return roundToX9(bestPerDay * days);
-  }, [bestPerDay, days]);
+    let cancelled = false;
+    fetch(`/api/tariffs/price-table?code=${encodeURIComponent(code)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.priceTable) {
+          setActivePriceTables((prev) => ({ ...prev, [code]: data.priceTable }));
+        }
+      })
+      .catch((err) => console.warn('[configurator] Failed to fetch price table:', err));
 
-  const discount = getDiscountPct(days);
+    return () => {
+      cancelled = true;
+    };
+  }, [bestPackage, activePriceTables]);
+
+  const currentPriceTable = bestPackage ? activePriceTables[bestPackage.package_code] : null;
+  const dayInfo = currentPriceTable?.days?.[days];
+
+  const frontPricePerDay = currentPriceTable?.frontPricePerDay ?? (bestPerDay ?? 0);
+  const finalPrice = dayInfo?.priceEur ?? (bestPackage ? bestPackage.sale_price_eur : null);
+  const subtotalBeforeDiscount = dayInfo?.subtotalEur ?? null;
+  const discountPct = dayInfo?.discountPct ?? 0;
+
+  const betterDealDays = dayInfo?.betterDealDays;
+  const betterDealPriceEur = dayInfo?.betterDealPriceEur;
+  const compareDays = dayInfo?.compareDays ?? days;
 
   const syntheticTariff = useMemo((): Tariff | null => {
     if (!finalPrice || selectedGb === null || !selectedCountry || !bestPackage) return null;
@@ -681,7 +718,12 @@ export function UnlimitedConfigurator({
 
             {/* 3. Duration Controls */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-              <DaySlider days={days} onChange={setDays} />
+              <DaySlider
+                days={days}
+                onChange={setDays}
+                tiers={currentPriceTable?.tiers}
+                currentDiscountPct={discountPct}
+              />
             </div>
 
           </div>
@@ -731,23 +773,62 @@ export function UnlimitedConfigurator({
               </div>
 
               {/* Price & Per-Day Rate */}
-              <div className="py-3 flex items-baseline justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}</span>
-                  {discount > 0 && priceBeforeDiscount !== null && (
-                    <Price eur={priceBeforeDiscount} className="text-xs text-slate-400 line-through block" />
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-black text-slate-900 tracking-tight">
-                    {finalPrice !== null ? <Price eur={finalPrice} /> : '–'}
-                  </p>
-                  {finalPrice !== null && (
-                    <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-                      (<Price eur={finalPrice / days} /> {t('unit_per_day')})
+              <div className="py-3 space-y-2 border-b border-slate-100">
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                     </span>
-                  )}
+                    {discountPct > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                        Staffelrabatt −{discountPct}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-slate-900 tracking-tight">
+                      {finalPrice !== null ? <Price eur={finalPrice} /> : '–'}
+                    </p>
+                    {finalPrice !== null && (
+                      <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
+                        (<Price eur={finalPrice / days} /> {t('unit_per_day')})
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Subtotal breakdown */}
+                {subtotalBeforeDiscount !== null && frontPricePerDay > 0 && (
+                  <div className="text-xs text-slate-500 flex items-center justify-between">
+                    <span>
+                      {t('cfg_discount_subtotal', {
+                        days,
+                        rate: `${frontPricePerDay.toFixed(2)} €`,
+                        subtotal: `${subtotalBeforeDiscount.toFixed(2)} €`,
+                      }) || `${days} Tage × ${frontPricePerDay.toFixed(2)} € = ${subtotalBeforeDiscount.toFixed(2)} €`}
+                    </span>
+                  </div>
+                )}
+
+                {/* Better Deal Recommendation */}
+                {betterDealDays && betterDealPriceEur !== undefined && (
+                  <button
+                    type="button"
+                    onClick={() => setDays(betterDealDays)}
+                    className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex items-center justify-between group"
+                  >
+                    <span className="font-medium">
+                      💡 {t('cfg_duration_better_deal', {
+                        dealDays: betterDealDays,
+                        dealPrice: `${betterDealPriceEur.toFixed(2)} €`,
+                        compareDays,
+                      }) || `Tipp: ${betterDealDays} Tage kosten nur ${betterDealPriceEur.toFixed(2)} € (günstiger als ${compareDays} Tage)`}
+                    </span>
+                    <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0 ml-2">
+                      {betterDealDays}d wählen →
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Action Buttons */}

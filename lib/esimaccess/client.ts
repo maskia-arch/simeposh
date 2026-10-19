@@ -16,6 +16,8 @@ import type {
   TariffType,
 } from './types';
 
+export type { EsimAccessPackage };
+
 // ── Config ───────────────────────────────────────────────────
 
 function getConfig() {
@@ -601,13 +603,13 @@ export async function allocateEsim(
 
 // ── Top-Up ───────────────────────────────────────────────────
 
-export async function fetchTopUpPackages(iccid: string): Promise<TopUpPackageListResponse> {
+export async function fetchTopUpPackages(iccid: string, slug?: string): Promise<TopUpPackageListResponse> {
   return esimRequest<TopUpPackageListResponse>('/package/list', {
     iccid,
     type:         'TOPUP',
     packageCode:  '',
     locationCode: '',
-    slug:         '',
+    slug:         slug ?? '',
   });
 }
 
@@ -617,8 +619,14 @@ export async function applyTopUp(
   orderRef:    string,
   opts?: {
     periodNum?: number;
+    supportTopUpType?: number;
   }
 ): Promise<TopUpOrderResponse> {
+  // Enforce periodNum for validity-only plans (supportTopUpType = 3)
+  if (opts?.supportTopUpType === 3 && (!opts?.periodNum || opts.periodNum <= 0)) {
+    throw new Error(`Missing required periodNum for validity-only topup (supportTopUpType = 3) on ICCID ${iccid}`);
+  }
+
   // Ensure the top-up package code format expected by eSIMAccess (e.g. TOPUP_CKH978)
   let codeToSend = packageCode;
   if (!codeToSend.startsWith('TOPUP_') && !codeToSend.startsWith('ESIM_')) {
@@ -807,3 +815,33 @@ export async function queryEsimLifecycle(iccid: string): Promise<EsimLifecycle> 
     return 'unknown';
   }
 }
+
+/**
+ * Fetch discount rule definitions from eSIM Access /discountRule/list endpoint.
+ */
+export async function fetchDiscountRules(discountRuleCode?: string): Promise<{
+  success: boolean;
+  errorCode?: string | null;
+  errorMsg?: string | null;
+  obj?: {
+    list?: Array<{
+      discountRuleCode: string;
+      rewardType?: number;
+      periodRuleList?: Array<{
+        minDays: number;
+        maxDays: number;
+        payRatio: number;
+        discountAmount?: number | null;
+      }>;
+      validPeriod?: {
+        startTime?: string;
+        endTime?: string;
+      };
+    }>;
+  } | null;
+}> {
+  return esimRequest('/discountRule/list', {
+    discountRuleCode: discountRuleCode ?? '',
+  });
+}
+

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import type { PublicTariff } from '@/lib/tariffs';
 import type { Destination } from '@/lib/destinations';
+import type { UnlimitedPriceTable, ClientTier } from '@/lib/pricing';
 import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
@@ -17,6 +18,7 @@ interface UnlimitedPageClientProps {
   allDestinations?: Array<{ code: string; name: string; flag?: string | null; slug: string }>;
   minPrice: number;
   minPerDay: number;
+  priceTables?: Record<string, UnlimitedPriceTable>;
 }
 
 export function UnlimitedPageClient({
@@ -26,12 +28,22 @@ export function UnlimitedPageClient({
   allDestinations,
   minPrice,
   minPerDay,
+  priceTables,
 }: UnlimitedPageClientProps) {
   const { t, locale } = useTranslation();
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
 
   const [activeCategory, setActiveCategory] = useState<'unlimited_eco' | 'unlimited_pro'>('unlimited_eco');
+
+  const tiers: ClientTier[] = useMemo(() => {
+    if (priceTables) {
+      for (const pt of Object.values(priceTables)) {
+        if (pt?.tiers && pt.tiers.length > 0) return pt.tiers;
+      }
+    }
+    return [];
+  }, [priceTables]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
@@ -165,12 +177,21 @@ export function UnlimitedPageClient({
           </div>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-2">
-          <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_3')}</span>
-          <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_7')}</span>
-          <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_14')}</span>
-          <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_30')}</span>
-        </div>
+        {tiers.length > 0 ? (
+          <div className="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-2">
+            {tiers
+              .filter((tier) => tier.discountPct > 0)
+              .map((tier) => (
+                <span
+                  key={tier.minDays}
+                  className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800"
+                >
+                  {t('cfg_tier_discount_badge', { days: tier.minDays, pct: tier.discountPct }) ||
+                    (isDe ? `Ab ${tier.minDays} Tagen −${tier.discountPct} %` : `From ${tier.minDays} days −${tier.discountPct}%`)}
+                </span>
+              ))}
+          </div>
+        ) : null}
       </div>
 
       {/* ── Reused Unlimited Builder Studio ── */}
@@ -182,6 +203,7 @@ export function UnlimitedPageClient({
           onTariffTypeChange={(type) => setActiveCategory(type)}
           allDestinations={allDestinations}
           isStandaloneRoute={true}
+          priceTables={priceTables}
         />
       </section>
 

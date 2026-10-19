@@ -43,7 +43,9 @@ export interface EsimAccessPackage {
   retailPrice?:   number;
   smsStatus?:     number;
   unusedValidityDay?: number;
+  activeType?:    number;
   supportTopUpType?: number;
+  discountRuleCode?: string;
   ipExport?:      boolean;
   /** List of mobile network operators providing coverage */
   operatorList?:  OperatorInfo[];

@@ -15,6 +15,8 @@ import { PendingOrderActions } from '@/components/PendingOrderActions';
 import { AccountSettings } from '@/components/AccountSettings';
 import { getEsimOverviewUrl } from '@/lib/url';
 import { generateFeedbackToken } from '@/lib/feedback/token';
+import { getTopUpEligibility } from '@/lib/topup';
+import { countryCodeToSlug } from '@/lib/destinations-shared';
 
 export const metadata: Metadata = { title: 'Mein Bereich' };
 export const dynamic = 'force-dynamic';
@@ -37,7 +39,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const t = getServerT(await getServerLocale());
+  const locale = await getServerLocale();
+  const t = getServerT(locale);
+  const prefix = locale === 'de' ? '' : `/${locale}`;
   const service = createServiceClient();
 
   // Claim any guest orders & cash accounts made with this email before registering.
@@ -64,10 +68,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     }
   }
 
-  // Fetch the user's orders.
+  // Fetch the user's orders with tariff details needed for top-up eligibility check.
   const { data: orders } = await service
     .from('orders')
-    .select('id, status, order_type, amount_eur, iccid, short_url, qr_code_url, activation_code, smdp_address, apn, top_up_iccid, period_num, esim_status, esim_status_at, created_at, checkout_ref, tariffs(name, country_name, data_gb, validity_days, flag_emoji, tariff_type)')
+    .select('id, status, order_type, amount_eur, iccid, short_url, qr_code_url, activation_code, smdp_address, apn, top_up_iccid, period_num, esim_status, esim_status_at, created_at, checkout_ref, tariffs(id, slug, name, country_name, country_code, data_gb, validity_days, flag_emoji, tariff_type, active_type, support_top_up_type, raw_data)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -82,6 +86,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .eq('customer_email', userEmailClean);
   const activeSessions = sessions?.filter((s) => s.status === 'pending') ?? [];
   const allSessions = sessions ?? [];
+
+  // Fetch eSIM top-up records from authoritative esims table
+  const iccids = Array.from(new Set(orderList.map((o) => o.iccid).filter(Boolean))) as string[];
+  const esimMap = new Map<string, { iccid: string; topup_count: number }>();
+  if (iccids.length > 0) {
+    const { data: esimRows } = await service
+      .from('esims')
+      .select('iccid, topup_count')
+      .in('iccid', iccids);
+    if (esimRows) {
+      esimRows.forEach((row) => esimMap.set(row.iccid, row));
+    }
+  }
 
   // ── Refresh eSIM lifecycle status from esimaccess (rate-limited) ──
   const now = Date.now();
@@ -245,6 +262,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       t={t}
                       sessionId={session?.id}
                       userEmail={user.email}
+                      prefix={prefix}
                     />
                   );
                 })}
@@ -264,11 +282,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {completed.map((order) => {
                   const session = allSessions.find((s) => s.order_ids?.includes(order.id));
                   const txId = session?.id ?? (order as any).checkout_ref ?? order.id;
                   const overviewUrl = order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null;
+                  const esimRecord = order.iccid ? (esimMap.get(order.iccid) ?? { iccid: order.iccid, topup_count: 0 }) : null;
+
                   return (
                     <OrderRow
                       key={order.id}
@@ -278,6 +298,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       overviewUrl={overviewUrl}
                       isReviewed={reviewedOrderIds.has(order.id)}
                       userEmail={user.email}
+                      esimRecord={esimRecord}
+                      prefix={prefix}
                     />
                   );
                 })}
@@ -313,9 +335,20 @@ type OrderType = {
   period_num:   number | null;
   esim_status:  string | null;
   created_at:   string;
+  checkout_ref?: string | null;
   tariffs: {
-    name: string; country_name: string; data_gb: number | null;
-    validity_days: number; flag_emoji: string | null; tariff_type: string | null;
+    id?: string;
+    slug?: string | null;
+    name: string;
+    country_name: string;
+    country_code?: string | null;
+    data_gb: number | null;
+    validity_days: number;
+    flag_emoji: string | null;
+    tariff_type: string | null;
+    active_type?: number | null;
+    support_top_up_type?: number | null;
+    raw_data?: any;
   } | null;
 };
 
@@ -345,6 +378,8 @@ function OrderRow({
   overviewUrl,
   isReviewed,
   userEmail,
+  esimRecord,
+  prefix = '',
 }: {
   order: OrderType;
   t: ServerT;
@@ -353,17 +388,43 @@ function OrderRow({
   overviewUrl?: string | null;
   isReviewed?: boolean;
   userEmail?: string | null;
+  esimRecord?: { iccid: string; topup_count: number } | null;
+  prefix?: string;
 }) {
   const tariff = order.tariffs;
-  const isTravel = (tariff?.tariff_type ?? 'travel') === 'travel';
   const lifecycle = (order.esim_status as EsimLifecycle | null) ?? 'unknown';
   const lifeMeta = LIFECYCLE_META[lifecycle] ?? LIFECYCLE_META.unknown;
   const lifeLabel = lifeMeta.key ? t(lifeMeta.key) : '—';
-  // Reloadable: eSIMs (Travel and Unlimited) that are not yet a top-up order and have an ICCID.
-  const canReload = order.order_type !== 'top_up' && !!order.iccid;
+
+  // Calculate top-up eligibility strictly using single source of truth
+  const eligibility = (showEsim && order.iccid)
+    ? getTopUpEligibility(esimRecord, tariff)
+    : null;
+
+  const used = eligibility?.used ?? 0;
+  const remaining = eligibility?.remaining ?? 9;
+  const isLimitReached = eligibility?.reason === 'limit_reached' || used >= 9;
+  const isNotSupported = eligibility?.reason === 'not_supported';
+  const isWarning = used >= 7;
+
+  // Resolve country destination URL for "Neue eSIM bestellen" / "Neue eSIM kaufen"
+  const countryCode = tariff?.country_code;
+  const countrySlug = countryCode ? (countryCodeToSlug(countryCode) || countryCode.toLowerCase()) : null;
+  const originCountryUrl = countrySlug ? `${prefix}/esim/${countrySlug}` : `${prefix}/tariffs`;
+
+  const valueText = t('topup_limit_used', { used });
+  let remainingText = '';
+  if (remaining === 0) {
+    remainingText = t('topup_limit_remaining_none');
+  } else if (remaining === 1) {
+    remainingText = t('topup_limit_remaining_singular');
+  } else {
+    remainingText = t('topup_limit_remaining', { remaining });
+  }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs hover:shadow-xs transition-shadow">
+      {/* Top order summary */}
       <div className="flex flex-wrap items-center gap-3 p-4">
         <span className="text-2xl">{tariff?.flag_emoji ?? '🌐'}</span>
         <div className="flex-1 min-w-0">
@@ -389,8 +450,67 @@ function OrderRow({
         </div>
       </div>
 
+      {/* eSIM Details & 9-Segment Progressbar */}
+      {showEsim && order.status === 'completed' && order.iccid && !isNotSupported && (
+        <div className="bg-slate-50/70 border-t border-slate-100 px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className={`font-bold ${isWarning ? 'text-amber-800' : 'text-slate-800'}`}>
+              {valueText}
+            </span>
+            <span className={`text-[11px] font-medium ${isWarning ? 'text-amber-700' : 'text-slate-500'}`}>
+              {remainingText}
+            </span>
+          </div>
+
+          {/* 9 Segments */}
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={9}
+            aria-valuenow={used}
+            aria-valuetext={valueText}
+            className="flex items-center gap-1 w-full"
+          >
+            {Array.from({ length: 9 }).map((_, idx) => {
+              const isFilled = idx < used;
+              let segmentBg = 'bg-slate-200';
+              if (isFilled) {
+                segmentBg = isWarning ? 'bg-amber-500' : 'bg-brand-600';
+              }
+              return (
+                <div
+                  key={idx}
+                  className={`h-2 flex-1 rounded-full transition-all duration-300 ${segmentBg}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 9/9 Limit Reached Info Box */}
+      {showEsim && order.status === 'completed' && isLimitReached && (
+        <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg shrink-0" aria-hidden="true">⚠️</span>
+            <p className="text-xs text-amber-900 leading-relaxed font-medium">
+              {t('topup_limit_reached_box')}
+            </p>
+          </div>
+          <div>
+            <Link
+              href={originCountryUrl}
+              className="btn-primary min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center font-bold px-4 py-2 text-xs"
+            >
+              {t('topup_order_new_esim')}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Actions footer */}
       {showEsim && order.status === 'completed' && (
-        <div className="border-t border-slate-100 px-4 py-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="border-t border-slate-100 px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
           {order.iccid ? (
             <>
               <span className="text-xs text-slate-400">ICCID:</span>
@@ -399,7 +519,8 @@ function OrderRow({
           ) : (
             <span className="text-xs text-slate-400">Bestellung: #{order.id.slice(0, 8)}</span>
           )}
-          <div className="ml-auto flex items-center gap-2.5">
+
+          <div className="ml-auto flex items-center gap-2.5 flex-wrap">
             {isReviewed ? (
               <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-700 flex items-center gap-1">
                 <span>✓</span> Bewertet
@@ -413,17 +534,45 @@ function OrderRow({
                 <span>🎁</span> Bewerten (+1% Cash)
               </Link>
             )}
+
             <Link href={`/dashboard/orders/${order.id}`} className="text-xs font-medium text-slate-500 hover:text-brand-700">
               {t('dash_details')}
             </Link>
-            {canReload && order.iccid && (
-              <Link
-                href={`/topup?iccid=${encodeURIComponent(order.iccid)}`}
-                className="rounded-lg bg-brand-50 border border-brand-200 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
-              >
-                {t('dash_topup')}
-              </Link>
+
+            {/* Reload button / badges */}
+            {order.iccid && (
+              <>
+                {isNotSupported ? (
+                  <div className="inline-flex items-center gap-2">
+                    <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500">
+                      {t('topup_not_supported_badge')}
+                    </span>
+                    <Link
+                      href={originCountryUrl}
+                      className="text-xs font-bold text-brand-600 hover:text-brand-800 underline underline-offset-2"
+                    >
+                      {t('topup_buy_new_esim')}
+                    </Link>
+                  </div>
+                ) : isLimitReached ? (
+                  <button
+                    disabled
+                    aria-disabled="true"
+                    className="rounded-lg bg-slate-100 border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-400 cursor-not-allowed opacity-60 pointer-events-none"
+                  >
+                    {t('dash_topup')}
+                  </button>
+                ) : (
+                  <Link
+                    href={`/topup?iccid=${encodeURIComponent(order.iccid)}`}
+                    className="rounded-lg bg-brand-50 border border-brand-200 px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
+                  >
+                    {t('dash_topup')}
+                  </Link>
+                )}
+              </>
             )}
+
             {overviewUrl && (
               <a
                 href={overviewUrl}

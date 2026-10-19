@@ -185,37 +185,50 @@ export async function createCryptoSession(opts: {
           .gt('expires_at', new Date().toISOString());
 
         const activeAddresses = new Set((activeSessions || []).map((s: any) => s.wallet_address).filter(Boolean));
-        const nextIdx = typeof pool.next_index === 'number' ? pool.next_index : 0;
-        let entry = pool.addresses[nextIdx % pool.addresses.length];
+        const isErc20 = coinCode === 'USDC' || coinCode === 'USDT';
+        let entry: { address: string; index: number };
 
-        // Search for the next available address that is not in active checkout
-        for (let attempt = 0; attempt < pool.addresses.length; attempt++) {
-          const candidate = pool.addresses[(nextIdx + attempt) % pool.addresses.length];
-          if (!activeAddresses.has(candidate.address)) {
-            entry = candidate;
-            pool.next_index = (nextIdx + attempt + 1) % pool.addresses.length;
-            break;
+        if (isErc20) {
+          // Always use master address (index 0) for ERC-20 tokens so all funds stay unified with ETH gas on Address 0
+          entry = pool.addresses.find(a => a.index === 0) || pool.addresses[0];
+        } else {
+          const nextIdx = typeof pool.next_index === 'number' ? pool.next_index : 0;
+          entry = pool.addresses[nextIdx % pool.addresses.length];
+
+          // Search for the next available address that is not in active checkout
+          for (let attempt = 0; attempt < pool.addresses.length; attempt++) {
+            const candidate = pool.addresses[(nextIdx + attempt) % pool.addresses.length];
+            if (!activeAddresses.has(candidate.address)) {
+              entry = candidate;
+              pool.next_index = (nextIdx + attempt + 1) % pool.addresses.length;
+              break;
+            }
           }
-        }
 
-        if (!activeAddresses.has(entry.address)) {
-          pool.next_index = (nextIdx + 1) % pool.addresses.length;
-        }
+          if (!activeAddresses.has(entry.address)) {
+            pool.next_index = (nextIdx + 1) % pool.addresses.length;
+          }
 
-        // Asynchronously update pool next_index without blocking checkout on error
-        db.from('system_settings')
-          .update({ value: JSON.stringify(pool) })
-          .eq('key', poolKey)
-          .then(({ error: saveError }: any) => {
-            if (saveError) console.warn('[Session] Non-critical: Failed to save updated pool index:', saveError.message);
-          })
-          .catch((saveErr: any) => {
-            console.warn('[Session] Non-critical: Pool index update exception:', saveErr.message);
-          });
+          // Asynchronously update pool next_index without blocking checkout on error
+          db.from('system_settings')
+            .update({ value: JSON.stringify(pool) })
+            .eq('key', poolKey)
+            .then(({ error: saveError }: any) => {
+              if (saveError) console.warn('[Session] Non-critical: Failed to save updated pool index:', saveError.message);
+            })
+            .catch((saveErr: any) => {
+              console.warn('[Session] Non-critical: Pool index update exception:', saveErr.message);
+            });
+        }
 
         const rate = await getCoinEurRate(coin.coingecko_id || coinCode);
         const decimals = coin.decimals || 8;
-        const amountLtc = Math.round((amountEur / rate) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        let amountLtc = Math.round((amountEur / rate) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        if (isErc20) {
+          // Add micro-fraction (random satoshis in 5th-6th decimal) so simultaneous sessions on master address are uniquely identifiable
+          const randomMicro = (Math.floor(Math.random() * 800) + 100) / Math.pow(10, decimals);
+          amountLtc = Math.round((amountLtc + randomMicro) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        }
         const memo = coinCode === 'TON'
           ? sessionId.slice(-8).toUpperCase()
           : coinCode === 'SOL'
@@ -228,7 +241,7 @@ export async function createCryptoSession(opts: {
           expires_at: new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString(),
           payment_memo: memo,
         };
-        console.log(`[Session] Rotated address ${entry.address} (index ${entry.index}) from pool for session ${sessionId} (${coin.code})`);
+        console.log(`[Session] Selected address ${entry.address} (index ${entry.index}) from pool for session ${sessionId} (${coin.code})`);
       }
     }
   } catch (err) {

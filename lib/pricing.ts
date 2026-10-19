@@ -1,51 +1,76 @@
 /**
- * Pricing calculation for eSIM tariffs.
+ * Pricing calculation and dynamic discount tier resolution for eSIM tariffs.
  *
  * Formula:
- *   1. Take EK price in USD
- *   2. Multiply by 2  (EK_USD × 2)
+ *   1. Wholesale EK price in USD
+ *   2. Multiply by factor 2  (EK_USD × 2)
  *   3. Convert USD → EUR  (× usdEurRate)
- *   4. Round UP to the nearest x.x9 € cent
- *      e.g. 4.12 → 4.19 | 4.21 → 4.29 | 4.01 → 4.09 | 4.19 → 4.19
+ *   4. Round UP to the nearest x.x9 € boundary:
+ *      (0.1 * ceil((x + 0.001) / 0.1) - 0.01)
+ *
+ * For DayPass / Unlimited plans:
+ *   Final price = roundToXX9(frontPricePerDay × days × payRatio)
+ *   Dynamic discount rules fetched from database table `discount_rules`
+ *   via provider's `discount_rule_code`.
  */
+import { query as runRawQuery } from '@/lib/db';
+
+export interface NormalizedPeriodRule {
+  minDays: number;
+  maxDays: number;
+  payRatio: number;
+}
+
+export interface ClientTier {
+  minDays: number;
+  maxDays: number;
+  discountPct: number;
+}
+
+export interface PriceTableEntry {
+  priceEur: number;
+  subtotalEur: number;
+  discountPct: number;
+  minDays: number;
+  betterDealDays?: number;
+  betterDealPriceEur?: number;
+  compareDays?: number;
+}
+
+export interface UnlimitedPriceTable {
+  frontPricePerDay: number;
+  tiers: ClientTier[];
+  days: Record<number, PriceTableEntry>;
+}
+
+export interface TariffPricingInput {
+  sale_price_eur: number;
+  validity_days: number;
+  discount_rule_code?: string | null;
+}
 
 /**
  * Round a price up to the nearest x.x9 € boundary.
- * Works by converting to cents, ceiling-dividing to the next 10-cent block,
- * then subtracting 1 cent to land on x.x9.
- *
- * Examples:
- *   4.12 → 419 cents → ceil(419/10)*10 - 1 = 420 - 1 = 419 → 4.19 ✓
- *   4.21 → 421 cents → ceil(421/10)*10 - 1 = 430 - 1 = 429 → 4.29 ✓
- *   4.01 → 401 cents → ceil(401/10)*10 - 1 = 410 - 1 = 409 → 4.09 ✓
- *   4.19 → 419 cents → ceil(419/10)*10 - 1 = 420 - 1 = 419 → 4.19 ✓  (already x.x9)
- *   4.09 → 409 cents → ceil(409/10)*10 - 1 = 410 - 1 = 409 → 4.09 ✓  (already x.x9)
- *   4.20 → 420 cents → ceil(420/10)*10 - 1 = 420 - 1 = 419 → 4.19 ✓
- *   4.29 → 429 cents → ceil(429/10)*10 - 1 = 430 - 1 = 429 → 4.29 ✓
- *   4.30 → 430 cents → ceil(430/10)*10 - 1 = 430 - 1 = 429 → 4.29 ✓
+ * Works strictly in whole cents to prevent floating point inaccuracies.
+ * Formula: 0.1 * Math.ceil((rawEur + 0.001) / 0.1) - 0.01
  */
 export function roundToXX9(rawEur: number): number {
-  const cents    = Math.round(rawEur * 100);        // avoid floating-point drift
-  const rounded  = Math.ceil(cents / 10) * 10 - 1;  // next x9 boundary
+  const cents = Math.round(rawEur * 100);
+  const rounded = Math.ceil((cents + 0.1) / 10) * 10 - 1;
   return rounded / 100;
 }
 
 /**
  * Calculate the EUR sale price from a USD EK price.
- *
- * @param ekPriceUsd  - Raw EK price in USD from esimaccess
- * @param usdEurRate  - Current USD→EUR exchange rate (e.g. 0.92)
- * @returns           - Final EUR sale price, rounded to x.x9
  */
 export function calculateSalePrice(ekPriceUsd: number, usdEurRate: number): number {
-  const doubled   = ekPriceUsd * 2;
-  const inEur     = doubled * usdEurRate;
+  const doubled = ekPriceUsd * 2;
+  const inEur   = doubled * usdEurRate;
   return roundToXX9(inEur);
 }
 
 /**
- * Fetch the live USD→EUR exchange rate.
- * Falls back to the provided fallbackRate if the API call fails.
+ * Fetch the live USD→EUR exchange rate with fallback.
  */
 export async function fetchUsdEurRate(fallbackRate: number): Promise<number> {
   const apiUrl = process.env.EXCHANGE_RATE_API_URL;
@@ -55,14 +80,11 @@ export async function fetchUsdEurRate(fallbackRate: number): Promise<number> {
 
   try {
     const url = apiKey ? `${apiUrl}?apikey=${apiKey}` : apiUrl;
-    const res  = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
 
     if (!res.ok) throw new Error(`Exchange rate API returned ${res.status}`);
 
     const data = await res.json();
-
-    // Support Open Exchange Rates format: { rates: { EUR: 0.92 } }
-    // and Open Exchange Rates v6 format:  { conversion_rates: { EUR: 0.92 } }
     const rate =
       data?.rates?.EUR ??
       data?.conversion_rates?.EUR ??
@@ -73,7 +95,6 @@ export async function fetchUsdEurRate(fallbackRate: number): Promise<number> {
       throw new Error('Unexpected exchange rate API response format');
     }
 
-    console.log(`[pricing] Live USD/EUR rate: ${rate}`);
     return rate;
   } catch (err) {
     console.warn(
@@ -82,4 +103,189 @@ export async function fetchUsdEurRate(fallbackRate: number): Promise<number> {
     );
     return fallbackRate;
   }
+}
+
+// ── In-Memory Cache for Discount Rules (5 minute TTL) ─────────────────────────
+interface CachedRule {
+  periodRules: NormalizedPeriodRule[];
+  validFrom: number | null;
+  validTo: number | null;
+  cachedAt: number;
+}
+const rulesCache = new Map<string, CachedRule>();
+const RULES_CACHE_TTL = 5 * 60 * 1000;
+
+/**
+ * Retrieve active period rules for a given discountRuleCode from the database.
+ */
+export async function getDiscountRuleByCode(
+  code?: string | null,
+  now: Date = new Date()
+): Promise<NormalizedPeriodRule[] | null> {
+  const cleanCode = (code || '').trim();
+  if (!cleanCode) return null;
+
+  const cached = rulesCache.get(cleanCode);
+  const nowTs = now.getTime();
+  if (cached && nowTs - cached.cachedAt < RULES_CACHE_TTL) {
+    if (cached.validFrom && nowTs < cached.validFrom) return null;
+    if (cached.validTo && nowTs > cached.validTo) return null;
+    return cached.periodRules;
+  }
+
+  try {
+    const res = await runRawQuery(
+      `SELECT period_rules, valid_from, valid_to FROM discount_rules WHERE discount_rule_code = $1 LIMIT 1`,
+      [cleanCode]
+    );
+
+    if (!res || res.rows.length === 0) {
+      return null;
+    }
+
+    const row = res.rows[0];
+    const rawPeriodRules = typeof row.period_rules === 'string'
+      ? JSON.parse(row.period_rules)
+      : row.period_rules;
+
+    const periodRules: NormalizedPeriodRule[] = Array.isArray(rawPeriodRules)
+      ? rawPeriodRules
+      : [];
+
+    const validFrom = row.valid_from ? new Date(row.valid_from).getTime() : null;
+    const validTo = row.valid_to ? new Date(row.valid_to).getTime() : null;
+
+    rulesCache.set(cleanCode, {
+      periodRules,
+      validFrom,
+      validTo,
+      cachedAt: nowTs,
+    });
+
+    if (validFrom && nowTs < validFrom) return null;
+    if (validTo && nowTs > validTo) return null;
+
+    return periodRules;
+  } catch (err) {
+    console.warn(`[pricing] Failed to load discount rule for ${cleanCode}:`, (err as Error).message);
+    return null;
+  }
+}
+
+/**
+ * Calculates the DayPass / Unlimited price for any day count (1–365) server-side.
+ * Resolves discount rules dynamically and rounds using roundToXX9.
+ */
+export async function getDayPassPrice(
+  tariff: TariffPricingInput,
+  days: number,
+  now: Date = new Date(),
+  options?: { rules?: NormalizedPeriodRule[] | null }
+): Promise<number> {
+  const perDay = tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1);
+  const clampedDays = Math.min(365, Math.max(1, Math.round(days)));
+
+  const rules = options?.rules !== undefined
+    ? options.rules
+    : await getDiscountRuleByCode(tariff.discount_rule_code, now);
+
+  let payRatio = 1.0;
+  if (rules && rules.length > 0) {
+    const match = rules.find((r) => clampedDays >= r.minDays && clampedDays <= r.maxDays);
+    if (match && typeof match.payRatio === 'number' && match.payRatio > 0 && match.payRatio <= 1) {
+      payRatio = match.payRatio;
+    }
+  }
+
+  return roundToXX9(perDay * clampedDays * payRatio);
+}
+
+/**
+ * Precomputes the complete price table for 1–365 days server-side.
+ * Sanitized to never leak raw payRatio, wholesale cost, exchange rates or internal factors.
+ * Includes dynamic threshold comparison ("Tipp: 30 Tage kosten nur 14,59 €").
+ */
+export async function getUnlimitedPriceTable(
+  tariff: TariffPricingInput,
+  minDays: number = 1,
+  maxDays: number = 365,
+  now: Date = new Date(),
+  options?: { rules?: NormalizedPeriodRule[] | null }
+): Promise<UnlimitedPriceTable> {
+  const perDay = tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1);
+  const rules = options?.rules !== undefined
+    ? options.rules
+    : await getDiscountRuleByCode(tariff.discount_rule_code, now);
+
+  // Build clean client tiers
+  const tiers: ClientTier[] = (rules || []).map((r) => ({
+    minDays: r.minDays,
+    maxDays: r.maxDays,
+    discountPct: Math.round((1 - r.payRatio) * 100),
+  }));
+
+  const daysTable: Record<number, PriceTableEntry> = {};
+
+  // 1. First pass: compute exact price, subtotal, discountPct for each day
+  for (let d = minDays; d <= maxDays; d++) {
+    let payRatio = 1.0;
+    let discountPct = 0;
+    let ruleMinDays = 1;
+
+    if (rules && rules.length > 0) {
+      const match = rules.find((r) => d >= r.minDays && d <= r.maxDays);
+      if (match) {
+        payRatio = match.payRatio;
+        discountPct = Math.round((1 - payRatio) * 100);
+        ruleMinDays = match.minDays;
+      }
+    }
+
+    const subtotalEur = roundToXX9(perDay * d);
+    const priceEur = roundToXX9(perDay * d * payRatio);
+
+    daysTable[d] = {
+      priceEur,
+      subtotalEur,
+      discountPct,
+      minDays: ruleMinDays,
+    };
+  }
+
+  // 2. Second pass: detect better deals at threshold transitions
+  // If a longer duration d2 (e.g. 30 days) costs equal or less than d (e.g. 29 days),
+  // show the tip for day d (and starting 2 days prior to the threshold, e.g. day 28 & 29).
+  for (let d = minDays; d <= maxDays; d++) {
+    // Look ahead across upcoming days / next tier
+    for (let d2 = d + 1; d2 <= Math.min(maxDays, d + 7); d2++) {
+      if (daysTable[d2] && daysTable[d2].priceEur <= daysTable[d].priceEur) {
+        daysTable[d].betterDealDays = d2;
+        daysTable[d].betterDealPriceEur = daysTable[d2].priceEur;
+        daysTable[d].compareDays = d;
+        break;
+      }
+    }
+
+    // Check tier threshold inversion (e.g. if tier starts at 30, and day 30 <= day 29, activate tip on day 28 as well)
+    for (const tier of tiers) {
+      if (tier.minDays > d && d >= tier.minDays - 2) {
+        const thresholdDay = tier.minDays;
+        const thresholdPrice = daysTable[thresholdDay]?.priceEur;
+        const prevDayPrice = daysTable[thresholdDay - 1]?.priceEur;
+        if (thresholdPrice !== undefined && prevDayPrice !== undefined && thresholdPrice <= prevDayPrice) {
+          if (!daysTable[d].betterDealDays || thresholdPrice < daysTable[d].betterDealPriceEur!) {
+            daysTable[d].betterDealDays = thresholdDay;
+            daysTable[d].betterDealPriceEur = thresholdPrice;
+            daysTable[d].compareDays = thresholdDay - 1;
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    frontPricePerDay: roundToXX9(perDay),
+    tiers,
+    days: daysTable,
+  };
 }

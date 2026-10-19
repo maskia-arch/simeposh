@@ -59,6 +59,9 @@ export interface Database {
           usd_eur_rate:       number;
           is_active:          boolean;
           is_top_up_eligible: boolean;
+          active_type:        number | null;
+          support_top_up_type: number | null;
+          discount_rule_code: string | null;
           tariff_type:        TariffType;
           speed_kbps:         number | null;
           label:              string | null;
@@ -84,6 +87,9 @@ export interface Database {
           usd_eur_rate:       number;
           is_active?:         boolean;
           is_top_up_eligible?: boolean;
+          active_type?:        number | null;
+          support_top_up_type?: number | null;
+          discount_rule_code?: string | null;
           tariff_type?:       TariffType;
           speed_kbps?:        number | null;
           label?:             string | null;
@@ -107,6 +113,9 @@ export interface Database {
           usd_eur_rate?:      number;
           is_active?:         boolean;
           is_top_up_eligible?: boolean;
+          active_type?:        number | null;
+          support_top_up_type?: number | null;
+          discount_rule_code?: string | null;
           tariff_type?:       TariffType;
           speed_kbps?:        number | null;
           label?:             string | null;
@@ -719,6 +728,81 @@ export interface Database {
           message?:          string;
           is_internal_note?: boolean;
           attachments?:      any;
+        };
+        Relationships: [];
+      };
+
+      // ── esims ────────────────────────────────────────────────────────
+      esims: {
+        Row: {
+          iccid:       string;
+          topup_count: number;
+          order_id:    string | null;
+          created_at:  string;
+          updated_at:  string;
+        };
+        Insert: {
+          iccid:        string;
+          topup_count?: number;
+          order_id?:    string | null;
+          created_at?:  string;
+          updated_at?:  string;
+        };
+        Update: {
+          topup_count?: number;
+          order_id?:    string | null;
+          updated_at?:  string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'esims_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+      // ── discount_rules ──────────────────────────────────────────────
+      discount_rules: {
+        Row: {
+          discount_rule_code: string;
+          reward_type:        number;
+          period_rules:       Array<{
+            minDays:        number;
+            maxDays:        number;
+            payRatio:       number;
+            discountAmount: number | null;
+          }>;
+          valid_from:         string | null;
+          valid_to:           string | null;
+          synced_at:          string;
+        };
+        Insert: {
+          discount_rule_code:  string;
+          reward_type:         number;
+          period_rules:        Array<{
+            minDays:        number;
+            maxDays:        number;
+            payRatio:       number;
+            discountAmount: number | null;
+          }>;
+          valid_from?:         string | null;
+          valid_to?:           string | null;
+          synced_at?:          string;
+        };
+        Update: {
+          reward_type?:        number;
+          period_rules?:       Array<{
+            minDays:        number;
+            maxDays:        number;
+            payRatio:       number;
+            discountAmount: number | null;
+          }>;
+          valid_from?:         string | null;
+          valid_to?:           string | null;
+          synced_at?:          string;
         };
         Relationships: [];
       };

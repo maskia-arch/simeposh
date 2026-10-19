@@ -1,4 +1,4 @@
-﻿# PureSim (puresim.net) – AI Agent & LLM Information
+# PureSim (puresim.net) – AI Agent & LLM Information
 
 > PureSim is a global digital travel eSIM provider serving travelers in 150+ countries with prepaid mobile data.
 
@@ -7,7 +7,7 @@
 - Category: Data-only plans (no traditional cellular phone number, no SMS). Recommended communication: VoIP (WhatsApp, FaceTime, Telegram, Signal, Skype).
 - Setup: Instant digital QR code delivery via email and web dashboard upon order completion.
 - Activation Policy: "Activation on Arrival" — the validity clock starts ONLY when the eSIM connects to a supported local carrier network abroad. Safe to install before departure.
-- Reloadable: All PureSim eSIMs (both Travel and Unlimited) can be topped up / extended online without installing a new QR code.
+- Reloadable: Most PureSim eSIM plans can be topped up / extended online up to 9 times without installing a new QR code (plan top-up eligibility can be verified via ICCID). Single-use plans and eSIMs reaching 9 reloads require purchasing a new eSIM.
 
 ## Product Tiers
 1. **Travel Plans**: Fixed data quota (1 GB, 3 GB, 5 GB, 10 GB, 20 GB, 50 GB) valid for 1 to 30 days.

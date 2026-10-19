@@ -32,6 +32,7 @@ import { createServiceClient }                 from '@/lib/supabase/server';
 import type { EsimAccessPackage }              from '@/lib/esimaccess/types';
 import { revalidatePath }                      from 'next/cache';
 import { query as runRawQuery }                from '@/lib/db';
+import { syncDiscountRules }                   from '@/lib/sync/discount-rules';
 
 export interface SyncResult {
   success:      boolean;
@@ -84,6 +85,10 @@ function isTariffChanged(existing: any, generated: any): boolean {
   
   if (existing.is_active !== generated.is_active) return true;
   if (existing.is_top_up_eligible !== generated.is_top_up_eligible) return true;
+  if (existing.active_type !== generated.active_type) return true;
+  if (existing.support_top_up_type !== generated.support_top_up_type) return true;
+  if (existing.discount_rule_code !== generated.discount_rule_code) return true;
+  if (existing.slug !== generated.slug) return true;
   if (existing.tariff_type !== generated.tariff_type) return true;
   if (existing.speed_kbps !== generated.speed_kbps) return true;
 
@@ -253,9 +258,8 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         ? getFlagEmoji(locationCodes[0])
         : isMulti ? '🌍' : '🌐';
 
-      // slug = slugify(packageCode) – for URL readability only.
-      // NOT globally unique (the unique constraint was dropped in migration 003).
-      const slug = slugify(pkg.packageCode);
+      // slug from provider if provided, otherwise slugify(packageCode)
+      const slug = pkg.slug || slugify(pkg.packageCode);
 
       let speedKbps: number | null = null;
       if (typeof pkg.speed === 'number') {
@@ -269,8 +273,10 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         }
       }
 
-      const topUpType = Number(pkg.supportTopUpType ?? 0);
-      const isTopUpEligible = topUpType === 2 || topUpType === 3;
+      const activeType = Number(pkg.activeType ?? 2);
+      const topUpType = Number(pkg.supportTopUpType ?? 1);
+      const discountRuleCode = (pkg as any).discountRuleCode || null;
+      const isTopUpEligible = activeType !== 3 && (topUpType === 2 || topUpType === 3);
 
       return {
         package_code:       pkg.packageCode,
@@ -288,6 +294,9 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         usd_eur_rate:       usdEurRate,
         is_active:          true,
         is_top_up_eligible: isTopUpEligible,
+        active_type:        activeType,
+        support_top_up_type: topUpType,
+        discount_rule_code: discountRuleCode,
         tariff_type:        tariffType,
         speed_kbps:         speedKbps,
         location_codes:     locationCodes.length > 0 ? locationCodes : null as string[] | null,
@@ -341,6 +350,24 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     }
 
     console.log(`[sync] Delta Sync: ${rowsToUpsert.length} packages to upsert, ${unchangedCodes.length} unchanged packages.`);
+
+    // ── 5.8. Sync dynamic discount rules from provider ─────────
+    const uniqueDiscountCodes = Array.from(
+      new Set(
+        packages
+          .map((p) => String((p as any).discountRuleCode || '').trim())
+          .filter(Boolean)
+      )
+    );
+    if (uniqueDiscountCodes.length > 0) {
+      console.log(`[sync] Syncing ${uniqueDiscountCodes.length} unique discount rule(s)...`);
+      try {
+        const ruleRes = await syncDiscountRules(uniqueDiscountCodes);
+        console.log(`[sync] Discount rules result: ${ruleRes.synced} synced, ${ruleRes.skipped} skipped.`);
+      } catch (ruleErr) {
+        console.warn('[sync] Failed to sync discount rules (non-blocking):', (ruleErr as Error).message);
+      }
+    }
 
     // ── 6. Upsert changed packages in batches of 200 ─────────────
     const BATCH = 200;

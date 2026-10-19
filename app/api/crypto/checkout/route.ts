@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { customUnlimitedPriceEur, clampDays } from '@/lib/quote';
+import { clampDays } from '@/lib/quote';
 import { isUuid }                from '@/lib/utils';
 import { resolveCustomer }     from '@/lib/customers';
 import { createCryptoSession } from '@/lib/crypto/session';
@@ -18,11 +18,12 @@ import { getCoin }             from '@/lib/crypto/coins';
 import { fulfillOrders }       from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
-import { calculateSalePrice }  from '@/lib/pricing';
+import { calculateSalePrice, getDayPassPrice }  from '@/lib/pricing';
 import { validateEmail }        from '@/lib/validation/email';
 import { isValidLocale }        from '@/lib/i18n/config';
 import { getServerDict }        from '@/lib/i18n/server';
 import { formatCurrencyEuro }   from '@/lib/currency';
+import { getTopUpEligibility, getEsimRecord, hasPendingTopUpSession } from '@/lib/topup';
 
 export const runtime = 'nodejs';
 
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
     if (uuidIds.length > 0) {
       const { data: byId } = await service
         .from('tariffs')
-        .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+        .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb, discount_rule_code, support_top_up_type, active_type')
         .in('id', uuidIds);
       if (byId) tariffs.push(...byId);
     }
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
       ]));
       const { data: byCode } = await service
         .from('tariffs')
-        .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+        .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb, discount_rule_code, support_top_up_type, active_type')
         .in('package_code', allCodes);
       if (byCode) tariffs.push(...byCode);
     }
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
             if (!targetTariff) {
               const { data: byCode } = await service
                 .from('tariffs')
-                .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')
+                .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb, discount_rule_code, support_top_up_type, active_type')
                 .eq('package_code', found.packageCode)
                 .maybeSingle();
               targetTariff = byCode;
@@ -196,7 +197,7 @@ export async function POST(request: Request) {
       const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
       let unit = t.sale_price_eur;
       if (isUnlimited && line.days) {
-        unit = customUnlimitedPriceEur(t.sale_price_eur, t.validity_days, line.days);
+        unit = await getDayPassPrice(t, line.days);
       }
       totalBaseEur += unit * line.quantity;
     }
@@ -205,12 +206,47 @@ export async function POST(request: Request) {
     const cookieLocale = cookieStore.get('locale')?.value;
     const rawLocale = body.customerLocale || body.locale || request.headers.get('x-locale') || cookieLocale || request.headers.get('accept-language')?.slice(0, 2) || 'de';
     const customerLocale = isValidLocale(rawLocale) ? rawLocale : 'de';
+    const dict = getServerDict(customerLocale);
+
+    // Gatekeeper check: validate top-up eligibility, 9/9 limit, and concurrency lock per ICCID
+    for (const line of lines) {
+      if (line.topUpIccid) {
+        const esim = await getEsimRecord(line.topUpIccid);
+        const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
+        const eligibility = getTopUpEligibility(esim, t);
+
+        if (!eligibility.allowed) {
+          const errKey = eligibility.reason === 'limit_reached' ? 'topup_error_limit_reached' : 'topup_error_not_supported';
+          const errMsg = (dict as any)[errKey] || (eligibility.reason === 'limit_reached'
+            ? 'Maximales Auflade-Limit (9/9) erreicht. Diese eSIM kann nicht weiter aufgeladen werden.'
+            : 'Dieser Tarif kann nicht aufgeladen werden.');
+          return NextResponse.json({ error: errMsg, code: errKey }, { status: 400 });
+        }
+
+        // Concurrency lock: maximum 1 open unpaid top-up session per ICCID
+        const hasPending = await hasPendingTopUpSession(line.topUpIccid);
+        if (hasPending) {
+          const errMsg = (dict as any).topup_error_pending_session ||
+            (customerLocale === 'de'
+              ? 'Für diese eSIM existiert bereits eine offene Zahlungs-Session. Bitte schließe diese zuerst ab oder warte, bis sie abläuft.'
+              : 'There is already an open payment session for this eSIM. Please complete or cancel it first.');
+          return NextResponse.json({ error: errMsg, code: 'topup_error_pending_session' }, { status: 400 });
+        }
+
+        // Enforce periodNum for validity-only plans (supportTopUpType = 3)
+        if (t?.support_top_up_type === 3 && (!line.days || line.days <= 0)) {
+          return NextResponse.json({
+            error: 'Für reine Laufzeitverlängerungen muss eine Gültigkeitsdauer (Tage) angegeben werden.',
+            code: 'topup_error_missing_period',
+          }, { status: 400 });
+        }
+      }
+    }
 
     // 2. Process checkouts based on payment method
     if (coin !== 'ESIM_CASH') {
       const coinCfg = await getCoin(coin);
       if (!coinCfg) {
-        const dict = getServerDict(customerLocale);
         const errMsg = (dict.pay_coin_unavailable || 'Coin {coin} ist nicht verfügbar').replace('{coin}', coin);
         return NextResponse.json({ error: errMsg }, { status: 400 });
       }
@@ -284,7 +320,7 @@ export async function POST(request: Request) {
         let periodNum: number | null = null;
         if (isUnlimited && line.days) {
           periodNum = line.days;
-          unit = customUnlimitedPriceEur(t.sale_price_eur, t.validity_days, line.days);
+          unit = await getDayPassPrice(t, line.days);
         }
         for (let n = 0; n < line.quantity; n++) {
           orderRows.push({
@@ -343,7 +379,7 @@ export async function POST(request: Request) {
         let periodNum: number | null = null;
         if (isUnlimited && line.days) {
           periodNum = line.days;
-          unit = customUnlimitedPriceEur(t.sale_price_eur, t.validity_days, line.days);
+          unit = await getDayPassPrice(t, line.days);
         }
         for (let n = 0; n < line.quantity; n++) {
           orderRows.push({

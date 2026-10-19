@@ -5,6 +5,7 @@ import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
 import { formatCurrencyEuro } from '@/lib/currency';
+import { getDayPassPrice, getUnlimitedPriceTable, type UnlimitedPriceTable } from '@/lib/pricing';
 import { UnlimitedPageClient } from './UnlimitedPageClient';
 
 export const revalidate = 600;
@@ -39,7 +40,19 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
       robots: { index: false, follow: false },
     };
   }
-  const minPrice = Math.min(...unlimited.map((t) => t.sale_price_eur));
+  const oneDayPrices = await Promise.all(
+    unlimited.map((t) =>
+      getDayPassPrice(
+        {
+          sale_price_eur: t.sale_price_eur,
+          validity_days: t.validity_days || 1,
+          discount_rule_code: t.discount_rule_code,
+        },
+        1
+      )
+    )
+  );
+  const minPrice = Math.min(...oneDayPrices);
   const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
 
   // Next.js layout template is '%s | PureSim', so title must NOT end with '| PureSim'
@@ -121,9 +134,30 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
   );
 
   const baseUrl = BASE_URL;
-  const minPrice = Math.min(...unlimitedTariffs.map((t) => t.sale_price_eur));
-  const maxPrice = Math.max(...unlimitedTariffs.map((t) => t.sale_price_eur));
-  const minPerDay = Math.min(...unlimitedTariffs.map((t) => t.sale_price_eur / Math.max(1, t.validity_days || 1)));
+
+  // Precompute price tables server-side (1-365 days, client-safe tiers, better deal hints)
+  const priceTables: Record<string, UnlimitedPriceTable> = {};
+  for (const t of unlimitedTariffs) {
+    priceTables[t.package_code] = await getUnlimitedPriceTable(
+      {
+        sale_price_eur: t.sale_price_eur,
+        validity_days: t.validity_days || 1,
+        discount_rule_code: t.discount_rule_code,
+      },
+      1,
+      365
+    );
+  }
+
+  const oneDayPrices = unlimitedTariffs.map(
+    (t) => priceTables[t.package_code]?.days[1]?.priceEur ?? t.sale_price_eur
+  );
+  const minPrice = Math.min(...oneDayPrices);
+  const maxPrice = Math.max(...oneDayPrices);
+  const perDayPrices = unlimitedTariffs.map(
+    (t) => priceTables[t.package_code]?.frontPricePerDay ?? (t.sale_price_eur / Math.max(1, t.validity_days || 1))
+  );
+  const minPerDay = Math.min(...perDayPrices);
 
   // JSON-LD Structured Data (Product + AggregateOffer + Breadcrumbs - strictly no fake stars/ratings)
   const productJsonLd = {
@@ -238,6 +272,7 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
         countryLabel={countryLabel}
         minPrice={minPrice}
         minPerDay={minPerDay}
+        priceTables={priceTables}
       />
     </>
   );

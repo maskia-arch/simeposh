@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { formatGb, roundToX9, getDiscountPct } from '@/lib/utils';
+import Link from 'next/link';
+import { formatGb } from '@/lib/utils';
+import type { UnlimitedPriceTable } from '@/lib/pricing';
 import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
-import type { Database } from '@/lib/supabase/types';
-import { NetworkIcon, SearchIcon, InfinityIcon, BoltIcon, ShieldIcon, TopUpIcon } from '@/components/Icons';
-import { DaySlider, computePrice, perDayEur } from '@/components/UnlimitedConfigurator';
+import { countryCodeToSlug } from '@/lib/destinations-shared';
+import { SearchIcon, InfinityIcon, BoltIcon, ShieldIcon, TopUpIcon } from '@/components/Icons';
+import { DaySlider, perDayEur } from '@/components/UnlimitedConfigurator';
 import { useCart } from '@/components/CartProvider';
+import { TopUpProgressBar } from '@/components/TopUpProgressBar';
 import type { PublicTariff } from '@/lib/tariffs';
 
 type Tariff = PublicTariff;
@@ -26,20 +29,37 @@ interface TopUpPackage extends Partial<PublicTariff> {
   tariff_type?:   'travel' | 'unlimited_eco' | 'unlimited_pro' | string;
   speed_kbps?:    number | null;
   is_unlimited?:  boolean;
+  priceTable?:    UnlimitedPriceTable | null;
+}
+
+interface TopUpEligibility {
+  allowed: boolean;
+  reason: 'ok' | 'limit_reached' | 'not_supported';
+  used: number;
+  remaining: number;
+  mode: 'data_and_validity' | 'validity_only' | 'none';
+}
+
+interface OrderInfo {
+  id: string;
+  tariff: PublicTariff;
 }
 
 export default function TopUpPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const prefix = locale === 'de' ? '' : `/${locale}`;
   const { addItem, open } = useCart();
   const [iccid,        setIccid]        = useState('');
   const [packages,     setPackages]     = useState<TopUpPackage[]>([]);
+  const [eligibility,  setEligibility]  = useState<TopUpEligibility | null>(null);
+  const [orderInfo,    setOrderInfo]    = useState<OrderInfo | null>(null);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
   const [searched,     setSearched]     = useState(false);
   const [addedCode,    setAddedCode]    = useState<string | null>(null);
 
   // Unlimited Configurator state
-  const [unlimitedDays, setUnlimitedDays]   = useState(7);
+  const [unlimitedDays, setUnlimitedDays]     = useState(7);
   const [selectedPkgCode, setSelectedPkgCode] = useState<string | null>(null);
 
   const doSearch = useCallback(async (code: string) => {
@@ -49,6 +69,8 @@ export default function TopUpPage() {
     setLoading(true);
     setError('');
     setPackages([]);
+    setEligibility(null);
+    setOrderInfo(null);
     setSearched(false);
     setSelectedPkgCode(null);
 
@@ -56,7 +78,24 @@ export default function TopUpPage() {
       const res  = await fetch(`/api/topup/packages?iccid=${encodeURIComponent(value)}`);
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error ?? 'Fehler beim Abrufen der Pakete');
+      if (data.eligibility) {
+        setEligibility(data.eligibility);
+      }
+      if (data.orderInfo) {
+        setOrderInfo(data.orderInfo);
+      }
+
+      if (!res.ok) {
+        if (data.eligibility?.reason === 'limit_reached' || data.error === 'topup_error_limit_reached') {
+          setSearched(true);
+          return;
+        }
+        if (data.eligibility?.reason === 'not_supported' || data.error === 'topup_error_not_supported') {
+          setSearched(true);
+          return;
+        }
+        throw new Error(data.error ?? 'topup_error_general');
+      }
 
       const pkgs: TopUpPackage[] = data.packages ?? [];
       setPackages(pkgs);
@@ -68,7 +107,7 @@ export default function TopUpPage() {
         setSelectedPkgCode(unlim.package_code);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
+      setError(err instanceof Error ? err.message : 'topup_error_general');
     } finally {
       setLoading(false);
     }
@@ -87,6 +126,16 @@ export default function TopUpPage() {
       doSearch(param);
     }
   }, [doSearch]);
+
+  const originCountrySlug = useMemo(() => {
+    const code = orderInfo?.tariff?.country_code;
+    if (!code) return null;
+    return countryCodeToSlug(code) || code.toLowerCase();
+  }, [orderInfo]);
+
+  const originCountryUrl = originCountrySlug
+    ? `${prefix}/esim/${originCountrySlug}`
+    : `${prefix}/tariffs`;
 
   // Separate packages into Unlimited and Travel
   const { unlimitedPackages, travelPackages } = useMemo(() => {
@@ -113,29 +162,30 @@ export default function TopUpPage() {
     );
   }, [unlimitedPackages, selectedPkgCode]);
 
-  // Price calculations for active unlimited package
-  const unlimitedPerDay = useMemo(() => {
-    if (!activeUnlimitedPkg) return 0;
-    return perDayEur({
-      sale_price_eur: activeUnlimitedPkg.sale_price_eur,
-      validity_days:  activeUnlimitedPkg.validity_days || 1,
-    });
-  }, [activeUnlimitedPkg]);
+  // Price calculations from precomputed priceTable
+  const currentPriceTable = activeUnlimitedPkg?.priceTable;
+  const dayInfo = currentPriceTable?.days?.[unlimitedDays];
 
-  const unlimitedTotalPrice = useMemo(() => {
-    if (!unlimitedPerDay) return 0;
-    return computePrice(unlimitedPerDay, unlimitedDays);
-  }, [unlimitedPerDay, unlimitedDays]);
+  const unlimitedPerDay = currentPriceTable?.frontPricePerDay ?? (activeUnlimitedPkg ? perDayEur({
+    sale_price_eur: activeUnlimitedPkg.sale_price_eur,
+    validity_days:  activeUnlimitedPkg.validity_days || 1,
+  }) : 0);
+  const frontPricePerDay = unlimitedPerDay;
 
-  const unlimitedBeforeDiscount = useMemo(() => {
-    if (!unlimitedPerDay) return 0;
-    return roundToX9(unlimitedPerDay * unlimitedDays);
-  }, [unlimitedPerDay, unlimitedDays]);
+  const unlimitedTotalPrice = dayInfo?.priceEur ?? activeUnlimitedPkg?.sale_price_eur ?? 0;
+  const unlimitedBeforeDiscount = dayInfo?.subtotalEur ?? null;
+  const unlimitedDiscount = dayInfo?.discountPct ?? 0;
 
-  const unlimitedDiscount = getDiscountPct(unlimitedDays);
+  const betterDealDays = dayInfo?.betterDealDays;
+  const betterDealPriceEur = dayInfo?.betterDealPriceEur;
+  const compareDays = dayInfo?.compareDays ?? unlimitedDays;
+
+  const isLimitReached = Boolean(eligibility?.reason === 'limit_reached' || (eligibility && eligibility.used >= 9));
+  const isNotSupported = Boolean(eligibility?.reason === 'not_supported');
+  const isValidityOnly = Boolean(eligibility?.mode === 'validity_only');
 
   const handleOpenUnlimitedCheckout = () => {
-    if (!activeUnlimitedPkg) return;
+    if (!activeUnlimitedPkg || isLimitReached || isNotSupported) return;
     const synthetic: Partial<Tariff> = {
       ...activeUnlimitedPkg,
       id:             activeUnlimitedPkg.id,
@@ -155,6 +205,7 @@ export default function TopUpPage() {
   };
 
   const handleOpenTravelCheckout = (pkg: TopUpPackage) => {
+    if (isLimitReached || isNotSupported) return;
     addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
     open();
   };
@@ -181,6 +232,9 @@ export default function TopUpPage() {
           <input
             id="iccid"
             type="text"
+            inputMode="numeric"
+            aria-invalid={!!error}
+            aria-describedby={error ? 'iccid-error' : 'iccid-hint'}
             placeholder={t('topup_iccid_ph')}
             value={iccid}
             onChange={(e) => setIccid(e.target.value)}
@@ -194,20 +248,72 @@ export default function TopUpPage() {
             {loading ? '…' : t('topup_search')}
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-400">
+        <p id="iccid-hint" className="mt-2 text-xs text-slate-400">
           {t('topup_iccid_hint')}
         </p>
       </form>
 
-      {/* Error */}
-      {error && (
-        <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium">
-          {t(error as any)}
+      {/* Error Banner */}
+      {error && !eligibility && (
+        <div id="iccid-error" role="alert" className="mb-6 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium">
+          {t(error as any) || error}
+        </div>
+      )}
+
+      {/* Eligibility status counter / progressbar (when ICCID searched) */}
+      {eligibility && (
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+          <TopUpProgressBar used={eligibility.used} />
+        </div>
+      )}
+
+      {/* 9/9 Limit Reached Banner & Action */}
+      {isLimitReached && (
+        <div className="mb-8 rounded-2xl bg-amber-50 border border-amber-300/80 p-5 shadow-xs space-y-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0" aria-hidden="true">⚠️</span>
+            <div className="space-y-1">
+              <h3 className="text-sm font-black text-amber-950">
+                {t('topup_limit_used', { used: 9 })}
+              </h3>
+              <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                {t('topup_limit_reached_box')}
+              </p>
+            </div>
+          </div>
+          <div className="pt-1">
+            <Link
+              href={originCountryUrl}
+              className="btn-primary min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center font-bold px-6 py-2.5 rounded-xl shadow-sm text-sm text-center"
+            >
+              {t('topup_order_new_esim')}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Non-Reloadable / Single-Use Notice */}
+      {isNotSupported && (
+        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs text-center space-y-3">
+          <div className="inline-flex items-center gap-3">
+            <span className="rounded-full bg-slate-100 border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600">
+              {t('topup_not_supported_badge')}
+            </span>
+            <Link
+              href={originCountryUrl}
+              className="text-xs font-bold text-brand-600 hover:text-brand-800 underline underline-offset-2"
+            >
+              {t('topup_buy_new_esim')} →
+            </Link>
+          </div>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            {t('topup_error_not_supported')}
+          </p>
         </div>
       )}
 
       {/* No Results */}
-      {searched && packages.length === 0 && !loading && (
+      {searched && !isLimitReached && !isNotSupported && packages.length === 0 && !loading && (
         <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-400 bg-white">
           <div className="flex justify-center mb-2">
             <SearchIcon size={32} className="text-slate-300" />
@@ -227,9 +333,16 @@ export default function TopUpPage() {
                 {iccid}
               </span>
             </h2>
-            <span className="text-xs font-semibold text-slate-400">
-              {packages.length} {packages.length === 1 ? 'Tarif gefunden' : 'Tarife verfügbar'}
-            </span>
+            <div className="flex items-center gap-2">
+              {isValidityOnly && (
+                <span className="rounded-md bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                  {t('topup_validity_only_badge')}
+                </span>
+              )}
+              <span className="text-xs font-semibold text-slate-400">
+                {packages.length} {packages.length === 1 ? 'Tarif gefunden' : 'Tarife verfügbar'}
+              </span>
+            </div>
           </div>
 
           {/* ── UNLIMITED TARIFF EXTENSION SLIDER STUDIO ── */}
@@ -253,7 +366,7 @@ export default function TopUpPage() {
 
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-bold text-indigo-700 shrink-0">
                   <InfinityIcon size={14} className="text-indigo-600" />
-                  <span>🔄 Days Reloadable (Laufzeit-Verlängerung)</span>
+                  <span>{isValidityOnly ? t('topup_validity_only_badge') : t('topup_data_validity_badge')}</span>
                 </span>
               </div>
 
@@ -309,33 +422,66 @@ export default function TopUpPage() {
                   days={unlimitedDays}
                   onChange={setUnlimitedDays}
                   label="Laufzeit-Verlängerung (Tage)"
+                  tiers={currentPriceTable?.tiers}
+                  currentDiscountPct={unlimitedDiscount}
                 />
               </div>
+
+              {/* Better Deal Tip */}
+              {betterDealDays && betterDealPriceEur !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => setUnlimitedDays(betterDealDays)}
+                  className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex items-center justify-between group mt-2"
+                >
+                  <span className="font-medium">
+                    💡 {t('cfg_duration_better_deal', {
+                      dealDays: betterDealDays,
+                      dealPrice: `${betterDealPriceEur.toFixed(2)} €`,
+                      compareDays,
+                    }) || `Tipp: ${betterDealDays} Tage kosten nur ${betterDealPriceEur.toFixed(2)} € (günstiger als ${compareDays} Tage)`}
+                  </span>
+                  <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0 ml-2">
+                    {betterDealDays}d wählen →
+                  </span>
+                </button>
+              )}
 
               {/* Live Pricing & Action Area */}
               <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Gesamtpreis Verlängerung
-                  </span>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Gesamtpreis Verlängerung
+                    </span>
+                    {unlimitedDiscount > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                        Staffelrabatt −{unlimitedDiscount}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-0.5">
                     <p className="text-2xl font-black text-slate-900 tracking-tight">
                       <Price eur={unlimitedTotalPrice} />
                     </p>
-                    {unlimitedDiscount > 0 && (
-                      <Price eur={unlimitedBeforeDiscount} className="text-xs text-slate-400 line-through" />
-                    )}
                   </div>
                   <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
                     ({(unlimitedTotalPrice / unlimitedDays).toFixed(2)} € / Tag)
                   </span>
+                  {unlimitedBeforeDiscount !== null && frontPricePerDay > 0 && (
+                    <span className="text-xs text-slate-400 block mt-1">
+                      {unlimitedDays} Tage × {frontPricePerDay.toFixed(2)} € = {unlimitedBeforeDiscount.toFixed(2)} €
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
+                    disabled={isLimitReached}
+                    aria-disabled={isLimitReached}
                     onClick={() => {
-                      if (!activeUnlimitedPkg) return;
+                      if (!activeUnlimitedPkg || isLimitReached) return;
                       const synthetic: Partial<Tariff> = {
                         ...activeUnlimitedPkg,
                         id:             activeUnlimitedPkg.id,
@@ -354,15 +500,23 @@ export default function TopUpPage() {
                       setAddedCode('unlimited');
                       setTimeout(() => setAddedCode(null), 2000);
                     }}
-                    className="h-12 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-5 text-sm font-semibold text-brand-700 hover:bg-brand-100 hover:border-brand-300 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                    className={`h-12 rounded-xl border-[1.5px] px-5 text-sm font-semibold shadow-xs transition-all ${
+                      isLimitReached
+                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 hover:border-brand-300 cursor-pointer active:scale-[0.98]'
+                    }`}
                   >
-                    {addedCode === 'unlimited' ? '✓ Im Warenkorb' : '+ In den Warenkorb'}
+                    {isLimitReached ? t('topup_btn') : (addedCode === 'unlimited' ? '✓ Im Warenkorb' : '+ In den Warenkorb')}
                   </button>
 
                   <button
                     type="button"
+                    disabled={isLimitReached}
+                    aria-disabled={isLimitReached}
                     onClick={handleOpenUnlimitedCheckout}
-                    className="btn-primary shadow-md active:scale-[0.98] flex items-center gap-2"
+                    className={`btn-primary shadow-md flex items-center gap-2 ${
+                      isLimitReached ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : 'active:scale-[0.98]'
+                    }`}
                   >
                     <span>eSIM um {unlimitedDays} {unlimitedDays === 1 ? 'Tag' : 'Tage'} verlängern</span>
                     <span>·</span>
@@ -374,8 +528,8 @@ export default function TopUpPage() {
             </div>
           )}
 
-          {/* ── TRAVEL FIXED-VOLUME TOP-UP PACKAGES ── */}
-          {travelPackages.length > 0 && (
+          {/* ── TRAVEL FIXED-VOLUME TOP-UP PACKAGES (only if not validity_only) ── */}
+          {!isValidityOnly && travelPackages.length > 0 && (
             <div className="space-y-3">
               {unlimitedPackages.length > 0 && (
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 pt-2">
@@ -407,18 +561,29 @@ export default function TopUpPage() {
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
+                          disabled={isLimitReached}
+                          aria-disabled={isLimitReached}
                           onClick={() => {
+                            if (isLimitReached) return;
                             addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
                             setAddedCode(pkg.package_code);
                             setTimeout(() => setAddedCode(null), 2000);
                           }}
-                          className="h-10 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-3.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-all cursor-pointer active:scale-[0.98]"
+                          className={`h-10 rounded-xl border-[1.5px] px-3.5 text-xs font-semibold transition-all ${
+                            isLimitReached
+                              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 hover:border-brand-300 cursor-pointer active:scale-[0.98]'
+                          }`}
                         >
                           {addedCode === pkg.package_code ? '✓' : '+ Warenkorb'}
                         </button>
                         <button
+                          disabled={isLimitReached}
+                          aria-disabled={isLimitReached}
                           onClick={() => handleOpenTravelCheckout(pkg)}
-                          className="btn-primary !h-10 !px-4 !text-xs shadow-xs active:scale-[0.98]"
+                          className={`btn-primary !h-10 !px-4 !text-xs shadow-xs ${
+                            isLimitReached ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : 'active:scale-[0.98]'
+                          }`}
                         >
                           {t('topup_btn')}
                         </button>

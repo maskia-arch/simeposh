@@ -93,6 +93,7 @@ import {
   cleanTariffName,
   type TariffOperator,
 } from './tariff-display';
+import { getTopUpEligibility } from '@/lib/topup';
 
 export interface PublicTariff {
   id:                   string;
@@ -112,6 +113,7 @@ export interface PublicTariff {
   speed_kbps:           number | null;
   label:                string | null;
   is_top_up_eligible:   boolean | null;
+  discount_rule_code?:  string | null;
 
   // Serverseitig sauber aufbereitete Felder (ersetzen raw_data vollständig, einheitlich snake_case):
   operators:            TariffOperator[];
@@ -216,6 +218,7 @@ export function extractServerBreakoutIp(row: any): string | null {
 
 /**
  * Server-side helper: Extract reloadability classification from database row or supplier raw_data.
+ * Derived strictly from activeType and supportTopUpType via getTopUpEligibility.
  */
 export function extractServerReloadability(row: any): { isReloadable: boolean; type: 'days' | 'data' | 'none' } {
   if (row.reloadability_type === 'days' || row.reloadability_type === 'data' || row.reloadability_type === 'none') {
@@ -225,22 +228,18 @@ export function extractServerReloadability(row: any): { isReloadable: boolean; t
     };
   }
 
-  const raw = (row.raw_data ?? {}) as Record<string, unknown>;
-  const rawTopUpType = raw.supportTopUpType !== undefined && raw.supportTopUpType !== null
-    ? Number(raw.supportTopUpType)
-    : undefined;
-  const isUnlimited = row.tariff_type?.startsWith('unlimited') || row.data_gb === 0;
+  const eligibility = getTopUpEligibility(null, row);
+  const type: 'days' | 'data' | 'none' =
+    eligibility.mode === 'validity_only'
+      ? 'days'
+      : eligibility.mode === 'data_and_validity'
+      ? 'data'
+      : 'none';
 
-  if (rawTopUpType === 3 || (isUnlimited && rawTopUpType !== 1 && row.is_top_up_eligible !== false)) {
-    return { type: 'days', isReloadable: true };
-  }
-  if (rawTopUpType === 2 || (!isUnlimited && rawTopUpType !== 1 && row.is_top_up_eligible !== false)) {
-    return { type: 'data', isReloadable: true };
-  }
-  if (row.is_reloadable === true || row.is_top_up_eligible === true) {
-    return isUnlimited ? { type: 'days', isReloadable: true } : { type: 'data', isReloadable: true };
-  }
-  return { type: 'none', isReloadable: false };
+  return {
+    type,
+    isReloadable: eligibility.reason !== 'not_supported',
+  };
 }
 
 /**
@@ -297,7 +296,8 @@ export function toPublicTariff(row: any): PublicTariff {
     tariff_type:          row.tariff_type ? String(row.tariff_type) : 'travel',
     speed_kbps:           row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
     label:                row.label ? String(row.label) : null,
-    is_top_up_eligible:   row.is_top_up_eligible !== undefined && row.is_top_up_eligible !== null ? Boolean(row.is_top_up_eligible) : null,
+    is_top_up_eligible:   reload.isReloadable,
+    discount_rule_code:   row.discount_rule_code ? String(row.discount_rule_code) : null,
 
     // Derived whitelisted fields (strictly snake_case)
     operators:            ops,

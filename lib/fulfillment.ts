@@ -10,6 +10,7 @@ import { allocateEsim, applyTopUp } from '@/lib/esimaccess/client';
 import { sendEsimEmail, sendTopUpEmail, sendConsolidatedOrderEmail } from '@/lib/email/mailer';
 import { applyOrderCompletionCashback } from './cashback';
 import { getEsimOverviewUrl } from '@/lib/url';
+import { getEsimRecord, atomicIncrementTopUpCount } from '@/lib/topup';
 
 export interface FulfillResult { orderId: string; ok: boolean; error?: string }
 
@@ -176,8 +177,26 @@ export async function fulfillOrder(
   try {
     if (o.order_type === 'top_up') {
       if (!o.top_up_iccid) throw new Error('top_up_iccid missing');
+
+      // Re-check top-up limit immediately before calling provider (edge-case guard)
+      const esim = await getEsimRecord(o.top_up_iccid);
+      if (esim && esim.topup_count >= 9) {
+        console.error(`[FULFILLMENT CRITICAL] Order ${orderId}: Max top-up limit (9/9) reached for ICCID ${o.top_up_iccid}. Aborting provider call.`);
+        await supabase.from('orders').update({
+          status: 'review',
+          error_message: 'Maximales Auflade-Limit (9/9) vor Bereitstellung erreicht. Automatische Stornierung/Prüfung erforderlich.',
+        }).eq('id', orderId);
+        return { orderId, ok: false, error: 'Max top-up limit (9/9) reached. Order moved to review.' };
+      }
+
       const periodNum = o.period_num ? Number(o.period_num) : undefined;
-      await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId, { periodNum });
+      const supportTopUpType = o.tariffs?.support_top_up_type ?? o.tariffs?.raw_data?.supportTopUpType;
+
+      await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId, { periodNum, supportTopUpType });
+
+      // Atomic increment: UPDATE esims SET topup_count = topup_count + 1 WHERE iccid = $1 AND topup_count < 9 RETURNING topup_count;
+      await atomicIncrementTopUpCount(o.top_up_iccid, orderId);
+
       await supabase.from('orders').update({ status: 'completed', iccid: o.top_up_iccid }).eq('id', orderId);
       
       try {

@@ -17,6 +17,8 @@ function getConflictTarget(table: string): string {
   if (table === 'post_translations') return '("post_id", "locale")';
   if (table === 'crypto_coins') return '("code")';
   if (table === 'tariffs') return '("package_code")';
+  if (table === 'discount_rules') return '("discount_rule_code")';
+  if (table === 'esims') return '("iccid")';
   if (table === 'sync_logs') return '("sync_id")';
   if (table === 'orders') return '("id")';
   if (table === 'support_tickets') return '("id")';
@@ -428,6 +430,8 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
           if (this.table === 'users' && k === 'id') return false;
           if (this.table === 'post_translations' && (k === 'post_id' || k === 'locale')) return false;
           if (this.table === 'tariffs' && k === 'package_code') return false;
+          if (this.table === 'discount_rules' && k === 'discount_rule_code') return false;
+          if (this.table === 'esims' && k === 'iccid') return false;
           return k !== 'id';
         });
         

@@ -743,7 +743,24 @@ export const CLIENT_TRANSLATION_KEYS = [
   "login_resending",
   "login_resend_success",
   "login_resend_error",
-  "login_resend_network_error"
+  "login_resend_network_error",
+  "topup_limit_used",
+  "topup_limit_remaining",
+  "topup_limit_remaining_singular",
+  "topup_limit_remaining_none",
+  "topup_limit_reached_box",
+  "topup_order_new_esim",
+  "topup_buy_new_esim",
+  "topup_not_supported_badge",
+  "topup_error_limit_reached",
+  "topup_error_not_supported",
+  "topup_error_pending_session",
+  "topup_validity_only_badge",
+  "topup_data_validity_badge",
+  "cfg_tier_discount_badge",
+  "cfg_discount_subtotal",
+  "cfg_duration_better_deal"
 ] as const;
 
 export type ClientTranslationKey = typeof CLIENT_TRANSLATION_KEYS[number];
+

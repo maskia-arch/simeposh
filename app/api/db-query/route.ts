@@ -39,10 +39,34 @@ function sanitizeSelectFields(fields: string): boolean {
   return true;
 }
 
+const FORBIDDEN_COLUMNS = ['ek_price_usd', 'usd_eur_rate', 'raw_data', 'cost_price', 'wholesale_price'];
+const SAFE_TARIFF_COLUMNS = [
+  'id',
+  'package_code',
+  'slug',
+  'name',
+  'description',
+  'country_code',
+  'country_name',
+  'region',
+  'flag_emoji',
+  'location_codes',
+  'data_gb',
+  'validity_days',
+  'sale_price_eur',
+  'tariff_type',
+  'speed_kbps',
+  'label',
+  'is_top_up_eligible',
+  'active_type',
+  'support_top_up_type',
+  'discount_rule_code',
+];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { table, selectFields, filters, orFilters, limitVal, offsetVal, isSingle, isMaybeSingle } = body;
+    let { table, selectFields, filters, orFilters, limitVal, offsetVal, isSingle, isMaybeSingle } = body;
 
     if (!table || typeof table !== 'string') {
       return NextResponse.json({ error: 'Table is required' }, { status: 400 });
@@ -68,9 +92,23 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Validate selectFields
+    // 2. Validate selectFields and protect sensitive columns
     if (selectFields && !sanitizeSelectFields(selectFields)) {
       return NextResponse.json({ error: 'Invalid or disallowed select fields' }, { status: 400 });
+    }
+
+    // Ensure secret pricing / wholesale columns can never be queried on tariffs
+    if (table === 'tariffs') {
+      if (!selectFields || selectFields.trim() === '*' || selectFields.includes('*')) {
+        selectFields = SAFE_TARIFF_COLUMNS.join(', ');
+      } else {
+        const requestedTokens = selectFields.split(',').map((s: string) => s.trim().toLowerCase());
+        for (const token of requestedTokens) {
+          if (FORBIDDEN_COLUMNS.includes(token)) {
+            return NextResponse.json({ error: `Column '${token}' is restricted` }, { status: 403 });
+          }
+        }
+      }
     }
 
     // 3. Build Postgres Query
@@ -100,6 +138,7 @@ export async function POST(request: Request) {
     if (Array.isArray(filters)) {
       for (const f of filters) {
         if (!f || typeof f.col !== 'string' || !SAFE_IDENTIFIER_REGEX.test(f.col)) continue;
+        if (table === 'tariffs' && FORBIDDEN_COLUMNS.includes(f.col.toLowerCase())) continue;
         if (f.op === '=') {
           if (table === 'users' && f.col === 'id' && f.val !== user?.id) continue;
           if (table === 'esim_cash_accounts' && f.col === 'email' && f.val !== user?.email) continue;

@@ -5,10 +5,11 @@
  * applies our pricing formula, and returns the enriched packages.
  */
 import { NextResponse }        from 'next/server';
-import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes, detectTariffType } from '@/lib/esimaccess/client';
-import { calculateSalePrice }  from '@/lib/pricing';
+import { priceToUsd, bytesToGb, getVolumeBytes, detectTariffType } from '@/lib/esimaccess/client';
+import { calculateSalePrice, getUnlimitedPriceTable }  from '@/lib/pricing';
 import { createServiceClient } from '@/lib/supabase/server';
 import { toPublicTariff }       from '@/lib/tariffs';
+import { getTopUpEligibility, getEsimRecord, fetchTopUpPackagesCached } from '@/lib/topup';
 
 function slugify(str: string): string {
   return str
@@ -28,7 +29,38 @@ export async function GET(request: Request) {
   try {
     const supabase = createServiceClient();
 
-    // 1. Get current exchange rate from DB
+    // 1. Check if this ICCID belongs to an existing order in our database
+    const { data: existingOrder } = await supabase
+      .from('orders')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .select('id, period_num, tariffs(id, slug, name, country_name, country_code, flag_emoji, data_gb, validity_days, tariff_type, speed_kbps, package_code, raw_data, active_type, support_top_up_type)')
+      .eq('iccid', iccid)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle() as any;
+
+    const existingTariff = existingOrder?.tariffs ?? null;
+
+    // 2. Gatekeeper check: eSIM topup limit (max 9/9)
+    const esim = await getEsimRecord(iccid);
+    if (esim && esim.topup_count >= 9) {
+      return NextResponse.json(
+        {
+          error: 'topup_error_limit_reached',
+          eligibility: {
+            allowed: false,
+            reason: 'limit_reached',
+            used: 9,
+            remaining: 0,
+            mode: 'none',
+          },
+          orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, tariff: toPublicTariff(existingTariff) } : null,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 3. Get current exchange rate from DB
     const { data: rateRow } = await supabase
       .from('system_settings')
       .select('value')
@@ -37,32 +69,37 @@ export async function GET(request: Request) {
 
     const usdEurRate = rateRow ? parseFloat(rateRow.value) : 0.92;
 
-    // 2. Check if this ICCID belongs to an existing order in our database
-    const { data: existingOrder } = await supabase
-      .from('orders')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .select('id, period_num, tariffs(id, name, country_name, country_code, flag_emoji, data_gb, validity_days, tariff_type, speed_kbps, package_code, raw_data)')
-      .eq('iccid', iccid)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle() as any;
+    if (existingTariff) {
+      const planCheck = getTopUpEligibility(esim, existingTariff);
+      if (planCheck.reason === 'not_supported') {
+        return NextResponse.json(
+          {
+            error: 'topup_error_not_supported',
+            eligibility: planCheck,
+            orderInfo: { id: existingOrder.id, tariff: toPublicTariff(existingTariff) },
+          },
+          { status: 400 }
+        );
+      }
+    }
 
-    const existingTariff = existingOrder?.tariffs ?? null;
+    const originTariffSlug = (existingTariff?.raw_data?.slug || existingTariff?.slug || '').trim();
 
-    // 3. Fetch top-up packages from esimaccess
-    const res = await fetchTopUpPackages(iccid);
-
-    if (!res.success) {
-      const errCode = String(res.errorCode);
-      const isInvalidIccid = ['310409', '310006', '310401', '310204', '310410', '310411'].includes(errCode) || errCode.includes('iccid');
+    // 4. Fetch top-up packages from esimaccess (slug-based & cached)
+    let rawPackages: any[] = [];
+    try {
+      rawPackages = await fetchTopUpPackagesCached(iccid, originTariffSlug);
+    } catch (fetchErr: any) {
+      const errCode = String(fetchErr.message || fetchErr);
+      const isInvalidIccid =
+        ['310409', '310006', '310401', '310204', '310410', '310411'].includes(errCode) ||
+        errCode.includes('iccid');
       console.warn(`[topup/packages] Failed to fetch top-up packages for ICCID ${iccid}: code ${errCode}`);
       return NextResponse.json(
         { error: isInvalidIccid ? 'topup_error_invalid_iccid' : 'topup_error_general' },
         { status: 400 }
       );
     }
-
-    const rawPackages = res.obj?.packageList ?? [];
 
     // 4. Map and detect unlimited attributes
     const packages = rawPackages.map((pkg) => {
@@ -218,16 +255,38 @@ export async function GET(request: Request) {
       return a.sale_price_eur - b.sale_price_eur;
     });
 
-    const publicPackages = packages.map((p) => {
-      const pub = toPublicTariff(p);
-      return {
-        ...pub,
-        is_unlimited: Boolean(p.is_unlimited),
-      };
-    });
+    const publicPackages = await Promise.all(
+      packages.map(async (p) => {
+        const pub = toPublicTariff(p);
+        let priceTable = null;
+        if (p.is_unlimited) {
+          try {
+            priceTable = await getUnlimitedPriceTable(
+              {
+                sale_price_eur: p.sale_price_eur,
+                validity_days: p.validity_days || 1,
+                discount_rule_code: existingTariff?.discount_rule_code,
+              },
+              1,
+              365
+            );
+          } catch (e) {
+            console.warn('[topup/packages] Error precomputing priceTable:', e);
+          }
+        }
+        return {
+          ...pub,
+          is_unlimited: Boolean(p.is_unlimited),
+          priceTable,
+        };
+      })
+    );
+
+    const finalEligibility = getTopUpEligibility(esim, existingTariff);
 
     return NextResponse.json({
       packages: publicPackages,
+      eligibility: finalEligibility,
       orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, tariff: toPublicTariff(existingTariff) } : null
     });
   } catch (err) {
