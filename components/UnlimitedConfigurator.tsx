@@ -184,23 +184,23 @@ export function DaySlider({
         </div>
       </div>
 
-      {/* Dynamic Discount Hint: fixed 2-line min-height to prevent layout jumps on mobile */}
-      <div className="min-h-[44px] flex items-center">
+      {/* Dynamic Discount Hint: strictly fixed 2-line height (46px) with leading-4 so 390px, 768px, 1280px have 0px jump */}
+      <div className="h-[46px] min-h-[46px] flex items-center">
         {currentDiscountPct > 0 ? (
-          <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
-            <span>🎁 {t('cfg_disc_incl', { pct: formatPercent(currentDiscountPct, locale) })}</span>
+          <p className="text-[11px] leading-4 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
+            <span>{t('cfg_disc_incl', { pct: currentDiscountPct })}</span>
             {nextTier && (
               <span className="text-emerald-600 font-normal">
-                {' '}· {t('cfg_disc_next', { days: formatDaysWithUnit(nextTier.minDays, locale), pct: formatPercent(nextTier.discountPct, locale) })}
+                {' '}· {t('cfg_disc_next', { n: nextTier.minDays, pct: nextTier.discountPct })}
               </span>
             )}
           </p>
         ) : nextTier ? (
-          <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
-            <span>💡 {t('cfg_disc_hint', { days: formatDaysWithUnit(nextTier.minDays, locale), pct: formatPercent(nextTier.discountPct, locale) })}</span>
+          <p className="text-[11px] leading-4 text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
+            <span>{t('cfg_disc_hint', { n: nextTier.minDays, pct: nextTier.discountPct })}</span>
           </p>
         ) : (
-          <div className="w-full h-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
+          <div className="w-full h-[46px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
         )}
       </div>
     </div>
@@ -863,7 +863,7 @@ export function UnlimitedConfigurator({
                         onClick={() => setDays(betterDealDays)}
                         className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs"
                       >
-                        <span className="font-medium">
+                        <span className="font-medium [text-wrap:pretty]">
                           💡 {tipTitle}
                         </span>
                         <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0">

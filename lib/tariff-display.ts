@@ -207,10 +207,7 @@ export function formatLocalizedTariffName(
   // Ensure space between digit and data unit: 500MB -> 500 MB
   name = name.replace(/(\d+)\s*(MB|GB)\b/gi, '$1 $2');
 
-  // Finnish data unit localization: MB -> Mt, GB -> Gt
-  if (locale === 'fi') {
-    name = name.replace(/\bMB\b/g, 'Mt').replace(/\bGB\b/g, 'Gt');
-  }
+
 
   // Localize "/Day" suffix
   if (/\b(?:per\s+day|\/day)\b/i.test(name) || /\/day\b/i.test(name)) {

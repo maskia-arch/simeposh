@@ -5,6 +5,7 @@ import type { PublicTariff } from '@/lib/tariffs';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -92,8 +93,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const tariffStr = items.map((i) => i.name).filter(Boolean).join(', ');
       const tot = items.reduce((s, i) => s + (Number(i.priceEur) || 0) * (Number(i.quantity) || 1), 0);
       const amountStr = tot > 0 ? `${tot.toFixed(2)} €` : '';
+      const validityStr = items.map((i) => i.validityDays ? formatDaysWithUnit(i.validityDays, locale) : '').filter(Boolean).join(', ');
       if (tariffStr) {
         document.cookie = `esim_checkout_tariff=${encodeURIComponent(tariffStr)};path=/;max-age=86400;SameSite=Lax`;
+      }
+      if (validityStr) {
+        document.cookie = `esim_checkout_validity=${encodeURIComponent(validityStr)};path=/;max-age=86400;SameSite=Lax`;
+        window.localStorage.setItem('esim_checkout_validity', validityStr);
       }
       if (amountStr) {
         document.cookie = `esim_checkout_amount=${encodeURIComponent(amountStr)};path=/;max-age=86400;SameSite=Lax`;

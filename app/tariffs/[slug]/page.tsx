@@ -118,8 +118,6 @@ export async function generateMetadata({
     } else {
       dataLabel = 'Unlimited';
     }
-  } else if (locale === 'fi') {
-    dataLabel = dataLabel.replace(/\bGB\b/g, 'Gt').replace(/\bMB\b/g, 'Mt');
   }
 
   const daysLabel = formatDaysWithUnit(tariff.validity_days, locale);
@@ -222,8 +220,6 @@ export default async function TariffDetailPage({
     } else {
       dataLabel = 'Unlimited';
     }
-  } else if (locale === 'fi') {
-    dataLabel = dataLabel.replace(/\bGB\b/g, 'Gt').replace(/\bMB\b/g, 'Mt');
   }
 
   const daysLabel = formatDaysWithUnit(tariff.validity_days, locale);

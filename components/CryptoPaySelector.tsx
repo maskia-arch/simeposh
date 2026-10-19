@@ -7,6 +7,7 @@ import { validateEmail } from '@/lib/validation/email';
 import { OpenChatButton } from '@/components/OpenChatButton';
 import { useCart } from '@/components/CartProvider';
 import { formatCurrencyEuro } from '@/lib/currency';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 
 interface CoinOption {
   code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number; minOrderEur?: number;
@@ -268,11 +269,16 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
     if (typeof window !== 'undefined') {
       try {
         const tariffVal = cartItems.map((i) => i.name).filter(Boolean).join(', ');
+        const validityVal = cartItems.map((i) => i.validityDays ? formatDaysWithUnit(i.validityDays, locale) : '').filter(Boolean).join(', ');
         const amountVal = `${finalTotal.toFixed(2)} €`;
         localStorage.setItem('esim_checkout_email', effectiveEmail);
         localStorage.setItem('esim_checkout_terms', 'true');
         localStorage.setItem('esim_checkout_amount', amountVal);
         localStorage.setItem('esim_checkout_tariff', tariffVal);
+        if (validityVal) {
+          localStorage.setItem('esim_checkout_validity', validityVal);
+          document.cookie = `esim_checkout_validity=${encodeURIComponent(validityVal)};path=/;max-age=86400;SameSite=Lax`;
+        }
         if (tariffVal) {
           document.cookie = `esim_checkout_tariff=${encodeURIComponent(tariffVal)};path=/;max-age=86400;SameSite=Lax`;
         }

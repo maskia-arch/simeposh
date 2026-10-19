@@ -8,6 +8,7 @@ import { useHideChatBubble } from '@/lib/useHideChatBubble';
 import { useCart } from '@/components/CartProvider';
 import { OpenChatButton } from '@/components/OpenChatButton';
 import { formatCurrencyEuro } from '@/lib/currency';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 
 interface SessionState {
   id: string; coin: string; coinName: string; status: string;
@@ -263,15 +264,35 @@ export function CryptoCheckout({
   sessionId,
   initialTariff = '',
   initialAmount = '',
+  initialValidity = '',
 }: {
   sessionId: string;
   initialTariff?: string;
   initialAmount?: string;
+  initialValidity?: string;
 }) {
   useHideChatBubble(true);
   const { locale, t } = useTranslation();
   const { items, total } = useCart();
   const s = (k: string) => t((`pay_${k}`) as any);
+
+  const [cachedValidity, setCachedValidity] = useState(() => {
+    if (initialValidity) return initialValidity;
+    if (typeof window === 'undefined') return '';
+    try {
+      const v = localStorage.getItem('esim_checkout_validity');
+      if (v) return v;
+      const rawCart = localStorage.getItem('esim_cart_v1');
+      if (rawCart) {
+        const parsed = JSON.parse(rawCart);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valDays = parsed.map((i: any) => i.validityDays ? formatDaysWithUnit(i.validityDays, locale) : '').filter(Boolean).join(', ');
+          if (valDays) return valDays;
+        }
+      }
+    } catch {}
+    return '';
+  });
 
   const [cachedTariff, setCachedTariff] = useState(() => {
     if (initialTariff) return initialTariff;
@@ -313,13 +334,18 @@ export function CryptoCheckout({
       try {
         const t = localStorage.getItem('esim_checkout_tariff');
         const a = localStorage.getItem('esim_checkout_amount');
+        const v = localStorage.getItem('esim_checkout_validity');
         if (t) setCachedTariff(t);
         if (a) setCachedAmount(a);
+        if (v) setCachedValidity(v);
       } catch {}
     }
   }, []);
 
   const displayTariff = (items.length > 0 ? items.map((i) => i.name).join(', ') : '') || cachedTariff;
+  const displayValidity = (items.length > 0 && items.some((i) => i.validityDays)
+    ? items.map((i) => formatDaysWithUnit(i.validityDays, locale)).filter(Boolean).join(', ')
+    : '') || cachedValidity;
   const rawDisplayAmount = cachedAmount || (total > 0 ? `${total.toFixed(2)} €` : '');
   const displayAmount = rawDisplayAmount
     ? (locale === 'de' ? rawDisplayAmount.replace('.', ',') : rawDisplayAmount.replace(',', '.'))
@@ -657,6 +683,21 @@ export function CryptoCheckout({
                 {displayTariff}
               </span>
             </div>
+            <div
+              id="skeleton-validity-row"
+              className={`flex items-center justify-between border-t border-slate-200/40 pt-2 ${displayValidity ? '' : 'hidden'}`}
+            >
+              <span className="text-xs font-semibold text-slate-500">
+                {t('card_validity')}
+              </span>
+              <span
+                className="text-xs font-bold text-slate-800 text-right"
+                data-testid="skeleton-validity-value"
+                id="skeleton-validity-text"
+              >
+                {displayValidity}
+              </span>
+            </div>
             <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
               <span className="text-xs font-semibold text-slate-500">
                 {s('amount_label')}
@@ -673,7 +714,7 @@ export function CryptoCheckout({
 
           <script
             dangerouslySetInnerHTML={{
-              __html: `(function(){try{var t=localStorage.getItem('esim_checkout_tariff');var a=localStorage.getItem('esim_checkout_amount');if(!t||!a){var c=localStorage.getItem('esim_cart_v1');if(c){var items=JSON.parse(c);if(Array.isArray(items)&&items.length){if(!t)t=items.map(function(i){return i.name;}).filter(Boolean).join(', ');if(!a){var tot=items.reduce(function(s,i){return s+(Number(i.priceEur)||0)*(Number(i.quantity)||1);},0);if(tot>0)a=tot.toFixed(2)+' €';}}}}var tEl=document.getElementById('skeleton-tariff-text');var aEl=document.getElementById('skeleton-amount-text');if(t&&tEl&&(!tEl.textContent||tEl.textContent.trim()===''))tEl.textContent=t;if(a&&aEl&&(!aEl.textContent||aEl.textContent.trim()===''))aEl.textContent=a;}catch(_){}})();`,
+              __html: `(function(){try{var t=localStorage.getItem('esim_checkout_tariff');var a=localStorage.getItem('esim_checkout_amount');var v=localStorage.getItem('esim_checkout_validity');if(!t||!a||!v){var c=localStorage.getItem('esim_cart_v1');if(c){var items=JSON.parse(c);if(Array.isArray(items)&&items.length){if(!t)t=items.map(function(i){return i.name;}).filter(Boolean).join(', ');if(!a){var tot=items.reduce(function(s,i){return s+(Number(i.priceEur)||0)*(Number(i.quantity)||1);},0);if(tot>0)a=tot.toFixed(2)+' €';}}}}var tEl=document.getElementById('skeleton-tariff-text');var aEl=document.getElementById('skeleton-amount-text');var vEl=document.getElementById('skeleton-validity-text');var vRow=document.getElementById('skeleton-validity-row');if(t&&tEl&&(!tEl.textContent||tEl.textContent.trim()===''))tEl.textContent=t;if(a&&aEl&&(!aEl.textContent||aEl.textContent.trim()===''))aEl.textContent=a;if(v&&vEl){if(!vEl.textContent||vEl.textContent.trim()==='')vEl.textContent=v;if(vRow)vRow.classList.remove('hidden');}}catch(_){}})();`,
             }}
           />
 
@@ -831,6 +872,24 @@ export function CryptoCheckout({
             </span>
           )}
         </div>
+
+        {/* Plan and Validity summary */}
+        {(displayTariff || displayValidity) && (
+          <div className="mb-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3.5 space-y-1.5 shadow-2xs">
+            {displayTariff && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-500">{s('plan_label')}</span>
+                <span className="font-bold text-slate-800 text-right truncate max-w-[220px]" data-testid="checkout-tariff-name">{displayTariff}</span>
+              </div>
+            )}
+            {displayValidity && (
+              <div className={`flex items-center justify-between text-xs ${displayTariff ? 'border-t border-slate-200/50 pt-1.5' : ''}`}>
+                <span className="font-semibold text-slate-500">{t('card_validity')}</span>
+                <span className="font-bold text-slate-800 text-right" data-testid="checkout-validity-value">{displayValidity}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Network warning notice for USDT and USDC */}
         {isErc20Coin && status !== 'detected' && (

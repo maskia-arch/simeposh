@@ -53,7 +53,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
+    <div lang={locale} className="relative min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-3xl" />
@@ -86,7 +86,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 <div className="flex items-center gap-4">
                   <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={64} className="shadow-sm rounded-lg" />
                   <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{countryLabel}</h1>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('esim_for_country' as any, { country: countryLabel }) || countryLabel}</h1>
                     {coverage && (
                       <div className="relative flex items-center gap-1.5 text-sm text-slate-400 mt-1">
                         <GlobeIcon size={14} className="text-slate-400 animate-pulse" />
@@ -147,9 +147,6 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
               <div className="mt-6 border-t border-slate-100 pt-6">
                 <p className="text-lg font-bold text-slate-800 mb-2">{formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale)}</p>
-                {tariff.description && (
-                  <p className="text-sm text-slate-500 leading-relaxed">{tariff.description}</p>
-                )}
                 {tariff.label && (
                   <div className="mt-3">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-sm font-semibold text-amber-800">
@@ -226,7 +223,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             {ops.length > 0 && (
               <div className="rounded-3xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">{t('det_operators')}</h2>
+                  <h2 className={`text-sm font-bold tracking-wider text-slate-400 ${locale === 'tr' ? '' : 'uppercase'}`}>{t('det_operators')}</h2>
                   <div className="flex items-center gap-1.5">
                     {ops.length > 1 && (
                       <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
@@ -264,7 +261,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
             {/* Activation Guide */}
             <div className="rounded-3xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-8 shadow-sm">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">{t('det_activation')}</h2>
+              <h2 className={`text-sm font-bold tracking-wider text-slate-400 mb-4 ${locale === 'tr' ? '' : 'uppercase'}`}>{t('det_activation')}</h2>
               <ol className="space-y-3 text-sm text-slate-600 list-decimal list-inside">
                 <li className="leading-relaxed"><strong className="text-slate-800">{t('det_act_1')}</strong></li>
                 <li className="leading-relaxed" dangerouslySetInnerHTML={{ __html: t('det_act_2') }} />
@@ -304,7 +301,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             {/* Price section */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/60 flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-500 font-semibold uppercase">{t('det_price')}</p>
+                <p className={`text-xs text-slate-500 font-semibold ${locale === 'tr' ? '' : 'uppercase'}`}>{t('det_price')}</p>
                 <p className="text-xs text-slate-400 mt-0.5">~ {formatCurrencyEuro(perDayEur(tariff), locale)} {t('unit_per_day')}</p>
               </div>
               <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />

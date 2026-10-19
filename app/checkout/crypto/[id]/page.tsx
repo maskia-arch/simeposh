@@ -94,6 +94,8 @@ export async function generateMetadata({
   };
 }
 
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
+
 export default async function CryptoCheckoutPage({
   params,
 }: {
@@ -103,14 +105,41 @@ export default async function CryptoCheckoutPage({
   const cookieStore = await cookies();
   const rawTariff = cookieStore.get('esim_checkout_tariff')?.value;
   const rawAmount = cookieStore.get('esim_checkout_amount')?.value;
+  const rawValidity = cookieStore.get('esim_checkout_validity')?.value;
   const initialTariff = rawTariff ? decodeURIComponent(rawTariff) : '';
   const initialAmount = rawAmount ? decodeURIComponent(rawAmount) : '';
+  let initialValidity = rawValidity ? decodeURIComponent(rawValidity) : '';
+
+  try {
+    const db = createServiceClient();
+    const { data: session } = await db
+      .from('crypto_sessions')
+      .select('coin, locale, order_ids')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (session?.order_ids && session.order_ids.length > 0) {
+      const sessLocale = (session.locale as any) || 'de';
+      const { data: orders } = await db
+        .from('orders')
+        .select('period_num, tariffs(name, validity_days)')
+        .in('id', session.order_ids);
+      if (orders && orders.length > 0) {
+        const firstOrder = orders[0] as any;
+        const valDays = firstOrder?.period_num ?? firstOrder?.tariffs?.validity_days;
+        if (valDays) {
+          initialValidity = formatDaysWithUnit(valDays, sessLocale);
+        }
+      }
+    }
+  } catch {}
 
   return (
     <CryptoCheckout
       sessionId={id}
       initialTariff={initialTariff}
       initialAmount={initialAmount}
+      initialValidity={initialValidity}
     />
   );
 }
