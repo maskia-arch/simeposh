@@ -498,7 +498,7 @@ const es = {
   "pay_expired_title": "Pago vencido",
   "pay_expires_in": "Expira en",
   "pay_fee": "Comisión de red",
-  "pay_fee_fixed": "Incl. {eur} € de tarifa de procesamiento",
+  "pay_fee_fixed": "Incl. {eur} de tarifa de procesamiento",
   "pay_fee_hint": "Incl. {pct}% de tarifa de compensación de red",
   "pay_fee_label": "Tarifa de red",
   "pay_fee_warning": "IMPORTANTE: Asegúrese de enviar suficiente para cubrir las tarifas de red o transferencia. Las comisiones de red corren por cuenta del remitente.",
@@ -787,6 +787,11 @@ const es = {
   "cfg_duration_better_deal_btn": "Cambiar a {days} días →",
   "cfg_better_deal_diff_less": "¡{days} días más por {price} menos!",
   "cfg_better_deal_diff_same": "¡{days} días más al mismo precio!",
+  "cfg_change_destination": "🔍 Cambiar destino",
+  "cfg_duration_better_deal_one": "Consejo: Por {price} obtienes 1 día ({diff})",
+  "cfg_duration_better_deal_btn_one": "Cambiar a 1 día →",
+  "cfg_better_deal_diff_less_one": "¡1 día más por {price} menos!",
+  "cfg_better_deal_diff_same_one": "¡1 día más por el mismo precio!"
 } as const;
 export default es;
 export type TranslationKeys = keyof typeof es;

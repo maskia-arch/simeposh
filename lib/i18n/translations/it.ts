@@ -498,7 +498,7 @@ const it = {
   "pay_expired_title": "Pagamento scaduto",
   "pay_expires_in": "Scade tra",
   "pay_fee": "Commissione di rete",
-  "pay_fee_fixed": "Incl. {eur} € di commissione di elaborazione",
+  "pay_fee_fixed": "Incl. {eur} di commissione di elaborazione",
   "pay_fee_hint": "Incl. {pct}% di commissione di compensazione di rete",
   "pay_fee_label": "Commissione di rete",
   "pay_fee_warning": "IMPORTANTE: Assicurati di inviare abbastanza per coprire le commissioni di rete. Le tariffe di rete devono essere interamente a carico del mittente.",
@@ -787,6 +787,11 @@ const it = {
   "cfg_duration_better_deal_btn": "Passa a {days} giorni →",
   "cfg_better_deal_diff_less": "{days} giorni in più per {price} in meno!",
   "cfg_better_deal_diff_same": "{days} giorni in più allo stesso prezzo!",
+  "cfg_change_destination": "🔍 Cambia destinazione",
+  "cfg_duration_better_deal_one": "Suggerimento: per {price} ricevi 1 giorno ({diff})",
+  "cfg_duration_better_deal_btn_one": "Passa a 1 giorno →",
+  "cfg_better_deal_diff_less_one": "1 giorno in più per {price} in meno!",
+  "cfg_better_deal_diff_same_one": "1 giorno in più allo stesso prezzo!"
 } as const;
 export default it;
 export type TranslationKeys = keyof typeof it;

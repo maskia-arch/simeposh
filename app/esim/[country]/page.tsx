@@ -124,7 +124,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `eSIM ${countryLabel}`,
-    description: t('meta_country_desc' as any, { country: countryLabel, price: Number(minPrice).toFixed(2) })
+    description: t('meta_country_desc' as any, { country: countryLabel, price: formatCurrencyEuro(minPrice, locale) })
       || `Prepaid eSIM ${countryLabel}`,
     image: `${baseUrl}/logo.png`,
     brand: {

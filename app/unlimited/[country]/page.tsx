@@ -164,7 +164,7 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `Unlimited eSIM ${countryLabel}`,
-    description: t('meta_unlimited_desc' as any, { country: countryLabel, price: minPrice.toFixed(2) })
+    description: t('meta_unlimited_desc' as any, { country: countryLabel, price: formatCurrencyEuro(minPrice, locale) })
       || `Prepaid Unlimited eSIM ${countryLabel}`,
     image: `${baseUrl}/logo.png`,
     brand: {

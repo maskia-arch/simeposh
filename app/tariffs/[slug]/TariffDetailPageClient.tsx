@@ -307,7 +307,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 <p className="text-xs text-slate-500 font-semibold uppercase">{t('det_price')}</p>
                 <p className="text-xs text-slate-400 mt-0.5">~ {formatCurrencyEuro(perDayEur(tariff), locale)} {t('unit_per_day')}</p>
               </div>
-              <Price eur={tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />
+              <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />
             </div>
 
             {/* Unlimited notes */}
@@ -359,5 +359,6 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 }
 
 function perDayEur(t: Tariff): number {
-  return t.sale_price_eur / (t.validity_days || 1);
+  const price = t.customer_price_eur ?? t.sale_price_eur;
+  return price / (t.validity_days || 1);
 }

@@ -148,8 +148,8 @@ const fr = {
   "cfg_add_cart": "Ajouter au panier",
   "cfg_added": "✓ Ajouté",
   "cfg_buy_now": "Acheter maintenant",
-  "cfg_day": "Jour",
-  "cfg_days": "Jours",
+  "cfg_day": "jour",
+  "cfg_days": "jours",
   "cfg_disc_hint": "Économisez {pct}% à partir de {days} jours",
   "cfg_disc_incl": "{pct}% de réduction incluse",
   "cfg_disc_label": "−{pct}% de réduction",
@@ -498,7 +498,7 @@ const fr = {
   "pay_expired_title": "Paiement expiré",
   "pay_expires_in": "Expire dans",
   "pay_fee": "Frais de transaction",
-  "pay_fee_fixed": "Inclut {eur} € de frais de traitement",
+  "pay_fee_fixed": "Inclut {eur} de frais de traitement",
   "pay_fee_hint": "Inclut {pct}% de frais de compensation réseau",
   "pay_fee_label": "Frais réseau",
   "pay_fee_warning": "IMPORTANT : Assurez-vous d’envoyer suffisamment pour couvrir les frais de transaction. Les frais de réseau sont à la charge de l’expéditeur.",
@@ -787,6 +787,11 @@ const fr = {
   "cfg_duration_better_deal_btn": "Passer à {days} jours →",
   "cfg_better_deal_diff_less": "{days} jours de plus pour {price} de moins !",
   "cfg_better_deal_diff_same": "{days} jours de plus au même prix !",
+  "cfg_change_destination": "🔍 Changer de destination",
+  "cfg_duration_better_deal_one": "Conseil : pour {price}, vous obtenez 1 jour ({diff})",
+  "cfg_duration_better_deal_btn_one": "Passer à 1 jour →",
+  "cfg_better_deal_diff_less_one": "1 jour de plus pour {price} de moins !",
+  "cfg_better_deal_diff_same_one": "1 jour de plus au même prix !"
 } as const;
 export default fr;
 export type TranslationKeys = keyof typeof fr;

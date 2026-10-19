@@ -175,12 +175,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const adminEmail = (process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com').toLowerCase();
   const isAdmin = user.email?.toLowerCase() === adminEmail || (user as any).app_metadata?.role === 'admin' || (user as any).user_metadata?.is_admin === true;
 
-  let missingDiscountTariffs: Array<{ id: string; name: string; country_name: string; country_code: string }> = [];
+  let missingDiscountTariffs: Array<{ id: string; name: string; package_code: string; country_name: string; country_code: string; data_gb: number | null; discount_rule_code: string | null }> = [];
+  let discountMinDaysSetting: string | null = null;
+  let defaultDiscountRuleSetting: string | null = null;
   if (isAdmin) {
     try {
       const { data: allActive } = await service
         .from('tariffs')
-        .select('id, name, country_name, country_code, discount_rule_code, tariff_type')
+        .select('id, name, package_code, country_name, country_code, data_gb, discount_rule_code, tariff_type')
         .eq('is_active', true);
 
       const unlimitedActive = (allActive ?? []).filter(
@@ -208,6 +210,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           (t) => !t.discount_rule_code || !validRules.has(t.discount_rule_code)
         );
       }
+
+      const { data: settingsRows } = await service
+        .from('system_settings')
+        .select('key, value')
+        .in('key', ['unlimited_discount_min_days', 'unlimited_default_discount_rule']);
+      if (settingsRows) {
+        for (const row of settingsRows) {
+          if (row.key === 'unlimited_discount_min_days') discountMinDaysSetting = row.value;
+          if (row.key === 'unlimited_default_discount_rule') defaultDiscountRuleSetting = row.value;
+        }
+      }
     } catch (checkErr) {
       console.error('[dashboard] Admin tariff discount check failed:', checkErr);
     }
@@ -231,7 +244,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div className="mb-8 rounded-2xl border-2 border-red-300 bg-red-50 p-5 shadow-sm text-red-900" role="alert">
           <div className="flex items-start gap-3">
             <span className="text-2xl shrink-0">⚠️</span>
-            <div className="space-y-1.5 flex-1">
+            <div className="space-y-1.5 flex-1 min-w-0">
               <h3 className="font-extrabold text-base text-red-800">
                 Admin-Warnung: {missingDiscountTariffs.length} aktive Unlimited-Tarife ohne gültige Rabattregel!
               </h3>
@@ -245,6 +258,59 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </span>
                 ))}
               </div>
+              <details className="mt-3 bg-white/90 rounded-xl border border-red-200 p-3">
+                <summary className="text-xs font-bold text-red-800 cursor-pointer select-none hover:text-red-950">
+                  Tabelle der betroffenen Tarife ({missingDiscountTariffs.length})
+                </summary>
+                <div className="mt-2.5 overflow-x-auto max-h-60 scrollbar-thin">
+                  <table className="w-full text-left text-xs text-slate-700">
+                    <thead className="border-b border-red-200 bg-red-50/70 text-[11px] font-extrabold uppercase text-red-900 sticky top-0">
+                      <tr>
+                        <th className="py-1.5 px-2">Land</th>
+                        <th className="py-1.5 px-2">Tarifname / Code</th>
+                        <th className="py-1.5 px-2">Datenvolumen</th>
+                        <th className="py-1.5 px-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-100">
+                      {missingDiscountTariffs.map((t) => (
+                        <tr key={t.id} className="hover:bg-red-50/50">
+                          <td className="py-1.5 px-2 font-medium">{t.country_name} ({t.country_code})</td>
+                          <td className="py-1.5 px-2 font-mono text-[11px]">{t.name} <span className="text-slate-400">({t.package_code})</span></td>
+                          <td className="py-1.5 px-2 font-medium">{t.data_gb ? `${t.data_gb} GB/Tag` : 'Unlimited'}</td>
+                          <td className="py-1.5 px-2 text-red-700 font-semibold text-[11px]">
+                            {!t.discount_rule_code ? 'Kein Code zugewiesen' : 'Regel ohne Stufen'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Settings Overview */}
+      {isAdmin && (
+        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <span>⚙️</span> Unlimited-Staffelrabatt Konfiguration (system_settings)
+            </h3>
+            <span className="text-[11px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Admin Only</span>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 text-xs">
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <span className="font-bold text-slate-700 block mb-1">Minimale Rabattlaufzeit (unlimited_discount_min_days):</span>
+              <p className="text-sm font-extrabold text-brand-700">{discountMinDaysSetting ?? '4'} Tage</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Bei 1–{Math.max(1, (Number(discountMinDaysSetting) || 4) - 1)} Tagen gilt kein Rabatt. Staffel greift ab Tag {discountMinDaysSetting ?? '4'}.</p>
+            </div>
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <span className="font-bold text-slate-700 block mb-1">Standard-Rabattregel (unlimited_default_discount_rule):</span>
+              <p className="text-sm font-mono font-extrabold text-slate-800">{defaultDiscountRuleSetting || 'UNLIMITED_PLAN_DISC'}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Wird beim Produkt-Sync für Tarife ohne Regel aus der Datenbank zugewiesen.</p>
             </div>
           </div>
         </div>

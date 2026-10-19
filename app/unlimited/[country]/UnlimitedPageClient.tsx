@@ -9,6 +9,7 @@ import { UnlimitedConfigurator } from '@/components/UnlimitedConfigurator';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
+import { formatDayRangeWithUnit, formatPercent } from '@/lib/i18n/plural';
 import { EcoIcon, BoltIcon, InfinityIcon } from '@/components/Icons';
 
 interface UnlimitedPageClientProps {
@@ -186,8 +187,7 @@ export function UnlimitedPageClient({
                   key={tier.minDays}
                   className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800"
                 >
-                  {t('cfg_tier_discount_badge', { days: tier.minDays, pct: tier.discountPct }) ||
-                    (isDe ? `Ab ${tier.minDays} Tagen −${tier.discountPct} %` : `From ${tier.minDays} days −${tier.discountPct}%`)}
+                  {formatDayRangeWithUnit(tier.minDays, tier.maxDays, locale)} {formatPercent(tier.discountPct, locale, { negative: true })}
                 </span>
               ))}
           </div>

@@ -11,8 +11,9 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { CountryFlag } from '@/components/CountryFlag';
 import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
 import { useTranslation } from '@/lib/i18n';
+import { formatDaysWithUnit, formatDayMark, formatPercent } from '@/lib/i18n/plural';
 import { useCart } from '@/components/CartProvider';
-import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType } from '@/lib/tariff-display';
+import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType, displayCountryName } from '@/lib/tariff-display';
 import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
@@ -64,7 +65,7 @@ export function DaySlider({
   tiers?: ClientTier[];
   currentDiscountPct?: number;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const lastIdx = DAY_MARKS.length - 1;
   const presets = [1, 3, 7, 14, 30, 90];
 
@@ -145,7 +146,7 @@ export function DaySlider({
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {p}d
+            {formatDaysWithUnit(p, locale)}
           </button>
         ))}
       </div>
@@ -176,7 +177,7 @@ export function DaySlider({
                   days === m ? 'text-brand-600 font-extrabold' : 'text-slate-400'
                 }`}
               >
-                {m}d
+                {formatDayMark(m, locale)}
               </button>
             );
           })}
@@ -490,8 +491,8 @@ export function UnlimitedConfigurator({
   const subtotalBeforeDiscount = dayInfo?.subtotalEur ?? (finalPrice !== null ? finalPrice : null);
   const savedEur = dayInfo?.savedEur ?? (subtotalBeforeDiscount !== null && finalPrice !== null ? Math.max(0, Math.round((subtotalBeforeDiscount - finalPrice) * 100) / 100) : 0);
   const discountPct = dayInfo?.discountPct ?? 0;
-  const hasDiscount = finalPrice !== null && subtotalBeforeDiscount !== null && finalPrice < subtotalBeforeDiscount;
-  const perDayDisplay = finalPrice !== null ? Math.min(frontPricePerDay, Math.round((finalPrice / days) * 100) / 100) : null;
+  const hasDiscount = finalPrice !== null && subtotalBeforeDiscount !== null && finalPrice < subtotalBeforeDiscount && discountPct > 0;
+  const perDayDisplay = finalPrice !== null ? (!hasDiscount ? frontPricePerDay : Math.min(frontPricePerDay, Math.round((finalPrice / days) * 100) / 100)) : null;
 
   const betterDealDays = dayInfo?.betterDealDays;
   const betterDealPriceEur = dayInfo?.betterDealPriceEur;
@@ -510,7 +511,10 @@ export function UnlimitedConfigurator({
   }, [finalPrice, selectedGb, selectedCountry, days, bestPackage, tariffType]);
 
   const selectedCountryData = countries.find((c) => c.code === selectedCountry);
-  const specialFeatures     = bestPackage ? getTariffSpecialFeatures(bestPackage) : [];
+  const localizedCountry = selectedCountryData
+    ? displayCountryName({ country_code: selectedCountryData.code, country_name: selectedCountryData.name, region: null, location_codes: null }, locale)
+    : '';
+  const specialFeatures     = bestPackage ? getTariffSpecialFeatures(bestPackage, locale) : [];
   const ops                 = bestPackage ? getTariffOperators(bestPackage, 4) : [];
   const network             = bestNetworkType(ops);
 
@@ -522,10 +526,10 @@ export function UnlimitedConfigurator({
         {!isChangingCountry && selectedCountryData ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={32} className="shrink-0 rounded-md shadow-xs" />
+              <CountryFlag countryCode={selectedCountryData.code} countryName={localizedCountry} size={32} className="shrink-0 rounded-md shadow-xs" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900 leading-tight flex items-center gap-2">
-                  <span>{selectedCountryData.name}</span>
+                  <span>{localizedCountry}</span>
                   <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                     {t('cfg_plans_count' as any, { count: availablePackages.length }) || `${availablePackages.length} plans`}
                   </span>
@@ -538,7 +542,7 @@ export function UnlimitedConfigurator({
               onClick={() => setIsChangingCountry(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 transition-all cursor-pointer"
             >
-              <span>🔍 Zielgebiet ändern</span>
+              <span>{t('cfg_change_destination' as any) || (isDe ? '🔍 Zielgebiet ändern' : '🔍 Change destination')}</span>
             </button>
           </div>
         ) : (
@@ -546,7 +550,7 @@ export function UnlimitedConfigurator({
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <SearchIcon size={14} className="text-brand-600" />
-                <span>Reiseziel auswählen</span>
+                <span>{t('cfg_change_destination')}</span>
               </h3>
               {selectedCountryData && (
                 <button
@@ -557,7 +561,7 @@ export function UnlimitedConfigurator({
                   }}
                   className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
-                  Abbrechen ✕
+                  {t('btn_close')} ✕
                 </button>
               )}
             </div>
@@ -738,22 +742,22 @@ export function UnlimitedConfigurator({
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-brand-500 via-sky-400 to-indigo-500" />
 
               {/* Crisp Selected Specs Header */}
-              <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                <CountryFlag countryCode={selectedCountryData.code} countryName={selectedCountryData.name} size={32} className="shrink-0 rounded-md shadow-xs" />
-                <div>
-                  <h4 className="font-extrabold text-slate-900 text-base leading-tight">{selectedCountryData.name}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-100 min-h-[60px]">
+                <CountryFlag countryCode={selectedCountryData.code} countryName={localizedCountry} size={32} className="shrink-0 rounded-md shadow-xs" />
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-extrabold text-slate-900 text-base leading-tight truncate">{localizedCountry}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-1 min-h-[34px] sm:min-h-[18px]">
                     {tariffType === 'unlimited_eco' ? (
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><EcoIcon size={14} /> Eco</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 font-semibold text-violet-700"><BoltIcon size={14} className="text-violet-600" /> Pro</span>
-                    )} · <span className="font-bold text-slate-700">{selectedGb ? `${formatGb(selectedGb)} ${t('unit_per_day')}` : '–'}</span> · {days} {days === 1 ? t('cfg_day') : t('cfg_days')}
+                    )} · <span className="font-bold text-slate-700">{selectedGb ? `${formatGb(selectedGb)} ${t('unit_per_day')}` : '–'}</span> · <span>{formatDaysWithUnit(days, locale)}</span>
                   </p>
                 </div>
               </div>
 
               {/* Network Specs & Features Chips */}
-              <div className="py-3 border-b border-slate-100 space-y-2">
+              <div className="py-3 border-b border-slate-100 space-y-2 min-h-[64px]">
                 {ops.length > 0 && (
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span className="flex items-center gap-1"><NetworkIcon size={12} className="text-slate-400" /> {t('cfg_network' as any) || (isStandaloneRoute ? 'Network:' : 'Mobilfunknetz:')}</span>
@@ -761,37 +765,38 @@ export function UnlimitedConfigurator({
                   </div>
                 )}
 
-                {specialFeatures.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {specialFeatures.map((feat) => (
-                      <span
-                        key={feat.id}
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${feat.cls}`}
-                      >
-                        <span>{feat.icon}</span>
-                        <span>{t(feat.badgeKey as any)}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-1 pt-1 min-h-[26px]">
+                  {specialFeatures.map((feat) => (
+                    <span
+                      key={feat.id}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${feat.cls}`}
+                    >
+                      <span>{feat.icon}</span>
+                      <span>{t(feat.badgeKey as any)}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
 
               {/* Price & Per-Day Rate */}
               <div className="py-3 space-y-2 border-b border-slate-100">
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between min-h-[36px]">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                     </span>
-                    {hasDiscount && discountPct > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                        {t('cfg_tier_discount_badge' as any, { pct: discountPct }) || `Staffelrabatt −${discountPct}%`}
-                      </span>
-                    )}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700 transition-opacity ${
+                        hasDiscount && discountPct > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                      aria-hidden={!hasDiscount || discountPct <= 0}
+                    >
+                      {t('cfg_tier_discount_badge' as any, { pct: discountPct }) || `Staffelrabatt −${discountPct}%`}
+                    </span>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-black text-slate-900 tracking-tight">
-                      {finalPrice !== null ? <Price eur={finalPrice} /> : '–'}
+                      {finalPrice !== null ? formatCurrencyEuro(finalPrice, locale) : '–'}
                     </p>
                     {perDayDisplay !== null && (
                       <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
@@ -801,26 +806,48 @@ export function UnlimitedConfigurator({
                   </div>
                 </div>
 
-                {/* Subtotal & Savings breakdown: only show when hasDiscount (finalPrice < subtotalBeforeDiscount) */}
-                {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && (
-                  <div className="space-y-0.5 text-xs text-slate-500">
-                    <div>
-                      {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} − {discountPct} % = {formatCurrencyEuro(finalPrice, locale)}
-                    </div>
-                    <div className="font-semibold text-emerald-700 text-[11px]">
-                      {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
-                    </div>
+                {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
+                <div
+                  className={`space-y-0.5 text-xs text-slate-500 min-h-[38px] transition-opacity ${
+                    hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0
+                      ? 'opacity-100'
+                      : 'opacity-0 pointer-events-none'
+                  }`}
+                  aria-hidden={!hasDiscount || subtotalBeforeDiscount === null || frontPricePerDay <= 0}
+                >
+                  <div className="truncate">
+                    {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount || 0, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice || 0, locale)}
                   </div>
-                )}
+                  <div className="font-semibold text-emerald-700 text-[11px] truncate">
+                    {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
+                  </div>
+                </div>
 
-                {/* Better Deal Recommendation: min-h preserves height on mobile (84px) & desktop (56px) so CTA buttons shift by 0 px */}
-                <div className="min-h-[84px] sm:min-h-[56px] flex items-center" role="status" aria-live="polite">
+                {/* Better Deal Recommendation: strictly preserved height on mobile (84px) & desktop (64px) */}
+                <div className="min-h-[84px] sm:min-h-[64px] flex items-center" role="status" aria-live="polite">
                   {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
                     const diffDays = betterDealDays - days;
                     const diffAmount = Math.max(0, Math.round((finalPrice - betterDealPriceEur) * 100) / 100);
                     const diffText = diffAmount > 0
-                      ? t('cfg_better_deal_diff_less' as any, { days: diffDays, price: formatCurrencyEuro(diffAmount, locale) })
-                      : t('cfg_better_deal_diff_same' as any, { days: diffDays });
+                      ? (diffDays === 1 && t('cfg_better_deal_diff_less_one' as any) !== 'cfg_better_deal_diff_less_one'
+                          ? t('cfg_better_deal_diff_less_one' as any, { price: formatCurrencyEuro(diffAmount, locale) })
+                          : t('cfg_better_deal_diff_less' as any, { days: diffDays, price: formatCurrencyEuro(diffAmount, locale) }))
+                      : (diffDays === 1 && t('cfg_better_deal_diff_same_one' as any) !== 'cfg_better_deal_diff_same_one'
+                          ? t('cfg_better_deal_diff_same_one' as any)
+                          : t('cfg_better_deal_diff_same' as any, { days: diffDays }));
+
+                    const tipTitle = betterDealDays === 1 && t('cfg_duration_better_deal_one' as any) !== 'cfg_duration_better_deal_one'
+                      ? t('cfg_duration_better_deal_one' as any, { price: formatCurrencyEuro(betterDealPriceEur, locale), diff: diffText })
+                      : t('cfg_duration_better_deal' as any, {
+                          price: formatCurrencyEuro(betterDealPriceEur, locale),
+                          days: betterDealDays,
+                          diff: diffText,
+                        });
+
+                    const btnText = betterDealDays === 1 && t('cfg_duration_better_deal_btn_one' as any) !== 'cfg_duration_better_deal_btn_one'
+                      ? t('cfg_duration_better_deal_btn_one' as any)
+                      : t('cfg_duration_better_deal_btn' as any, { days: betterDealDays });
+
                     return (
                       <button
                         type="button"
@@ -828,18 +855,16 @@ export function UnlimitedConfigurator({
                         className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs"
                       >
                         <span className="font-medium">
-                          💡 {t('cfg_duration_better_deal' as any, {
-                            price: formatCurrencyEuro(betterDealPriceEur, locale),
-                            days: betterDealDays,
-                            diff: diffText,
-                          })}
+                          💡 {tipTitle}
                         </span>
                         <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0">
-                          {t('cfg_duration_better_deal_btn' as any, { days: betterDealDays })}
+                          {btnText}
                         </span>
                       </button>
                     );
-                  })() : null}
+                  })() : (
+                    <div className="w-full h-full opacity-0 pointer-events-none" aria-hidden="true" />
+                  )}
                 </div>
               </div>
 
@@ -864,7 +889,7 @@ export function UnlimitedConfigurator({
                   disabled={!syntheticTariff}
                   className="w-full btn-primary active:scale-[0.98] shadow-md"
                 >
-                  {t('cfg_buy_now')} {finalPrice !== null ? <> · <Price eur={finalPrice} /></> : ''}
+                  {t('cfg_buy_now')}{finalPrice !== null ? ` · ${formatCurrencyEuro(finalPrice, locale)}` : ''}
                 </button>
               </div>
 
@@ -878,7 +903,7 @@ export function UnlimitedConfigurator({
       {syntheticTariff && finalPrice !== null && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 shadow-2xl flex items-center justify-between gap-3">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total' : 'Gesamt')} ({days}{days === 1 ? (t('cfg_day') || 'd') : (t('cfg_days') || 'd')})</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total' : 'Gesamt')} ({formatDaysWithUnit(days, locale)})</span>
             <Price eur={finalPrice} className="text-lg font-black text-slate-900" />
           </div>
           <div className="flex gap-2">

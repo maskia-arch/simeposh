@@ -106,7 +106,7 @@ export async function fetchUsdEurRate(fallbackRate: number): Promise<number> {
   }
 }
 
-// ── In-Memory Cache for Discount Rules (5 minute TTL) ─────────────────────────
+// ── In-Memory Cache for Discount Rules & Min Days (5 minute TTL) ──────────────
 interface CachedRule {
   periodRules: NormalizedPeriodRule[];
   validFrom: number | null;
@@ -115,6 +115,39 @@ interface CachedRule {
 }
 const rulesCache = new Map<string, CachedRule>();
 const RULES_CACHE_TTL = 5 * 60 * 1000;
+
+let cachedMinDiscountDays: { value: number; expiresAt: number } | null = null;
+
+/**
+ * Retrieve the minimum days threshold for dynamic discounts (default: 4).
+ * Reads admin setting `unlimited_discount_min_days` from `system_settings`.
+ */
+export async function getDiscountMinDays(): Promise<number> {
+  const now = Date.now();
+  if (cachedMinDiscountDays && now < cachedMinDiscountDays.expiresAt) {
+    return cachedMinDiscountDays.value;
+  }
+  try {
+    const res = await runRawQuery(
+      `SELECT value FROM system_settings WHERE key = 'unlimited_discount_min_days' LIMIT 1`
+    );
+    if (res && res.rows.length > 0) {
+      const val = parseInt(res.rows[0].value, 10);
+      if (!isNaN(val) && val >= 1 && val <= 30) {
+        cachedMinDiscountDays = { value: val, expiresAt: now + 60_000 };
+        return val;
+      }
+    }
+  } catch (err) {
+    console.warn('[pricing] Failed to read unlimited_discount_min_days setting, using fallback 4:', (err as Error).message);
+  }
+  cachedMinDiscountDays = { value: 4, expiresAt: now + 60_000 };
+  return 4;
+}
+
+export function clearDiscountMinDaysCache(): void {
+  cachedMinDiscountDays = null;
+}
 
 /**
  * Retrieve active period rules for a given discountRuleCode from the database.
@@ -175,17 +208,30 @@ export async function getDiscountRuleByCode(
 
 /**
  * Calculates the DayPass / Unlimited price for any day count (1–365) server-side.
- * Resolves discount rules dynamically and computes commercial cent-rounded final price (no ,x9 after discount).
+ * - For 1 to (minDiscountDays - 1) days: strictly no discount; rounded up to the nearest x.x9 € boundary.
+ * - For minDiscountDays+ days: 1:1 pass-through of dynamic provider discount rules, commercial cent rounding.
  */
 export async function getDayPassPrice(
   tariff: TariffPricingInput,
   days: number,
   now: Date = new Date(),
-  options?: { rules?: NormalizedPeriodRule[] | null }
+  options?: { rules?: NormalizedPeriodRule[] | null; minDiscountDays?: number }
 ): Promise<number> {
   const frontPrice = roundToXX9(tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1));
   const frontCents = Math.round(frontPrice * 100);
   const clampedDays = Math.min(365, Math.max(1, Math.round(days)));
+
+  const minDiscountDays = options?.minDiscountDays !== undefined
+    ? options.minDiscountDays
+    : await getDiscountMinDays();
+
+  // 1 to 3 days (or < minDiscountDays): no discount, rounded up to nearest ,x9
+  if (clampedDays < minDiscountDays) {
+    const base = frontCents * clampedDays;
+    const x9 = Math.floor(base / 10) * 10 + 9;
+    const finalCents = x9 >= base ? x9 : x9 + 10;
+    return finalCents / 100;
+  }
 
   const rules = options?.rules !== undefined
     ? options.rules
@@ -206,13 +252,13 @@ export async function getDayPassPrice(
 
 /**
  * Resolves the minimum customer price for any tariff.
- * For Unlimited / DayPass plans, calculates the 1-day price with discount rule applied (e.g. 0.57 € instead of 0.59 €).
+ * For Unlimited / DayPass plans, returns the 1-day price without discount (e.g. 0.59 €).
  * For Travel plans, returns the standard sale_price_eur.
  */
 export async function getTariffMinCustomerPrice(
   tariff: TariffPricingInput & { tariff_type?: string | null; data_gb?: number | null },
   now: Date = new Date(),
-  options?: { rules?: NormalizedPeriodRule[] | null }
+  options?: { rules?: NormalizedPeriodRule[] | null; minDiscountDays?: number }
 ): Promise<number> {
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   if (isUnlimited) {
@@ -231,42 +277,63 @@ export async function getUnlimitedPriceTable(
   minDays: number = 1,
   maxDays: number = 365,
   now: Date = new Date(),
-  options?: { rules?: NormalizedPeriodRule[] | null }
+  options?: { rules?: NormalizedPeriodRule[] | null; minDiscountDays?: number }
 ): Promise<UnlimitedPriceTable> {
   const frontPrice = tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1);
   const frontPricePerDay = roundToXX9(frontPrice);
   const frontCents = Math.round(frontPricePerDay * 100);
 
+  const minDiscountDays = options?.minDiscountDays !== undefined
+    ? options.minDiscountDays
+    : await getDiscountMinDays();
+
   const rules = options?.rules !== undefined
     ? options.rules
     : await getDiscountRuleByCode(tariff.discount_rule_code, now);
 
-  // Build clean client tiers
-  const tiers: ClientTier[] = (rules || []).map((r) => ({
-    minDays: r.minDays,
-    maxDays: r.maxDays,
-    discountPct: Math.round((1 - r.payRatio) * 100),
-  }));
+  // Build clean client tiers starting strictly at minDiscountDays
+  const tiers: ClientTier[] = (rules || [])
+    .filter((r) => r.maxDays >= minDiscountDays)
+    .map((r) => ({
+      minDays: Math.max(r.minDays, minDiscountDays),
+      maxDays: r.maxDays,
+      discountPct: Math.round((1 - r.payRatio) * 100),
+    }));
 
   const daysTable: Record<number, PriceTableEntry> = {};
 
   // 1. First pass: compute exact price, subtotal, savedEur, discountPct for each day
   for (let d = minDays; d <= maxDays; d++) {
+    const subtotalCents = frontCents * d;
+    const subtotalEur = subtotalCents / 100;
+
+    // For days before minDiscountDays, apply strictly no discount with ,x9 rounding
+    if (d < minDiscountDays) {
+      const base = subtotalCents;
+      const x9 = Math.floor(base / 10) * 10 + 9;
+      const finalCents = x9 >= base ? x9 : x9 + 10;
+      daysTable[d] = {
+        priceEur: finalCents / 100,
+        subtotalEur,
+        savedEur: 0,
+        discountPct: 0,
+        minDays: minDiscountDays,
+      };
+      continue;
+    }
+
     let payRatio = 1.0;
     let discountPct = 0;
-    let ruleMinDays = 1;
+    let ruleMinDays = minDiscountDays;
 
     if (rules && rules.length > 0) {
       const match = rules.find((r) => d >= r.minDays && d <= r.maxDays);
       if (match && typeof match.payRatio === 'number' && match.payRatio > 0 && match.payRatio <= 1) {
         payRatio = match.payRatio;
         discountPct = Math.round((1 - payRatio) * 100);
-        ruleMinDays = match.minDays;
+        ruleMinDays = Math.max(match.minDays, minDiscountDays);
       }
     }
-
-    const subtotalCents = frontCents * d;
-    const subtotalEur = subtotalCents / 100;
 
     let finalCents = subtotalCents;
     if (payRatio < 1.0) {

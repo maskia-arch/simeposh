@@ -498,7 +498,7 @@ const da = {
   "pay_expired_title": "Betaling udløbet",
   "pay_expires_in": "Udløber om",
   "pay_fee": "Netværksgebyr",
-  "pay_fee_fixed": "Inkl. {eur} € ekspeditionsgebyr",
+  "pay_fee_fixed": "Inkl. {eur} ekspeditionsgebyr",
   "pay_fee_hint": "Inkl. {pct}% netværkskompensationsgebyr",
   "pay_fee_label": "Netværksgebyr",
   "pay_fee_warning": "VIGTIGT: Sørg for at sende nok til at dække netværksgebyrer. Transaktionsgebyrer skal dækkes fuldt ud af afsenderen.",
@@ -787,6 +787,11 @@ const da = {
   "cfg_duration_better_deal_btn": "Skift til {days} dage →",
   "cfg_better_deal_diff_less": "{days} dage mere for {price} mindre!",
   "cfg_better_deal_diff_same": "{days} dage mere til samme pris!",
+  "cfg_change_destination": "🔍 Skift destination",
+  "cfg_duration_better_deal_one": "Tip: For {price} får du 1 dag ({diff})",
+  "cfg_duration_better_deal_btn_one": "Skift til 1 dag →",
+  "cfg_better_deal_diff_less_one": "1 dag mere for {price} mindre!",
+  "cfg_better_deal_diff_same_one": "1 dag mere til samme pris!"
 } as const;
 export default da;
 export type TranslationKeys = keyof typeof da;

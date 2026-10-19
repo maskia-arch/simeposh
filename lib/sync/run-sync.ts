@@ -202,7 +202,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     });
 
     // ── 3. Load existing tariffs & default discount rule setting ────
-    let configuredDefaultRule: string | null = 'UNLIMITED_PLAN_DISC';
+    let configuredDefaultRule: string | null = null;
     try {
       const { data: defaultRuleSetting } = await db
         .from('system_settings')
@@ -210,13 +210,19 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         .eq('key', 'unlimited_default_discount_rule')
         .maybeSingle();
 
-      if (defaultRuleSetting) {
+      if (!defaultRuleSetting) {
+        console.warn('[sync] System setting unlimited_default_discount_rule is missing! No default rule will be assigned.');
+      } else {
         const val = typeof defaultRuleSetting.value === 'string' ? defaultRuleSetting.value.trim() : '';
-        // If explicitly set to empty string or 'none', disable default rule assignment
-        configuredDefaultRule = val === '' || val.toLowerCase() === 'none' ? null : val;
+        if (val === '' || val.toLowerCase() === 'none') {
+          console.warn('[sync] System setting unlimited_default_discount_rule is empty. No default rule will be assigned.');
+          configuredDefaultRule = null;
+        } else {
+          configuredDefaultRule = val;
+        }
       }
     } catch (settingErr) {
-      console.warn('[sync] Failed to read unlimited_default_discount_rule setting, using fallback:', settingErr);
+      console.warn('[sync] Failed to read unlimited_default_discount_rule setting:', settingErr);
     }
 
     if (configuredDefaultRule) {
@@ -226,8 +232,8 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         .eq('discount_rule_code', configuredDefaultRule)
         .maybeSingle();
       if (!existingRule) {
-        console.warn(`[sync] Configured default discount rule '${configuredDefaultRule}' does not exist in discount_rules table! Falling back to 'UNLIMITED_PLAN_DISC'`);
-        configuredDefaultRule = 'UNLIMITED_PLAN_DISC';
+        console.warn(`[sync] Configured default discount rule '${configuredDefaultRule}' does not exist in discount_rules table! No default rule will be assigned.`);
+        configuredDefaultRule = null;
       }
     }
 
@@ -539,7 +545,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     }).eq('sync_id', syncId);
 
     console.log(`[sync] Done. packages=${packages.length} upserted=${upserted} errors=${errors} priceChanges=${proposals.length} duration=${duration}ms`);
-    console.log(`[sync] DayPass discount rules: ${dayPassWithCode} with provider code, ${dayPassWithDefaultCode} assigned default code 'UNLIMITED_PLAN_DISC', ${dayPassWithoutRule} without rule.`);
+    console.log(`[sync] DayPass discount rules: ${dayPassWithCode} with provider code, ${dayPassWithDefaultCode} assigned default code '${configuredDefaultRule || 'none'}', ${dayPassWithoutRule} without rule.`);
     if (dayPassWithoutRule > 0) {
       console.warn(`[sync] WARNING: ${dayPassWithoutRule} DayPass packages have no discount rule code!`);
     }

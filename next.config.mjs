@@ -52,6 +52,30 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/tariffs',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/tariffs/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/tariffs',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/tariffs/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
     ];
   },
 };

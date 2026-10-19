@@ -498,7 +498,7 @@ const nl = {
   "pay_expired_title": "Betaling verlopen",
   "pay_expires_in": "Verloopt over",
   "pay_fee": "Netwerkkosten",
-  "pay_fee_fixed": "Incl. {eur} € verwerkingskosten",
+  "pay_fee_fixed": "Incl. {eur} verwerkingskosten",
   "pay_fee_hint": "Incl. {pct}% netwerkcompensatiekosten",
   "pay_fee_label": "Netwerkkosten",
   "pay_fee_warning": "BELANGRIJK: Zorg ervoor dat je voldoende verstuurt om eventuele netwerkkosten te dekken. Transactiekosten zijn voor rekening van de verzender.",
@@ -787,6 +787,11 @@ const nl = {
   "cfg_duration_better_deal_btn": "Naar {days} dagen wisselen →",
   "cfg_better_deal_diff_less": "{days} dagen meer voor {price} minder!",
   "cfg_better_deal_diff_same": "{days} dagen meer voor dezelfde prijs!",
+  "cfg_change_destination": "🔍 Bestemming wijzigen",
+  "cfg_duration_better_deal_one": "Tip: Voor {price} krijg je 1 dag ({diff})",
+  "cfg_duration_better_deal_btn_one": "Overschakelen naar 1 dag →",
+  "cfg_better_deal_diff_less_one": "1 dag meer voor {price} minder!",
+  "cfg_better_deal_diff_same_one": "1 dag meer voor dezelfde prijs!"
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;
