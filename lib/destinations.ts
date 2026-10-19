@@ -2,6 +2,7 @@ import { query } from '@/lib/db';
 import { isRegionCode, regionLabel, isoName } from '@/lib/tariff-display';
 import { COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
+import { getTariffMinCustomerPrice } from '@/lib/pricing';
 import {
   type Destination,
   slugify,
@@ -166,7 +167,13 @@ export async function getCountryTariffs(countryCode: string): Promise<PublicTari
         [upperCode]
       );
 
-      const tariffs = rows.map(toPublicTariff);
+      const tariffs = await Promise.all(
+        rows.map(async (row: any) => {
+          const t = toPublicTariff(row);
+          t.customer_price_eur = await getTariffMinCustomerPrice(row);
+          return t;
+        })
+      );
       countryTariffsCache.set(upperCode, {
         data: tariffs,
         timestamp: Date.now(),

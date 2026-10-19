@@ -73,15 +73,25 @@ export async function POST(request: Request) {
     const termsAcceptedAt = new Date().toISOString();
 
     // Merge identical cart lines
-    const merged = new Map<string, { tariffId: string; days: number | null; quantity: number; topUpIccid: string | null }>();
+    const merged = new Map<string, { tariffId: string; days: number | null; quantity: number; topUpIccid: string | null; clientPrice?: number }>();
     for (const it of items) {
       if (!it.tariffId) continue;
+      if (it.days !== undefined && it.days !== null) {
+        if (typeof it.days !== 'number' || !Number.isInteger(it.days) || it.days < 1 || it.days > 365) {
+          return NextResponse.json({ error: 'Ungültige Laufzeit (1-365 Tage erlaubt)' }, { status: 400 });
+        }
+      }
       const days   = it.days ? clampDays(it.days) : null;
       const iccid  = it.topUpIccid?.trim() || null;
       const key    = `${it.tariffId}:${days ?? 0}:${iccid ?? ''}`;
       const q      = Math.max(1, Math.round(it.quantity || 1));
+      const clientPrice = typeof (it as any).priceEur === 'number' ? (it as any).priceEur : typeof (it as any).price === 'number' ? (it as any).price : undefined;
       const prev   = merged.get(key);
-      if (prev) prev.quantity += q; else merged.set(key, { tariffId: it.tariffId, days, quantity: q, topUpIccid: iccid });
+      if (prev) {
+        prev.quantity += q;
+      } else {
+        merged.set(key, { tariffId: it.tariffId, days, quantity: q, topUpIccid: iccid, clientPrice });
+      }
     }
     const lines = Array.from(merged.values());
     if (lines.length === 0) return NextResponse.json({ error: 'No valid items' }, { status: 400 });
@@ -199,11 +209,20 @@ export async function POST(request: Request) {
       if (isUnlimited && line.days) {
         unit = await getDayPassPrice(t, line.days);
       }
+      if (line.clientPrice !== undefined && typeof line.clientPrice === 'number') {
+        const clientDiff = Math.abs(line.clientPrice - unit);
+        if (clientDiff > 0.001) {
+          console.warn(`[checkout] Client price deviation: client claimed ${line.clientPrice} €, server strictly calculated ${unit} €.`);
+        }
+      }
       totalBaseEur += unit * line.quantity;
     }
 
-    const cookieStore = await cookies();
-    const cookieLocale = cookieStore.get('locale')?.value;
+    let cookieLocale: string | undefined;
+    try {
+      const cookieStore = await cookies();
+      cookieLocale = cookieStore.get('locale')?.value;
+    } catch (_) {}
     const rawLocale = body.customerLocale || body.locale || request.headers.get('x-locale') || cookieLocale || request.headers.get('accept-language')?.slice(0, 2) || 'de';
     const customerLocale = isValidLocale(rawLocale) ? rawLocale : 'de';
     const dict = getServerDict(customerLocale);
@@ -470,6 +489,7 @@ export async function POST(request: Request) {
         console.error('[checkout] error setting response cookies:', cookieErr);
       }
 
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       return response;
     }
   } catch (err) {

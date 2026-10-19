@@ -171,6 +171,48 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     is_verified: false,
   }) as any;
 
+  // Admin detection & check for Unlimited tariffs missing discount rules or with empty tiers
+  const adminEmail = (process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com').toLowerCase();
+  const isAdmin = user.email?.toLowerCase() === adminEmail || (user as any).app_metadata?.role === 'admin' || (user as any).user_metadata?.is_admin === true;
+
+  let missingDiscountTariffs: Array<{ id: string; name: string; country_name: string; country_code: string }> = [];
+  if (isAdmin) {
+    try {
+      const { data: allActive } = await service
+        .from('tariffs')
+        .select('id, name, country_name, country_code, discount_rule_code, tariff_type')
+        .eq('is_active', true);
+
+      const unlimitedActive = (allActive ?? []).filter(
+        (t: any) => t.tariff_type?.startsWith('unlimited')
+      );
+
+      if (unlimitedActive && unlimitedActive.length > 0) {
+        const ruleCodes = Array.from(new Set(unlimitedActive.map((t: any) => t.discount_rule_code).filter(Boolean)));
+        const validRules = new Set<string>();
+        if (ruleCodes.length > 0) {
+          const { data: rules } = await service
+            .from('discount_rules')
+            .select('discount_rule_code, period_rules')
+            .in('discount_rule_code', ruleCodes);
+          if (rules) {
+            for (const r of rules) {
+              const pr = typeof r.period_rules === 'string' ? JSON.parse(r.period_rules) : r.period_rules;
+              if (Array.isArray(pr) && pr.length > 0) {
+                validRules.add(r.discount_rule_code);
+              }
+            }
+          }
+        }
+        missingDiscountTariffs = (unlimitedActive as any[]).filter(
+          (t) => !t.discount_rule_code || !validRules.has(t.discount_rule_code)
+        );
+      }
+    } catch (checkErr) {
+      console.error('[dashboard] Admin tariff discount check failed:', checkErr);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
       {/* Header */}
@@ -183,6 +225,30 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           {t('dash_new_esim')}
         </Link>
       </div>
+
+      {/* Admin Warning: Missing Discount Rules */}
+      {isAdmin && missingDiscountTariffs.length > 0 && (
+        <div className="mb-8 rounded-2xl border-2 border-red-300 bg-red-50 p-5 shadow-sm text-red-900" role="alert">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0">⚠️</span>
+            <div className="space-y-1.5 flex-1">
+              <h3 className="font-extrabold text-base text-red-800">
+                Admin-Warnung: {missingDiscountTariffs.length} aktive Unlimited-Tarife ohne gültige Rabattregel!
+              </h3>
+              <p className="text-xs text-red-700 leading-relaxed">
+                Diese Tarife haben keinen <code className="font-mono bg-red-100 px-1 py-0.5 rounded text-red-800">discount_rule_code</code> zugewiesen oder die hinterlegte Rabattregel besitzt keine aktiven Staffelstufen. Kunden sehen für diese Länder keinen Staffelrabatt.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5 pt-1">
+                {Array.from(new Set(missingDiscountTariffs.map((t) => `${t.country_name} (${t.country_code})`))).map((c) => (
+                  <span key={c} className="inline-flex items-center rounded-md bg-white border border-red-200 px-2 py-0.5 text-xs font-semibold text-red-800 shadow-2xs">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">

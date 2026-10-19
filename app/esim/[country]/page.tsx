@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
       robots: { index: false, follow: false },
     };
   }
-  const minPrice = Math.min(...tariffs.map((t) => t.sale_price_eur));
+  const minPrice = Math.min(...tariffs.map((t) => t.customer_price_eur ?? t.sale_price_eur));
 
   const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
   const baseUrl = BASE_URL;
@@ -116,7 +116,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
   );
 
   const baseUrl = BASE_URL;
-  const minPrice = Math.min(...tariffs.map((t) => t.sale_price_eur));
+  const minPrice = Math.min(...tariffs.map((t) => t.customer_price_eur ?? t.sale_price_eur));
   const maxPrice = Math.max(...tariffs.map((t) => t.sale_price_eur));
 
   // JSON-LD Structured Data (Product + AggregateOffer + Breadcrumbs)

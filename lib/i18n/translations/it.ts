@@ -153,7 +153,7 @@ const it = {
   "cfg_disc_hint": "Risparmia {pct}% da {days} giorni",
   "cfg_disc_incl": "{pct}% di sconto incluso",
   "cfg_disc_label": "−{pct}% di sconto",
-  "cfg_disc_next": "· da {days} giorni ottieni {pct}%",
+  "cfg_disc_next": "da {days} giorni persino {pct}%",
   "cfg_duration": "Durata",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Dopo limite: 512 kbps",
@@ -780,10 +780,13 @@ const it = {
   "topup_error_pending_session": "Esiste già una sessione di pagamento aperta per questa eSIM. Concludila o attendi la scadenza.",
   "topup_validity_only_badge": "🔄 Solo estensione validità",
   "topup_data_validity_badge": "🔄 Dati e validità",
-  "cfg_tier_discount_badge": "Sconto scaglioni −{pct}%",
+  "cfg_tier_discount_badge": "Sconto a scaglioni −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Risparmi {saved}",
-  "cfg_duration_better_deal": "Per {price} ricevi {days} giorni",
+  "cfg_duration_better_deal": "Consiglio: Ottieni {days} giorni a {price} ({diff})",
+  "cfg_duration_better_deal_btn": "Passa a {days} giorni →",
+  "cfg_better_deal_diff_less": "{days} giorni in più per {price} in meno!",
+  "cfg_better_deal_diff_same": "{days} giorni in più allo stesso prezzo!",
 } as const;
 export default it;
 export type TranslationKeys = keyof typeof it;

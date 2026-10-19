@@ -6,6 +6,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import TariffDetailPageClient from './TariffDetailPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
+import { getTariffMinCustomerPrice } from '@/lib/pricing';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { formatGb } from '@/lib/utils';
@@ -41,6 +42,7 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
 
       if (data) {
         const res = toPublicTariff(data);
+        res.customer_price_eur = await getTariffMinCustomerPrice(data);
         tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
         return res;
       }
@@ -56,6 +58,7 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
 
       if (dataCode) {
         const res = toPublicTariff(dataCode);
+        res.customer_price_eur = await getTariffMinCustomerPrice(dataCode);
         tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
         return res;
       }
@@ -69,6 +72,9 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
         .maybeSingle();
 
       const res = dataCodeDirect ? toPublicTariff(dataCodeDirect) : null;
+      if (res && dataCodeDirect) {
+        res.customer_price_eur = await getTariffMinCustomerPrice(dataCodeDirect);
+      }
       tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
       return res;
     } finally {
@@ -232,7 +238,7 @@ export default async function TariffDetailPage({
     },
     offers: {
       '@type': 'Offer',
-      price: Number(tariff.sale_price_eur).toFixed(2),
+      price: Number(tariff.customer_price_eur ?? tariff.sale_price_eur).toFixed(2),
       priceCurrency: 'EUR',
       availability: 'https://schema.org/InStock',
       url: `${baseUrl}/tariffs/${tariff.slug}`,

@@ -502,19 +502,30 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // ── Cache-Control for public static/ISR storefront pages (ensures Cloudflare caches all 15 languages identically to German) ──
-  const isPublicCatalogRoute =
+  // ── Cache-Control for storefront pages (Cloudflare caching & fresh pricing) ──
+  const isPriceBearingRoute =
     normalizedPath === '/tariffs' ||
     normalizedPath.startsWith('/tariffs/') ||
     normalizedPath.startsWith('/esim/') ||
-    normalizedPath.startsWith('/unlimited/') ||
-    normalizedPath === '/ai';
+    normalizedPath.startsWith('/unlimited/');
 
-  if (!user && isPublicCatalogRoute && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
-    // If not already set with a public cache policy, emit public caching for Cloudflare
+  const isCartOrCheckout =
+    normalizedPath.startsWith('/cart') ||
+    normalizedPath.startsWith('/checkout') ||
+    normalizedPath.startsWith('/api/crypto/checkout');
+
+  if (isCartOrCheckout) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  } else if (!user && isPriceBearingRoute && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
+    // 5 minutes in CDN, browser always validates with server (0 stale-while-revalidate)
     response.headers.set(
       'Cache-Control',
-      'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400'
+      'public, max-age=0, s-maxage=300'
+    );
+  } else if (!user && normalizedPath === '/ai' && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
+    response.headers.set(
+      'Cache-Control',
+      'public, max-age=600, s-maxage=3600'
     );
   }
 

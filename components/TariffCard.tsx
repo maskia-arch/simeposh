@@ -397,7 +397,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         {/* ── Price ── */}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
           <Price
-            eur={tariff.sale_price_eur}
+            eur={tariff.customer_price_eur ?? tariff.sale_price_eur}
             className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
           />
           {onDetail && (

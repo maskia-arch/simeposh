@@ -153,7 +153,7 @@ const en = {
   "cfg_disc_hint": "From {days} days you save {pct}%",
   "cfg_disc_incl": "{pct}% discount included",
   "cfg_disc_label": "−{pct}% discount",
-  "cfg_disc_next": "· from {days} days even {pct}%",
+  "cfg_disc_next": "from {days} days even {pct}%",
   "cfg_duration": "Duration",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "After limit: 512 kbps",
@@ -783,7 +783,10 @@ const en = {
   "cfg_tier_discount_badge": "Tier discount −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "You save {saved}",
-  "cfg_duration_better_deal": "Get {days} days for {price}",
+  "cfg_duration_better_deal": "Tip: Get {days} days for {price} ({diff})",
+  "cfg_duration_better_deal_btn": "Switch to {days} days →",
+  "cfg_better_deal_diff_less": "{days} more days for {price} less!",
+  "cfg_better_deal_diff_same": "{days} more days for the same price!",
 } as const;
 export default en;
 export type TranslationKeys = keyof typeof en;

@@ -109,6 +109,7 @@ export interface PublicTariff {
   data_gb:              number | null;
   validity_days:        number;
   sale_price_eur:       number;
+  customer_price_eur?:  number;
   tariff_type:          'travel' | 'unlimited_eco' | 'unlimited_pro' | string | null;
   speed_kbps:           number | null;
   label:                string | null;
@@ -293,6 +294,7 @@ export function toPublicTariff(row: any): PublicTariff {
     data_gb:              row.data_gb !== null && row.data_gb !== undefined ? Number(row.data_gb) : null,
     validity_days:        Math.max(1, Number(row.validity_days ?? row.duration ?? 1)),
     sale_price_eur:       Number(row.sale_price_eur ?? 0),
+    customer_price_eur:   typeof row.customer_price_eur === 'number' ? row.customer_price_eur : undefined,
     tariff_type:          row.tariff_type ? String(row.tariff_type) : 'travel',
     speed_kbps:           row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
     label:                row.label ? String(row.label) : null,
@@ -311,4 +313,22 @@ export function toPublicTariff(row: any): PublicTariff {
     network_speed:        safeSpeed,
     activates_on_arrival: activatesOnArrival,
   };
+}
+
+let tariffsPageCache: { data: PublicTariff[]; timestamp: number } | null = null;
+const TARIFFS_PAGE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+export function getCachedTariffsPage(): PublicTariff[] | null {
+  if (tariffsPageCache && Date.now() - tariffsPageCache.timestamp < TARIFFS_PAGE_CACHE_TTL) {
+    return tariffsPageCache.data;
+  }
+  return null;
+}
+
+export function setCachedTariffsPage(tariffs: PublicTariff[]): void {
+  tariffsPageCache = { data: tariffs, timestamp: Date.now() };
+}
+
+export function clearTariffsPageCache(): void {
+  tariffsPageCache = null;
 }

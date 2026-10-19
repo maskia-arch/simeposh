@@ -6,7 +6,10 @@ import { PostgresQueryBuilder, PostgresAuthClient, TableName } from './postgresC
 import { cookies } from 'next/headers';
 
 export async function createClient() {
-  const cookieStore = await cookies();
+  let cookieStore: any;
+  try {
+    cookieStore = await cookies();
+  } catch (_) {}
   
   return {
     from: <T extends TableName = any>(table: T) => new PostgresQueryBuilder<T>(table),

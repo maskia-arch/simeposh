@@ -153,7 +153,7 @@ const da = {
   "cfg_disc_hint": "Spar {pct}% fra {days} dage",
   "cfg_disc_incl": "{pct}% rabat inkluderet",
   "cfg_disc_label": "−{pct}% rabat",
-  "cfg_disc_next": "· fra {days} dage får du {pct}%",
+  "cfg_disc_next": "fra {days} dage endda {pct}%",
   "cfg_duration": "Varighed",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Efter grænse: 512 kbps",
@@ -783,7 +783,10 @@ const da = {
   "cfg_tier_discount_badge": "Mængderabat −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Du sparer {saved}",
-  "cfg_duration_better_deal": "For {price} får du {days} dage",
+  "cfg_duration_better_deal": "Tip: Få {days} dage for {price} ({diff})",
+  "cfg_duration_better_deal_btn": "Skift til {days} dage →",
+  "cfg_better_deal_diff_less": "{days} dage mere for {price} mindre!",
+  "cfg_better_deal_diff_same": "{days} dage mere til samme pris!",
 } as const;
 export default da;
 export type TranslationKeys = keyof typeof da;

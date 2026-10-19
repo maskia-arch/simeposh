@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient }      from '@/lib/supabase/server';
 import { TariffsPageClient } from './TariffsPageClient';
-import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
+import { toPublicTariff, getCachedTariffsPage, setCachedTariffsPage, type PublicTariff } from '@/lib/tariffs';
+import { getTariffMinCustomerPrice } from '@/lib/pricing';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
@@ -26,22 +27,12 @@ export async function generateMetadata(): Promise<Metadata> {
 // Revalidate every 10 minutes so freshly-synced tariffs appear quickly
 export const revalidate = 600;
 
-/**
- * Load ALL active tariffs mapped to safe PublicTariff DTOs.
- *
- * CRITICAL:
- * - Sensitive columns (ek_price_usd, usd_eur_rate) are NEVER selected from the DB.
- * - raw_data is only read on the server to extract operators & breakout IP, then discarded.
- * - Client components receive strictly whitelisted PublicTariff objects.
- */
-let tariffsCache: { data: PublicTariff[]; timestamp: number } | null = null;
-const TARIFFS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 let inFlightTariffsPromise: Promise<PublicTariff[]> | null = null;
 
 async function getTariffs(): Promise<PublicTariff[]> {
-  const now = Date.now();
-  if (tariffsCache && (now - tariffsCache.timestamp < TARIFFS_CACHE_TTL)) {
-    return tariffsCache.data;
+  const cached = getCachedTariffsPage();
+  if (cached) {
+    return cached;
   }
 
   if (inFlightTariffsPromise) {
@@ -69,20 +60,25 @@ async function getTariffs(): Promise<PublicTariff[]> {
         }
         if (!data || data.length === 0) break;
         for (const row of data) {
-          all.push(toPublicTariff(row));
+          const t = toPublicTariff(row);
+          if (t.tariff_type?.startsWith('unlimited') || t.data_gb === 0) {
+            t.customer_price_eur = await getTariffMinCustomerPrice(row);
+          } else {
+            t.customer_price_eur = t.sale_price_eur;
+          }
+          all.push(t);
         }
         if (data.length < PAGE) break; // last (short) page
       }
 
       if (all.length > 0) {
-        tariffsCache = { data: all, timestamp: Date.now() };
+        setCachedTariffsPage(all);
         return all;
       }
-      return tariffsCache ? tariffsCache.data : all;
+      return getCachedTariffsPage() ?? all;
     } catch (err) {
       console.error('[tariffs] Fetch error, returning stale cache if available:', err);
-      if (tariffsCache) return tariffsCache.data;
-      return [];
+      return getCachedTariffsPage() ?? [];
     } finally {
       inFlightTariffsPromise = null;
     }

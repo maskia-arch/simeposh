@@ -34,17 +34,19 @@ import { revalidatePath }                      from 'next/cache';
 import { query as runRawQuery }                from '@/lib/db';
 import { syncDiscountRules }                   from '@/lib/sync/discount-rules';
 import { clearCountryTariffsCache }             from '@/lib/destinations';
+import { clearTariffsPageCache }               from '@/lib/tariffs';
 
 export interface SyncResult {
-  success:      boolean;
-  upserted:     number;
-  errors:       number;
-  total:        number;
-  usdEurRate:   number;
-  priceChanges: number;
-  syncId:       string;
-  duration_ms:  number;
-  error?:       string;
+  success:                boolean;
+  upserted:               number;
+  errors:                 number;
+  total:                  number;
+  usdEurRate:             number;
+  priceChanges:           number;
+  syncId:                 string;
+  duration_ms:            number;
+  error?:                 string;
+  revalidatedPathsCount?: number;
 }
 
 /** slug is for URL readability only – NOT globally unique (package_code is the PK). */
@@ -199,7 +201,36 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       error_message:  `fetched:${packages.length}|eta_ms:${lastDurationMs > 0 ? lastDurationMs : 120_000}`,
     });
 
-    // ── 3. Load existing tariffs for change detection ────────────
+    // ── 3. Load existing tariffs & default discount rule setting ────
+    let configuredDefaultRule: string | null = 'UNLIMITED_PLAN_DISC';
+    try {
+      const { data: defaultRuleSetting } = await db
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'unlimited_default_discount_rule')
+        .maybeSingle();
+
+      if (defaultRuleSetting) {
+        const val = typeof defaultRuleSetting.value === 'string' ? defaultRuleSetting.value.trim() : '';
+        // If explicitly set to empty string or 'none', disable default rule assignment
+        configuredDefaultRule = val === '' || val.toLowerCase() === 'none' ? null : val;
+      }
+    } catch (settingErr) {
+      console.warn('[sync] Failed to read unlimited_default_discount_rule setting, using fallback:', settingErr);
+    }
+
+    if (configuredDefaultRule) {
+      const { data: existingRule } = await db
+        .from('discount_rules')
+        .select('discount_rule_code')
+        .eq('discount_rule_code', configuredDefaultRule)
+        .maybeSingle();
+      if (!existingRule) {
+        console.warn(`[sync] Configured default discount rule '${configuredDefaultRule}' does not exist in discount_rules table! Falling back to 'UNLIMITED_PLAN_DISC'`);
+        configuredDefaultRule = 'UNLIMITED_PLAN_DISC';
+      }
+    }
+
     const { data: existing } = await db
       .from('tariffs').select('*').limit(200_000);
     const existingMap = new Map(
@@ -285,9 +316,11 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       if (isDayPass) {
         if (discountRuleCode) {
           dayPassWithCode++;
-        } else {
-          discountRuleCode = 'UNLIMITED_PLAN_DISC';
+        } else if (configuredDefaultRule) {
+          discountRuleCode = configuredDefaultRule;
           dayPassWithDefaultCode++;
+        } else {
+          discountRuleCode = null;
         }
         if (!discountRuleCode) {
           dayPassWithoutRule++;
@@ -511,34 +544,47 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       console.warn(`[sync] WARNING: ${dayPassWithoutRule} DayPass packages have no discount rule code!`);
     }
 
+    let revalidatedCount = 0;
     try {
       console.log('[sync] Triggering local cache revalidation...');
       clearCountryTariffsCache();
-      revalidatePath('/', 'layout');
-      revalidatePath('/tariffs', 'layout');
-      revalidatePath('/unlimited', 'layout');
-      revalidatePath('/esim', 'layout');
-      revalidatePath('/api/destinations');
-      console.log('[sync] Local cache revalidation triggered.');
+      clearTariffsPageCache();
+      const pathsToRevalidate = [
+        '/',
+        '/tariffs',
+        '/unlimited',
+        '/esim',
+        '/api/destinations',
+      ];
+      for (const p of pathsToRevalidate) {
+        revalidatePath(p, 'layout');
+        revalidatedCount++;
+      }
+      console.log(`[sync] Local cache revalidation completed (${revalidatedCount} paths revalidated).`);
     } catch (revalErr) {
       console.error('[sync] Local cache revalidation failed:', revalErr);
     }
 
     return {
-      success:      upserted > 0,
+      success:                upserted > 0,
       upserted,
       errors,
-      total:        packages.length,
+      total:                  packages.length,
       usdEurRate,
-      priceChanges: proposals.length,
+      priceChanges:           proposals.length,
       syncId,
-      duration_ms:  duration,
-      error:        finalErrorMsg ?? undefined,
+      duration_ms:            duration,
+      error:                  finalErrorMsg ?? undefined,
+      revalidatedPathsCount:  revalidatedCount,
     };
 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[sync] Fatal error:', message);
+    try {
+      clearCountryTariffsCache();
+      clearTariffsPageCache();
+    } catch (_) {}
     await db.from('sync_logs').update({
       status:        'failed',
       error_message: message,
@@ -548,6 +594,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     return {
       success: false, upserted: 0, errors: 0, total: 0, usdEurRate: 0,
       priceChanges: 0, syncId, duration_ms: Date.now() - startedAt, error: message,
+      revalidatedPathsCount: 0,
     };
   }
 }

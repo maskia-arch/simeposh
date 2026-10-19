@@ -205,6 +205,23 @@ export async function getDayPassPrice(
 }
 
 /**
+ * Resolves the minimum customer price for any tariff.
+ * For Unlimited / DayPass plans, calculates the 1-day price with discount rule applied (e.g. 0.57 € instead of 0.59 €).
+ * For Travel plans, returns the standard sale_price_eur.
+ */
+export async function getTariffMinCustomerPrice(
+  tariff: TariffPricingInput & { tariff_type?: string | null; data_gb?: number | null },
+  now: Date = new Date(),
+  options?: { rules?: NormalizedPeriodRule[] | null }
+): Promise<number> {
+  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  if (isUnlimited) {
+    return await getDayPassPrice(tariff, 1, now, options);
+  }
+  return tariff.sale_price_eur;
+}
+
+/**
  * Precomputes the complete price table for 1–365 days server-side.
  * Sanitized to never leak raw payRatio, wholesale cost, exchange rates or internal factors.
  * Includes dynamic threshold comparison ("Tipp: 30 Tage kosten nur 14,51 €").

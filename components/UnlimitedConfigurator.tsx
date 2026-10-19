@@ -785,7 +785,7 @@ export function UnlimitedConfigurator({
                     </span>
                     {hasDiscount && discountPct > 0 && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                        Staffelrabatt −{discountPct}%
+                        {t('cfg_tier_discount_badge' as any, { pct: discountPct }) || `Staffelrabatt −${discountPct}%`}
                       </span>
                     )}
                   </div>
@@ -813,14 +813,14 @@ export function UnlimitedConfigurator({
                   </div>
                 )}
 
-                {/* Better Deal Recommendation */}
-                <div className="min-h-[52px] flex items-center" role="status" aria-live="polite">
+                {/* Better Deal Recommendation: min-h preserves height on mobile (84px) & desktop (56px) so CTA buttons shift by 0 px */}
+                <div className="min-h-[84px] sm:min-h-[56px] flex items-center" role="status" aria-live="polite">
                   {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
                     const diffDays = betterDealDays - days;
                     const diffAmount = Math.max(0, Math.round((finalPrice - betterDealPriceEur) * 100) / 100);
                     const diffText = diffAmount > 0
-                      ? (isDe ? `${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'} mehr für ${formatCurrencyEuro(diffAmount, locale)} weniger!` : `${diffDays} more ${diffDays === 1 ? 'day' : 'days'} for ${formatCurrencyEuro(diffAmount, locale)} less!`)
-                      : (isDe ? `${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'} mehr zum selben Preis!` : `${diffDays} more ${diffDays === 1 ? 'day' : 'days'} for the same price!`);
+                      ? t('cfg_better_deal_diff_less' as any, { days: diffDays, price: formatCurrencyEuro(diffAmount, locale) })
+                      : t('cfg_better_deal_diff_same' as any, { days: diffDays });
                     return (
                       <button
                         type="button"
@@ -828,10 +828,14 @@ export function UnlimitedConfigurator({
                         className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs"
                       >
                         <span className="font-medium">
-                          💡 {isDe ? `Tipp: Für ${formatCurrencyEuro(betterDealPriceEur, locale)} bekommst du ${betterDealDays} Tage (${diffText})` : `Tip: Get ${betterDealDays} days for ${formatCurrencyEuro(betterDealPriceEur, locale)} (${diffText})`}
+                          💡 {t('cfg_duration_better_deal' as any, {
+                            price: formatCurrencyEuro(betterDealPriceEur, locale),
+                            days: betterDealDays,
+                            diff: diffText,
+                          })}
                         </span>
                         <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0">
-                          {isDe ? `Auf ${betterDealDays} Tage wechseln →` : `Switch to ${betterDealDays} days →`}
+                          {t('cfg_duration_better_deal_btn' as any, { days: betterDealDays })}
                         </span>
                       </button>
                     );

@@ -153,7 +153,7 @@ const nl = {
   "cfg_disc_hint": "Bespaar {pct}% vanaf {days} dagen",
   "cfg_disc_incl": "{pct}% korting inbegrepen",
   "cfg_disc_label": "−{pct}% korting",
-  "cfg_disc_next": "· vanaf {days} dagen krijg je {pct}%",
+  "cfg_disc_next": "vanaf {days} dagen zelfs {pct}%",
   "cfg_duration": "Duur",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Na limiet: 512 kbps",
@@ -783,7 +783,10 @@ const nl = {
   "cfg_tier_discount_badge": "Staffelkorting −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Je bespaart {saved}",
-  "cfg_duration_better_deal": "Voor {price} krijg je {days} dagen",
+  "cfg_duration_better_deal": "Tip: Voor {price} krijg je {days} dagen ({diff})",
+  "cfg_duration_better_deal_btn": "Naar {days} dagen wisselen →",
+  "cfg_better_deal_diff_less": "{days} dagen meer voor {price} minder!",
+  "cfg_better_deal_diff_same": "{days} dagen meer voor dezelfde prijs!",
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

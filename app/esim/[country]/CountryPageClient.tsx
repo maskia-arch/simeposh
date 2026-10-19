@@ -48,15 +48,15 @@ export function CountryPageClient({
 
   // Dynamic pricing metrics
   const minPrice = tariffs.length > 0
-    ? Math.min(...tariffs.map((t) => t.sale_price_eur))
+    ? Math.min(...tariffs.map((t) => t.customer_price_eur ?? t.sale_price_eur))
     : 0;
 
   const minTravelTariff = travelTariffs.length > 0
-    ? travelTariffs.reduce((prev, curr) => (curr.sale_price_eur < prev.sale_price_eur ? curr : prev))
+    ? travelTariffs.reduce((prev, curr) => ((curr.customer_price_eur ?? curr.sale_price_eur) < (prev.customer_price_eur ?? prev.sale_price_eur) ? curr : prev))
     : null;
 
   const minUnlimitedPerDay = unlimitedTariffs.length > 0
-    ? Math.min(...unlimitedTariffs.map((t) => t.sale_price_eur / Math.max(1, t.validity_days || 1)))
+    ? Math.min(...unlimitedTariffs.map((t) => t.customer_price_eur ?? (t.sale_price_eur / Math.max(1, t.validity_days || 1))))
     : null;
 
   // Collect unique local operators
