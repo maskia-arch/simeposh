@@ -153,7 +153,7 @@ const fr = {
   "cfg_disc_hint": "Économisez {pct}% à partir de {days} jours",
   "cfg_disc_incl": "{pct}% de réduction incluse",
   "cfg_disc_label": "−{pct}% de réduction",
-  "cfg_disc_next": "dès {days} jours même {pct}%",
+  "cfg_disc_next": "dès {days} jours même {pct}",
   "cfg_duration": "Durée de validité",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Après limite : 512 kbps",
@@ -780,18 +780,21 @@ const fr = {
   "topup_error_pending_session": "Une session de paiement est déjà en cours pour cette eSIM. Veuillez la finaliser ou attendre son expiration.",
   "topup_validity_only_badge": "🔄 Prolongation de validité uniquement",
   "topup_data_validity_badge": "🔄 Données & Validité",
-  "cfg_tier_discount_badge": "Remise dégressive −{pct}%",
+  "cfg_tier_discount_badge": "Remise échelonnée {pct}",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Vous économisez {saved}",
   "cfg_duration_better_deal": "Conseil : Obtenez {days} jours pour {price} ({diff})",
   "cfg_duration_better_deal_btn": "Passer à {days} jours →",
-  "cfg_better_deal_diff_less": "{days} jours de plus pour {price} de moins !",
-  "cfg_better_deal_diff_same": "{days} jours de plus au même prix !",
+  "cfg_better_deal_diff_less": "{days} jours de plus et {price} moins cher",
+  "cfg_better_deal_diff_same": "{days} jours de plus au même prix",
+  "cfg_better_deal_diff_more": "{days} jours de plus pour seulement {price} de plus",
   "cfg_change_destination": "🔍 Changer de destination",
   "cfg_duration_better_deal_one": "Conseil : pour {price}, vous obtenez 1 jour ({diff})",
   "cfg_duration_better_deal_btn_one": "Passer à 1 jour →",
-  "cfg_better_deal_diff_less_one": "1 jour de plus pour {price} de moins !",
-  "cfg_better_deal_diff_same_one": "1 jour de plus au même prix !"
+  "cfg_better_deal_diff_less_one": "1 jour de plus et {price} moins cher",
+  "cfg_better_deal_diff_same_one": "1 jour de plus au même prix",
+  "cfg_better_deal_diff_more_one": "1 jour de plus pour seulement {price} de plus",
+  "meta_tariff_slug_desc": "eSIM prépayée pour {country} avec {data} de données pendant {days} dès {price}. Activation immédiate par code QR sans frais d'itinérance."
 } as const;
 export default fr;
 export type TranslationKeys = keyof typeof fr;

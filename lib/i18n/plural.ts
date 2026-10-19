@@ -97,7 +97,7 @@ export function formatDayMark(days: number, locale: string = 'de'): string {
     case 'fi':
       return days === 1 ? '1 pv' : `${days} pv`;
     case 'cs':
-      return days === 1 ? '1 den' : `${days} dní`;
+      return days === 1 ? '1 den' : (days >= 2 && days <= 4 ? `${days} dny` : `${days} dní`);
     case 'ro':
       return days === 1 ? '1 zi' : `${days} zile`;
     case 'hu':
@@ -109,18 +109,25 @@ export function formatDayMark(days: number, locale: string = 'de'): string {
 
 /**
  * Formats a percentage according to the locale's typographic rules.
- * In Turkish, the % sign precedes the number (e.g. -%4, -%11).
- * In German/French, a non-breaking space precedes the % sign (e.g. -4 %, -11 %).
+ * Uses strictly the Unicode minus sign U+2212 ("−") for negative values (never ASCII hyphen "-").
+ * Spacing and positioning follows Intl.NumberFormat:
+ * e.g. de, fr, fi: "−4 %", en: "−4%", tr: "−%4".
  */
 export function formatPercent(pct: number, locale: string = 'de', options?: { negative?: boolean }): string {
   const num = Math.abs(pct);
   if (locale === 'tr') {
-    return options?.negative ? `−%${num}` : `%${num}`;
+    return options?.negative ? `\u2212%${num}` : `%${num}`;
   }
   const intlLocale = locale === 'en' ? 'en-US' : locale;
   const val = options?.negative ? -num / 100 : num / 100;
-  return new Intl.NumberFormat(intlLocale, {
+  let formatted = new Intl.NumberFormat(intlLocale, {
     style: 'percent',
     maximumFractionDigits: 0,
   }).format(val);
+
+  if (options?.negative) {
+    // Replace any ASCII hyphen-minus \u002D with Unicode minus \u2212
+    formatted = formatted.replace(/-/g, '\u2212');
+  }
+  return formatted;
 }

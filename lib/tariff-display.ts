@@ -204,8 +204,16 @@ export function formatLocalizedTariffName(
     }
   }
 
+  // Ensure space between digit and data unit: 500MB -> 500 MB
+  name = name.replace(/(\d+)\s*(MB|GB)\b/gi, '$1 $2');
+
+  // Finnish data unit localization: MB -> Mt, GB -> Gt
+  if (locale === 'fi') {
+    name = name.replace(/\bMB\b/g, 'Mt').replace(/\bGB\b/g, 'Gt');
+  }
+
   // Localize "/Day" suffix
-  if (/\b(?:per\s+day|\/day)\b/i.test(name)) {
+  if (/\b(?:per\s+day|\/day)\b/i.test(name) || /\/day\b/i.test(name)) {
     const dayWords: Record<string, string> = {
       de: '/Tag',
       fr: '/jour',
@@ -221,10 +229,18 @@ export function formatLocalizedTariffName(
       cs: '/den',
       ro: '/zi',
       hu: '/nap',
-      en: '/day',
+      en: '/Day',
     };
-    const dayWord = dayWords[locale] || '/day';
-    name = name.replace(/\b(?:per\s+day|\/day)\b/gi, dayWord);
+    const dayWord = dayWords[locale] || '/Day';
+    name = name.replace(/\b(?:per\s+day|\/day)\b|\/day\b/gi, dayWord);
+  }
+
+  // Insert middle dot separator between country and data portion if not already present
+  if (countryLabel && name.startsWith(countryLabel)) {
+    const remainder = name.slice(countryLabel.length).trim();
+    if (remainder && !remainder.startsWith('·') && !remainder.startsWith('-')) {
+      name = `${countryLabel} · ${remainder}`;
+    }
   }
 
   return name;

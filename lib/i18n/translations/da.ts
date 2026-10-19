@@ -153,7 +153,7 @@ const da = {
   "cfg_disc_hint": "Spar {pct}% fra {days} dage",
   "cfg_disc_incl": "{pct}% rabat inkluderet",
   "cfg_disc_label": "−{pct}% rabat",
-  "cfg_disc_next": "fra {days} dage endda {pct}%",
+  "cfg_disc_next": "fra {days} dage endda {pct}",
   "cfg_duration": "Varighed",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Efter grænse: 512 kbps",
@@ -780,18 +780,21 @@ const da = {
   "topup_error_pending_session": "Der er allerede en åben betalingssession for dette eSIM. Gennemfør den eller vent til den udløber.",
   "topup_validity_only_badge": "🔄 Kun forlængelse af gyldighed",
   "topup_data_validity_badge": "🔄 Data og gyldighed",
-  "cfg_tier_discount_badge": "Mængderabat −{pct}%",
+  "cfg_tier_discount_badge": "Mængderabat {pct}",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Du sparer {saved}",
   "cfg_duration_better_deal": "Tip: Få {days} dage for {price} ({diff})",
   "cfg_duration_better_deal_btn": "Skift til {days} dage →",
-  "cfg_better_deal_diff_less": "{days} dage mere for {price} mindre!",
-  "cfg_better_deal_diff_same": "{days} dage mere til samme pris!",
+  "cfg_better_deal_diff_less": "{days} dage mere og {price} billigere",
+  "cfg_better_deal_diff_same": "{days} dage mere til samme pris",
+  "cfg_better_deal_diff_more": "{days} dage mere for kun {price} mere",
   "cfg_change_destination": "🔍 Skift destination",
   "cfg_duration_better_deal_one": "Tip: For {price} får du 1 dag ({diff})",
   "cfg_duration_better_deal_btn_one": "Skift til 1 dag →",
-  "cfg_better_deal_diff_less_one": "1 dag mere for {price} mindre!",
-  "cfg_better_deal_diff_same_one": "1 dag mere til samme pris!"
+  "cfg_better_deal_diff_less_one": "1 dag mere og {price} billigere",
+  "cfg_better_deal_diff_same_one": "1 dag mere til samme pris",
+  "cfg_better_deal_diff_more_one": "1 dag mere for kun {price} mere",
+  "meta_tariff_slug_desc": "Forudbetalt eSIM til {country} med {data} data i {days} fra {price}. Øjeblikkelig aktivering via QR-kode uden roaminggebyrer."
 } as const;
 export default da;
 export type TranslationKeys = keyof typeof da;

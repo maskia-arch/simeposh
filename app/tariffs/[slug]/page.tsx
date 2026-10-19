@@ -1,5 +1,5 @@
 import { buildAlternates, BASE_URL } from '@/lib/seo';
-import { getServerLocale } from '@/lib/i18n/server';
+import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
@@ -8,8 +8,10 @@ import TariffDetailPageClient from './TariffDetailPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
 import { getTariffMinCustomerPrice } from '@/lib/pricing';
 import { getDestinationBySlug } from '@/lib/destinations';
-import { displayCountryName } from '@/lib/tariff-display';
+import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
 import { formatGb } from '@/lib/utils';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatCurrencyEuro } from '@/lib/currency';
 
 const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, raw_data';
 
@@ -104,35 +106,24 @@ export async function generateMetadata({
   }
 
   const locale = await getServerLocale();
+  const t = getServerT(locale);
   const isDe = locale === 'de';
 
   const country = displayCountryName(tariff, locale);
-  const dataLabel =
-    tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0
-      ? 'Unlimited'
-      : formatGb(tariff.data_gb);
+  let dataLabel = formatGb(tariff.data_gb);
+  if (tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0) {
+    const localizedFullName = formatLocalizedTariffName(tariff.name, country, tariff.country_name, locale);
+    if (localizedFullName.includes(' · ')) {
+      dataLabel = localizedFullName.split(' · ').slice(1).join(' · ');
+    } else {
+      dataLabel = 'Unlimited';
+    }
+  } else if (locale === 'fi') {
+    dataLabel = dataLabel.replace(/\bGB\b/g, 'Gt').replace(/\bMB\b/g, 'Mt');
+  }
 
-  const daysSuffixMap: Record<string, { one: string; other: string }> = {
-    de: { one: '1 Tag', other: `${tariff.validity_days} Tage` },
-    en: { one: '1 Day', other: `${tariff.validity_days} Days` },
-    fr: { one: '1 jour', other: `${tariff.validity_days} jours` },
-    es: { one: '1 día', other: `${tariff.validity_days} días` },
-    it: { one: '1 giorno', other: `${tariff.validity_days} giorni` },
-    nl: { one: '1 dag', other: `${tariff.validity_days} dagen` },
-    pl: { one: '1 dzień', other: `${tariff.validity_days} dni` },
-    pt: { one: '1 dia', other: `${tariff.validity_days} dias` },
-    tr: { one: '1 gün', other: `${tariff.validity_days} gün` },
-    sv: { one: '1 dag', other: `${tariff.validity_days} dagar` },
-    da: { one: '1 dag', other: `${tariff.validity_days} dage` },
-    fi: { one: '1 päivä', other: `${tariff.validity_days} päivää` },
-    cs: { one: '1 den', other: `${tariff.validity_days} dní` },
-    ro: { one: '1 zi', other: `${tariff.validity_days} zile` },
-    hu: { one: '1 nap', other: `${tariff.validity_days} nap` },
-  };
-
-  const daysLabel = tariff.validity_days === 1
-    ? (daysSuffixMap[locale]?.one || `${tariff.validity_days} Day`)
-    : (daysSuffixMap[locale]?.other || `${tariff.validity_days} Days`);
+  const daysLabel = formatDaysWithUnit(tariff.validity_days, locale);
+  const priceFormatted = formatCurrencyEuro(tariff.customer_price_eur ?? tariff.sale_price_eur, locale);
 
   const buyPrefixMap: Record<string, string> = {
     de: `eSIM ${country} ${dataLabel} (${daysLabel}) kaufen`,
@@ -154,9 +145,12 @@ export async function generateMetadata({
 
   const title = buyPrefixMap[locale] || `Buy eSIM ${country} ${dataLabel} (${daysLabel})`;
 
-  const description = isDe
-    ? `Günstige Prepaid eSIM für ${country}. Nutzen Sie ${dataLabel} Daten für ${daysLabel}. Sofort-Aktivierung per QR-Code.`
-    : `Affordable prepaid eSIM for ${country}. Enjoy ${dataLabel} high-speed data for ${daysLabel.toLowerCase()}. Instant activation via QR code.`;
+  const description = t('meta_tariff_slug_desc', {
+    country,
+    data: dataLabel,
+    days: daysLabel,
+    price: priceFormatted,
+  });
 
   const baseUrl = BASE_URL;
 
@@ -169,7 +163,7 @@ export async function generateMetadata({
       `${country} eSIM`,
       'PureSim',
       dataLabel,
-      `${tariff.validity_days} days`,
+      daysLabel,
     ],
     openGraph: {
       title,
@@ -185,6 +179,12 @@ export async function generateMetadata({
         },
       ],
     },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+      images: [`${baseUrl}/logo.png`],
+    },
     alternates: buildAlternates(locale, {
       dePath: `tariffs/${tariff.slug}`,
       enPath: `tariffs/${tariff.slug}`,
@@ -199,6 +199,7 @@ export default async function TariffDetailPage({
 }) {
   const { slug } = await params;
   const locale = await getServerLocale();
+  const t = getServerT(locale);
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
 
@@ -213,13 +214,26 @@ export default async function TariffDetailPage({
   }
 
   const countryLabel = displayCountryName(tariff, locale);
-  const dataLabel =
-    tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0
-      ? 'Unlimited'
-      : `${tariff.data_gb} GB`;
+  let dataLabel = formatGb(tariff.data_gb);
+  if (tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0) {
+    const localizedFullName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
+    if (localizedFullName.includes(' · ')) {
+      dataLabel = localizedFullName.split(' · ').slice(1).join(' · ');
+    } else {
+      dataLabel = 'Unlimited';
+    }
+  } else if (locale === 'fi') {
+    dataLabel = dataLabel.replace(/\bGB\b/g, 'Gt').replace(/\bMB\b/g, 'Mt');
+  }
 
-  const daysLabelDe = tariff.validity_days === 1 ? '1 Tag' : `${tariff.validity_days} Tage`;
-  const daysLabelEn = tariff.validity_days === 1 ? '1 Day' : `${tariff.validity_days} Days`;
+  const daysLabel = formatDaysWithUnit(tariff.validity_days, locale);
+  const priceFormatted = formatCurrencyEuro(tariff.customer_price_eur ?? tariff.sale_price_eur, locale);
+  const description = t('meta_tariff_slug_desc', {
+    country: countryLabel,
+    data: dataLabel,
+    days: daysLabel,
+    price: priceFormatted,
+  });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
 
@@ -227,10 +241,8 @@ export default async function TariffDetailPage({
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: `${countryLabel} eSIM - ${dataLabel} (${isDe ? daysLabelDe : daysLabelEn})`,
-    description: isDe
-      ? `Prepaid eSIM Datenpaket für ${countryLabel} mit ${dataLabel} Daten für ${daysLabelDe}.`
-      : `Prepaid eSIM data plan for ${countryLabel} featuring ${dataLabel} data for ${daysLabelEn.toLowerCase()}.`,
+    name: `${countryLabel} eSIM - ${dataLabel} (${daysLabel})`,
+    description,
     image: `${baseUrl}/logo.png`,
     brand: {
       '@type': 'Brand',
@@ -241,7 +253,7 @@ export default async function TariffDetailPage({
       price: Number(tariff.customer_price_eur ?? tariff.sale_price_eur).toFixed(2),
       priceCurrency: 'EUR',
       availability: 'https://schema.org/InStock',
-      url: `${baseUrl}/tariffs/${tariff.slug}`,
+      url: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}`,
       priceValidUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90)
         .toISOString()
         .split('T')[0], // 90 days from now

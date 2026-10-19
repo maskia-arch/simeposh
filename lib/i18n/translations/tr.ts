@@ -228,7 +228,7 @@ const tr = {
   "det_activation": "Activation",
   "det_add_cart": "Sepete Ekle",
   "det_added": "✓ Added",
-  "det_buy_now": "Buy now",
+  "det_buy_now": "Hemen satın al",
   "det_coverage_label": "Ağ kapsamı:",
   "det_coverage_list": "Covered Countries",
   "det_dual_net_redundancy": "Çift Ağ (Yedeklilik)",
@@ -780,18 +780,21 @@ const tr = {
   "topup_error_pending_session": "Bu eSIM için zaten açık bir ödeme oturumu var. Lütfen önce bunu tamamlayın veya süresinin dolmasını bekleyin.",
   "topup_validity_only_badge": "🔄 Yalnızca Geçerlilik Uzatma",
   "topup_data_validity_badge": "🔄 Veri ve Geçerlilik",
-  "cfg_tier_discount_badge": "Kademeli indirim −%{pct}",
+  "cfg_tier_discount_badge": "Kademeli indirim {pct}",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "{saved} tasarruf edersiniz",
   "cfg_duration_better_deal": "İpucu: {price} karşılığında {days} gün alırsınız ({diff})",
   "cfg_duration_better_deal_btn": "{days} güne geç →",
-  "cfg_better_deal_diff_less": "{price} daha azına {days} gün daha fazla!",
-  "cfg_better_deal_diff_same": "Aynı fiyata {days} gün daha fazla!",
+  "cfg_better_deal_diff_less": "{days} gün daha ve {price} daha ucuz",
+  "cfg_better_deal_diff_same": "{days} gün daha aynı fiyata",
+  "cfg_better_deal_diff_more": "{days} gün daha sadece {price} farkla",
   "cfg_change_destination": "🔍 Hedef bölgeyi değiştir",
   "cfg_duration_better_deal_one": "İpucu: {price} karşılığında 1 gün alırsınız ({diff})",
   "cfg_duration_better_deal_btn_one": "1 güne geç →",
-  "cfg_better_deal_diff_less_one": "{price} daha ucuza 1 gün daha fazla!",
-  "cfg_better_deal_diff_same_one": "Aynı fiyata 1 gün daha fazla!"
+  "cfg_better_deal_diff_less_one": "1 gün daha ve {price} daha ucuz",
+  "cfg_better_deal_diff_same_one": "1 gün daha aynı fiyata",
+  "cfg_better_deal_diff_more_one": "1 gün daha sadece {price} farkla",
+  "meta_tariff_slug_desc": "{country} için {days} boyunca {data} veri içeren ön ödemeli eSIM {price} başlayan fiyatlarla. Dolaşım ücreti olmadan anında QR kod aktivasyonu."
 } as const;
 export default tr;
 export type TranslationKeys = keyof typeof tr;

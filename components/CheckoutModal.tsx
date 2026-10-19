@@ -6,6 +6,7 @@ import { formatGb } from '@/lib/utils';
 import type { PublicTariff } from '@/lib/tariffs';
 import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
@@ -28,7 +29,7 @@ export function CheckoutModal({
   days,
   onClose,
 }: CheckoutModalProps) {
-  const { t }               = useTranslation();
+  const { t, locale }       = useTranslation();
   const [email, setEmail]   = useState('');
   const [user, setUser]     = useState<any>(null);
   const [balance, setBalance] = useState<number>(0);
@@ -141,7 +142,7 @@ export function CheckoutModal({
           <div className="flex justify-between text-sm mb-1">
             <span className="text-slate-600">{t('checkout_validity')}</span>
             <span className="font-medium">
-              {days || tariff.validity_days} {t('checkout_days')}
+              {formatDaysWithUnit(days || tariff.validity_days || 1, locale)}
               {orderType === 'top_up' ? ' (Verlängerung)' : ''}
             </span>
           </div>

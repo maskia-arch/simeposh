@@ -153,7 +153,7 @@ const nl = {
   "cfg_disc_hint": "Bespaar {pct}% vanaf {days} dagen",
   "cfg_disc_incl": "{pct}% korting inbegrepen",
   "cfg_disc_label": "−{pct}% korting",
-  "cfg_disc_next": "vanaf {days} dagen zelfs {pct}%",
+  "cfg_disc_next": "vanaf {days} dagen zelfs {pct}",
   "cfg_duration": "Duur",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Na limiet: 512 kbps",
@@ -780,18 +780,21 @@ const nl = {
   "topup_error_pending_session": "Er is al een openstaande betalingssessie voor deze eSIM. Voltooi deze eerst of wacht tot deze verloopt.",
   "topup_validity_only_badge": "🔄 Alleen geldigheidsverlenging",
   "topup_data_validity_badge": "🔄 Data & geldigheid",
-  "cfg_tier_discount_badge": "Staffelkorting −{pct}%",
+  "cfg_tier_discount_badge": "Staffelkorting {pct}",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Je bespaart {saved}",
   "cfg_duration_better_deal": "Tip: Voor {price} krijg je {days} dagen ({diff})",
   "cfg_duration_better_deal_btn": "Naar {days} dagen wisselen →",
-  "cfg_better_deal_diff_less": "{days} dagen meer voor {price} minder!",
-  "cfg_better_deal_diff_same": "{days} dagen meer voor dezelfde prijs!",
+  "cfg_better_deal_diff_less": "{days} dagen meer en {price} goedkoper",
+  "cfg_better_deal_diff_same": "{days} dagen meer voor dezelfde prijs",
+  "cfg_better_deal_diff_more": "{days} dagen meer voor slechts {price} meer",
   "cfg_change_destination": "🔍 Bestemming wijzigen",
   "cfg_duration_better_deal_one": "Tip: Voor {price} krijg je 1 dag ({diff})",
   "cfg_duration_better_deal_btn_one": "Overschakelen naar 1 dag →",
-  "cfg_better_deal_diff_less_one": "1 dag meer voor {price} minder!",
-  "cfg_better_deal_diff_same_one": "1 dag meer voor dezelfde prijs!"
+  "cfg_better_deal_diff_less_one": "1 dag meer en {price} goedkoper",
+  "cfg_better_deal_diff_same_one": "1 dag meer voor dezelfde prijs",
+  "cfg_better_deal_diff_more_one": "1 dag meer voor slechts {price} meer",
+  "meta_tariff_slug_desc": "Prepaid eSIM voor {country} met {data} data voor {days} vanaf {price}. Directe activatie via QR-code zonder roamingkosten."
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

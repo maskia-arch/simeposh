@@ -11,6 +11,7 @@ import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { displayCountryName, coverageLabel, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -196,7 +197,7 @@ export default function CartPage() {
                       </p>
                       <p className="text-xs text-slate-500">
                         {badge && <span className="inline-flex items-center gap-1">{badge.icon} {badge.label} · </span>}
-                        {isUnlimited ? '∞' : formatGb(i.dataGb)} · {i.validityDays} {t('cfg_days')}
+                        {isUnlimited ? '∞' : formatGb(i.dataGb)} · {formatDaysWithUnit(i.validityDays, locale)}
                         {coverage && (
                           <span className="inline-flex items-center gap-0.5 ml-1">
                             · <GlobeIcon size={12} className="text-slate-400" />

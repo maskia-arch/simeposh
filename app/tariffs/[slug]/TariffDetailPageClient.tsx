@@ -11,7 +11,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
@@ -146,7 +146,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
               </div>
 
               <div className="mt-6 border-t border-slate-100 pt-6">
-                <p className="text-lg font-bold text-slate-800 mb-2">{tariff.name}</p>
+                <p className="text-lg font-bold text-slate-800 mb-2">{formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale)}</p>
                 {tariff.description && (
                   <p className="text-sm text-slate-500 leading-relaxed">{tariff.description}</p>
                 )}

@@ -7,6 +7,7 @@ import { formatEur, formatGb } from '@/lib/utils';
 import { claimGuestOrders, resolveCustomer } from '@/lib/customers';
 import { queryEsimLifecycle, type EsimLifecycle } from '@/lib/esimaccess/client';
 import { getServerT, getServerLocale, type ServerT } from '@/lib/i18n/server';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import type { TranslationKeys } from '@/lib/i18n/translations/en';
 import { resolveEsimCashAccount } from '@/lib/cashback';
 import EsimCashDashboard from '@/components/EsimCashDashboard';
@@ -567,7 +568,7 @@ function OrderRow({
             )}
           </p>
           <p className="text-xs text-slate-500">
-            {tariff ? `${formatGb(tariff.data_gb)} · ${order.period_num ?? tariff.validity_days}d` : ''}
+            {tariff ? `${formatGb(tariff.data_gb)} · ${formatDaysWithUnit(order.period_num ?? tariff.validity_days, prefix.replace(/^\//, '') || 'de')}` : ''}
             {' · '}{new Date(order.created_at).toLocaleDateString('de-DE')}
           </p>
         </div>

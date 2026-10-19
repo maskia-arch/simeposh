@@ -184,22 +184,24 @@ export function DaySlider({
         </div>
       </div>
 
-      {/* Dynamic Discount Hint */}
-      <div className="min-h-[18px]">
+      {/* Dynamic Discount Hint: fixed 2-line min-height to prevent layout jumps on mobile */}
+      <div className="min-h-[44px] flex items-center">
         {currentDiscountPct > 0 ? (
-          <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1">
-            <span>🎁 {t('cfg_disc_incl', { pct: currentDiscountPct })}</span>
+          <p className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
+            <span>🎁 {t('cfg_disc_incl', { pct: formatPercent(currentDiscountPct, locale) })}</span>
             {nextTier && (
               <span className="text-emerald-600 font-normal">
-                {' '}· {t('cfg_disc_next', { days: nextTier.minDays, pct: nextTier.discountPct })}
+                {' '}· {t('cfg_disc_next', { days: formatDaysWithUnit(nextTier.minDays, locale), pct: formatPercent(nextTier.discountPct, locale) })}
               </span>
             )}
           </p>
         ) : nextTier ? (
-          <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1">
-            <span>💡 {t('cfg_disc_hint', { days: nextTier.minDays, pct: nextTier.discountPct })}</span>
+          <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
+            <span>💡 {t('cfg_disc_hint', { days: formatDaysWithUnit(nextTier.minDays, locale), pct: formatPercent(nextTier.discountPct, locale) })}</span>
           </p>
-        ) : null}
+        ) : (
+          <div className="w-full h-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
+        )}
       </div>
     </div>
   );
@@ -785,14 +787,13 @@ export function UnlimitedConfigurator({
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700 transition-opacity ${
-                        hasDiscount && discountPct > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                      }`}
-                      aria-hidden={!hasDiscount || discountPct <= 0}
-                    >
-                      {t('cfg_tier_discount_badge' as any, { pct: discountPct }) || `Staffelrabatt −${discountPct}%`}
-                    </span>
+                    {hasDiscount && discountPct > 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                        {t('cfg_tier_discount_badge' as any, { pct: formatPercent(discountPct, locale, { negative: true }) }) || `Staffelrabatt ${formatPercent(discountPct, locale, { negative: true })}`}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs border border-transparent opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-black text-slate-900 tracking-tight">
@@ -807,34 +808,42 @@ export function UnlimitedConfigurator({
                 </div>
 
                 {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
-                <div
-                  className={`space-y-0.5 text-xs text-slate-500 min-h-[38px] transition-opacity ${
-                    hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0
-                      ? 'opacity-100'
-                      : 'opacity-0 pointer-events-none'
-                  }`}
-                  aria-hidden={!hasDiscount || subtotalBeforeDiscount === null || frontPricePerDay <= 0}
-                >
-                  <div className="truncate">
-                    {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount || 0, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice || 0, locale)}
+                {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 ? (
+                  <div className="space-y-0.5 text-xs text-slate-500 min-h-[38px]">
+                    <div className="truncate">
+                      {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
+                    </div>
+                    <div className="font-semibold text-emerald-700 text-[11px] truncate">
+                      {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
+                    </div>
                   </div>
-                  <div className="font-semibold text-emerald-700 text-[11px] truncate">
-                    {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
-                  </div>
-                </div>
+                ) : (
+                  <div className="min-h-[38px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                )}
 
-                {/* Better Deal Recommendation: strictly preserved height on mobile (84px) & desktop (64px) */}
-                <div className="min-h-[84px] sm:min-h-[64px] flex items-center" role="status" aria-live="polite">
+                {/* Better Deal Recommendation: strictly preserved height on mobile & desktop */}
+                <div className="min-h-[92px] sm:min-h-[72px] flex items-center" role="status" aria-live="polite">
                   {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
                     const diffDays = betterDealDays - days;
-                    const diffAmount = Math.max(0, Math.round((finalPrice - betterDealPriceEur) * 100) / 100);
-                    const diffText = diffAmount > 0
-                      ? (diffDays === 1 && t('cfg_better_deal_diff_less_one' as any) !== 'cfg_better_deal_diff_less_one'
-                          ? t('cfg_better_deal_diff_less_one' as any, { price: formatCurrencyEuro(diffAmount, locale) })
-                          : t('cfg_better_deal_diff_less' as any, { days: diffDays, price: formatCurrencyEuro(diffAmount, locale) }))
-                      : (diffDays === 1 && t('cfg_better_deal_diff_same_one' as any) !== 'cfg_better_deal_diff_same_one'
-                          ? t('cfg_better_deal_diff_same_one' as any)
-                          : t('cfg_better_deal_diff_same' as any, { days: diffDays }));
+                    const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
+                    const diff = diffCents / 100;
+                    const absDiff = Math.abs(diff);
+                    const formattedDiffAmount = formatCurrencyEuro(absDiff, locale);
+
+                    let diffText = '';
+                    if (diff < 0) {
+                      diffText = diffDays === 1
+                        ? t('cfg_better_deal_diff_less_one' as any, { price: formattedDiffAmount })
+                        : t('cfg_better_deal_diff_less' as any, { days: diffDays, price: formattedDiffAmount });
+                    } else if (diff === 0) {
+                      diffText = diffDays === 1
+                        ? t('cfg_better_deal_diff_same_one' as any)
+                        : t('cfg_better_deal_diff_same' as any, { days: diffDays });
+                    } else {
+                      diffText = diffDays === 1
+                        ? t('cfg_better_deal_diff_more_one' as any, { price: formattedDiffAmount })
+                        : t('cfg_better_deal_diff_more' as any, { days: diffDays, price: formattedDiffAmount });
+                    }
 
                     const tipTitle = betterDealDays === 1 && t('cfg_duration_better_deal_one' as any) !== 'cfg_duration_better_deal_one'
                       ? t('cfg_duration_better_deal_one' as any, { price: formatCurrencyEuro(betterDealPriceEur, locale), diff: diffText })
@@ -863,7 +872,7 @@ export function UnlimitedConfigurator({
                       </button>
                     );
                   })() : (
-                    <div className="w-full h-full opacity-0 pointer-events-none" aria-hidden="true" />
+                    <div className="w-full h-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
                   )}
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { formatGb } from '@/lib/utils';
 import { Price } from '@/components/Price';
 import { displayCountryName, isNonHkIpTariff, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { createClient } from '@/lib/supabase/client';
@@ -301,7 +302,7 @@ export function CartDrawer() {
 
                         <p className="text-xs text-slate-500 font-medium flex items-center flex-wrap gap-1">
                           {badge && <span className="inline-flex items-center gap-0.5 mr-0.5">{badge.icon} <span>{badge.label}</span></span>}
-                          <span>· {isUnlimited ? '∞ Unlimited' : formatGb(i.dataGb)} · {i.validityDays}d</span>
+                          <span>· {isUnlimited ? '∞ Unlimited' : formatGb(i.dataGb)} · {formatDaysWithUnit(i.validityDays, locale)}</span>
                           {i.topUpIccid && (
                             <span className="inline-flex items-center gap-0.5 rounded bg-brand-50 border border-brand-200 px-1.5 py-0.5 text-xs font-bold text-brand-700 font-mono">
                               🔄 Refill: {i.topUpIccid.slice(-8)}

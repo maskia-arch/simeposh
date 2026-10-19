@@ -153,7 +153,7 @@ const it = {
   "cfg_disc_hint": "Risparmia {pct}% da {days} giorni",
   "cfg_disc_incl": "{pct}% di sconto incluso",
   "cfg_disc_label": "−{pct}% di sconto",
-  "cfg_disc_next": "da {days} giorni persino {pct}%",
+  "cfg_disc_next": "da {days} giorni persino {pct}",
   "cfg_duration": "Durata",
   "cfg_eco": "Unlimited Eco",
   "cfg_eco_sub": "Dopo limite: 512 kbps",
@@ -780,18 +780,21 @@ const it = {
   "topup_error_pending_session": "Esiste già una sessione di pagamento aperta per questa eSIM. Concludila o attendi la scadenza.",
   "topup_validity_only_badge": "🔄 Solo estensione validità",
   "topup_data_validity_badge": "🔄 Dati e validità",
-  "cfg_tier_discount_badge": "Sconto a scaglioni −{pct}%",
+  "cfg_tier_discount_badge": "Sconto a scaglioni {pct}",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
   "cfg_you_save": "Risparmi {saved}",
   "cfg_duration_better_deal": "Consiglio: Ottieni {days} giorni a {price} ({diff})",
   "cfg_duration_better_deal_btn": "Passa a {days} giorni →",
-  "cfg_better_deal_diff_less": "{days} giorni in più per {price} in meno!",
-  "cfg_better_deal_diff_same": "{days} giorni in più allo stesso prezzo!",
+  "cfg_better_deal_diff_less": "{days} giorni in più e {price} più conveniente",
+  "cfg_better_deal_diff_same": "{days} giorni in più allo stesso prezzo",
+  "cfg_better_deal_diff_more": "{days} giorni in più per soli {price} in più",
   "cfg_change_destination": "🔍 Cambia destinazione",
   "cfg_duration_better_deal_one": "Suggerimento: per {price} ricevi 1 giorno ({diff})",
   "cfg_duration_better_deal_btn_one": "Passa a 1 giorno →",
-  "cfg_better_deal_diff_less_one": "1 giorno in più per {price} in meno!",
-  "cfg_better_deal_diff_same_one": "1 giorno in più allo stesso prezzo!"
+  "cfg_better_deal_diff_less_one": "1 giorno in più e {price} più conveniente",
+  "cfg_better_deal_diff_same_one": "1 giorno in più allo stesso prezzo",
+  "cfg_better_deal_diff_more_one": "1 giorno in più per soli {price} in più",
+  "meta_tariff_slug_desc": "eSIM prepagata per {country} con {data} di dati per {days} da {price}. Attivazione istantanea tramite codice QR senza costi di roaming."
 } as const;
 export default it;
 export type TranslationKeys = keyof typeof it;
