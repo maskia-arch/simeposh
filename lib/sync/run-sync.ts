@@ -33,6 +33,7 @@ import type { EsimAccessPackage }              from '@/lib/esimaccess/types';
 import { revalidatePath }                      from 'next/cache';
 import { query as runRawQuery }                from '@/lib/db';
 import { syncDiscountRules }                   from '@/lib/sync/discount-rules';
+import { clearCountryTariffsCache }             from '@/lib/destinations';
 
 export interface SyncResult {
   success:      boolean;
@@ -234,6 +235,10 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     // Fetch AI display names if DeepSeek is configured (will only query for new combinations)
     const aiDisplayNames = await getAiDisplayNames(packages, existingNamingMap);
 
+    let dayPassWithCode = 0;
+    let dayPassWithDefaultCode = 0;
+    let dayPassWithoutRule = 0;
+
     const rows = packages.map((pkg) => {
       const ekUsd         = priceToUsd(pkg.price);
       const salePriceEur  = calculateSalePrice(ekUsd, usdEurRate);
@@ -275,7 +280,19 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
       const activeType = Number(pkg.activeType ?? 2);
       const topUpType = Number(pkg.supportTopUpType ?? 1);
-      const discountRuleCode = (pkg as any).discountRuleCode || null;
+      const isDayPass = tariffType.startsWith('unlimited') || pkg.dataType === 2;
+      let discountRuleCode = (pkg as any).discountRuleCode ? String((pkg as any).discountRuleCode).trim() : null;
+      if (isDayPass) {
+        if (discountRuleCode) {
+          dayPassWithCode++;
+        } else {
+          discountRuleCode = 'UNLIMITED_PLAN_DISC';
+          dayPassWithDefaultCode++;
+        }
+        if (!discountRuleCode) {
+          dayPassWithoutRule++;
+        }
+      }
       const isTopUpEligible = activeType !== 3 && (topUpType === 2 || topUpType === 3);
 
       return {
@@ -489,11 +506,18 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     }).eq('sync_id', syncId);
 
     console.log(`[sync] Done. packages=${packages.length} upserted=${upserted} errors=${errors} priceChanges=${proposals.length} duration=${duration}ms`);
+    console.log(`[sync] DayPass discount rules: ${dayPassWithCode} with provider code, ${dayPassWithDefaultCode} assigned default code 'UNLIMITED_PLAN_DISC', ${dayPassWithoutRule} without rule.`);
+    if (dayPassWithoutRule > 0) {
+      console.warn(`[sync] WARNING: ${dayPassWithoutRule} DayPass packages have no discount rule code!`);
+    }
 
     try {
       console.log('[sync] Triggering local cache revalidation...');
-      revalidatePath('/');
-      revalidatePath('/tariffs');
+      clearCountryTariffsCache();
+      revalidatePath('/', 'layout');
+      revalidatePath('/tariffs', 'layout');
+      revalidatePath('/unlimited', 'layout');
+      revalidatePath('/esim', 'layout');
       revalidatePath('/api/destinations');
       console.log('[sync] Local cache revalidation triggered.');
     } catch (revalErr) {

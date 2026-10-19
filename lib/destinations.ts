@@ -126,6 +126,13 @@ const countryTariffsCache = new Map<string, TariffCacheEntry>();
 const inFlightTariffQueries = new Map<string, Promise<PublicTariff[]>>();
 const COUNTRY_TARIFF_TTL = 10 * 60 * 1000; // 10 minutes
 
+export function clearCountryTariffsCache(): void {
+  countryTariffsCache.clear();
+  inFlightTariffQueries.clear();
+  cachedDestinations = null;
+  cacheTime = 0;
+}
+
 /**
  * Fetch strictly public, sanitized tariffs for a specific country or region.
  * NEVER selects sensitive internal columns (ek_price_usd, usd_eur_rate).
@@ -152,7 +159,7 @@ export async function getCountryTariffs(countryCode: string): Promise<PublicTari
       const { rows } = await query(
         `SELECT id, package_code, slug, name, description, country_code, country_name, region,
                 flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
-                speed_kbps, label, is_top_up_eligible, raw_data
+                speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, raw_data
          FROM tariffs
          WHERE is_active = true AND country_code = $1
          ORDER BY sale_price_eur ASC`,

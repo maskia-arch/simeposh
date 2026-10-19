@@ -621,10 +621,6 @@ export const CLIENT_TRANSLATION_KEYS = [
   "topup_sub",
   "topup_title",
   "topup_validity_label",
-  "tp_disc_14",
-  "tp_disc_3",
-  "tp_disc_30",
-  "tp_disc_7",
   "tp_eco_desc",
   "tp_eco_desc_generic",
   "tp_eco_title",
@@ -759,7 +755,8 @@ export const CLIENT_TRANSLATION_KEYS = [
   "topup_data_validity_badge",
   "cfg_tier_discount_badge",
   "cfg_discount_subtotal",
-  "cfg_duration_better_deal"
+  "cfg_duration_better_deal",
+  "cfg_you_save"
 ] as const;
 
 export type ClientTranslationKey = typeof CLIENT_TRANSLATION_KEYS[number];

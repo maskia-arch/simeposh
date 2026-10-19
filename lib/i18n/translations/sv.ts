@@ -622,10 +622,6 @@ const sv = {
   "topup_sub": "Lägg till data på sekunder.",
   "topup_title": "Har du redan ett eSIM?",
   "topup_validity_label": "Giltighet:",
-  "tp_disc_14": "Från 14 dagar −11%",
-  "tp_disc_3": "Från 3 dagar −4%",
-  "tp_disc_30": "Från 30 dagar −18%",
-  "tp_disc_7": "Från 7 dagar −8%",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Obegränsad data med bashastighet efter höghastighetskvoten.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const sv = {
   "topup_data_validity_badge": "🔄 Data & giltighet",
   "cfg_tier_discount_badge": "Mängdrabatt −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Du sparar {saved}",
   "cfg_duration_better_deal": "För {price} får du {days} dagar",
 } as const;
 export default sv;

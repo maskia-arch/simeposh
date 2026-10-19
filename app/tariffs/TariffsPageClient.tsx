@@ -581,12 +581,6 @@ export function TariffsPageClient({
                 </div>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-2">
-              <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_3')}</span>
-              <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_7')}</span>
-              <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_14')}</span>
-              <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-semibold text-green-800">{t('tp_disc_30')}</span>
-            </div>
           </div>
 
           {unlimitedTariffs.length === 0 ? (

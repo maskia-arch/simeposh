@@ -622,10 +622,6 @@ const ro = {
   "topup_sub": "Adaugă date în câteva secunde.",
   "topup_title": "Ai deja un eSIM?",
   "topup_validity_label": "Valabilitate:",
-  "tp_disc_14": "De la 14 zile −11%",
-  "tp_disc_3": "De la 3 zile −4%",
-  "tp_disc_30": "De la 30 de zile −18%",
-  "tp_disc_7": "De la 7 zile −8%",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Date nelimitate cu viteză de bază după cota de mare viteză.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const ro = {
   "topup_data_validity_badge": "🔄 Date și valabilitate",
   "cfg_tier_discount_badge": "Reducere progresivă −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Economisești {saved}",
   "cfg_duration_better_deal": "Pentru {price} primiți {days} zile",
 } as const;
 export default ro;

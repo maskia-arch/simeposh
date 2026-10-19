@@ -622,10 +622,6 @@ const fi = {
   "topup_sub": "Lisää dataa sekunneissa.",
   "topup_title": "Sinulla on jo eSIM?",
   "topup_validity_label": "Voimassaolo:",
-  "tp_disc_14": "Alk. 14 päivää −11%",
-  "tp_disc_3": "Alk. 3 päivää −4%",
-  "tp_disc_30": "Alk. 30 päivää −18%",
-  "tp_disc_7": "Alk. 7 päivää −8%",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Rajoittamaton data perusnopeudella huippunopeuskiintiön jälkeen.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const fi = {
   "topup_data_validity_badge": "🔄 Data & voimassaolo",
   "cfg_tier_discount_badge": "Porr想isalennus −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Säästät {saved}",
   "cfg_duration_better_deal": "Hinnalla {price} saat {days} päivää",
 } as const;
 export default fi;

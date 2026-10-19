@@ -622,10 +622,6 @@ const da = {
   "topup_sub": "Tilføj data på sekunder.",
   "topup_title": "Har du allerede et eSIM?",
   "topup_validity_label": "Gyldighed:",
-  "tp_disc_14": "Fra 14 dage −11%",
-  "tp_disc_3": "Fra 3 dage −4%",
-  "tp_disc_30": "Fra 30 dage −18%",
-  "tp_disc_7": "Fra 7 dage −8%",
   "tp_eco_desc": "Daglig højhastighedsdata, derefter ubegrænset op til 512 kbps.",
   "tp_eco_desc_generic": "Ubegrænset data med basishastighed efter højhastighedskvoten.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const da = {
   "topup_data_validity_badge": "🔄 Data og gyldighed",
   "cfg_tier_discount_badge": "Mængderabat −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Du sparer {saved}",
   "cfg_duration_better_deal": "For {price} får du {days} dage",
 } as const;
 export default da;

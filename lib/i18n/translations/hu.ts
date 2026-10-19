@@ -622,10 +622,6 @@ const hu = {
   "topup_sub": "Adj hozzá adatot másodpercek alatt.",
   "topup_title": "Már van eSIM-ed?",
   "topup_validity_label": "Érvényesség:",
-  "tp_disc_14": "14 naptól −11%",
-  "tp_disc_3": "3 naptól −4%",
-  "tp_disc_30": "30 naptól −18%",
-  "tp_disc_7": "7 naptól −8%",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Korlátlan adat alapvető sebességgel a nagysebességű keret után.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const hu = {
   "topup_data_validity_badge": "🔄 Adat és érvényesség",
   "cfg_tier_discount_badge": "Sávos kedvezmény −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Megtakarítás: {saved}",
   "cfg_duration_better_deal": "{price} áron {days} napot kap",
 } as const;
 export default hu;

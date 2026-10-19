@@ -622,10 +622,6 @@ const tr = {
   "topup_sub": "Saniyeler içinde veri ekle.",
   "topup_title": "Zaten bir eSIM'in mi var?",
   "topup_validity_label": "Geçerlilik:",
-  "tp_disc_14": "14 günden itibaren −%11",
-  "tp_disc_3": "3 günden itibaren −%4",
-  "tp_disc_30": "30 günden itibaren −%18",
-  "tp_disc_7": "7 günden itibaren −%8",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Yüksek hız kotasından sonra temel hız ile sınırsız veri.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const tr = {
   "topup_data_validity_badge": "🔄 Veri ve Geçerlilik",
   "cfg_tier_discount_badge": "Kademeli indirim −%{pct}",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "{saved} tasarruf edersiniz",
   "cfg_duration_better_deal": "{price} karşılığında {days} gün",
 } as const;
 export default tr;

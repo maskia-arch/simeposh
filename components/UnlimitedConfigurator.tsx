@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatGb } from '@/lib/utils';
 import type { UnlimitedPriceTable, ClientTier } from '@/lib/pricing';
 import { Price } from '@/components/Price';
+import { formatCurrencyEuro } from '@/lib/currency';
 import type { PublicTariff } from '@/lib/tariffs';
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { CountryFlag } from '@/components/CountryFlag';
@@ -486,8 +487,11 @@ export function UnlimitedConfigurator({
 
   const frontPricePerDay = currentPriceTable?.frontPricePerDay ?? (bestPerDay ?? 0);
   const finalPrice = dayInfo?.priceEur ?? (bestPackage ? bestPackage.sale_price_eur : null);
-  const subtotalBeforeDiscount = dayInfo?.subtotalEur ?? null;
+  const subtotalBeforeDiscount = dayInfo?.subtotalEur ?? (finalPrice !== null ? finalPrice : null);
+  const savedEur = dayInfo?.savedEur ?? (subtotalBeforeDiscount !== null && finalPrice !== null ? Math.max(0, Math.round((subtotalBeforeDiscount - finalPrice) * 100) / 100) : 0);
   const discountPct = dayInfo?.discountPct ?? 0;
+  const hasDiscount = finalPrice !== null && subtotalBeforeDiscount !== null && finalPrice < subtotalBeforeDiscount;
+  const perDayDisplay = finalPrice !== null ? Math.min(frontPricePerDay, Math.round((finalPrice / days) * 100) / 100) : null;
 
   const betterDealDays = dayInfo?.betterDealDays;
   const betterDealPriceEur = dayInfo?.betterDealPriceEur;
@@ -779,7 +783,7 @@ export function UnlimitedConfigurator({
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                     </span>
-                    {discountPct > 0 && (
+                    {hasDiscount && discountPct > 0 && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
                         Staffelrabatt −{discountPct}%
                       </span>
@@ -789,46 +793,50 @@ export function UnlimitedConfigurator({
                     <p className="text-2xl font-black text-slate-900 tracking-tight">
                       {finalPrice !== null ? <Price eur={finalPrice} /> : '–'}
                     </p>
-                    {finalPrice !== null && (
+                    {perDayDisplay !== null && (
                       <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-                        (<Price eur={finalPrice / days} /> {t('unit_per_day')})
+                        ({formatCurrencyEuro(perDayDisplay, locale)} {t('unit_per_day')})
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Subtotal breakdown */}
-                {subtotalBeforeDiscount !== null && frontPricePerDay > 0 && (
-                  <div className="text-xs text-slate-500 flex items-center justify-between">
-                    <span>
-                      {t('cfg_discount_subtotal', {
-                        days,
-                        rate: `${frontPricePerDay.toFixed(2)} €`,
-                        subtotal: `${subtotalBeforeDiscount.toFixed(2)} €`,
-                      }) || `${days} Tage × ${frontPricePerDay.toFixed(2)} € = ${subtotalBeforeDiscount.toFixed(2)} €`}
-                    </span>
+                {/* Subtotal & Savings breakdown: only show when hasDiscount (finalPrice < subtotalBeforeDiscount) */}
+                {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && (
+                  <div className="space-y-0.5 text-xs text-slate-500">
+                    <div>
+                      {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} − {discountPct} % = {formatCurrencyEuro(finalPrice, locale)}
+                    </div>
+                    <div className="font-semibold text-emerald-700 text-[11px]">
+                      {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
+                    </div>
                   </div>
                 )}
 
                 {/* Better Deal Recommendation */}
-                {betterDealDays && betterDealPriceEur !== undefined && (
-                  <button
-                    type="button"
-                    onClick={() => setDays(betterDealDays)}
-                    className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex items-center justify-between group"
-                  >
-                    <span className="font-medium">
-                      💡 {t('cfg_duration_better_deal', {
-                        dealDays: betterDealDays,
-                        dealPrice: `${betterDealPriceEur.toFixed(2)} €`,
-                        compareDays,
-                      }) || `Tipp: ${betterDealDays} Tage kosten nur ${betterDealPriceEur.toFixed(2)} € (günstiger als ${compareDays} Tage)`}
-                    </span>
-                    <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0 ml-2">
-                      {betterDealDays}d wählen →
-                    </span>
-                  </button>
-                )}
+                <div className="min-h-[52px] flex items-center" role="status" aria-live="polite">
+                  {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
+                    const diffDays = betterDealDays - days;
+                    const diffAmount = Math.max(0, Math.round((finalPrice - betterDealPriceEur) * 100) / 100);
+                    const diffText = diffAmount > 0
+                      ? (isDe ? `${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'} mehr für ${formatCurrencyEuro(diffAmount, locale)} weniger!` : `${diffDays} more ${diffDays === 1 ? 'day' : 'days'} for ${formatCurrencyEuro(diffAmount, locale)} less!`)
+                      : (isDe ? `${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'} mehr zum selben Preis!` : `${diffDays} more ${diffDays === 1 ? 'day' : 'days'} for the same price!`);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setDays(betterDealDays)}
+                        className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs"
+                      >
+                        <span className="font-medium">
+                          💡 {isDe ? `Tipp: Für ${formatCurrencyEuro(betterDealPriceEur, locale)} bekommst du ${betterDealDays} Tage (${diffText})` : `Tip: Get ${betterDealDays} days for ${formatCurrencyEuro(betterDealPriceEur, locale)} (${diffText})`}
+                        </span>
+                        <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0">
+                          {isDe ? `Auf ${betterDealDays} Tage wechseln →` : `Switch to ${betterDealDays} days →`}
+                        </span>
+                      </button>
+                    );
+                  })() : null}
+                </div>
               </div>
 
               {/* Action Buttons */}

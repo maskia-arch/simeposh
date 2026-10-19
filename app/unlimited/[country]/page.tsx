@@ -179,6 +179,13 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
       offerCount: unlimitedTariffs.length,
       url: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
       availability: 'https://schema.org/InStock',
+      offers: unlimitedTariffs.map((t) => ({
+        '@type': 'Offer',
+        price: (priceTables[t.package_code]?.days[1]?.priceEur ?? t.sale_price_eur).toFixed(2),
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+        url: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
+      })),
     },
   };
 

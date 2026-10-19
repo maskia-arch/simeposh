@@ -622,10 +622,6 @@ const en = {
   "topup_sub": "Add more data in seconds with a top-up.",
   "topup_title": "Already have an eSIM?",
   "topup_validity_label": "Validity",
-  "tp_disc_14": "From 14 days −11%",
-  "tp_disc_3": "From 3 days −4%",
-  "tp_disc_30": "From 30 days −18%",
-  "tp_disc_7": "From 7 days −8%",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Daily high-speed allowance, then unlimited.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const en = {
   "topup_data_validity_badge": "🔄 Data & Validity",
   "cfg_tier_discount_badge": "Tier discount −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "You save {saved}",
   "cfg_duration_better_deal": "Get {days} days for {price}",
 } as const;
 export default en;

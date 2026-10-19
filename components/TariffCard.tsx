@@ -132,6 +132,14 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 {badge.icon} {t(badge.labelKey)}
               </span>
             ) : null}
+            {!tariff.is_reloadable && (
+              <span
+                title={t('feat_topup_none_desc' as any) || (isDe ? 'Diese eSIM kann nicht aufgeladen werden (Einweg-eSIM)' : 'This eSIM cannot be reloaded (Single-use)')}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 shadow-2xs"
+              >
+                <span>🚫</span> {t('feat_topup_none_badge' as any) || (isDe ? 'Einweg-eSIM' : 'Single-use')}
+              </span>
+            )}
           </div>
         </div>
 

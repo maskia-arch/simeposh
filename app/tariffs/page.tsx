@@ -57,7 +57,7 @@ async function getTariffs(): Promise<PublicTariff[]> {
       for (let from = 0; from < 200_000; from += PAGE) {
         const { data, error } = await supabase
           .from('tariffs')
-          .select('id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, raw_data')
+          .select('id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, raw_data')
           .eq('is_active', true)
           .order('country_name', { ascending: true })
           .order('sale_price_eur', { ascending: true })

@@ -10,7 +10,7 @@ import { getDestinationBySlug } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { formatGb } from '@/lib/utils';
 
-const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, raw_data';
+const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, raw_data';
 
 const tariffDetailCache = new Map<string, { data: PublicTariff | null; timestamp: number }>();
 const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();

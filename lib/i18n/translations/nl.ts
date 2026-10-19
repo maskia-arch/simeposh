@@ -622,10 +622,6 @@ const nl = {
   "topup_sub": "Voeg in seconden data toe met een opwaardering.",
   "topup_title": "Al een eSIM?",
   "topup_validity_label": "Geldigheid:",
-  "tp_disc_14": "Vanaf 14 dagen −11%",
-  "tp_disc_3": "Vanaf 3 dagen −4%",
-  "tp_disc_30": "Vanaf 30 dagen −18%",
-  "tp_disc_7": "Vanaf 7 dagen −8%",
   "tp_eco_desc": "Dagelijkse highspeed-data, daarna onbeperkt tot 512 kbps.",
   "tp_eco_desc_generic": "Onbeperkte data met basissnelheid na het highspeed-quotum.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const nl = {
   "topup_data_validity_badge": "🔄 Data & geldigheid",
   "cfg_tier_discount_badge": "Staffelkorting −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Je bespaart {saved}",
   "cfg_duration_better_deal": "Voor {price} krijg je {days} dagen",
 } as const;
 export default nl;

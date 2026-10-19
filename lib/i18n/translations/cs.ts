@@ -622,10 +622,6 @@ const cs = {
   "topup_sub": "Přidejte data během vteřin.",
   "topup_title": "Máte již eSIM?",
   "topup_validity_label": "Platnost:",
-  "tp_disc_14": "Od 14 dnů −11%",
-  "tp_disc_3": "Od 3 dnů −4%",
-  "tp_disc_30": "Od 30 dnů −18%",
-  "tp_disc_7": "Od 7 dnů −8%",
   "tp_eco_desc": "Daily high-speed allowance, then unlimited at 512 kbps.",
   "tp_eco_desc_generic": "Neomezená data se základní rychlostí po vyčerpání vysokorychlostního limitu.",
   "tp_eco_title": "Unlimited Eco",
@@ -786,6 +782,7 @@ const cs = {
   "topup_data_validity_badge": "🔄 Data a platnost",
   "cfg_tier_discount_badge": "Množstevní sleva −{pct}%",
   "cfg_discount_subtotal": "{days} × {rate} = {subtotal}",
+  "cfg_you_save": "Ušetříte {saved}",
   "cfg_duration_better_deal": "Za {price} získáte {days} dní",
 } as const;
 export default cs;

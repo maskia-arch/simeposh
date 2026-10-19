@@ -30,6 +30,7 @@ export interface ClientTier {
 export interface PriceTableEntry {
   priceEur: number;
   subtotalEur: number;
+  savedEur: number;
   discountPct: number;
   minDays: number;
   betterDealDays?: number;
@@ -174,7 +175,7 @@ export async function getDiscountRuleByCode(
 
 /**
  * Calculates the DayPass / Unlimited price for any day count (1–365) server-side.
- * Resolves discount rules dynamically and rounds using roundToXX9.
+ * Resolves discount rules dynamically and computes commercial cent-rounded final price (no ,x9 after discount).
  */
 export async function getDayPassPrice(
   tariff: TariffPricingInput,
@@ -182,7 +183,8 @@ export async function getDayPassPrice(
   now: Date = new Date(),
   options?: { rules?: NormalizedPeriodRule[] | null }
 ): Promise<number> {
-  const perDay = tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1);
+  const frontPrice = roundToXX9(tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1));
+  const frontCents = Math.round(frontPrice * 100);
   const clampedDays = Math.min(365, Math.max(1, Math.round(days)));
 
   const rules = options?.rules !== undefined
@@ -197,13 +199,15 @@ export async function getDayPassPrice(
     }
   }
 
-  return roundToXX9(perDay * clampedDays * payRatio);
+  const ratioBp = Math.round(payRatio * 10000);
+  const finalCents = Math.floor((frontCents * clampedDays * ratioBp + 5000) / 10000);
+  return finalCents / 100;
 }
 
 /**
  * Precomputes the complete price table for 1–365 days server-side.
  * Sanitized to never leak raw payRatio, wholesale cost, exchange rates or internal factors.
- * Includes dynamic threshold comparison ("Tipp: 30 Tage kosten nur 14,59 €").
+ * Includes dynamic threshold comparison ("Tipp: 30 Tage kosten nur 14,51 €").
  */
 export async function getUnlimitedPriceTable(
   tariff: TariffPricingInput,
@@ -212,7 +216,10 @@ export async function getUnlimitedPriceTable(
   now: Date = new Date(),
   options?: { rules?: NormalizedPeriodRule[] | null }
 ): Promise<UnlimitedPriceTable> {
-  const perDay = tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1);
+  const frontPrice = tariff.sale_price_eur / Math.max(1, tariff.validity_days || 1);
+  const frontPricePerDay = roundToXX9(frontPrice);
+  const frontCents = Math.round(frontPricePerDay * 100);
+
   const rules = options?.rules !== undefined
     ? options.rules
     : await getDiscountRuleByCode(tariff.discount_rule_code, now);
@@ -226,7 +233,7 @@ export async function getUnlimitedPriceTable(
 
   const daysTable: Record<number, PriceTableEntry> = {};
 
-  // 1. First pass: compute exact price, subtotal, discountPct for each day
+  // 1. First pass: compute exact price, subtotal, savedEur, discountPct for each day
   for (let d = minDays; d <= maxDays; d++) {
     let payRatio = 1.0;
     let discountPct = 0;
@@ -234,19 +241,28 @@ export async function getUnlimitedPriceTable(
 
     if (rules && rules.length > 0) {
       const match = rules.find((r) => d >= r.minDays && d <= r.maxDays);
-      if (match) {
+      if (match && typeof match.payRatio === 'number' && match.payRatio > 0 && match.payRatio <= 1) {
         payRatio = match.payRatio;
         discountPct = Math.round((1 - payRatio) * 100);
         ruleMinDays = match.minDays;
       }
     }
 
-    const subtotalEur = roundToXX9(perDay * d);
-    const priceEur = roundToXX9(perDay * d * payRatio);
+    const subtotalCents = frontCents * d;
+    const subtotalEur = subtotalCents / 100;
+
+    let finalCents = subtotalCents;
+    if (payRatio < 1.0) {
+      const ratioBp = Math.round(payRatio * 10000);
+      finalCents = Math.floor((frontCents * d * ratioBp + 5000) / 10000);
+    }
+    const priceEur = finalCents / 100;
+    const savedEur = (subtotalCents - finalCents) / 100;
 
     daysTable[d] = {
       priceEur,
       subtotalEur,
+      savedEur,
       discountPct,
       minDays: ruleMinDays,
     };
@@ -284,7 +300,7 @@ export async function getUnlimitedPriceTable(
   }
 
   return {
-    frontPricePerDay: roundToXX9(perDay),
+    frontPricePerDay,
     tiers,
     days: daysTable,
   };
