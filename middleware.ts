@@ -314,13 +314,14 @@ export async function middleware(request: NextRequest) {
   const isExemptFrom404 =
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
+    pathname.startsWith('/auth/') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
     pathname.startsWith('/sitemap/') ||
     pathname === '/llms.txt' ||
     pathname.includes('.');
 
-  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)(\/|$)/i;
+  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|reset-password|topup|success)(\/|$)/i;
 
   const isValidPageRoute =
     normalizedPath === '/' ||

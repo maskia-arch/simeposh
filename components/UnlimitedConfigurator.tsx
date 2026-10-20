@@ -856,7 +856,7 @@ export function UnlimitedConfigurator({
                         <button
                           type="button"
                           onClick={() => setDays(betterDealDays)}
-                          className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-950 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                          className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[13px] text-amber-950 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                         >
                           <span className="font-medium [text-wrap:pretty]">
                             💡 {tipTitle}

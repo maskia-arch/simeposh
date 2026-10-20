@@ -137,7 +137,7 @@ const pl = {
   "cash_tx_empty": "No transactions yet.",
   "cash_tx_referral": "Referral Bonus",
   "cash_tx_spend": "Balance Spent",
-  "cat_travel": "Travel Standard",
+  "cat_travel": "Travel",
   "cat_travel_desc": "Klasyczne plany danych dla podróżnych w najlepszych cenach wyjściowych.",
   "cat_travel_premium": "Travel Premium",
   "cat_travel_premium_desc": "Podwójny zasięg sieci i zoptymalizowany routing w Wielkiej Brytanii (wybrane kraje).",
@@ -254,7 +254,7 @@ const pl = {
   "esim_desktop_hint": "Zeskanuj poniższy kod QR aparatem w telefonie.",
   "esim_detailed_guide": "Szczegółowa instrukcja instalacji",
   "esim_download_qr": "⬇ QR as PNG",
-  "esim_for_country": "eSIM – {country}",
+  "esim_for_country": "eSIM {country}",
   "esim_index_of": "z",
   "esim_install_center": "Centrum instalacji eSIM",
   "esim_install_link": "Install link (ShortURL)",
@@ -803,6 +803,22 @@ const pl = {
   "det_validity": "Ważność",
   "det_network": "Operatorzy sieci",
 
+
+  "cart_toast_added": "Produkt dodany",
+  "cart_toast_continue": "Kontynuuj zakupy",
+  "cart_toast_view_cart": "Przejdź do koszyka",
+  "cart_cancelled_title": "Płatność anulowana",
+  "login_rate_limited": "Zbyt wiele prób logowania. Odczekaj {time} przed kolejną próbą.",
+  "login_forgot_pw_link": "Nie pamiętasz hasła?",
+  "forgot_pw_title": "Zapomniałeś hasła",
+  "forgot_pw_desc": "Wpisz swój adres e-mail, aby otrzymać link do zresetowania hasła.",
+  "forgot_pw_btn": "Wyślij link resetujący",
+  "forgot_pw_back_to_login": "Wróć do logowania",
+  "reset_pw_title": "Ustaw nowe hasło",
+  "reset_pw_desc": "Wprowadź nowe hasło (minimum 6 znaków).",
+  "reset_pw_btn": "Zapisz hasło",
+  "reset_pw_success": "Twoje hasło zostało pomyślnie zaktualizowane. Możesz się teraz zalogować.",
+  "reset_pw_error_invalid": "Ten link jest nieprawidłowy lub wygasł. Poproś o nowy link.",
 } as const;
 export default pl;
 export type TranslationKeys = keyof typeof pl;

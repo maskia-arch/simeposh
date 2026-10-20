@@ -137,7 +137,7 @@ const sv = {
   "cash_tx_empty": "No transactions yet.",
   "cash_tx_referral": "Referral Bonus",
   "cash_tx_spend": "Balance Spent",
-  "cat_travel": "Resa Standard",
+  "cat_travel": "Travel",
   "cat_travel_desc": "Klassiska dataplaner för resenärer med bästa instegspriser.",
   "cat_travel_premium": "Travel Premium",
   "cat_travel_premium_desc": "Dubbel nätverkstäckning och optimerad UK-routing (endast i utvalda länder).",
@@ -798,6 +798,22 @@ const sv = {
   "det_validity": "Giltighet",
   "det_network": "Mobiloperatörer",
 
+
+  "cart_toast_added": "Produkt tillagd",
+  "cart_toast_continue": "Fortsätt handla",
+  "cart_toast_view_cart": "Gå till varukorg",
+  "cart_cancelled_title": "Betalning avbruten",
+  "login_rate_limited": "För många inloggningsförsök. Vänta {time} innan du försöker igen.",
+  "login_forgot_pw_link": "Glömt lösenordet?",
+  "forgot_pw_title": "Glömt lösenord",
+  "forgot_pw_desc": "Ange din e-postadress för att få en återställningslänk.",
+  "forgot_pw_btn": "Skicka återställningslänk",
+  "forgot_pw_back_to_login": "Tillbaka till inloggning",
+  "reset_pw_title": "Ange nytt lösenord",
+  "reset_pw_desc": "Ange ditt nya lösenord (minst 6 tecken).",
+  "reset_pw_btn": "Spara lösenord",
+  "reset_pw_success": "Ditt lösenord har uppdaterats. Du kan nu logga in.",
+  "reset_pw_error_invalid": "Länken är ogiltig eller har gått ut. Begär en ny länk.",
 } as const;
 export default sv;
 export type TranslationKeys = keyof typeof sv;

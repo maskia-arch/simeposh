@@ -798,6 +798,22 @@ const de = {
   "det_validity": "Laufzeit",
   "det_network": "Netzanbieter",
 
+
+  "cart_toast_added": "Produkt hinzugefügt",
+  "cart_toast_continue": "Weiter shoppen",
+  "cart_toast_view_cart": "Zum Warenkorb",
+  "cart_cancelled_title": "Zahlung abgebrochen",
+  "login_rate_limited": "Zu viele Anmeldeversuche. Bitte warte {time} vor dem nächsten Versuch.",
+  "login_forgot_pw_link": "Passwort vergessen?",
+  "forgot_pw_title": "Passwort vergessen",
+  "forgot_pw_desc": "Gib deine E-Mail-Adresse ein. Wir senden dir einen Link, mit dem du ein neues Passwort festlegen kannst.",
+  "forgot_pw_btn": "Link zum Zurücksetzen senden",
+  "forgot_pw_back_to_login": "Zurück zum Login",
+  "reset_pw_title": "Neues Passwort festlegen",
+  "reset_pw_desc": "Gib bitte dein neues Passwort ein (mindestens 6 Zeichen).",
+  "reset_pw_btn": "Passwort speichern",
+  "reset_pw_success": "Dein Passwort wurde erfolgreich aktualisiert. Du kannst dich jetzt anmelden.",
+  "reset_pw_error_invalid": "Dieser Link zum Zurücksetzen ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.",
 } as const;
 export default de;
 export type TranslationKeys = keyof typeof de;

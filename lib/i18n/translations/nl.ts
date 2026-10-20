@@ -137,7 +137,7 @@ const nl = {
   "cash_tx_empty": "Nog geen transacties.",
   "cash_tx_referral": "Affiliaat bonus",
   "cash_tx_spend": "Gebruikt voor aankoop",
-  "cat_travel": "Travel Standaard",
+  "cat_travel": "Travel",
   "cat_travel_desc": "Klassieke datapakketten voor reizigers tegen de scherpste instapprijzen.",
   "cat_travel_premium": "Travel Premium",
   "cat_travel_premium_desc": "Dubbele netwerkdekking & geoptimaliseerde UK-routering (alleen in geselecteerde landen).",
@@ -798,6 +798,22 @@ const nl = {
   "det_validity": "Geldigheid",
   "det_network": "Netwerkproviders",
 
+
+  "cart_toast_added": "Product toegevoegd",
+  "cart_toast_continue": "Verder winkelen",
+  "cart_toast_view_cart": "Naar winkelwagen",
+  "cart_cancelled_title": "Betaling geannuleerd",
+  "login_rate_limited": "Te veel inlogpogingen. Wacht {time} voordat u het opnieuw probeert.",
+  "login_forgot_pw_link": "Wachtwoord vergeten?",
+  "forgot_pw_title": "Wachtwoord vergeten",
+  "forgot_pw_desc": "Voer uw e-mailadres in om een herstellink te ontvangen.",
+  "forgot_pw_btn": "Herstellink versturen",
+  "forgot_pw_back_to_login": "Terug naar inloggen",
+  "reset_pw_title": "Nieuw wachtwoord instellen",
+  "reset_pw_desc": "Voer uw nieuwe wachtwoord in (minimaal 6 tekens).",
+  "reset_pw_btn": "Wachtwoord opslaan",
+  "reset_pw_success": "Uw wachtwoord is succesvol bijgewerkt. U kunt nu inloggen.",
+  "reset_pw_error_invalid": "Deze herstellink is ongeldig of verlopen. Vraag een nieuwe link aan.",
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

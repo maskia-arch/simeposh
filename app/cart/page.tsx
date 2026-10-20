@@ -78,10 +78,12 @@ export default function CartPage() {
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      const pageTitle = t('cart_title') || (locale === 'de' ? 'Warenkorb' : 'Cart');
+      const pageTitle = paymentCancelled
+        ? (t('cart_cancelled_title' as any) || (locale === 'de' ? 'Zahlung abgebrochen' : 'Payment cancelled'))
+        : (t('cart_title') || (locale === 'de' ? 'Warenkorb' : 'Cart'));
       document.title = `${pageTitle} | PureSim`;
     }
-  }, [locale, t]);
+  }, [locale, t, paymentCancelled]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {

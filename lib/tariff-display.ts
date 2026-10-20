@@ -6,6 +6,7 @@
  * WITHOUT requiring a re-sync. Future syncs already store clean names.
  */
 import type { Database } from '@/lib/supabase/types';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 
 type TariffLike = Pick<
   Database['public']['Tables']['tariffs']['Row'],
@@ -251,6 +252,11 @@ export function formatLocalizedTariffName(
     const dayWord = dayWords[locale] || '/day';
     name = name.replace(/\b(?:per\s+day|\/day)\b|\/day\b/gi, dayWord);
   }
+
+  // Localize standalone days duration, e.g. "30Days", "30 Days", "7Days", "1Day"
+  name = name.replace(/\b(\d+)\s*Days?\b/gi, (_, count) => {
+    return formatDaysWithUnit(parseInt(count, 10), locale);
+  });
 
   // Insert middle dot separator between country and data portion if not already present
   if (countryLabel && name.startsWith(countryLabel)) {

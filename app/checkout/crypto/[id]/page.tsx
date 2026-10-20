@@ -70,11 +70,18 @@ export async function generateMetadata({
       .select('coin, locale')
       .eq('id', id)
       .maybeSingle();
+
+    if (!session) {
+      notFound();
+    }
+
     if (session?.coin) {
       coinCode = session.coin.toUpperCase();
       coinName = COIN_NAMES[coinCode] || coinCode;
     }
-  } catch {}
+  } catch (err: any) {
+    if (err?.digest?.includes('NEXT_NOT_FOUND')) throw err;
+  }
 
   const localizedAction = getLocalizedCheckoutTitle(locale, coinName);
   const fullTitle = `${localizedAction} · PureSim`;
@@ -94,7 +101,9 @@ export async function generateMetadata({
   };
 }
 
+import { notFound } from 'next/navigation';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
 
 export default async function CryptoCheckoutPage({
   params,
@@ -106,7 +115,7 @@ export default async function CryptoCheckoutPage({
   const rawTariff = cookieStore.get('esim_checkout_tariff')?.value;
   const rawAmount = cookieStore.get('esim_checkout_amount')?.value;
   const rawValidity = cookieStore.get('esim_checkout_validity')?.value;
-  const initialTariff = rawTariff ? decodeURIComponent(rawTariff) : '';
+  let initialTariff = rawTariff ? decodeURIComponent(rawTariff) : '';
   const initialAmount = rawAmount ? decodeURIComponent(rawAmount) : '';
   let initialValidity = rawValidity ? decodeURIComponent(rawValidity) : '';
 
@@ -118,11 +127,15 @@ export default async function CryptoCheckoutPage({
       .eq('id', id)
       .maybeSingle();
 
+    if (!session) {
+      notFound();
+    }
+
     if (session?.order_ids && session.order_ids.length > 0) {
       const sessLocale = (session.locale as any) || 'de';
       const { data: orders } = await db
         .from('orders')
-        .select('period_num, tariffs(name, validity_days)')
+        .select('period_num, tariffs(name, country_name, validity_days)')
         .in('id', session.order_ids);
       if (orders && orders.length > 0) {
         const firstOrder = orders[0] as any;
@@ -130,9 +143,16 @@ export default async function CryptoCheckoutPage({
         if (valDays) {
           initialValidity = formatDaysWithUnit(valDays, sessLocale);
         }
+        if (firstOrder?.tariffs?.name) {
+          const cName = firstOrder.tariffs.country_name || '';
+          const cLabel = displayCountryName({ country_name: cName } as any, sessLocale);
+          initialTariff = formatLocalizedTariffName(firstOrder.tariffs.name, cLabel, cName, sessLocale);
+        }
       }
     }
-  } catch {}
+  } catch (err: any) {
+    if (err?.digest?.includes('NEXT_NOT_FOUND')) throw err;
+  }
 
   return (
     <CryptoCheckout

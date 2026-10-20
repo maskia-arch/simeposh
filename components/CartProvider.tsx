@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { formatGb } from '@/lib/utils';
+import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -64,7 +65,7 @@ function loadCart(): CartItem[] {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const [items,  setItems]  = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -150,11 +151,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
 
     setIsOpen(true);
+    const countryLabel = displayCountryName(tariff, locale);
+    const localizedName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
     setToast({
       show: true,
-      message: `${tariff.country_name || tariff.name} (${formatGb(tariff.data_gb)})`,
+      message: `${localizedName} (${formatGb(tariff.data_gb)})`,
     });
-  }, []);
+  }, [locale]);
 
   const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => i.key !== key));
@@ -193,7 +196,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               <span className="text-sm mt-0.5">🛒</span>
               <div>
                 <p className="text-xs font-extrabold text-slate-100">
-                  {locale === 'de' ? 'Produkt hinzugefügt' : 'Product added'}
+                  {t('cart_toast_added' as any) || (locale === 'de' ? 'Produkt hinzugefügt' : 'Product added')}
                 </p>
                 <p className="text-[11px] text-slate-350 mt-1 leading-normal">
                   {toast.message}
@@ -205,7 +208,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 onClick={() => setToast(null)}
                 className="rounded-xl px-3 py-2 text-[10px] font-bold text-slate-350 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
               >
-                {locale === 'de' ? 'Weiter shoppen' : 'Continue shopping'}
+                {t('cart_toast_continue' as any) || (locale === 'de' ? 'Weiter shoppen' : 'Continue shopping')}
               </button>
               <button
                 onClick={() => {
@@ -214,7 +217,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 }}
                 className="bg-brand-600 hover:bg-brand-700 text-white text-[10px] font-bold px-3.5 py-2 rounded-xl transition-all shadow-md cursor-pointer"
               >
-                {locale === 'de' ? 'Zum Warenkorb' : 'Go to cart'}
+                {t('cart_toast_view_cart' as any) || (locale === 'de' ? 'Zum Warenkorb' : 'Go to cart')}
               </button>
             </div>
           </div>

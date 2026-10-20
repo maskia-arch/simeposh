@@ -3,42 +3,92 @@ import { query } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { signJwt } from '@/lib/auth/jwt';
 import { cookies } from 'next/headers';
+import {
+  getClientIp,
+  checkRateLimit,
+  recordFailedAttempt,
+  resetRateLimitKeys,
+  isSpecialAdminAccount,
+} from '@/lib/auth/rateLimit';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const ip = getClientIp(request);
+    const body = await request.json().catch(() => ({}));
+    const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'E-Mail und Passwort sind erforderlich' }, { status: 400 });
+      return NextResponse.json({ error: 'Ungültige Anmeldedaten.' }, { status: 400 });
     }
 
-    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedEmail = String(email).trim().toLowerCase();
+    const isAdmin = isSpecialAdminAccount(trimmedEmail);
 
-    // Query database for the user row
-    const dbRes = await query('SELECT * FROM public.users WHERE email = $1 AND deleted_at IS NULL', [trimmedEmail]);
-    const userRow = dbRes.rows[0];
+    const accountKey = `login:acc:${trimmedEmail}:${ip}`;
+    const globalIpKey = `login:global_ip:${ip}`;
 
-    if (!userRow || !userRow.password_hash) {
-      return NextResponse.json({ error: 'Ungültige E-Mail-Adresse oder Passwort' }, { status: 400 });
-    }
-
-    // Verify password hash
-    const isValid = verifyPassword(password, userRow.password_hash);
-    if (!isValid) {
-      return NextResponse.json({ error: 'Ungültige E-Mail-Adresse oder Passwort' }, { status: 400 });
-    }
-
-    // Check if account is verified
-    if (!userRow.is_verified) {
+    // Check rate limits
+    const check = await checkRateLimit([accountKey, globalIpKey]);
+    if (!check.allowed) {
+      const retryAfter = check.retryAfterSeconds || 30;
       return NextResponse.json(
+        { error: 'rate_limited', retryAfter },
         {
-          error: 'email_not_verified',
-          email: userRow.email,
-          message: 'Deine E-Mail-Adresse wurde noch nicht bestätigt. Bitte klicke auf den Link in deiner Aktivierungs-E-Mail.',
-        },
-        { status: 403 }
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter),
+          },
+        }
       );
     }
+
+    // Query database for the user row
+    const dbRes = await query(
+      'SELECT id, email, password_hash, full_name, is_verified FROM public.users WHERE email = $1 AND deleted_at IS NULL',
+      [trimmedEmail]
+    );
+    const userRow = dbRes.rows[0];
+
+    // Dummy password verify if user does not exist to guarantee uniform response time
+    const dummyHash = '$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
+    let isValid = false;
+    if (userRow && userRow.password_hash) {
+      isValid = verifyPassword(password, userRow.password_hash);
+    } else {
+      verifyPassword(password, dummyHash);
+    }
+
+    // Uniform authentication failure response (no user enumeration, neutral message)
+    if (!userRow || !isValid || !userRow.is_verified) {
+      const failed = await recordFailedAttempt({
+        accountKey,
+        globalIpKey,
+        isAdmin,
+        ip,
+        email: trimmedEmail,
+      });
+
+      if (failed.retryAfterSeconds > 0) {
+        return NextResponse.json(
+          { error: 'rate_limited', retryAfter: failed.retryAfterSeconds },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(failed.retryAfterSeconds),
+            },
+          }
+        );
+      }
+
+      // Exact same neutral message for wrong password, unknown email, or unverified account
+      return NextResponse.json(
+        { error: 'Ungültige E-Mail-Adresse oder Passwort.' },
+        { status: 401 }
+      );
+    }
+
+    // Successful login: reset rate limit keys
+    await resetRateLimitKeys([accountKey]);
 
     // Generate JWT token
     const token = await signJwt({
@@ -68,6 +118,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ user });
   } catch (err: any) {
     console.error('[Login Error]', err);
-    return NextResponse.json({ error: 'Interner Serverfehler während des Logins' }, { status: 500 });
+    return NextResponse.json({ error: 'Ungültige Anmeldedaten.' }, { status: 500 });
   }
 }

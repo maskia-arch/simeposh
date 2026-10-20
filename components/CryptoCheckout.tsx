@@ -859,15 +859,15 @@ export function CryptoCheckout({
             </h1>
           </div>
           {status === 'detected' ? (
-            <span className="rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-bold animate-pulse">
+            <span role="status" aria-live="polite" className="rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-bold animate-pulse">
               ⏳ {s('confirming_status')}
             </span>
           ) : status === 'partially_paid' ? (
-            <span className="rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-bold animate-pulse">
+            <span role="status" aria-live="polite" className="rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-bold animate-pulse">
               ⚠️ {s('underpayment_title')}
             </span>
           ) : (
-            <span className={`rounded-full px-3 py-1 text-xs font-bold tabular-nums ${remaining < 120_000 ? 'bg-red-100 text-red-700 animate-pulse' : theme.badgeBg}`}>
+            <span role="timer" aria-live="polite" aria-atomic="true" className={`rounded-full px-3 py-1 text-xs font-bold tabular-nums ${remaining < 120_000 ? 'bg-red-100 text-red-700 animate-pulse' : theme.badgeBg}`}>
               ⏱ {fmtTime(remaining)}
             </span>
           )}
@@ -1060,7 +1060,7 @@ export function CryptoCheckout({
         })()}
 
         {/* Live status banner */}
-        <div className={`mt-5 rounded-xl border px-4 py-3 text-center ${theme.bgLight} ${theme.borderLight}`}>
+        <div role="status" aria-live="polite" className={`mt-5 rounded-xl border px-4 py-3 text-center ${theme.bgLight} ${theme.borderLight}`}>
           {status === 'detected' ? (
             <p className={`flex items-center justify-center gap-2 text-sm font-bold ${theme.textDark}`}>
               <Spinner color={theme.primary} /> {s('detected')} ({sess.confirmations}/{sess.confirmationsRequired})

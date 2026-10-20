@@ -24,6 +24,7 @@ import { isValidLocale }        from '@/lib/i18n/config';
 import { getServerDict }        from '@/lib/i18n/server';
 import { formatCurrencyEuro }   from '@/lib/currency';
 import { getTopUpEligibility, getEsimRecord, hasPendingTopUpSession } from '@/lib/topup';
+import { formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
 
 export const runtime = 'nodejs';
 
@@ -465,7 +466,9 @@ export async function POST(request: Request) {
       try {
         const tariffNames = orderRows.map((r: any) => {
           const t = tMap.get(r.tariff_id);
-          return t?.name;
+          if (!t) return '';
+          const cLabel = displayCountryName(t, customerLocale);
+          return formatLocalizedTariffName(t.name, cLabel, t.country_name, customerLocale);
         }).filter(Boolean);
         const uniqueTariffs = Array.from(new Set(tariffNames)).join(', ');
         const finalEur = session.amountEur || totalBaseEur;

@@ -140,3 +140,71 @@ export function getPluralKeySuffix(count: number, locale: string = 'de'): string
   if (rule === 'few') return '_few';
   return '';
 }
+
+/**
+ * Returns a localized duration string (seconds or minutes) with correct pluralization:
+ * e.g. "30 Sekunden", "30 seconds", "30 saniye", "1 Minute", "5 Minuten", etc.
+ */
+export function formatDurationWithUnit(seconds: number, locale: string = 'de'): string {
+  if (seconds >= 60 && seconds % 60 === 0) {
+    const mins = Math.floor(seconds / 60);
+    switch (locale) {
+      case 'de': return mins === 1 ? '1 Minute' : `${mins} Minuten`;
+      case 'en': return mins === 1 ? '1 minute' : `${mins} minutes`;
+      case 'fr': return mins === 1 ? '1 minute' : `${mins} minutes`;
+      case 'es': return mins === 1 ? '1 minuto' : `${mins} minutos`;
+      case 'it': return mins === 1 ? '1 minuto' : `${mins} minuti`;
+      case 'nl': return mins === 1 ? '1 minuut' : `${mins} minuten`;
+      case 'pl': {
+        const pr = new Intl.PluralRules(locale).select(mins);
+        if (mins === 1) return '1 minuta';
+        if (pr === 'few') return `${mins} minuty`;
+        return `${mins} minut`;
+      }
+      case 'pt': return mins === 1 ? '1 minuto' : `${mins} minutos`;
+      case 'tr': return `${mins} dakika`;
+      case 'sv': return mins === 1 ? '1 minut' : `${mins} minuter`;
+      case 'da': return mins === 1 ? '1 minut' : `${mins} minutter`;
+      case 'fi': return mins === 1 ? '1 minuutti' : `${mins} minuuttia`;
+      case 'cs': {
+        const pr = new Intl.PluralRules(locale).select(mins);
+        if (mins === 1) return '1 minuta';
+        if (pr === 'few') return `${mins} minuty`;
+        return `${mins} minut`;
+      }
+      case 'ro': return mins === 1 ? '1 minut' : (mins <= 19 ? `${mins} minute` : `${mins} de minute`);
+      case 'hu': return `${mins} perc`;
+      default: return mins === 1 ? '1 minute' : `${mins} minutes`;
+    }
+  }
+
+  // Seconds
+  switch (locale) {
+    case 'de': return seconds === 1 ? '1 Sekunde' : `${seconds} Sekunden`;
+    case 'en': return seconds === 1 ? '1 second' : `${seconds} seconds`;
+    case 'fr': return seconds === 1 ? '1 seconde' : `${seconds} secondes`;
+    case 'es': return seconds === 1 ? '1 segundo' : `${seconds} segundos`;
+    case 'it': return seconds === 1 ? '1 secondo' : `${seconds} secondi`;
+    case 'nl': return seconds === 1 ? '1 seconde' : `${seconds} seconden`;
+    case 'pl': {
+      const pr = new Intl.PluralRules(locale).select(seconds);
+      if (seconds === 1) return '1 sekunda';
+      if (pr === 'few') return `${seconds} sekundy`;
+      return `${seconds} sekund`;
+    }
+    case 'pt': return seconds === 1 ? '1 segundo' : `${seconds} segundos`;
+    case 'tr': return `${seconds} saniye`;
+    case 'sv': return seconds === 1 ? '1 sekund' : `${seconds} sekunder`;
+    case 'da': return seconds === 1 ? '1 sekund' : `${seconds} sekunder`;
+    case 'fi': return seconds === 1 ? '1 sekunti' : `${seconds} sekuntia`;
+    case 'cs': {
+      const pr = new Intl.PluralRules(locale).select(seconds);
+      if (seconds === 1) return '1 sekunda';
+      if (pr === 'few') return `${seconds} sekundy`;
+      return `${seconds} sekund`;
+    }
+    case 'ro': return seconds === 1 ? '1 secundă' : (seconds <= 19 ? `${seconds} secunde` : `${seconds} de secunde`);
+    case 'hu': return `${seconds} másodperc`;
+    default: return seconds === 1 ? '1 second' : `${seconds} seconds`;
+  }
+}

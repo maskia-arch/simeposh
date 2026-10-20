@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
@@ -11,6 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
       index: false,
       follow: false,
     },
+    alternates: buildAlternates(locale, {
+      dePath: 'cart',
+      enPath: 'cart',
+    }),
   };
 }
 

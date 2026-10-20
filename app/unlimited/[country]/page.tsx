@@ -214,7 +214,7 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
       {
         '@type': 'ListItem',
         position: 4,
-        name: `Unlimited eSIM ${countryLabel}`,
+        name: 'Unlimited Builder',
         item: `${baseUrl}${prefix}/unlimited/${destination.slug}`,
       },
     ],

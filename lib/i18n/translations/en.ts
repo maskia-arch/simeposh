@@ -798,6 +798,22 @@ const en = {
   "det_validity": "Validity",
   "det_network": "Network operators",
 
+
+  "cart_toast_added": "Product added",
+  "cart_toast_continue": "Continue shopping",
+  "cart_toast_view_cart": "Go to cart",
+  "cart_cancelled_title": "Payment cancelled",
+  "login_rate_limited": "Too many login attempts. Please wait {time} before trying again.",
+  "login_forgot_pw_link": "Forgot password?",
+  "forgot_pw_title": "Forgot password",
+  "forgot_pw_desc": "Enter your email address and we'll send you a link to reset your password.",
+  "forgot_pw_btn": "Send reset link",
+  "forgot_pw_back_to_login": "Back to login",
+  "reset_pw_title": "Set new password",
+  "reset_pw_desc": "Please enter your new password (minimum 6 characters).",
+  "reset_pw_btn": "Save password",
+  "reset_pw_success": "Your password has been successfully updated. You can now log in.",
+  "reset_pw_error_invalid": "This reset link is invalid or expired. Please request a new link.",
 } as const;
 export default en;
 export type TranslationKeys = keyof typeof en;

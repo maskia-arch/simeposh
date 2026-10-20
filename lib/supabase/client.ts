@@ -204,10 +204,36 @@ class BrowserAuthClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const body = await res.json();
-      if (!res.ok) {
-        return { data: null, error: { message: body.error || 'Login failed' } };
+      const contentType = res.headers.get('content-type') || '';
+      const retryAfterHeader = res.headers.get('retry-after');
+
+      if (res.status === 429) {
+        let retrySeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 30;
+        if (isNaN(retrySeconds) || retrySeconds <= 0) retrySeconds = 30;
+        if (contentType.includes('application/json')) {
+          const body = await res.json().catch(() => ({}));
+          if (body.retryAfter) retrySeconds = body.retryAfter;
+        }
+        return {
+          data: null,
+          error: {
+            message: 'rate_limited',
+            status: 429,
+            retryAfter: retrySeconds,
+          },
+        };
       }
+
+      if (!res.ok) {
+        let errorMsg = 'Ungültige Anmeldedaten.';
+        if (contentType.includes('application/json')) {
+          const body = await res.json().catch(() => ({}));
+          errorMsg = body.error || errorMsg;
+        }
+        return { data: null, error: { message: errorMsg, status: res.status } };
+      }
+
+      const body = await res.json();
       return { data: body, error: null };
     } catch (err: any) {
       return { data: null, error: { message: err.message } };
