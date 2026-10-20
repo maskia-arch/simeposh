@@ -347,9 +347,15 @@ export function CryptoCheckout({
     ? items.map((i) => formatDaysWithUnit(i.validityDays, locale)).filter(Boolean).join(', ')
     : '') || cachedValidity;
   const rawDisplayAmount = cachedAmount || (total > 0 ? `${total.toFixed(2)} €` : '');
-  const displayAmount = rawDisplayAmount
-    ? (locale === 'de' ? rawDisplayAmount.replace('.', ',') : rawDisplayAmount.replace(',', '.'))
-    : '';
+  const displayAmount = (() => {
+    if (!rawDisplayAmount) return '';
+    const numericMatch = rawDisplayAmount.match(/[\d.,]+/);
+    if (numericMatch) {
+      const val = parseFloat(numericMatch[0].replace(',', '.'));
+      if (!isNaN(val)) return formatCurrencyEuro(val, locale);
+    }
+    return rawDisplayAmount;
+  })();
 
   const [sess, setSess]   = useState<SessionState | null>(null);
   const [qr, setQr]       = useState<string | null>(null);
@@ -462,17 +468,11 @@ export function CryptoCheckout({
   const openCancelModal = () => {
     setCancelError('');
     setShowCancelModal(true);
-    if (typeof window !== 'undefined') {
-      window.history.pushState({ cancelModalOpen: true }, '');
-    }
   };
 
   const closeCancelModal = useCallback((fromPopstate = false) => {
     setShowCancelModal(false);
     setCancelError('');
-    if (!fromPopstate && typeof window !== 'undefined' && window.history.state?.cancelModalOpen) {
-      window.history.back();
-    }
     setTimeout(() => {
       cancelTriggerBtnRef.current?.focus();
     }, 50);
@@ -561,7 +561,7 @@ export function CryptoCheckout({
           } catch {}
         }
         const cartTarget = locale === 'de' ? '/cart?cancelled=1' : `/${locale}/cart?cancelled=1`;
-        window.location.href = cartTarget;
+        window.location.replace(cartTarget);
       } else {
         const data = await res.json().catch(() => ({}));
         setCancelError(data.error || s('cancel_failed'));

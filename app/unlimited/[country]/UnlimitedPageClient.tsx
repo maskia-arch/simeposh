@@ -66,7 +66,7 @@ export function UnlimitedPageClient({
           {countryLabel}
         </Link>
         <span>/</span>
-        <span className="font-semibold text-slate-800">Unlimited Builder</span>
+        <span aria-current="page" className="font-semibold text-slate-800">Unlimited Builder</span>
       </nav>
 
       {/* ── Hero Header ── */}

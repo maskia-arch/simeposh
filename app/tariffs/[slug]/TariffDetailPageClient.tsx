@@ -48,6 +48,18 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const coverage     = coverageLabel(tariff, locale);
   const reloadInfo   = getReloadabilityInfo(tariff);
 
+  let dataLabel = formatGb(tariff.data_gb);
+  if (isUnlimited) {
+    const localizedFullName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
+    if (localizedFullName.includes(' · ')) {
+      dataLabel = localizedFullName.split(' · ').slice(1).join(' · ');
+    } else {
+      dataLabel = 'Unlimited';
+    }
+  }
+
+  const h1Title = `${t('esim_for_country' as any, { country: countryLabel }) || countryLabel} – ${dataLabel}`;
+
   if (showCheckout) {
     return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={() => setShowCheckout(false)} />;
   }
@@ -62,16 +74,20 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
       <div className="mx-auto max-w-5xl">
         {/* Breadcrumb */}
-        <nav className="mb-8 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <nav aria-label={t('aria_breadcrumb' as any) || 'Breadcrumb'} className="mb-8 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
           <Link href={locale === 'de' ? '/' : `/${locale}`} className="hover:text-brand-600 transition-colors">
             {t('nav_home')}
           </Link>
           <span>/</span>
-          <Link href={locale === 'de' ? '/tariffs' : `/${locale}/tariffs`} className="hover:text-brand-600 transition-colors">
+          <Link
+            href={locale === 'de' ? '/tariffs' : `/${locale}/tariffs`}
+            data-testid="breadcrumb-tariffs-link"
+            className="hover:text-brand-600 transition-colors"
+          >
             {t('nav_tariffs')}
           </Link>
           <span>/</span>
-          <span className="text-slate-600 font-bold">{countryLabel}</span>
+          <span aria-current="page" className="text-slate-800 font-bold">{countryLabel}</span>
         </nav>
 
         {/* Two-Column Grid */}
@@ -86,7 +102,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 <div className="flex items-center gap-4">
                   <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={64} className="shadow-sm rounded-lg" />
                   <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('esim_for_country' as any, { country: countryLabel }) || countryLabel}</h1>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{h1Title}</h1>
                     {coverage && (
                       <div className="relative flex items-center gap-1.5 text-sm text-slate-400 mt-1">
                         <GlobeIcon size={14} className="text-slate-400 animate-pulse" />

@@ -27,7 +27,7 @@ export function OpenChatButton({ className = '' }: OpenChatButtonProps) {
       type="button"
       onClick={handleClick}
       data-testid="open-chat-button"
-      className={`group inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-1 rounded-lg py-1 px-2.5 cursor-pointer ${className}`}
+      className={`group inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-1 rounded-lg py-1 px-2.5 cursor-pointer ${className}`}
       aria-label={t('chat_open_support') || (locale === 'de' ? 'Chat mit Support öffnen' : 'Open chat with support')}
     >
       <svg

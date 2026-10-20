@@ -124,24 +124,24 @@ export async function generateMetadata({
   const priceFormatted = formatCurrencyEuro(tariff.customer_price_eur ?? tariff.sale_price_eur, locale);
 
   const buyPrefixMap: Record<string, string> = {
-    de: `eSIM ${country} ${dataLabel} (${daysLabel}) kaufen`,
-    en: `Buy eSIM ${country} ${dataLabel} (${daysLabel})`,
-    fr: `Acheter eSIM ${country} ${dataLabel} (${daysLabel})`,
-    es: `Comprar eSIM ${country} ${dataLabel} (${daysLabel})`,
-    it: `Acquista eSIM ${country} ${dataLabel} (${daysLabel})`,
-    nl: `Koop eSIM ${country} ${dataLabel} (${daysLabel})`,
-    pl: `Kup eSIM ${country} ${dataLabel} (${daysLabel})`,
-    pt: `Comprar eSIM ${country} ${dataLabel} (${daysLabel})`,
-    tr: `eSIM Satın Al ${country} ${dataLabel} (${daysLabel})`,
-    sv: `Köp eSIM ${country} ${dataLabel} (${daysLabel})`,
-    da: `Køb eSIM ${country} ${dataLabel} (${daysLabel})`,
-    fi: `Osta eSIM ${country} ${dataLabel} (${daysLabel})`,
-    cs: `Koupit eSIM ${country} ${dataLabel} (${daysLabel})`,
-    ro: `Cumpără eSIM ${country} ${dataLabel} (${daysLabel})`,
-    hu: `eSIM vásárlás ${country} ${dataLabel} (${daysLabel})`,
+    de: `eSIM ${country} ${dataLabel} kaufen`,
+    en: `Buy eSIM ${country} ${dataLabel}`,
+    fr: `Acheter eSIM ${country} ${dataLabel}`,
+    es: `Comprar eSIM ${country} ${dataLabel}`,
+    it: `Acquista eSIM ${country} ${dataLabel}`,
+    nl: `Koop eSIM ${country} ${dataLabel}`,
+    pl: `Kup eSIM ${country} ${dataLabel}`,
+    pt: `Comprar eSIM ${country} ${dataLabel}`,
+    tr: `eSIM Satın Al ${country} ${dataLabel}`,
+    sv: `Köp eSIM ${country} ${dataLabel}`,
+    da: `Køb eSIM ${country} ${dataLabel}`,
+    fi: `Osta eSIM ${country} ${dataLabel}`,
+    cs: `Koupit eSIM ${country} ${dataLabel}`,
+    ro: `Cumpără eSIM ${country} ${dataLabel}`,
+    hu: `eSIM vásárlás ${country} ${dataLabel}`,
   };
 
-  const title = buyPrefixMap[locale] || `Buy eSIM ${country} ${dataLabel} (${daysLabel})`;
+  const title = buyPrefixMap[locale] || `Buy eSIM ${country} ${dataLabel}`;
 
   const description = t('meta_tariff_slug_desc', {
     country,
@@ -256,13 +256,48 @@ export default async function TariffDetailPage({
     },
   };
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: t('nav_home' as any) || 'Home',
+        item: `${baseUrl}${isDe ? '' : `/${locale}`}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: t('nav_tariffs' as any) || 'eSIM',
+        item: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: countryLabel,
+        item: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}`,
+      },
+    ],
+  };
+
+  const clientTariff = {
+    ...tariff,
+    name: formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale),
+    description: formatLocalizedTariffName(tariff.description || tariff.name, countryLabel, tariff.country_name, locale),
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <TariffDetailPageClient tariff={tariff} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <TariffDetailPageClient tariff={clientTariff} />
     </>
   );
 }

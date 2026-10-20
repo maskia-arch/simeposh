@@ -6,6 +6,7 @@ import type { Database } from '@/lib/supabase/types';
 import { useTranslation } from '@/lib/i18n';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatGb } from '@/lib/utils';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -149,6 +150,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
 
     setIsOpen(true);
+    setToast({
+      show: true,
+      message: `${tariff.country_name || tariff.name} (${formatGb(tariff.data_gb)})`,
+    });
   }, []);
 
   const removeItem = useCallback((key: string) => {
@@ -182,7 +187,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {children}
       {/* Add to Cart Toast Overlay (Desktop & Mobile) */}
       {toast && (
-        <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 z-[9999] animate-in slide-in-from-bottom duration-300">
+        <div role="status" aria-live="polite" className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 z-[9999] animate-in slide-in-from-bottom duration-300">
           <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-2xl border border-slate-800 flex flex-col gap-3.5">
             <div className="flex items-start gap-2.5">
               <span className="text-sm mt-0.5">🛒</span>

@@ -95,7 +95,7 @@ export function CountryPageClient({
           {t('nav_tariffs') || 'eSIM'}
         </Link>
         <span>/</span>
-        <span className="font-semibold text-slate-800">{countryLabel}</span>
+        <span aria-current="page" className="font-semibold text-slate-800">{countryLabel}</span>
       </nav>
 
       {/* ── Hero Header ── */}

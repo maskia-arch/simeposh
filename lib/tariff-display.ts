@@ -196,20 +196,40 @@ export function formatLocalizedTariffName(
   let name = cleanTariffName(tariffName);
   const enName = (englishCountryName || '').trim();
 
-  // If name starts with English country name, replace it with the localized country name
-  if (enName && countryLabel && enName.toLowerCase() !== countryLabel.toLowerCase()) {
-    const regex = new RegExp(`^${enName}\\b`, 'i');
+  // If name starts with English country name or common variants, replace it with the localized country name
+  const candidateNames: string[] = [];
+  if (enName) candidateNames.push(enName);
+  // Special alias handling: Türkiye vs Turkey, USA vs United States, etc.
+  if (enName.toLowerCase() === 'türkiye' || enName.toLowerCase() === 'turkey') {
+    candidateNames.push('Turkey', 'Türkiye');
+  } else if (enName.toLowerCase() === 'united states' || enName.toLowerCase() === 'usa') {
+    candidateNames.push('United States', 'USA');
+  } else if (enName.toLowerCase() === 'united kingdom' || enName.toLowerCase() === 'uk') {
+    candidateNames.push('United Kingdom', 'UK');
+  }
+
+  // Check if tariffName starts with any of the candidate names
+  let matchedPrefix = '';
+  for (const cand of candidateNames) {
+    const regex = new RegExp(`^${cand}\\b`, 'i');
     if (regex.test(name)) {
+      matchedPrefix = cand;
       name = name.replace(regex, countryLabel);
+      break;
+    }
+  }
+
+  // Fallback: If countryLabel is provided and name begins with "Turkey" but country was not in candidateNames
+  if (!matchedPrefix && countryLabel) {
+    if (/^turkey\b/i.test(name) && /türk|turk/i.test(countryLabel)) {
+      name = name.replace(/^turkey\b/i, countryLabel);
     }
   }
 
   // Ensure space between digit and data unit: 500MB -> 500 MB
   name = name.replace(/(\d+)\s*(MB|GB)\b/gi, '$1 $2');
 
-
-
-  // Localize "/Day" suffix
+  // Localize "/Day" suffix, and ensure English uses lowercase "/day"
   if (/\b(?:per\s+day|\/day)\b/i.test(name) || /\/day\b/i.test(name)) {
     const dayWords: Record<string, string> = {
       de: '/Tag',
@@ -226,9 +246,9 @@ export function formatLocalizedTariffName(
       cs: '/den',
       ro: '/zi',
       hu: '/nap',
-      en: '/Day',
+      en: '/day',
     };
-    const dayWord = dayWords[locale] || '/Day';
+    const dayWord = dayWords[locale] || '/day';
     name = name.replace(/\b(?:per\s+day|\/day)\b|\/day\b/gi, dayWord);
   }
 
@@ -396,7 +416,7 @@ export function getReloadabilityInfo(tariff: {
       badgeKey: 'feat_topup_none_badge',
       titleKey: 'feat_topup_none_title',
       descKey: 'feat_topup_none_desc',
-      icon: '⚡',
+      icon: '🚫',
       isReloadable: false,
     };
   }
@@ -433,7 +453,7 @@ export function getReloadabilityInfo(tariff: {
     badgeKey: 'feat_topup_none_badge',
     titleKey: 'feat_topup_none_title',
     descKey: 'feat_topup_none_desc',
-    icon: '⚡',
+    icon: '🚫',
     isReloadable: false,
   };
 }

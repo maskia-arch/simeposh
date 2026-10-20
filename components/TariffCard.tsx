@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
 import type { PublicTariff } from '@/lib/tariffs';
 import { useTranslation } from '@/lib/i18n';
@@ -345,7 +346,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 });
               }}
               aria-label={t('card_dual_net_aria') || `${t('card_dual_net_pill')} - ${t('feat_dual_net_desc')}`}
-              className="dual-net-pill relative h-[22px] inline-flex items-center justify-center rounded-md bg-emerald-50 border border-emerald-300 px-2 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors shadow-2xs after:absolute after:-inset-y-[11px] after:-inset-x-1.5 after:content-[''] after:z-10"
+              className="dual-net-pill relative min-h-[44px] inline-flex items-center justify-center rounded-md bg-emerald-50 border border-emerald-300 px-2 py-2.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors shadow-2xs after:absolute after:-inset-y-[12px] after:-inset-x-1.5 after:content-[''] after:z-10"
               title={t('feat_dual_net_desc')}
             >
               <span>{t('card_dual_net_pill')} ⓘ</span>
@@ -401,14 +402,23 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
           />
           {onDetail && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDetail(tariff); }}
+            <Link
+              href={tariff.slug ? `${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}` : `${isDe ? '' : `/${locale}`}/tariffs`}
+              prefetch={false}
+              onClick={(e) => {
+                // If it's a standard left click without modifier keys, trigger modal for smooth UX
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDetail(tariff);
+                }
+              }}
               className="relative h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:inset-0 after:content-[''] after:z-10"
               title={t('card_details')}
               aria-label={t('card_details')}
             >
               <span className="relative z-20">{t('card_details')}</span> <span className="ml-1 opacity-70 relative z-20">ⓘ</span>
-            </button>
+            </Link>
           )}
         </div>
 

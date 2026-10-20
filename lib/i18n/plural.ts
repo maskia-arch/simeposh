@@ -110,24 +110,33 @@ export function formatDayMark(days: number, locale: string = 'de'): string {
 /**
  * Formats a percentage according to the locale's typographic rules.
  * Uses strictly the Unicode minus sign U+2212 ("−") for negative values (never ASCII hyphen "-").
- * Spacing and positioning follows Intl.NumberFormat:
- * e.g. de, fr, fi: "−4 %", en: "−4%", tr: "−%4".
+ * de, fr, cs, fi, sv, da, hu, pl, ro, es, pt, it, nl: "4\u00A0%" (with non-breaking space)
+ * en: "4%"
+ * tr: "%4"
  */
 export function formatPercent(pct: number, locale: string = 'de', options?: { negative?: boolean }): string {
   const num = Math.abs(pct);
+  const sign = options?.negative ? '\u2212' : '';
   if (locale === 'tr') {
-    return options?.negative ? `\u2212%${num}` : `%${num}`;
+    return `${sign}%${num}`;
   }
-  const intlLocale = locale === 'en' ? 'en-US' : locale;
-  const val = options?.negative ? -num / 100 : num / 100;
-  let formatted = new Intl.NumberFormat(intlLocale, {
-    style: 'percent',
-    maximumFractionDigits: 0,
-  }).format(val);
+  if (locale === 'en') {
+    return `${sign}${num}%`;
+  }
+  // de, fr, cs, fi, sv, da, hu, pl, ro, es, pt, it, nl:
+  return `${sign}${num}\u00A0%`;
+}
 
-  if (options?.negative) {
-    // Replace any ASCII hyphen-minus \u002D with Unicode minus \u2212
-    formatted = formatted.replace(/-/g, '\u2212');
-  }
-  return formatted;
+/**
+ * Resolves plural key suffix for templates based on count and locale:
+ * e.g. for count === 1: "_one"
+ * for locales with few-plural (e.g. cs, pl) with rule === 'few': "_few"
+ * otherwise: "" (default / many)
+ */
+export function getPluralKeySuffix(count: number, locale: string = 'de'): string {
+  if (count === 1) return '_one';
+  const pr = new Intl.PluralRules(locale);
+  const rule = pr.select(count);
+  if (rule === 'few') return '_few';
+  return '';
 }

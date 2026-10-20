@@ -96,6 +96,9 @@ export function TariffsGrid({
 
       {remainingCount > 0 && (
         <div className="mt-8 flex flex-col items-center justify-center gap-2">
+          <div role="status" aria-live="polite" className="sr-only">
+            {tariffs.length - remainingCount} / {tariffs.length}
+          </div>
           <button
             type="button"
             onClick={() => setVisibleCount((prev) => prev + CHUNK_INCREMENT)}

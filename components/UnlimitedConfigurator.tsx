@@ -11,7 +11,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { CountryFlag } from '@/components/CountryFlag';
 import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
 import { useTranslation } from '@/lib/i18n';
-import { formatDaysWithUnit, formatDayMark, formatPercent } from '@/lib/i18n/plural';
+import { formatDaysWithUnit, formatDayMark, formatPercent, getPluralKeySuffix } from '@/lib/i18n/plural';
 import { useCart } from '@/components/CartProvider';
 import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType, displayCountryName } from '@/lib/tariff-display';
 import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon } from '@/components/Icons';
@@ -188,16 +188,16 @@ export function DaySlider({
       <div className="h-[46px] min-h-[46px] flex items-center">
         {currentDiscountPct > 0 ? (
           <p className="text-[11px] leading-4 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
-            <span>{t('cfg_disc_incl', { pct: currentDiscountPct })}</span>
+            <span>{t('cfg_disc_incl', { pct: formatPercent(currentDiscountPct, locale) })}</span>
             {nextTier && (
               <span className="text-emerald-600 font-normal">
-                {' '}· {t('cfg_disc_next', { n: nextTier.minDays, pct: nextTier.discountPct })}
+                {' '}· {t('cfg_disc_next', { n: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale) })}
               </span>
             )}
           </p>
         ) : nextTier ? (
           <p className="text-[11px] leading-4 text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
-            <span>{t('cfg_disc_hint', { n: nextTier.minDays, pct: nextTier.discountPct })}</span>
+            <span>{t('cfg_disc_hint', { n: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale) })}</span>
           </p>
         ) : (
           <div className="w-full h-[46px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
@@ -780,102 +780,97 @@ export function UnlimitedConfigurator({
                 </div>
               </div>
 
-              {/* Price & Per-Day Rate */}
-              <div className="py-3 space-y-2 border-b border-slate-100">
-                <div className="flex items-baseline justify-between min-h-[36px]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
-                    </span>
-                    {hasDiscount && discountPct > 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                        {t('cfg_tier_discount_badge' as any, { pct: formatPercent(discountPct, locale, { negative: true }) }) || `Staffelrabatt ${formatPercent(discountPct, locale, { negative: true })}`}
+                {/* Price & Per-Day Rate */}
+                <div className="py-3 space-y-2 border-b border-slate-100">
+                  <div className="flex items-start justify-between min-h-[46px]">
+                    <div className="flex flex-col gap-1 min-h-[42px] justify-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
+                        {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 text-xs border border-transparent opacity-0 pointer-events-none select-none" aria-hidden="true" />
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-black text-slate-900 tracking-tight">
-                      {finalPrice !== null ? formatCurrencyEuro(finalPrice, locale) : '–'}
-                    </p>
-                    {perDayDisplay !== null && (
-                      <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-                        ({formatCurrencyEuro(perDayDisplay, locale)} {t('unit_per_day')})
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
-                {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 ? (
-                  <div className="space-y-0.5 text-xs text-slate-500 min-h-[38px]">
-                    <div className="truncate">
-                      {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
+                      <div className="h-[22px] flex items-center">
+                        {hasDiscount && discountPct > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700 whitespace-nowrap">
+                            {t('cfg_tier_discount_badge' as any, { pct: formatPercent(discountPct, locale, { negative: true }) }) || `Staffelrabatt ${formatPercent(discountPct, locale, { negative: true })}`}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 text-xs border border-transparent opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                        )}
+                      </div>
                     </div>
-                    <div className="font-semibold text-emerald-700 text-[11px] truncate">
-                      {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
+                    <div className="text-right shrink-0">
+                      <p className="text-2xl font-black text-slate-900 tracking-tight leading-tight whitespace-nowrap">
+                        {finalPrice !== null ? formatCurrencyEuro(finalPrice, locale) : '–'}
+                      </p>
+                      {perDayDisplay !== null && (
+                        <span className="text-[11px] text-slate-500 font-semibold block mt-0.5 whitespace-nowrap">
+                          ({formatCurrencyEuro(perDayDisplay, locale)} {t('unit_per_day')})
+                        </span>
+                      )}
                     </div>
                   </div>
-                ) : (
-                  <div className="min-h-[38px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
-                )}
 
-                {/* Better Deal Recommendation: strictly preserved height on mobile & desktop */}
-                <div className="min-h-[92px] sm:min-h-[72px] flex items-center" role="status" aria-live="polite">
-                  {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
-                    const diffDays = betterDealDays - days;
-                    const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
-                    const diff = diffCents / 100;
-                    const absDiff = Math.abs(diff);
-                    const formattedDiffAmount = formatCurrencyEuro(absDiff, locale);
-
-                    let diffText = '';
-                    if (diff < 0) {
-                      diffText = diffDays === 1
-                        ? t('cfg_better_deal_diff_less_one' as any, { price: formattedDiffAmount })
-                        : t('cfg_better_deal_diff_less' as any, { days: diffDays, price: formattedDiffAmount });
-                    } else if (diff === 0) {
-                      diffText = diffDays === 1
-                        ? t('cfg_better_deal_diff_same_one' as any)
-                        : t('cfg_better_deal_diff_same' as any, { days: diffDays });
-                    } else {
-                      diffText = diffDays === 1
-                        ? t('cfg_better_deal_diff_more_one' as any, { price: formattedDiffAmount })
-                        : t('cfg_better_deal_diff_more' as any, { days: diffDays, price: formattedDiffAmount });
-                    }
-
-                    const tipTitle = betterDealDays === 1 && t('cfg_duration_better_deal_one' as any) !== 'cfg_duration_better_deal_one'
-                      ? t('cfg_duration_better_deal_one' as any, { price: formatCurrencyEuro(betterDealPriceEur, locale), diff: diffText })
-                      : t('cfg_duration_better_deal' as any, {
-                          price: formatCurrencyEuro(betterDealPriceEur, locale),
-                          days: betterDealDays,
-                          diff: diffText,
-                        });
-
-                    const btnText = betterDealDays === 1 && t('cfg_duration_better_deal_btn_one' as any) !== 'cfg_duration_better_deal_btn_one'
-                      ? t('cfg_duration_better_deal_btn_one' as any)
-                      : t('cfg_duration_better_deal_btn' as any, { days: betterDealDays });
-
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => setDays(betterDealDays)}
-                        className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs"
-                      >
-                        <span className="font-medium [text-wrap:pretty]">
-                          💡 {tipTitle}
-                        </span>
-                        <span className="text-[11px] font-bold text-amber-700 underline group-hover:text-amber-900 shrink-0">
-                          {btnText}
-                        </span>
-                      </button>
-                    );
-                  })() : (
-                    <div className="w-full h-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                  {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
+                  {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 ? (
+                    <div className="space-y-0.5 text-xs text-slate-500 h-[42px] min-h-[42px] flex flex-col justify-center">
+                      <div className="truncate text-xs">
+                        {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
+                      </div>
+                      <div className="font-semibold text-emerald-800 text-[13px] truncate">
+                        {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-[42px] min-h-[42px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
                   )}
+
+                  {/* Better Deal Recommendation: strictly preserved height on mobile & desktop */}
+                  <div className="min-h-[92px] sm:min-h-[86px] flex items-center" role="status" aria-live="polite">
+                    {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
+                      const diffDays = betterDealDays - days;
+                      const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
+                      const diff = diffCents / 100;
+                      const absDiff = Math.abs(diff);
+                      const formattedDiffAmount = formatCurrencyEuro(absDiff, locale);
+                      const suffix = getPluralKeySuffix(diffDays, locale);
+
+                      let diffText = '';
+                      if (diff < 0) {
+                        diffText = t((`cfg_better_deal_diff_less${suffix}`) as any, { days: diffDays, price: formattedDiffAmount });
+                      } else if (diff === 0) {
+                        diffText = t((`cfg_better_deal_diff_same${suffix}`) as any, { days: diffDays });
+                      } else {
+                        diffText = t((`cfg_better_deal_diff_more${suffix}`) as any, { days: diffDays, price: formattedDiffAmount });
+                      }
+
+                      const tipTitle = t((`cfg_duration_better_deal${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
+                        price: formatCurrencyEuro(betterDealPriceEur, locale),
+                        days: betterDealDays,
+                        diff: diffText,
+                      });
+
+                      const btnText = t((`cfg_duration_better_deal_btn${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
+                        days: betterDealDays,
+                      });
+
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setDays(betterDealDays)}
+                          className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-950 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                        >
+                          <span className="font-medium [text-wrap:pretty]">
+                            💡 {tipTitle}
+                          </span>
+                          <span className="min-w-[44px] min-h-[24px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline group-hover:text-amber-950 shrink-0">
+                            {btnText}
+                          </span>
+                        </button>
+                      );
+                    })() : (
+                      <div className="w-full h-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                    )}
+                  </div>
                 </div>
-              </div>
 
               {/* Action Buttons */}
               <div className="space-y-2 pt-1">
