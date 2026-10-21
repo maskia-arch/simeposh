@@ -2,7 +2,7 @@ import { CountryPageClient } from './CountryPageClient';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
-import { displayCountryName } from '@/lib/tariff-display';
+import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
 import { formatCurrencyEuro } from '@/lib/currency';
@@ -222,7 +222,11 @@ export default async function CountryPage({ params }: CountryPageProps) {
       />
       <CountryPageClient
         destination={destination}
-        tariffs={tariffs}
+        tariffs={tariffs.map((t) => ({
+          ...t,
+          description: null,
+          name: formatLocalizedTariffName(t.name, countryLabel, t.country_name, locale),
+        }))}
         countryLabel={countryLabel}
       />
     </>

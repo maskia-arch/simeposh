@@ -820,6 +820,13 @@ const fi = {
   "login_error_invalid_credentials": "Virheellinen sähköpostiosoite tai salasana.",
   "btn_please_wait": "Odota ({time})",
   "forgot_pw_success": "Olemme lähettäneet sinulle linkin salasanasi nollaamiseksi, jos tällä sähköpostiosoitteella on tili.",
+  "cfg_standard_rate": "Normaali päivähinta",
+  "cfg_next_tier_hint": "Alkaen {days} päivää {pct} alennus",
+  "cfg_next_tier_btn": "Vaihda {days} päivään →",
+  "cfg_max_tier_hint": "Suurin porrasalennus ({pct}) aktiivinen",
+  "checkout_cancelled_filled_banner": "Maksu peruutettu. Ostoskorisi on yhä tallessa.",
+  "checkout_cancelled_empty_banner": "Maksu peruutettu.",
+  "btn_checkout_again": "Uudelleen kassalle",
 } as const;
 export default fi;
 export type TranslationKeys = keyof typeof fi;

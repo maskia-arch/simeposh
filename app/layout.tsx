@@ -15,6 +15,7 @@ import type { LocaleCode } from '@/lib/i18n/config';
 
 import { SkipLink } from '@/components/SkipLink';
 import { BASE_URL } from '@/lib/seo';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const headerStore = await headers();
@@ -30,8 +31,23 @@ export async function generateMetadata(): Promise<Metadata> {
     : 'de';
   const dict = getServerDict(locale);
 
-  if (is404) {
-    const notFoundTitle = `${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim`;
+  let isCheckout404 = false;
+  const checkoutMatch = pathname.match(/\/checkout\/crypto\/([a-zA-Z0-9_-]+)/);
+  if (checkoutMatch) {
+    const sessionId = checkoutMatch[1];
+    try {
+      const db = createServiceClient();
+      const { data: sess } = await db.from('crypto_sessions').select('id').eq('id', sessionId).maybeSingle();
+      if (!sess) {
+        isCheckout404 = true;
+      }
+    } catch (_) {
+      isCheckout404 = true;
+    }
+  }
+
+  if (is404 || isCheckout404) {
+    const notFoundTitle = `${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} | PureSim`;
     return {
       title: { absolute: notFoundTitle },
       robots: {
@@ -39,7 +55,7 @@ export async function generateMetadata(): Promise<Metadata> {
         follow: false,
       },
       alternates: {
-        canonical: null,
+        canonical: undefined,
       },
     };
   }

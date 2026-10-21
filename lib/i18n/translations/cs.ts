@@ -819,12 +819,19 @@ const cs = {
   "reset_pw_btn": "Uložit heslo",
   "reset_pw_success": "Vaše heslo bylo úspěšně aktualizováno. Nyní se můžete přihlásit.",
   "reset_pw_error_invalid": "Tento odkaz je neplatný nebo vypršel. Požádejte o nový odkaz.",
-  "filter_label": "Filter:",
+  "filter_label": "Filtr:",
   "cat_unlimited_eco_speed": "512 kbps snížení rychlosti",
   "cat_unlimited_pro_speed": "≥ 1 Mbps snížení rychlosti",
   "login_error_invalid_credentials": "Neplatný e-mail nebo heslo.",
   "btn_please_wait": "Počkejte prosím ({time})",
   "forgot_pw_success": "Pokud existuje účet s touto e-mailovou adresou, zaslali jsme vám odkaz pro obnovení hesla.",
+  "cfg_standard_rate": "Běžná denní sazba",
+  "cfg_next_tier_hint": "Od {days} dní sleva {pct}",
+  "cfg_next_tier_btn": "Změnit na {days} dní →",
+  "cfg_max_tier_hint": "Maximální stupňovitá sleva ({pct}) aktivní",
+  "checkout_cancelled_filled_banner": "Platba byla zrušena. Váš košík zůstává uložen.",
+  "checkout_cancelled_empty_banner": "Platba byla zrušena.",
+  "btn_checkout_again": "Znovu k pokladně",
 } as const;
 export default cs;
 export type TranslationKeys = keyof typeof cs;

@@ -820,6 +820,13 @@ const ro = {
   "login_error_invalid_credentials": "E-mail sau parolă incorectă.",
   "btn_please_wait": "Vă rugăm să așteptați ({time})",
   "forgot_pw_success": "Ți-am trimis un link pentru a-ți reseta parola, dacă există un cont cu această adresă de e-mail.",
+  "cfg_standard_rate": "Tarif zilnic standard",
+  "cfg_next_tier_hint": "De la {days} zile reducere de {pct}",
+  "cfg_next_tier_btn": "Schimbă la {days} zile →",
+  "cfg_max_tier_hint": "Reducere maximă în trepte ({pct}) activă",
+  "checkout_cancelled_filled_banner": "Plată anulată. Coșul tău este încă salvat.",
+  "checkout_cancelled_empty_banner": "Plată anulată.",
+  "btn_checkout_again": "Din nou la finalizare",
 } as const;
 export default ro;
 export type TranslationKeys = keyof typeof ro;

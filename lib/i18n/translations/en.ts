@@ -167,7 +167,7 @@ const en = {
   "cfg_step1": "Select country",
   "cfg_step2": "Speed after data limit",
   "cfg_step3": "Daily high-speed allowance",
-  "cfg_step3_duration": "3. Validity (Days)",
+  "cfg_step3_duration": "3. Validity (days)",
   "cfg_step4": "Duration & price",
   "cfg_unavailable": "Not available",
   "checkout_agree_error": "Please accept the Terms and Conditions to continue.",
@@ -687,7 +687,7 @@ const en = {
   "faq_country_q4": "When does my data validity period start?",
   "faq_country_a4": "Validity starts only upon your first connection to a local network in {country}. You can easily install the eSIM profile at home before departure.",
   "badge_unlimited_surf": "Unlimited Data",
-  "badge_flexible_days": "1–365 Days flexible",
+  "badge_flexible_days": "1–365 days flexible",
   "unlimited_hero_desc": "Prepaid high-speed data for {country} with customizable duration from 1 to 365 days. Zero roaming fees, no contract, and unlimited browsing after your daily high-speed allowance.",
   "starting_price_from": "Starting from",
   "daily_price_from": "Daily rate from",
@@ -820,6 +820,13 @@ const en = {
   "login_error_invalid_credentials": "Invalid email or password.",
   "btn_please_wait": "Please wait ({time})",
   "forgot_pw_success": "We have sent you a link to reset your password if an account exists with this email address.",
+  "cfg_standard_rate": "Regular daily rate",
+  "cfg_next_tier_hint": "From {days} days {pct} discount",
+  "cfg_next_tier_btn": "Switch to {days} days →",
+  "cfg_max_tier_hint": "Maximum tier discount ({pct}) active",
+  "checkout_cancelled_filled_banner": "Payment cancelled. Your cart is still saved.",
+  "checkout_cancelled_empty_banner": "Payment cancelled.",
+  "btn_checkout_again": "Checkout again",
 } as const;
 export default en;
 export type TranslationKeys = keyof typeof en;

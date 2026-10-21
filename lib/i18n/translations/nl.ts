@@ -820,6 +820,13 @@ const nl = {
   "login_error_invalid_credentials": "E-mail of wachtwoord is onjuist.",
   "btn_please_wait": "Even geduld a.u.b. ({time})",
   "forgot_pw_success": "We hebben je een link gestuurd om je wachtwoord opnieuw in te stellen als er een account bestaat met dit e-mailadres.",
+  "cfg_standard_rate": "Standaard dagtarief",
+  "cfg_next_tier_hint": "Vanaf {days} dagen {pct} korting",
+  "cfg_next_tier_btn": "Naar {days} dagen wisselen →",
+  "cfg_max_tier_hint": "Maximale staffelkorting ({pct}) actief",
+  "checkout_cancelled_filled_banner": "Betaling geannuleerd. Je winkelwagen is nog bewaard.",
+  "checkout_cancelled_empty_banner": "Betaling geannuleerd.",
+  "btn_checkout_again": "Opnieuw afrekenen",
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

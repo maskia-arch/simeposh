@@ -740,7 +740,7 @@ export function UnlimitedConfigurator({
 
           {/* ── RIGHT COLUMN: High-Converting Crisp Live Price Card (5 Cols) ── */}
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-3">
-            <div className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-lg relative overflow-hidden">
+            <div data-testid="unlimited-configurator-card" className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-brand-500 via-sky-400 to-indigo-500" />
 
               {/* Crisp Selected Specs Header */}
@@ -781,7 +781,7 @@ export function UnlimitedConfigurator({
               </div>
 
                 {/* Price & Per-Day Rate */}
-                <div className="py-3 space-y-2 border-b border-slate-100">
+                <div data-testid="price-box" className="py-3 space-y-2 border-b border-slate-100">
                   <div className="flex items-start justify-between min-h-[46px]">
                     <div className="flex flex-col gap-1 min-h-[42px] justify-center">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
@@ -810,70 +810,108 @@ export function UnlimitedConfigurator({
                   </div>
 
                   {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
-                  {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 ? (
-                    <div className="space-y-0.5 text-xs text-slate-500 h-[42px] min-h-[42px] flex flex-col justify-center">
-                      <div className="truncate text-xs">
-                        {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
-                      </div>
-                      <div className="font-semibold text-emerald-800 text-[13px] truncate">
-                        {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-[42px] min-h-[42px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
-                  )}
-
-                  {/* Better Deal Recommendation: strictly preserved height on mobile & desktop */}
-                  <div className="min-h-[96px] lg:min-h-[102px] flex items-center justify-center" role="status" aria-live="polite">
-                    {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
-                      const diffDays = betterDealDays - days;
-                      const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
-                      const diff = diffCents / 100;
-                      const absDiff = Math.abs(diff);
-                      const formattedDiffAmount = formatCurrencyEuro(absDiff, locale);
-                      const suffix = getPluralKeySuffix(diffDays, locale);
-
-                      let diffText = '';
-                      if (diff < 0) {
-                        diffText = t((`cfg_better_deal_diff_less${suffix}`) as any, { days: diffDays, price: formattedDiffAmount });
-                      } else if (diff === 0) {
-                        diffText = t((`cfg_better_deal_diff_same${suffix}`) as any, { days: diffDays });
-                      } else {
-                        diffText = t((`cfg_better_deal_diff_more${suffix}`) as any, { days: diffDays, price: formattedDiffAmount });
-                      }
-
-                      const tipTitle = t((`cfg_duration_better_deal${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
-                        price: formatCurrencyEuro(betterDealPriceEur, locale),
-                        days: betterDealDays,
-                        diff: diffText,
-                      });
-
-                      const btnText = t((`cfg_duration_better_deal_btn${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
-                        days: betterDealDays,
-                      });
-
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => setDays(betterDealDays)}
-                          className="w-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[13px] text-amber-950 hover:bg-amber-100/80 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-1 group shadow-2xs focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                        >
-                          <span className="font-medium [text-wrap:pretty]">
-                            💡 {tipTitle}
-                          </span>
-                          <span className="min-w-[44px] min-h-[24px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline group-hover:text-amber-950 shrink-0">
-                            {btnText}
-                          </span>
-                        </button>
-                      );
-                    })() : (
-                      <div className="w-full h-[96px] lg:h-[102px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                  <div className="space-y-0.5 text-xs text-slate-500 h-[42px] min-h-[42px] flex flex-col justify-center">
+                    {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 ? (
+                      <>
+                        <div className="truncate text-xs">
+                          {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
+                        </div>
+                        <div className="font-semibold text-emerald-800 text-[13px] truncate">
+                          {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="truncate text-xs">
+                          {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(finalPrice!, locale)}
+                        </div>
+                        <div className="font-semibold text-slate-600 text-[13px] truncate">
+                          {t('cfg_standard_rate' as any) || (isDe ? 'Regulärer Tagespreis' : 'Regular daily rate')}
+                        </div>
+                      </>
                     )}
                   </div>
+
+                  {/* Better Deal Recommendation or Next Tier Discount Hint: strictly preserved height on mobile & desktop */}
+                  {(() => {
+                    const nextTier = (currentPriceTable?.tiers || []).find((tier) => tier.minDays > days && tier.discountPct > discountPct);
+
+                    return (
+                      <div className="min-h-[90px] lg:min-h-[92px] flex items-center justify-center" role="status" aria-live="polite">
+                        {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
+                          const diffDays = betterDealDays - days;
+                          const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
+                          const diff = diffCents / 100;
+                          const absDiff = Math.abs(diff);
+                          const formattedDiffAmount = formatCurrencyEuro(absDiff, locale);
+                          const suffix = getPluralKeySuffix(diffDays, locale);
+
+                          let diffText = '';
+                          if (diff < 0) {
+                            diffText = t((`cfg_better_deal_diff_less${suffix}`) as any, { days: diffDays, price: formattedDiffAmount });
+                          } else if (diff === 0) {
+                            diffText = t((`cfg_better_deal_diff_same${suffix}`) as any, { days: diffDays });
+                          } else {
+                            diffText = t((`cfg_better_deal_diff_more${suffix}`) as any, { days: diffDays, price: formattedDiffAmount });
+                          }
+
+                          const tipTitle = t((`cfg_duration_better_deal${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
+                            price: formatCurrencyEuro(betterDealPriceEur, locale),
+                            days: betterDealDays,
+                            diff: diffText,
+                          });
+
+                          const btnText = t((`cfg_duration_better_deal_btn${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
+                            days: betterDealDays,
+                          });
+
+                          return (
+                            <div className="w-full h-full text-left rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[13px] text-amber-950 flex flex-col justify-between gap-1 shadow-2xs">
+                              <span className="font-medium [text-wrap:pretty] leading-tight">
+                                💡 {tipTitle}
+                              </span>
+                              <div className="flex justify-end pt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setDays(betterDealDays)}
+                                  className="min-w-[44px] min-h-[24px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline cursor-pointer"
+                                >
+                                  {btnText}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })() : nextTier ? (
+                          <div className="w-full h-full text-left rounded-xl bg-amber-50/70 border border-amber-200/80 p-2.5 text-[13px] text-amber-950 flex flex-col justify-between gap-1 shadow-2xs">
+                            <span className="font-medium [text-wrap:pretty] leading-tight flex items-center gap-1.5">
+                              <span>🏷️</span>
+                              <span>{t('cfg_next_tier_hint' as any, { days: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale, { negative: true }) }) || `Ab ${nextTier.minDays} Tagen ${formatPercent(nextTier.discountPct, locale, { negative: true })}`}</span>
+                            </span>
+                            <div className="flex justify-end pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => setDays(nextTier.minDays)}
+                                className="min-w-[44px] min-h-[24px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline cursor-pointer"
+                              >
+                                {t('cfg_next_tier_btn' as any, { days: nextTier.minDays }) || (isDe ? `Auf ${nextTier.minDays} Tage wechseln →` : `Switch to ${nextTier.minDays} days →`)}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full text-left rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-2.5 text-[13px] text-emerald-950 flex flex-col justify-center gap-1 shadow-2xs">
+                            <span className="font-semibold [text-wrap:pretty] leading-tight flex items-center gap-1.5">
+                              <span>✓</span>
+                              <span>{t('cfg_max_tier_hint' as any, { pct: formatPercent(discountPct, locale, { negative: true }) }) || `Maximaler Staffelrabatt (${formatPercent(discountPct, locale, { negative: true })}) aktiv`}</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 pt-1">
+              <div data-testid="action-container" className="space-y-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {

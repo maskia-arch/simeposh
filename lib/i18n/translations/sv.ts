@@ -820,6 +820,13 @@ const sv = {
   "login_error_invalid_credentials": "Felaktig e-postadress eller lösenord.",
   "btn_please_wait": "Vänligen vänta ({time})",
   "forgot_pw_success": "Vi har skickat en länk för att återställa ditt lösenord om ett konto finns med denna e-postadress.",
+  "cfg_standard_rate": "Vanlig dagsavgift",
+  "cfg_next_tier_hint": "Från {days} dagar {pct} rabatt",
+  "cfg_next_tier_btn": "Byt till {days} dagar →",
+  "cfg_max_tier_hint": "Maximal mängdrabatt ({pct}) aktiv",
+  "checkout_cancelled_filled_banner": "Betalning avbruten. Din varukorg är sparad.",
+  "checkout_cancelled_empty_banner": "Betalning avbruten.",
+  "btn_checkout_again": "Till kassan igen",
 } as const;
 export default sv;
 export type TranslationKeys = keyof typeof sv;

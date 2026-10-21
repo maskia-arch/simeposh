@@ -820,6 +820,13 @@ const tr = {
   "login_error_invalid_credentials": "E-posta veya şifre hatalı.",
   "btn_please_wait": "Lütfen bekleyin ({time})",
   "forgot_pw_success": "Bu e-posta adresiyle bir hesap varsa, şifrenizi sıfırlamanız için bir bağlantı gönderdik.",
+  "cfg_standard_rate": "Standart günlük ücret",
+  "cfg_next_tier_hint": "{days} günden itibaren {pct} indirim",
+  "cfg_next_tier_btn": "{days} güne geç →",
+  "cfg_max_tier_hint": "Maksimum kademeli indirim ({pct}) aktif",
+  "checkout_cancelled_filled_banner": "Ödeme iptal edildi. Sepetiniz hala duruyor.",
+  "checkout_cancelled_empty_banner": "Ödeme iptal edildi.",
+  "btn_checkout_again": "Tekrar ödemeye geç",
 } as const;
 export default tr;
 export type TranslationKeys = keyof typeof tr;

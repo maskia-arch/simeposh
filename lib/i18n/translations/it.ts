@@ -820,6 +820,13 @@ const it = {
   "login_error_invalid_credentials": "Email o password non validi.",
   "btn_please_wait": "Attendere prego ({time})",
   "forgot_pw_success": "Ti abbiamo inviato un link per reimpostare la password se esiste un account con questo indirizzo email.",
+  "cfg_standard_rate": "Tariffa giornaliera standard",
+  "cfg_next_tier_hint": "Da {days} giorni {pct} di sconto",
+  "cfg_next_tier_btn": "Passa a {days} giorni →",
+  "cfg_max_tier_hint": "Sconto scaglione massimo ({pct}) attivo",
+  "checkout_cancelled_filled_banner": "Pagamento annullato. Il tuo carrello è ancora salvato.",
+  "checkout_cancelled_empty_banner": "Pagamento annullato.",
+  "btn_checkout_again": "Torna alla cassa",
 } as const;
 export default it;
 export type TranslationKeys = keyof typeof it;

@@ -72,7 +72,37 @@ export async function generateMetadata({
       .maybeSingle();
 
     if (!session) {
-      notFound();
+      const notFoundMap: Record<string, string> = {
+        de: 'Seite nicht gefunden',
+        en: 'Page Not Found',
+        fr: 'Page non trouvée',
+        es: 'Página no encontrada',
+        it: 'Pagina non trovata',
+        nl: 'Pagina niet gevonden',
+        pl: 'Strona nie znaleziona',
+        pt: 'Página não encontrada',
+        tr: 'Sayfa Bulunamadı',
+        sv: 'Sidan hittades inte',
+        da: 'Siden blev ikke fundet',
+        fi: 'Sivua ei löydy',
+        cs: 'Stránka nenalezena',
+        ro: 'Pagina nu a fost găsită',
+        hu: 'Az oldal nem található',
+      };
+      const notFoundTitle = notFoundMap[locale] || 'Page Not Found';
+      return {
+        title: {
+          absolute: `${notFoundTitle} | PureSim`,
+        },
+        robots: {
+          index: false,
+          follow: false,
+        },
+        alternates: {
+          canonical: undefined,
+          languages: undefined,
+        },
+      };
     }
 
     if (session?.coin) {
@@ -103,7 +133,7 @@ export async function generateMetadata({
 
 import { notFound } from 'next/navigation';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
-import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
+import { formatFullCheckoutTariffName } from '@/lib/tariff-display';
 
 export default async function CryptoCheckoutPage({
   params,
@@ -135,13 +165,22 @@ export default async function CryptoCheckoutPage({
       const sessLocale = (session.locale as any) || 'de';
       const { data: orders } = await db
         .from('orders')
-        .select('period_num, tariffs(name, country_name, validity_days)')
+        .select('period_num, tariffs(id, name, country_name, country_code, tariff_type, data_gb, validity_days, package_code, description, region, location_codes)')
         .in('id', session.order_ids);
       if (orders && orders.length > 0) {
         const names = orders.map((o: any) => {
-          const cName = o?.tariffs?.country_name || '';
-          const cLabel = displayCountryName({ country_name: cName } as any, sessLocale);
-          return formatLocalizedTariffName(o?.tariffs?.name, cLabel, cName, sessLocale);
+          const t = o?.tariffs;
+          if (!t) return '';
+          return formatFullCheckoutTariffName({
+            countryName: t.country_name,
+            countryCode: t.country_code,
+            locationCodes: t.location_codes,
+            region: t.region,
+            tariffType: t.tariff_type,
+            dataGb: Number(t.data_gb),
+            validityDays: o.period_num ?? t.validity_days,
+            name: t.name,
+          }, sessLocale);
         }).filter(Boolean);
         if (names.length > 0) {
           initialTariff = Array.from(new Set(names)).join(', ');

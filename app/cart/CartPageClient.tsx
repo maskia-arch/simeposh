@@ -23,6 +23,7 @@ const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
 export function CartPageClient({ initialCancelled = false }: { initialCancelled?: boolean }) {
   const { locale, t } = useTranslation();
   const { items, total, count, setQuantity, removeItem, clear } = useCart();
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -38,6 +39,13 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
   const [paymentCancelled, setPaymentCancelled] = useState(initialCancelled);
   const supabase = createClient();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const prefix = locale === 'de' ? '' : `/${locale}`;
+  const tariffsLink = `${prefix}/tariffs`;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -131,19 +139,76 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
     return () => subscription.unsubscribe();
   }, []);
 
+  const renderCancelledBanner = () => {
+    if (!paymentCancelled) return null;
+    return (
+      <div
+        data-testid="checkout-cancelled-notice"
+        role="status"
+        className="mb-8 rounded-2xl border border-amber-200 bg-amber-50/95 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[110px] sm:min-h-[72px]"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-xl shrink-0">⚠️</span>
+          <span className="text-sm font-bold text-amber-950">
+            {mounted && items.length > 0
+              ? (t('checkout_cancelled_filled_banner' as any) || (locale === 'de' ? 'Zahlung abgebrochen. Dein Warenkorb ist noch da.' : 'Payment cancelled. Your cart is still here.'))
+              : (t('checkout_cancelled_empty_banner' as any) || (locale === 'de' ? 'Zahlung abgebrochen.' : 'Payment cancelled.'))}
+          </span>
+        </div>
+        {mounted ? (
+          items.length > 0 ? (
+            <button
+              type="button"
+              data-testid="checkout-cancelled-again-btn"
+              onClick={() => {
+                const target = document.querySelector('input[type="email"]') || document.getElementById('checkout-email-input') || document.querySelector('form');
+                if (target) {
+                  (target as HTMLElement).focus();
+                  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+              className="btn-primary min-h-[44px] px-5 py-2.5 text-xs font-bold shadow-sm whitespace-nowrap cursor-pointer shrink-0"
+            >
+              {t('btn_checkout_again' as any) || (locale === 'de' ? 'Erneut zur Kasse' : 'Checkout again')} →
+            </button>
+          ) : (
+            <Link
+              href={tariffsLink}
+              data-testid="checkout-cancelled-action-btn"
+              className="btn-primary min-h-[44px] px-5 py-2.5 text-xs font-bold shadow-sm whitespace-nowrap cursor-pointer shrink-0 inline-flex items-center justify-center"
+            >
+              {t('cart_discover')} →
+            </Link>
+          )
+        ) : (
+          <div className="min-h-[44px] min-w-[140px] opacity-0" aria-hidden="true" />
+        )}
+      </div>
+    );
+  };
+
+  if (!mounted) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12">
+        {renderCancelledBanner()}
+        <div className="space-y-4 animate-pulse">
+          <div className="h-9 w-48 rounded-xl bg-slate-100" />
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="space-y-3 lg:col-span-2">
+              <div className="h-28 rounded-2xl bg-slate-100" />
+              <div className="h-28 rounded-2xl bg-slate-100" />
+            </div>
+            <div className="h-64 rounded-2xl bg-slate-100 lg:col-span-1" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        {paymentCancelled && (
-          <div
-            data-testid="checkout-cancelled-notice"
-            role="status"
-            className="mb-6 flex items-center justify-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs font-semibold text-amber-900 shadow-xs max-w-md mx-auto"
-          >
-            <span className="shrink-0 text-sm">ℹ️</span>
-            <span>{t('checkout_cancelled_notice')}</span>
-          </div>
-        )}
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        {renderCancelledBanner()}
         <div className="flex justify-center mb-4">
           <CartIcon size={64} className="text-slate-300" />
         </div>
@@ -151,7 +216,7 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
           {paymentCancelled ? (t('cart_cancelled_title' as any) || (locale === 'de' ? 'Zahlung abgebrochen' : 'Payment cancelled')) : t('cart_empty_title')}
         </h1>
         <p className="mb-6 text-slate-500">{t('cart_empty_sub')}</p>
-        <Link href="/tariffs" className="rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white hover:bg-brand-700 transition-colors">
+        <Link href={tariffsLink} className="rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white hover:bg-brand-700 transition-colors inline-block">
           {t('cart_discover')}
         </Link>
       </div>
@@ -160,21 +225,11 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
+      {renderCancelledBanner()}
       <h1 className="mb-6 text-3xl font-bold text-slate-900 flex items-center gap-2">
         <CartIcon size={28} className="text-slate-900" />
         <span>{t('cart_title')}</span>
       </h1>
-
-      {paymentCancelled && (
-        <div
-          data-testid="checkout-cancelled-notice"
-          role="status"
-          className="mb-6 flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs font-semibold text-amber-900 shadow-xs"
-        >
-          <span className="shrink-0 text-sm">ℹ️</span>
-          <span>{t('checkout_cancelled_notice')}</span>
-        </div>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Items */}

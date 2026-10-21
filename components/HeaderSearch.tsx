@@ -119,7 +119,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
 
   return (
     <div ref={boxRef} className="relative w-full text-left">
-      <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white hover:border-slate-400 focus-within:border-brand-600 focus-within:ring-4 focus-within:ring-brand-100 px-3.5 py-1.5 shadow-sm hover:shadow transition-all duration-150">
+      <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white hover:border-slate-400 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500 px-3.5 py-1.5 shadow-sm hover:shadow transition-all duration-150">
         <svg className="h-4 w-4 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -129,7 +129,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder={placeholder ?? t('tariffs_search')}
-          className="w-full bg-transparent text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-500 outline-none"
+          className="w-full bg-transparent text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-500 outline-none focus:outline-none"
         />
         {q && (
           <button onClick={() => { setQ(''); setOpen(true); }} className="text-slate-400 hover:text-slate-600 text-xs font-bold" aria-label="Clear">✕</button>

@@ -820,6 +820,13 @@ const da = {
   "login_error_invalid_credentials": "Forkert e-mail eller adgangskode.",
   "btn_please_wait": "Vent venligst ({time})",
   "forgot_pw_success": "Vi har sendt dig et link til at nulstille din adgangskode, hvis der findes en konto med denne e-mailadresse.",
+  "cfg_standard_rate": "Almindelig dagspris",
+  "cfg_next_tier_hint": "Fra {days} dage {pct} rabat",
+  "cfg_next_tier_btn": "Skift til {days} dage →",
+  "cfg_max_tier_hint": "Maksimal mængderabat ({pct}) aktiv",
+  "checkout_cancelled_filled_banner": "Betaling annulleret. Din indkøbskurv er stadig gemt.",
+  "checkout_cancelled_empty_banner": "Betaling annulleret.",
+  "btn_checkout_again": "Gå til kassen igen",
 } as const;
 export default da;
 export type TranslationKeys = keyof typeof da;

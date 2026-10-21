@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { formatGb } from '@/lib/utils';
-import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
+import { displayCountryName, formatLocalizedTariffName, formatFullCheckoutTariffName } from '@/lib/tariff-display';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -92,12 +92,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-      const tariffStr = items.map((i) => i.name).filter(Boolean).join(', ');
+      const tariffStr = Array.from(new Set(items.map((i) => formatFullCheckoutTariffName({
+        countryName: i.countryName,
+        countryCode: i.countryCode,
+        locationCodes: i.locationCodes,
+        region: i.region,
+        tariffType: i.tariffType,
+        dataGb: i.dataGb,
+        validityDays: i.periodDays || i.validityDays,
+        name: i.name,
+      }, locale)))).filter(Boolean).join(', ');
       const tot = items.reduce((s, i) => s + (Number(i.priceEur) || 0) * (Number(i.quantity) || 1), 0);
       const amountStr = tot > 0 ? `${tot.toFixed(2)} €` : '';
-      const validityStr = items.map((i) => i.validityDays ? formatDaysWithUnit(i.validityDays, locale) : '').filter(Boolean).join(', ');
+      const validityStr = Array.from(new Set(items.map((i) => (i.periodDays || i.validityDays) ? formatDaysWithUnit(i.periodDays || i.validityDays, locale) : ''))).filter(Boolean).join(', ');
       if (tariffStr) {
         document.cookie = `esim_checkout_tariff=${encodeURIComponent(tariffStr)};path=/;max-age=86400;SameSite=Lax`;
+        window.localStorage.setItem('esim_checkout_tariff', tariffStr);
       }
       if (validityStr) {
         document.cookie = `esim_checkout_validity=${encodeURIComponent(validityStr)};path=/;max-age=86400;SameSite=Lax`;
@@ -105,6 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       if (amountStr) {
         document.cookie = `esim_checkout_amount=${encodeURIComponent(amountStr)};path=/;max-age=86400;SameSite=Lax`;
+        window.localStorage.setItem('esim_checkout_amount', amountStr);
       }
     } catch { /* quota / private mode – ignore */ }
   }, [items, hydrated]);

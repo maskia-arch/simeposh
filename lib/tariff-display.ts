@@ -7,13 +7,14 @@
  */
 import type { Database } from '@/lib/supabase/types';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatGb } from '@/lib/utils';
 
 type TariffLike = Pick<
   Database['public']['Tables']['tariffs']['Row'],
   'country_name' | 'country_code' | 'location_codes' | 'region'
 >;
 
-/** Explicit overrides for regions whose full names vary between Node SSR and browser Intl (e.g. HK, MO). */
+/** Explicit overrides for regions whose full names vary between Node SSR and browser Intl (e.g. HK, MO, GB, US). */
 const COUNTRY_NAME_OVERRIDES: Record<string, Record<string, string>> = {
   HK: {
     en: 'Hong Kong', de: 'Hongkong', fr: 'Hong Kong', es: 'Hong Kong', it: 'Hong Kong',
@@ -29,6 +30,21 @@ const COUNTRY_NAME_OVERRIDES: Record<string, Record<string, string>> = {
     en: 'Taiwan', de: 'Taiwan', fr: 'Taïwan', es: 'Taiwán', it: 'Taiwan',
     nl: 'Taiwan', pl: 'Tajwan', pt: 'Taiwan', tr: 'Tayvan', sv: 'Taiwan',
     da: 'Taiwan', fi: 'Taiwan', cs: 'Tchaj-wan', ro: 'Taiwan', hu: 'Tajvan'
+  },
+  GB: {
+    en: 'United Kingdom', de: 'Vereinigtes Königreich', fr: 'Royaume-Uni', es: 'Reino Unido', it: 'Regno Unito',
+    nl: 'Verenigd Koninkrijk', pl: 'Wielka Brytania', pt: 'Reino Unido', tr: 'Birleşik Krallık', sv: 'Storbritannien',
+    da: 'Storbritannien', fi: 'Iso-Britannia', cs: 'Spojené království', ro: 'Regatul Unit', hu: 'Egyesült Királyság'
+  },
+  UK: {
+    en: 'United Kingdom', de: 'Vereinigtes Königreich', fr: 'Royaume-Uni', es: 'Reino Unido', it: 'Regno Unito',
+    nl: 'Verenigd Koninkrijk', pl: 'Wielka Brytania', pt: 'Reino Unido', tr: 'Birleşik Krallık', sv: 'Storbritannien',
+    da: 'Storbritannien', fi: 'Iso-Britannia', cs: 'Spojené království', ro: 'Regatul Unit', hu: 'Egyesült Királyság'
+  },
+  US: {
+    en: 'United States', de: 'Vereinigte Staaten', fr: 'États-Unis', es: 'Estados Unidos', it: 'Stati Uniti',
+    nl: 'Verenigde Staten', pl: 'Stany Zjednoczone', pt: 'Estados Unidos', tr: 'Amerika Birleşik Devletleri', sv: 'USA',
+    da: 'USA', fi: 'Yhdysvallat', cs: 'Spojené státy', ro: 'Statele Unite', hu: 'Egyesült Államok'
   }
 };
 
@@ -39,7 +55,7 @@ export function isoName(code: string, locale = 'en'): string {
   const override = COUNTRY_NAME_OVERRIDES[upper]?.[locale] ?? COUNTRY_NAME_OVERRIDES[upper]?.en;
   if (override) return override;
   try {
-    return new Intl.DisplayNames([locale], { type: 'region', style: 'short' }).of(upper) ?? code;
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(upper) ?? code;
   } catch {
     return code;
   }
@@ -288,6 +304,114 @@ export function formatLocalizedTariffName(
   }
 
   return name;
+}
+
+export interface CheckoutTariffInput {
+  countryName?: string | null;
+  countryCode?: string | null;
+  locationCodes?: string[] | null;
+  region?: string | null;
+  tariffType?: string | null;
+  isPremium?: boolean | null;
+  dataGb?: number | null;
+  validityDays?: number | null;
+  periodDays?: number | null;
+  name?: string | null;
+}
+
+const PER_DAY_SUFFIXES: Record<string, string> = {
+  de: '/Tag',
+  en: '/day',
+  fr: '/jour',
+  es: '/día',
+  it: '/giorno',
+  nl: '/dag',
+  pl: '/dzień',
+  pt: '/dia',
+  tr: '/gün',
+  sv: '/dag',
+  da: '/dag',
+  fi: '/päivä',
+  cs: '/den',
+  ro: '/zi',
+  hu: '/nap',
+};
+
+function extractGbFromName(name: string): number | null {
+  const mbMatch = name.match(/(\d+)\s*MB/i);
+  if (mbMatch) return parseInt(mbMatch[1], 10) / 1024;
+  const gbMatch = name.match(/(\d+(?:\.\d+)?)\s*GB/i);
+  if (gbMatch) return parseFloat(gbMatch[1]);
+  return null;
+}
+
+/**
+ * Constructs the canonical, fully localized checkout tariff name including
+ * localized country, English proper tariff type (Unlimited Pro / Unlimited Eco / Travel Standard / Travel Premium),
+ * localized data volume, and localized validity duration.
+ *
+ * Examples:
+ *   de: "Deutschland · Unlimited Pro · 1 GB/Tag · 28 Tage"
+ *   en: "Germany · Unlimited Pro · 1 GB/day · 28 days"
+ *   cs: "Německo · Unlimited Pro · 1 GB/den · 28 dní"
+ *   tr: "Almanya · Unlimited Pro · 1 GB/gün · 28 gün"
+ *   de: "Deutschland · Travel Standard · 5 GB · 30 Tage"
+ */
+export function formatFullCheckoutTariffName(
+  tariff: CheckoutTariffInput,
+  locale = 'de'
+): string {
+  if (!tariff) return '';
+
+  // 1. Resolve country label
+  const countryLabel = displayCountryName(
+    {
+      country_name: tariff.countryName ?? '',
+      country_code: tariff.countryCode ?? '',
+      location_codes: tariff.locationCodes ?? null,
+      region: tariff.region ?? null,
+    },
+    locale
+  );
+
+  // 2. Resolve tariff type (English proper noun)
+  let typeLabel = '';
+  const rawType = (tariff.tariffType ?? '').toLowerCase();
+  const rawName = (tariff.name ?? '').toLowerCase();
+  const isPrem = typeof tariff.isPremium === 'boolean'
+    ? tariff.isPremium
+    : isPremiumTariff({ name: tariff.name, tariff_type: tariff.tariffType });
+
+  if (rawType === 'unlimited_pro' || rawName.includes('unlimited pro')) {
+    typeLabel = 'Unlimited Pro';
+  } else if (rawType === 'unlimited_eco' || rawName.includes('unlimited eco')) {
+    typeLabel = 'Unlimited Eco';
+  } else if (rawType.startsWith('unlimited') || rawName.includes('/day') || rawName.includes('/tag') || tariff.dataGb === 0) {
+    typeLabel = rawName.includes('pro') ? 'Unlimited Pro' : 'Unlimited Eco';
+  } else if (isPrem || rawType === 'travel_premium') {
+    typeLabel = 'Travel Premium';
+  } else {
+    typeLabel = 'Travel Standard';
+  }
+
+  // 3. Resolve data volume
+  let volumeLabel = '';
+  const isUnlimited = typeLabel.startsWith('Unlimited');
+  const gb = tariff.dataGb ?? (tariff.name ? extractGbFromName(tariff.name) : null);
+  if (isUnlimited) {
+    const effectiveGb = gb && gb > 0 ? gb : 1;
+    const dayWord = PER_DAY_SUFFIXES[locale] || '/day';
+    volumeLabel = `${formatGb(effectiveGb)}${dayWord}`;
+  } else if (gb && gb > 0) {
+    volumeLabel = formatGb(gb);
+  }
+
+  // 4. Resolve validity / duration
+  const days = tariff.periodDays ?? tariff.validityDays ?? null;
+  const validityLabel = days && days > 0 ? formatDaysWithUnit(days, locale) : '';
+
+  // 5. Combine with middle dots
+  return [countryLabel, typeLabel, volumeLabel, validityLabel].filter(Boolean).join(' · ');
 }
 
 /**

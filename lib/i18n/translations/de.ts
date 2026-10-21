@@ -820,6 +820,13 @@ const de = {
   "login_error_invalid_credentials": "E-Mail oder Passwort ist falsch.",
   "btn_please_wait": "Bitte warten ({time})",
   "forgot_pw_success": "Wir haben dir einen Link zum Zurücksetzen deines Passworts gesendet, falls ein Konto mit dieser E-Mail-Adresse existiert.",
+  "cfg_standard_rate": "Regulärer Tagespreis",
+  "cfg_next_tier_hint": "Ab {days} Tagen {pct} Rabatt",
+  "cfg_next_tier_btn": "Auf {days} Tage wechseln →",
+  "cfg_max_tier_hint": "Maximaler Staffelrabatt ({pct}) aktiv",
+  "checkout_cancelled_filled_banner": "Zahlung abgebrochen. Dein Warenkorb ist noch da.",
+  "checkout_cancelled_empty_banner": "Zahlung abgebrochen.",
+  "btn_checkout_again": "Erneut zur Kasse",
 } as const;
 export default de;
 export type TranslationKeys = keyof typeof de;

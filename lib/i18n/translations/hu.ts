@@ -820,6 +820,13 @@ const hu = {
   "login_error_invalid_credentials": "Érvénytelen e-mail cím vagy jelszó.",
   "btn_please_wait": "Kérjük várjon ({time})",
   "forgot_pw_success": "Küldtünk egy linket a jelszó visszaállításához, ha létezik fiók ezzel az e-mail címmel.",
+  "cfg_standard_rate": "Normál napidíj",
+  "cfg_next_tier_hint": "{days} naptól {pct} kedvezmény",
+  "cfg_next_tier_btn": "Váltás {days} napra →",
+  "cfg_max_tier_hint": "Maximális sávos kedvezmény ({pct}) aktív",
+  "checkout_cancelled_filled_banner": "Fizetés megszakítva. A kosarad megmaradt.",
+  "checkout_cancelled_empty_banner": "Fizetés megszakítva.",
+  "btn_checkout_again": "Újra a pénztárhoz",
 } as const;
 export default hu;
 export type TranslationKeys = keyof typeof hu;

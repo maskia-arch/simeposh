@@ -341,7 +341,7 @@ export function Navbar() {
           {showSearch && destinations.length > 0 && !hideHeaderSearch && (
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 transition-colors ${
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
                 mobileSearchOpen ? 'bg-slate-100 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-brand-700'
               }`}
               aria-label={t('search_aria_label' as any) || 'Search'}

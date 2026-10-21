@@ -8,7 +8,7 @@ import { OpenChatButton } from '@/components/OpenChatButton';
 import { useCart } from '@/components/CartProvider';
 import { formatCurrencyEuro } from '@/lib/currency';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
-import { formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
+import { formatFullCheckoutTariffName, formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
 
 interface CoinOption {
   code: string; name: string; surchargePct: number; surchargeFixedEur: number; confirmations: number; minOrderEur?: number;
@@ -204,10 +204,18 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
 
     if (typeof window !== 'undefined') {
       try {
-        const tariffVal = cartItems.map((i) => {
-          const cLabel = displayCountryName({ country_name: i.countryName, country_code: i.countryCode } as any, locale);
-          return formatLocalizedTariffName(i.name, cLabel, i.countryName, locale);
-        }).filter(Boolean).join(', ');
+        const tariffVal = Array.from(new Set(cartItems.map((i) => {
+          return formatFullCheckoutTariffName({
+            countryName: i.countryName,
+            countryCode: i.countryCode,
+            locationCodes: i.locationCodes,
+            region: i.region,
+            tariffType: i.tariffType,
+            dataGb: i.dataGb,
+            validityDays: i.periodDays || i.validityDays,
+            name: i.name,
+          }, locale);
+        }))).filter(Boolean).join(', ');
         localStorage.setItem('esim_checkout_email', effectiveEmail);
         localStorage.setItem('esim_checkout_terms', 'true');
         localStorage.setItem('esim_checkout_amount', `${finalTotal.toFixed(2)} €`);
@@ -273,10 +281,18 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
 
     if (typeof window !== 'undefined') {
       try {
-        const tariffVal = cartItems.map((i) => {
-          const cLabel = displayCountryName({ country_name: i.countryName, country_code: i.countryCode } as any, locale);
-          return formatLocalizedTariffName(i.name, cLabel, i.countryName, locale);
-        }).filter(Boolean).join(', ');
+        const tariffVal = Array.from(new Set(cartItems.map((i) => {
+          return formatFullCheckoutTariffName({
+            countryName: i.countryName,
+            countryCode: i.countryCode,
+            locationCodes: i.locationCodes,
+            region: i.region,
+            tariffType: i.tariffType,
+            dataGb: i.dataGb,
+            validityDays: i.periodDays || i.validityDays,
+            name: i.name,
+          }, locale);
+        }))).filter(Boolean).join(', ');
         const validityVal = cartItems.map((i) => (i.periodDays || i.validityDays) ? formatDaysWithUnit(i.periodDays || i.validityDays, locale) : '').filter(Boolean).join(', ');
         const amountVal = `${finalTotal.toFixed(2)} €`;
         localStorage.setItem('esim_checkout_email', effectiveEmail);

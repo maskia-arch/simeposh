@@ -9,7 +9,7 @@ import { useCart } from '@/components/CartProvider';
 import { OpenChatButton } from '@/components/OpenChatButton';
 import { formatCurrencyEuro } from '@/lib/currency';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
-import { formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
+import { formatFullCheckoutTariffName, formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
 
 interface SessionState {
   id: string; coin: string; coinName: string; status: string;
@@ -346,15 +346,20 @@ export function CryptoCheckout({
   const displayTariff = (() => {
     let name = '';
     if (items.length > 0) {
-      name = items.map((i) => {
-        const cLabel = displayCountryName({ country_name: i.countryName, country_code: i.countryCode } as any, locale);
-        return formatLocalizedTariffName(i.name, cLabel, i.countryName, locale);
-      }).filter(Boolean).join(', ');
+      name = Array.from(new Set(items.map((i) => {
+        return formatFullCheckoutTariffName({
+          countryName: i.countryName,
+          countryCode: i.countryCode,
+          locationCodes: i.locationCodes,
+          region: i.region,
+          tariffType: i.tariffType,
+          dataGb: i.dataGb,
+          validityDays: i.periodDays || i.validityDays,
+          name: i.name,
+        }, locale);
+      }))).filter(Boolean).join(', ');
     } else if (cachedTariff) {
       name = cachedTariff;
-    }
-    if (name) {
-      name = formatLocalizedTariffName(name, '', '', locale);
     }
     return name;
   })();
@@ -691,7 +696,7 @@ export function CryptoCheckout({
                 {s('plan_label')}
               </span>
               <span
-                className="text-xs font-bold text-slate-800 text-right truncate max-w-[200px]"
+                className="text-xs font-bold text-slate-800 text-right max-w-[280px] break-words leading-tight"
                 data-testid="skeleton-tariff-name"
                 id="skeleton-tariff-text"
               >
@@ -894,7 +899,7 @@ export function CryptoCheckout({
             {displayTariff && (
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-500">{s('plan_label')}</span>
-                <span className="font-bold text-slate-800 text-right truncate max-w-[220px]" data-testid="checkout-tariff-name">{displayTariff}</span>
+                <span className="font-bold text-slate-800 text-right max-w-[280px] break-words leading-tight" data-testid="checkout-tariff-name">{displayTariff}</span>
               </div>
             )}
             {displayValidity && (
