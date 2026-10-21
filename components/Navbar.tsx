@@ -40,7 +40,7 @@ function CartButton() {
   return (
     <button
       onClick={toggle}
-      className={`relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-all ${
+      className={`relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
         shouldBounce ? 'animate-bounce scale-120 text-brand-600' : ''
       }`}
       aria-label={t('cart_title') || 'Cart'}
@@ -259,7 +259,7 @@ export function Navbar() {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm supports-[not(backdrop-filter:blur(1px))]:bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
-        <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0">
+        <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
           <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
           <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
             PureSim
@@ -291,18 +291,18 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 text-sm font-medium lg:flex">
-          <Link href={`${prefix}/blog`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/blog`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             {t('nav_blog' as any) || 'Blog'}
           </Link>
           <Link
             href={`${prefix}/tariffs`}
             prefetch={false}
             data-testid="nav-tariffs-link"
-            className="relative inline-flex items-center min-h-[44px] py-2 px-1 text-slate-600 hover:text-brand-700 transition-colors after:absolute after:-inset-y-1 after:-inset-x-2 after:content-['']"
+            className="relative inline-flex items-center min-h-[44px] py-2 px-1 text-slate-600 hover:text-brand-700 transition-colors rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:-inset-y-1 after:-inset-x-2 after:content-['']"
           >
             {t('nav_tariffs')}
           </Link>
-          <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors">
+          <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             {t('nav_topup')}
           </Link>
           {user ? (
@@ -310,13 +310,13 @@ export function Navbar() {
               <Link
                 href={`${prefix}/dashboard`}
                 prefetch={false}
-                className="btn-primary !h-12 !px-5"
+                className="btn-primary !h-12 !px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {t('nav_dashboard')}
               </Link>
               <button
                 onClick={handleLogout}
-                className="inline-flex h-12 items-center justify-center rounded-xl bg-slate-100 px-4 text-base font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-slate-100 px-4 text-base font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {t('nav_logout')}
               </button>
@@ -326,7 +326,7 @@ export function Navbar() {
               <Link
                 href={`${prefix}/login`}
                 prefetch={false}
-                className="btn-primary !h-12 !px-5"
+                className="btn-primary !h-12 !px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {t('nav_login')}
               </Link>

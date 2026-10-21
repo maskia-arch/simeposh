@@ -122,6 +122,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const periodDays = opts?.periodDays ?? null;
     const topUpIccid = opts?.topUpIccid?.trim() || null;
     const key = `${tariff.id}__${periodDays ?? ''}__${topUpIccid ?? ''}`;
+    setIsOpen(true);
+    const countryLabel = displayCountryName(tariff, locale);
+    const localizedName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
+
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.key === key);
       if (idx >= 0) {
@@ -133,7 +137,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         key,
         tariffId:      tariff.id,
         packageCode:   tariff.package_code,
-        name:          tariff.name,
+        name:          localizedName,
         countryName:   tariff.country_name,
         countryCode:   tariff.country_code,
         flagEmoji:     tariff.flag_emoji,
@@ -150,12 +154,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, item];
     });
 
-    setIsOpen(true);
-    const countryLabel = displayCountryName(tariff, locale);
-    const localizedName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
     setToast({
       show: true,
-      message: `${localizedName} (${formatGb(tariff.data_gb)})`,
+      message: localizedName,
     });
   }, [locale]);
 

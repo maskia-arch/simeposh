@@ -18,6 +18,7 @@ import { getEsimOverviewUrl } from '@/lib/url';
 import { generateFeedbackToken } from '@/lib/feedback/token';
 import { getTopUpEligibility } from '@/lib/topup';
 import { countryCodeToSlug } from '@/lib/destinations-shared';
+import { isUserAdmin } from '@/lib/auth/isAdmin';
 
 export const metadata: Metadata = { title: 'Mein Bereich' };
 export const dynamic = 'force-dynamic';
@@ -173,8 +174,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }) as any;
 
   // Admin detection & check for Unlimited tariffs missing discount rules or with empty tiers
-  const adminEmail = (process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com').toLowerCase();
-  const isAdmin = user.email?.toLowerCase() === adminEmail || (user as any).app_metadata?.role === 'admin' || (user as any).user_metadata?.is_admin === true;
+  const isAdmin = isUserAdmin(user);
 
   let missingDiscountTariffs: Array<{ id: string; name: string; package_code: string; country_name: string; country_code: string; data_gb: number | null; discount_rule_code: string | null }> = [];
   let discountMinDaysSetting: string | null = null;

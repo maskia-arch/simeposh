@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
 
   const isStandardUserRoute =
     normalizedPath === '/' ||
-    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|topup|success)(\/|$)/i.test(normalizedPath) ||
+    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success)(\/|$)/i.test(normalizedPath) ||
     /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath) ||
     pathname.startsWith('/api/');
 
@@ -315,13 +315,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/auth/') ||
+    normalizedPath.startsWith('/auth/') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
     pathname.startsWith('/sitemap/') ||
     pathname === '/llms.txt' ||
     pathname.includes('.');
 
-  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|reset-password|topup|success)(\/|$)/i;
+  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success)(\/|$)/i;
 
   const isValidPageRoute =
     normalizedPath === '/' ||
@@ -455,6 +456,8 @@ export async function middleware(request: NextRequest) {
     normalizedPath === '/topup' ||
     normalizedPath === '/login' ||
     normalizedPath === '/register' ||
+    normalizedPath === '/forgot-password' ||
+    normalizedPath === '/reset-password' ||
     normalizedPath === '/reviews' ||
     normalizedPath === '/notfound' ||
     normalizedPath === '/404';
@@ -494,7 +497,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect logged-in users away from auth pages
-  if (user && (normalizedPath === '/login' || normalizedPath === '/register')) {
+  if (user && (normalizedPath === '/login' || normalizedPath === '/register' || normalizedPath === '/forgot-password' || normalizedPath === '/reset-password')) {
     return NextResponse.redirect(new URL(`${langPrefix}/dashboard`, request.url));
   }
 

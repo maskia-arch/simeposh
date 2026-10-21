@@ -13,12 +13,33 @@ type TariffLike = Pick<
   'country_name' | 'country_code' | 'location_codes' | 'region'
 >;
 
+/** Explicit overrides for regions whose full names vary between Node SSR and browser Intl (e.g. HK, MO). */
+const COUNTRY_NAME_OVERRIDES: Record<string, Record<string, string>> = {
+  HK: {
+    en: 'Hong Kong', de: 'Hongkong', fr: 'Hong Kong', es: 'Hong Kong', it: 'Hong Kong',
+    nl: 'Hongkong', pl: 'Hongkong', pt: 'Hong Kong', tr: 'Hong Kong', sv: 'Hongkong',
+    da: 'Hongkong', fi: 'Hongkong', cs: 'Hongkong', ro: 'Hong Kong', hu: 'Hongkong'
+  },
+  MO: {
+    en: 'Macau', de: 'Macau', fr: 'Macao', es: 'Macao', it: 'Macao',
+    nl: 'Macau', pl: 'Makau', pt: 'Macau', tr: 'Makao', sv: 'Macao',
+    da: 'Macao', fi: 'Macao', cs: 'Macao', ro: 'Macao', hu: 'Makaó'
+  },
+  TW: {
+    en: 'Taiwan', de: 'Taiwan', fr: 'Taïwan', es: 'Taiwán', it: 'Taiwan',
+    nl: 'Taiwan', pl: 'Tajwan', pt: 'Taiwan', tr: 'Tayvan', sv: 'Taiwan',
+    da: 'Taiwan', fi: 'Taiwan', cs: 'Tchaj-wan', ro: 'Taiwan', hu: 'Tajvan'
+  }
+};
+
 /** Full localised country name from an ISO alpha-2 code. */
 export function isoName(code: string, locale = 'en'): string {
   if (!code || code.length !== 2) return code;
   const upper = code.toUpperCase();
+  const override = COUNTRY_NAME_OVERRIDES[upper]?.[locale] ?? COUNTRY_NAME_OVERRIDES[upper]?.en;
+  if (override) return override;
   try {
-    return new Intl.DisplayNames([locale], { type: 'region' }).of(upper) ?? code;
+    return new Intl.DisplayNames([locale], { type: 'region', style: 'short' }).of(upper) ?? code;
   } catch {
     return code;
   }

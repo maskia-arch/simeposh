@@ -15,11 +15,9 @@ COPY . .
 # Declare build arguments for NEXT_PUBLIC_ variables
 # These will be baked into the client bundle at build-time.
 ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_ADMIN_EMAIL
 
 # Set them as env variables for the build process
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV NEXT_PUBLIC_ADMIN_EMAIL=$NEXT_PUBLIC_ADMIN_EMAIL
 
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1

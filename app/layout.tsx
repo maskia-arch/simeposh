@@ -38,6 +38,9 @@ export async function generateMetadata(): Promise<Metadata> {
         index: false,
         follow: false,
       },
+      alternates: {
+        canonical: null,
+      },
     };
   }
 
@@ -61,14 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title:  'PureSim',
       description: dict.meta_home_desc || 'eSIMs für über 150 Länder – sofort verfügbar.',
     },
-    alternates: {
-      canonical: BASE_URL,
-      languages: {
-        de: BASE_URL,
-        en: `${BASE_URL}/en`,
-        'x-default': `${BASE_URL}/en`,
-      },
-    },
+
   };
 }
 

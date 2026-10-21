@@ -318,7 +318,7 @@ export function TariffsPageClient({
               <span className={`block text-xs leading-tight ${
                 activeCategory === 'unlimited_eco' ? 'text-emerald-100' : 'text-slate-600'
               }`}>
-                Drosselung
+                {t('cat_unlimited_eco_speed' as any) || (locale === 'de' ? '512 kbps Drosselung' : '512 kbps throttling')}
               </span>
             </div>
           </div>
@@ -352,7 +352,7 @@ export function TariffsPageClient({
               <span className={`block text-xs leading-tight ${
                 activeCategory === 'unlimited_pro' ? 'text-violet-100' : 'text-slate-600'
               }`}>
-                ≥ 1 Mbps Drosselung
+                {t('cat_unlimited_pro_speed' as any) || (locale === 'de' ? '≥ 1 Mbps Drosselung' : '≥ 1 Mbps throttling')}
               </span>
             </div>
           </div>
@@ -418,8 +418,8 @@ export function TariffsPageClient({
 
           {/* ── Sub-Filter: Standard vs Premium Tiers ── */}
           <div className="mb-6 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
-              Filter:
+            <span className="text-xs font-bold tracking-wider text-slate-400 mr-1">
+              {t('filter_label' as any) || (locale === 'tr' ? 'Filtre:' : 'Filter:')}
             </span>
             <button
               onClick={() => {

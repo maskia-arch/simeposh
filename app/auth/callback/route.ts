@@ -12,7 +12,8 @@ export async function GET(request: Request) {
 
   const token = searchParams.get('token') || searchParams.get('code');
   const type = searchParams.get('type');
-  const locale = searchParams.get('locale') || 'de';
+  const headerLocale = request.headers.get('x-locale');
+  const locale = searchParams.get('locale') || headerLocale || 'de';
   const prefix = locale === 'de' ? '' : `/${locale}`;
 
   if (!token) {

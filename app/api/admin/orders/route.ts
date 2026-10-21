@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isUserAdmin } from '@/lib/auth/isAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !isUserAdmin(user)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const db = createServiceClient();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');

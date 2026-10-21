@@ -25,7 +25,7 @@ export function CurrencySwitcher() {
         onClick={() => setOpen((o) => !o)}
         aria-label={t('cur_title')}
         title={t('cur_title')}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-colors"
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-brand-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         {/* Banknote icon */}
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>

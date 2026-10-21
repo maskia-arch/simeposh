@@ -9,6 +9,7 @@ import { useCart } from '@/components/CartProvider';
 import { OpenChatButton } from '@/components/OpenChatButton';
 import { formatCurrencyEuro } from '@/lib/currency';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
 
 interface SessionState {
   id: string; coin: string; coinName: string; status: string;
@@ -342,9 +343,23 @@ export function CryptoCheckout({
     }
   }, []);
 
-  const displayTariff = (items.length > 0 ? items.map((i) => i.name).join(', ') : '') || cachedTariff;
-  const displayValidity = (items.length > 0 && items.some((i) => i.validityDays)
-    ? items.map((i) => formatDaysWithUnit(i.validityDays, locale)).filter(Boolean).join(', ')
+  const displayTariff = (() => {
+    let name = '';
+    if (items.length > 0) {
+      name = items.map((i) => {
+        const cLabel = displayCountryName({ country_name: i.countryName, country_code: i.countryCode } as any, locale);
+        return formatLocalizedTariffName(i.name, cLabel, i.countryName, locale);
+      }).filter(Boolean).join(', ');
+    } else if (cachedTariff) {
+      name = cachedTariff;
+    }
+    if (name) {
+      name = formatLocalizedTariffName(name, '', '', locale);
+    }
+    return name;
+  })();
+  const displayValidity = (items.length > 0 && items.some((i) => i.periodDays || i.validityDays)
+    ? items.map((i) => formatDaysWithUnit(i.periodDays || i.validityDays, locale)).filter(Boolean).join(', ')
     : '') || cachedValidity;
   const rawDisplayAmount = cachedAmount || (total > 0 ? `${total.toFixed(2)} €` : '');
   const displayAmount = (() => {

@@ -30,11 +30,8 @@ export function getAdminDelaySeconds(attemptNumber: number): number {
   return 900; // 15 mins
 }
 
-export function isSpecialAdminAccount(email: string): boolean {
-  const norm = (email || '').trim().toLowerCase();
-  const configured = (process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com').toLowerCase();
-  return norm === configured;
-}
+import { isSpecialAdminAccount, getAdminEmail } from './isAdmin';
+export { isSpecialAdminAccount };
 
 export interface RateLimitCheckResult {
   allowed: boolean;
@@ -112,7 +109,7 @@ export async function recordFailedAttempt(
       try {
         await sendTicketAdminAlertEmail({
           ticketNumber: 'SECURITY-ALERT',
-          customerEmail: opts.email || 'kaozpicks@gmail.com',
+          customerEmail: opts.email || getAdminEmail() || 'admin',
           customerName: 'Marcel / Admin Security System',
           subject: `⚠️ Sicherheitswarnung: Mehr als 10 fehlgeschlagene Admin-Loginversuche`,
           description: `Es wurden innerhalb einer Stunde ${count} fehlerhafte Login-Versuche auf das Admin-Konto (${opts.email}) von IP ${opts.ip} festgestellt. Die IP ist vorübergehend gesperrt.`,

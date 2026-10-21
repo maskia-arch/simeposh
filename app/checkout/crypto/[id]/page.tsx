@@ -138,15 +138,17 @@ export default async function CryptoCheckoutPage({
         .select('period_num, tariffs(name, country_name, validity_days)')
         .in('id', session.order_ids);
       if (orders && orders.length > 0) {
-        const firstOrder = orders[0] as any;
-        const valDays = firstOrder?.period_num ?? firstOrder?.tariffs?.validity_days;
-        if (valDays) {
-          initialValidity = formatDaysWithUnit(valDays, sessLocale);
-        }
-        if (firstOrder?.tariffs?.name) {
-          const cName = firstOrder.tariffs.country_name || '';
+        const names = orders.map((o: any) => {
+          const cName = o?.tariffs?.country_name || '';
           const cLabel = displayCountryName({ country_name: cName } as any, sessLocale);
-          initialTariff = formatLocalizedTariffName(firstOrder.tariffs.name, cLabel, cName, sessLocale);
+          return formatLocalizedTariffName(o?.tariffs?.name, cLabel, cName, sessLocale);
+        }).filter(Boolean);
+        if (names.length > 0) {
+          initialTariff = Array.from(new Set(names)).join(', ');
+        }
+        const valDays = orders.map((o: any) => o?.period_num ?? o?.tariffs?.validity_days).filter(Boolean);
+        if (valDays.length > 0) {
+          initialValidity = Array.from(new Set(valDays.map((d: number) => formatDaysWithUnit(d, sessLocale)))).join(', ');
         }
       }
     }

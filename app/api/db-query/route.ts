@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyJwt } from '@/lib/auth/jwt';
+import { createClient } from '@/lib/supabase/server';
 import { PostgresQueryBuilder } from '@/lib/supabase/postgresClient';
 import { getClientIp } from '@/lib/auth/rateLimit';
 
@@ -59,7 +58,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    let { query: queryName, params, table, selectFields } = body;
+    let { query: queryName, queryName: altQueryName, params, table, selectFields } = body;
+    queryName = queryName || altQueryName;
 
     // Backward compatibility mapper: If callers invoke table/selectFields, map to whitelisted named query
     if (!queryName && table) {
@@ -83,23 +83,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Disallowed or unknown query' }, { status: 400 });
     }
 
-    // Authenticate user via JWT session cookie
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-    const user = token ? await verifyJwt(token) : null;
+    // Authenticate user strictly via server-side session
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Strict security check for user-specific queries
+    const isUserQuery = queryName === 'getUserCashAccount' || queryName === 'getUserOrders' || queryName === 'getUserTickets';
+    if (isUserQuery) {
+      if (!user || !user.id || !user.email) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      // Reject any attempt by a client to specify another user's ID, email, or order ID in params
+      if (params && typeof params === 'object') {
+        const foreignUserId = params.userId || params.user_id;
+        if (foreignUserId && String(foreignUserId).trim() !== String(user.id)) {
+          return NextResponse.json({ error: 'Forbidden parameter mismatch' }, { status: 400 });
+        }
+        const foreignEmail = params.email || params.customer_email;
+        if (foreignEmail && String(foreignEmail).trim().toLowerCase() !== String(user.email).trim().toLowerCase()) {
+          return NextResponse.json({ error: 'Forbidden parameter mismatch' }, { status: 400 });
+        }
+        const foreignOrderId = params.orderId || params.order_id;
+        if (foreignOrderId && queryName !== 'getUserOrders') {
+          return NextResponse.json({ error: 'Forbidden parameter mismatch' }, { status: 400 });
+        }
+      }
+    }
 
     let resData: any = null;
 
     switch (queryName as AllowedQueryName) {
       // 1. User eSIM Cash account balance
       case 'getUserCashAccount': {
-        if (!user || !user.email) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
         const builder = new PostgresQueryBuilder('esim_cash_accounts');
         builder
           .select('balance_eur, total_spend_eur, extra_cashback_queue, referral_code')
-          .eq('email', user.email)
+          .eq('email', user!.email!.toLowerCase())
           .maybeSingle();
         const res = await builder;
         resData = res;
@@ -108,13 +128,10 @@ export async function POST(request: Request) {
 
       // 2. User Order History
       case 'getUserOrders': {
-        if (!user || !user.id) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
         const builder = new PostgresQueryBuilder('orders');
         builder
           .select('id, package_code, status, period_num, created_at, iccid, esim_tran_no')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
           .order('created_at', { ascending: false })
           .limit(50);
         const res = await builder;
@@ -124,13 +141,10 @@ export async function POST(request: Request) {
 
       // 3. User Support Tickets
       case 'getUserTickets': {
-        if (!user || !user.id) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
         const builder = new PostgresQueryBuilder('support_tickets');
         builder
           .select('id, ticket_number, subject, category, status, created_at, updated_at')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
           .order('created_at', { ascending: false })
           .limit(50);
         const res = await builder;

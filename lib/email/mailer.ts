@@ -578,7 +578,11 @@ export async function sendTicketCreatedEmail(data: TicketCreatedData): Promise<v
 }
 
 export async function sendTicketAdminAlertEmail(data: TicketCreatedData): Promise<void> {
-  const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kaozpicks@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
+  if (!adminEmail) {
+    console.warn('[Admin Alert Email] ADMIN_EMAIL environment variable not set, skipping admin alert email.');
+    return;
+  }
   await sendMailThroughTransporter({
     to:        adminEmail,
     subject:   `🚨 [Admin Alert] Neues Support-Ticket ${data.ticketNumber} von ${data.customerEmail}`,

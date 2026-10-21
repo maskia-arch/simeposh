@@ -102,13 +102,13 @@ export function DaySlider({
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+      <div className="flex items-center justify-between gap-2 min-h-[34px]">
+        <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 truncate">
           {label ?? (t('cfg_step3_duration' as any) || '3. Laufzeit (Tage)')}
         </label>
         
         {/* Interactive Direct Numeric Input */}
-        <div className="flex items-center gap-1 bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1 focus-within:ring-2 focus-within:ring-brand-400 focus-within:border-brand-500 transition-all shadow-2xs">
+        <div className="flex items-center gap-1 bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1 focus-within:ring-2 focus-within:ring-brand-400 focus-within:border-brand-500 transition-all shadow-2xs shrink-0">
           <input
             type="number"
             min={1}
@@ -824,7 +824,7 @@ export function UnlimitedConfigurator({
                   )}
 
                   {/* Better Deal Recommendation: strictly preserved height on mobile & desktop */}
-                  <div className="min-h-[92px] sm:min-h-[86px] flex items-center" role="status" aria-live="polite">
+                  <div className="min-h-[96px] lg:min-h-[102px] flex items-center justify-center" role="status" aria-live="polite">
                     {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
                       const diffDays = betterDealDays - days;
                       const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
@@ -867,7 +867,7 @@ export function UnlimitedConfigurator({
                         </button>
                       );
                     })() : (
-                      <div className="w-full h-full opacity-0 pointer-events-none select-none" aria-hidden="true" />
+                      <div className="w-full h-[96px] lg:h-[102px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
                     )}
                   </div>
                 </div>

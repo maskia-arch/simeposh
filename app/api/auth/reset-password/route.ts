@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Ungültiger oder fehlender Token.' }, { status: 400 });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return NextResponse.json({ error: 'Das Passwort muss mindestens 6 Zeichen lang sein.' }, { status: 400 });
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return NextResponse.json({ error: 'Das Passwort muss mindestens 8 Zeichen lang sein.' }, { status: 400 });
     }
 
     // Look up token

@@ -7,6 +7,7 @@ import { getTariffMinCustomerPrice } from '@/lib/pricing';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
+import { formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
@@ -103,7 +104,42 @@ export default async function TariffsPage({
     }
   }
 
-  const tariffs = await getTariffs();
+  const rawTariffs = await getTariffs();
+  const tariffs: PublicTariff[] = rawTariffs.map((t) => {
+    const countryLabel = displayCountryName(t, locale);
+    const localizedName = formatLocalizedTariffName(t.name, countryLabel, t.country_name, locale);
+    return {
+      id: t.id,
+      slug: t.slug,
+      package_code: t.package_code,
+      name: localizedName,
+      description: null,
+      country_code: t.country_code,
+      country_name: t.country_name,
+      region: t.region,
+      flag_emoji: t.flag_emoji,
+      location_codes: t.location_codes,
+      data_gb: t.data_gb,
+      validity_days: t.validity_days,
+      sale_price_eur: t.sale_price_eur,
+      customer_price_eur: t.customer_price_eur,
+      tariff_type: t.tariff_type,
+      speed_kbps: null,
+      label: t.label,
+      is_top_up_eligible: t.is_top_up_eligible,
+      discount_rule_code: null,
+      operators: (t.operators || []).slice(0, 4),
+      breakout_ip: t.breakout_ip,
+      best_network_type: t.best_network_type,
+      is_premium: t.is_premium,
+      is_non_hk_ip: t.is_non_hk_ip,
+      is_reloadable: t.is_reloadable,
+      reloadability_type: t.reloadability_type,
+      throttle_speed: t.throttle_speed,
+      network_speed: t.network_speed,
+      activates_on_arrival: t.activates_on_arrival,
+    };
+  });
   const initialCategory = params.category ?? (params.tab === 'unlimited' ? 'unlimited_eco' : params.tab);
   return (
     <TariffsPageClient

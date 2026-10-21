@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
           <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-center space-y-4 shadow-sm animate-fadeIn">
             <div className="text-2xl">✉️</div>
             <p className="text-xs text-emerald-900 font-medium leading-relaxed">
-              Wenn die Adresse gültig ist, haben wir dir einen Link zum Zurücksetzen deines Passworts geschickt. Bitte prüfe auch deinen Spam-Ordner.
+              {t('forgot_pw_success' as any) || (locale === 'de' ? 'Wenn die Adresse gültig ist, haben wir dir einen Link zum Zurücksetzen deines Passworts geschickt. Bitte prüfe auch deinen Spam-Ordner.' : 'If the address is valid, we have sent you a link to reset your password. Please also check your spam folder.')}
             </p>
             <Link
               href={`${prefix}/login`}

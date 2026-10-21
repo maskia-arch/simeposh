@@ -76,13 +76,23 @@ function LoginForm() {
         return;
       }
 
-      const msg = loginErr.message;
+      const msg = loginErr.message || '';
       if (msg === 'email_not_verified' || msg.includes('bestätigt') || msg.includes('not verified')) {
         setIsUnverified(true);
         setUnverifiedEmail(email);
         setError(t('login_unverified_title'));
+      } else if (
+        loginErr.status === 401 ||
+        loginErr.status === 400 ||
+        msg.toLowerCase().includes('ungültig') ||
+        msg.toLowerCase().includes('invalid') ||
+        msg.toLowerCase().includes('credentials') ||
+        msg.toLowerCase().includes('passwort') ||
+        msg.toLowerCase().includes('password')
+      ) {
+        setError(t('login_error_invalid_credentials' as any) || (locale === 'de' ? 'E-Mail oder Passwort ist falsch.' : 'Invalid email or password.'));
       } else {
-        setError(msg || 'Ungültige Anmeldedaten.');
+        setError(msg || (locale === 'de' ? 'E-Mail oder Passwort ist falsch.' : 'Invalid email or password.'));
       }
       setLoading(false);
       return;
@@ -211,7 +221,7 @@ function LoginForm() {
               <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">{t('login_password')}</label>
               <Link
                 href={`${prefix}/forgot-password`}
-                className="text-xs font-semibold text-brand-600 hover:text-brand-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                className="text-xs font-semibold text-brand-600 hover:text-brand-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded inline-flex items-center min-h-[44px]"
               >
                 {t('login_forgot_pw_link' as any) || 'Passwort vergessen?'}
               </Link>
@@ -266,7 +276,10 @@ function LoginForm() {
               <span>{t('login_loading')}</span>
             ) : isRateLimited ? (
               <span>
-                {formatDurationWithUnit(retrySeconds, locale)}
+                {(t('btn_please_wait' as any) || (locale === 'de' ? 'Bitte warten ({time})' : 'Please wait ({time})')).replace(
+                  '{time}',
+                  formatDurationWithUnit(retrySeconds, locale)
+                )}
               </span>
             ) : (
               <span>{t('login_submit')}</span>

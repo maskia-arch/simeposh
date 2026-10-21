@@ -50,8 +50,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Das Passwort muss mindestens 6 Zeichen lang sein.');
+    if (password.length < 8) {
+      setError(t('pw_rule_length' as any) || 'Das Passwort muss mindestens 8 Zeichen lang sein.');
       return;
     }
 

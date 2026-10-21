@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
+import { buildAlternates } from '@/lib/seo';
+import type { LocaleCode } from '@/lib/i18n/config';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
@@ -11,6 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
       index: false,
       follow: false,
     },
+    alternates: buildAlternates(locale as LocaleCode, { dePath: 'login', enPath: 'login' }),
   };
 }
 
