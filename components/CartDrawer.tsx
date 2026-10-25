@@ -66,17 +66,13 @@ export function CartDrawer() {
       setUser(data.user);
       if (data.user) {
         setEmail(data.user.email || '');
-        (supabase
-          .from('esim_cash_accounts')
-          .select('balance_eur, total_spend_eur, extra_cashback_queue')
-          .maybeSingle() as any)
-          .then(({ data: acc }: any) => {
-            if (acc) {
-              setBalance(Number(acc.balance_eur) || 0);
-              setTotalSpend(Number(acc.total_spend_eur) || 0);
-              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-            }
-          });
+        supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+          if (acc) {
+            setBalance(Number(acc.balance_eur) || 0);
+            setTotalSpend(Number(acc.total_spend_eur) || 0);
+            setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+          }
+        });
       }
     });
 
@@ -86,17 +82,13 @@ export function CartDrawer() {
         setUser(u);
         if (u) {
           setEmail(u.email || '');
-          (supabase
-            .from('esim_cash_accounts')
-            .select('balance_eur, total_spend_eur, extra_cashback_queue')
-            .maybeSingle() as any)
-            .then(({ data: acc }: any) => {
-              if (acc) {
-                setBalance(Number(acc.balance_eur) || 0);
-                setTotalSpend(Number(acc.total_spend_eur) || 0);
-                setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-              }
-            });
+          supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+            if (acc) {
+              setBalance(Number(acc.balance_eur) || 0);
+              setTotalSpend(Number(acc.total_spend_eur) || 0);
+              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+            }
+          });
         } else {
           setBalance(0);
           setTotalSpend(0);

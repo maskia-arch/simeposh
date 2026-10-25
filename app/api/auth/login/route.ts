@@ -90,11 +90,27 @@ export async function POST(request: Request) {
     // Successful login: reset rate limit keys
     await resetRateLimitKeys([accountKey]);
 
+    // Insert active session record in user_sessions
+    const ua = request.headers.get('user-agent') || 'Unknown';
+    let sessionId: string | undefined;
+    try {
+      const sessRes = await query(
+        `INSERT INTO public.user_sessions (user_id, user_agent, ip_address, created_at, last_active_at)
+         VALUES ($1, $2, $3, NOW(), NOW())
+         RETURNING id`,
+        [userRow.id, ua, ip]
+      );
+      sessionId = sessRes.rows[0]?.id;
+    } catch (sErr) {
+      console.error('[Login] Failed to record user_session:', sErr);
+    }
+
     // Generate JWT token
     const token = await signJwt({
       id: userRow.id,
       email: userRow.email,
       fullName: userRow.full_name,
+      sessionId,
     });
 
     // Set secure HttpOnly session cookie

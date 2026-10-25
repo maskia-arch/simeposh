@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import { HeaderSearch } from '@/components/HeaderSearch';
 import type { Destination } from '@/components/HeroSearch';
 import { WrenchIcon, CoinsIcon } from '@/components/Icons';
+import { formatPercent } from '@/lib/i18n/plural';
 
 /** Globe (language) | divider | banknote (currency) – Airalo-style controls. */
 function LocaleCurrencyControls() {
@@ -438,7 +439,7 @@ export function Navbar() {
         <CoinsIcon size={16} />
         {user ? (
           <span>
-            {t('announcement_user' as any, { rate: cashbackRate ?? 5 })}
+            {t('announcement_user' as any, { rate: formatPercent(cashbackRate ?? 5, locale) })}
           </span>
         ) : (
           <span>

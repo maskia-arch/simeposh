@@ -512,6 +512,18 @@ export class PostgresAuthClient {
         return { data: { user: null }, error: { message: 'Invalid or expired session' } };
       }
 
+      if (decoded.sessionId) {
+        try {
+          const sessRes = await query(
+            'SELECT revoked_at FROM public.user_sessions WHERE id = $1',
+            [decoded.sessionId]
+          );
+          if (sessRes.rows[0]?.revoked_at) {
+            return { data: { user: null }, error: { message: 'Session revoked' } };
+          }
+        } catch (_) {}
+      }
+
       const user = {
         id: decoded.id,
         email: decoded.email,

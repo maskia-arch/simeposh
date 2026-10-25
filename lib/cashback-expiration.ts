@@ -12,6 +12,12 @@ export interface ExpirationInfo {
  * Guest/Unregistered: 90 days validity.
  * Registered User: 730 days validity (2 years).
  */
+const LOCALE_DATE_MAP: Record<string, string> = {
+  de: 'de-DE', en: 'en-US', fr: 'fr-FR', es: 'es-ES', it: 'it-IT',
+  nl: 'nl-NL', pl: 'pl-PL', pt: 'pt-PT', tr: 'tr-TR', sv: 'sv-SE',
+  da: 'da-DK', fi: 'fi-FI', cs: 'cs-CZ', ro: 'ro-RO', hu: 'hu-HU',
+};
+
 export function getAccountExpirationInfo(account: {
   user_id?: string | null;
   updated_at?: string | null;
@@ -31,8 +37,9 @@ export function getAccountExpirationInfo(account: {
   const isExpired = diffMs <= 0;
 
   const normLoc = locale.toLowerCase().slice(0, 2);
-  const expiryDateFormatted = expiryDate.toLocaleDateString(normLoc === 'de' ? 'de-DE' : 'en-US', {
-    day: '2-digit',
+  const dateTag = LOCALE_DATE_MAP[normLoc] || 'de-DE';
+  const expiryDateFormatted = expiryDate.toLocaleDateString(dateTag, {
+    day: 'numeric',
     month: 'long',
     year: 'numeric',
   });

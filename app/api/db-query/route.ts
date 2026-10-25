@@ -23,28 +23,74 @@ function checkDbQueryRateLimit(ip: string): { allowed: boolean; retryAfter?: num
 
 // Periodic cleanup of stale rate-limit entries
 if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
+  const timer = setInterval(() => {
     const now = Date.now();
     ipDbQueryMap.forEach((v, k) => {
       if (now > v.resetAt) ipDbQueryMap.delete(k);
     });
   }, 60 * 1000);
+  if (timer.unref) timer.unref();
 }
 
 // ── Whitelisted Named Queries ──
-// Strictly maps named queries to predefined queries, tables, and fields.
-// NO free table, field, or filter names allowed from browser clients!
+// Strictly maps named queries to server-side predefined queries, tables, and fields.
+// NO free table, column, filter, or join names allowed from browser clients!
 const ALLOWED_QUERIES = [
-  'getUserCashAccount',
   'getUserOrders',
+  'userOrders',
+  'getUserCashAccount',
+  'userCashAccount',
   'getUserTickets',
-  'getPublicTariffs',
-  'getTariffsByCountry',
-  'getPostBySlug',
-  'getCryptoCoins',
+  'userTickets',
+  'getUserProfile',
+  'userProfile',
+  'getUserSessions',
+  'userSessions',
+  'getUserEsims',
+  'userEsims',
 ] as const;
 
 type AllowedQueryName = typeof ALLOWED_QUERIES[number];
+
+// Forbidden keys that must NEVER be leaked in output payloads
+const FORBIDDEN_KEYS = new Set([
+  'ek_price',
+  'ek_price_usd',
+  'payRatio',
+  'pay_ratio',
+  'raw_data',
+  'fupPolicy',
+  'fup_policy',
+  'is_admin',
+  'kaozpicks',
+  'USD',
+  'usd',
+  'cost_price_usd',
+  'retailPrice',
+  'retail_price',
+]);
+
+function sanitizeResponsePayload<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeResponsePayload) as unknown as T;
+  }
+  if (typeof obj === 'object') {
+    const clean: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (FORBIDDEN_KEYS.has(key)) {
+        continue;
+      }
+      clean[key] = sanitizeResponsePayload(value);
+    }
+    return clean;
+  }
+  return obj;
+}
+
+export async function GET() {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+}
 
 export async function POST(request: Request) {
   try {
@@ -58,137 +104,137 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    let { query: queryName, queryName: altQueryName, params, table, selectFields } = body;
-    queryName = queryName || altQueryName;
 
-    // Backward compatibility mapper: If callers invoke table/selectFields, map to whitelisted named query
-    if (!queryName && table) {
-      if (table === 'esim_cash_accounts') {
-        queryName = 'getUserCashAccount';
-      } else if (table === 'orders') {
-        queryName = 'getUserOrders';
-      } else if (table === 'support_tickets') {
-        queryName = 'getUserTickets';
-      } else if (table === 'tariffs') {
-        queryName = 'getPublicTariffs';
-      } else if (table === 'crypto_coins') {
-        queryName = 'getCryptoCoins';
-      } else {
-        // Any unapproved free table access is strictly blocked
-        return NextResponse.json({ error: 'Disallowed or unknown query' }, { status: 400 });
-      }
+    // 1. Strict security check: reject requests containing client-specified tables, columns, or filters
+    if (
+      body.table !== undefined ||
+      body.select !== undefined ||
+      body.selectFields !== undefined ||
+      body.columns !== undefined ||
+      body.filter !== undefined ||
+      body.filters !== undefined
+    ) {
+      return NextResponse.json({ error: 'Invalid query parameters' }, { status: 400 });
     }
 
+    // 2. Validate query name from server-side whitelist
+    const queryName = body.query || body.queryName;
     if (!queryName || !ALLOWED_QUERIES.includes(queryName as any)) {
-      return NextResponse.json({ error: 'Disallowed or unknown query' }, { status: 400 });
+      return NextResponse.json({ error: 'Unknown query' }, { status: 400 });
     }
 
-    // Authenticate user strictly via server-side session
+    // 3. Strict authentication via server-side session
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    let { data: { user } } = await supabase.auth.getUser();
 
-    // Strict security check for user-specific queries
-    const isUserQuery = queryName === 'getUserCashAccount' || queryName === 'getUserOrders' || queryName === 'getUserTickets';
-    if (isUserQuery) {
-      if (!user || !user.id || !user.email) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      // Reject any attempt by a client to specify another user's ID, email, or order ID in params
-      if (params && typeof params === 'object') {
-        const foreignUserId = params.userId || params.user_id;
-        if (foreignUserId && String(foreignUserId).trim() !== String(user.id)) {
-          return NextResponse.json({ error: 'Forbidden parameter mismatch' }, { status: 400 });
-        }
-        const foreignEmail = params.email || params.customer_email;
-        if (foreignEmail && String(foreignEmail).trim().toLowerCase() !== String(user.email).trim().toLowerCase()) {
-          return NextResponse.json({ error: 'Forbidden parameter mismatch' }, { status: 400 });
-        }
-        const foreignOrderId = params.orderId || params.order_id;
-        if (foreignOrderId && queryName !== 'getUserOrders') {
-          return NextResponse.json({ error: 'Forbidden parameter mismatch' }, { status: 400 });
+    if (!user) {
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const match = cookieHeader.match(/(^|;)\s*session_token\s*=\s*([^;]+)/);
+        if (match) {
+          const { verifyJwt } = await import('@/lib/auth/jwt');
+          const decoded = await verifyJwt(match[2]);
+          if (decoded && decoded.id && decoded.email) {
+            user = {
+              id: decoded.id,
+              email: decoded.email,
+              user_metadata: { full_name: decoded.fullName },
+              app_metadata: {},
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+              role: 'authenticated',
+            };
+          }
         }
       }
     }
+
+    if (!user || !user.id || !user.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Any client-provided user_id, userId, or email is strictly IGNORED.
+    // The query MUST bind ONLY to the session user.
+    const sessionUserId = user.id;
+    const sessionUserEmail = user.email.trim().toLowerCase();
 
     let resData: any = null;
 
     switch (queryName as AllowedQueryName) {
-      // 1. User eSIM Cash account balance
-      case 'getUserCashAccount': {
-        const builder = new PostgresQueryBuilder('esim_cash_accounts');
+      // 1. User Order History
+      case 'getUserOrders':
+      case 'userOrders': {
+        const builder = new PostgresQueryBuilder('orders');
         builder
-          .select('balance_eur, total_spend_eur, extra_cashback_queue, referral_code')
-          .eq('email', user!.email!.toLowerCase())
-          .maybeSingle();
-        const res = await builder;
-        resData = res;
+          .select('id, status, period_num, created_at, iccid, amount_eur, order_type, esim_status, tariffs(id, slug, name, country_name, country_code, data_gb, validity_days, flag_emoji, tariff_type)')
+          .eq('user_id', sessionUserId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        resData = await builder;
         break;
       }
 
-      // 2. User Order History
-      case 'getUserOrders': {
-        const builder = new PostgresQueryBuilder('orders');
+      // 2. User eSIM Cash account balance
+      case 'getUserCashAccount':
+      case 'userCashAccount': {
+        const builder = new PostgresQueryBuilder('esim_cash_accounts');
         builder
-          .select('id, package_code, status, period_num, created_at, iccid, esim_tran_no')
-          .eq('user_id', user!.id)
-          .order('created_at', { ascending: false })
-          .limit(50);
-        const res = await builder;
-        resData = res;
+          .select('balance_eur, total_spend_eur, extra_cashback_queue, affiliate_code')
+          .eq('email', sessionUserEmail)
+          .maybeSingle();
+        resData = await builder;
         break;
       }
 
       // 3. User Support Tickets
-      case 'getUserTickets': {
+      case 'getUserTickets':
+      case 'userTickets': {
         const builder = new PostgresQueryBuilder('support_tickets');
         builder
           .select('id, ticket_number, subject, category, status, created_at, updated_at')
-          .eq('user_id', user!.id)
+          .eq('customer_email', sessionUserEmail)
+          .order('updated_at', { ascending: false })
+          .limit(50);
+        resData = await builder;
+        break;
+      }
+
+      // 4. User Profile
+      case 'getUserProfile':
+      case 'userProfile': {
+        const builder = new PostgresQueryBuilder('users');
+        builder
+          .select('full_name, phone, billing_address, two_factor_enabled, is_verified')
+          .eq('id', sessionUserId)
+          .maybeSingle();
+        resData = await builder;
+        break;
+      }
+
+      // 5. User Active Sessions
+      case 'getUserSessions':
+      case 'userSessions': {
+        const builder = new PostgresQueryBuilder('user_sessions');
+        builder
+          .select('id, user_agent, ip_address, created_at, last_active_at, revoked_at')
+          .eq('user_id', sessionUserId)
+          .is('revoked_at', null)
+          .order('last_active_at', { ascending: false });
+        resData = await builder;
+        break;
+      }
+
+      // 6. User Active eSIMs (for Top-Up selection)
+      case 'getUserEsims':
+      case 'userEsims': {
+        const builder = new PostgresQueryBuilder('orders');
+        builder
+          .select('id, iccid, status, period_num, tariffs(id, name, country_name, country_code, flag_emoji)')
+          .eq('user_id', sessionUserId)
+          .eq('status', 'completed')
           .order('created_at', { ascending: false })
           .limit(50);
-        const res = await builder;
-        resData = res;
-        break;
-      }
-
-      // 4. Public Active Tariffs (sanitized, zero secret margins / raw_data)
-      case 'getPublicTariffs': {
-        const builder = new PostgresQueryBuilder('tariffs');
-        builder
-          .select('id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code')
-          .eq('is_active', true)
-          .limit(100);
-        const res = await builder;
-        resData = res;
-        break;
-      }
-
-      // 5. Public Tariffs by Country
-      case 'getTariffsByCountry': {
-        const countryCode = String(params?.countryCode || '').trim().toUpperCase();
-        if (!countryCode || countryCode.length !== 2) {
-          return NextResponse.json({ error: 'Invalid countryCode parameter' }, { status: 400 });
-        }
-        const builder = new PostgresQueryBuilder('tariffs');
-        builder
-          .select('id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code')
-          .eq('country_code', countryCode)
-          .eq('is_active', true)
-          .limit(100);
-        const res = await builder;
-        resData = res;
-        break;
-      }
-
-      // 6. Public Crypto Coins list
-      case 'getCryptoCoins': {
-        const builder = new PostgresQueryBuilder('crypto_coins');
-        builder
-          .select('code, name, is_active, surcharge_pct, surcharge_fixed_eur, min_order_eur')
-          .eq('is_active', true);
-        const res = await builder;
-        resData = res;
+        resData = await builder;
         break;
       }
 
@@ -196,8 +242,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Query not supported' }, { status: 400 });
     }
 
-    const response = NextResponse.json(resData);
-    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300');
+    // 4. Strict response sanitization: remove all confidential pricing / internal flags
+    const sanitized = sanitizeResponsePayload(resData);
+
+    const response = NextResponse.json(sanitized);
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
     return response;
   } catch (err: any) {
     console.error('[db-query route] Query error:', err);

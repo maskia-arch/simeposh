@@ -120,13 +120,23 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
   }
 
   const allTariffs = await getCountryTariffs(destination.code);
-  const unlimitedTariffs = allTariffs.filter(
+  const rawUnlimitedTariffs = allTariffs.filter(
     (t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0
   );
 
-  if (unlimitedTariffs.length === 0) {
+  if (rawUnlimitedTariffs.length === 0) {
     notFound();
   }
+
+  // Sanitize package names so raw provider strings like "Germany 1GB/Day" are displayed cleanly as "Unlimited Eco" or "Unlimited Pro"
+  const unlimitedTariffs = rawUnlimitedTariffs.map((t) => {
+    const isEco = t.tariff_type === 'unlimited_eco' || (t.data_gb !== null && t.data_gb <= 1);
+    const cleanName = isEco ? 'Unlimited Eco' : 'Unlimited Pro';
+    return {
+      ...t,
+      name: cleanName,
+    };
+  });
 
   const countryLabel = displayCountryName(
     { country_code: destination.code, country_name: destination.name, location_codes: null, region: null },

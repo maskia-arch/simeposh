@@ -45,6 +45,20 @@ interface OrderInfo {
   tariff: PublicTariff;
 }
 
+interface UserEsim {
+  id: string;
+  iccid: string;
+  status: string;
+  period_num?: number | null;
+  tariffs?: {
+    id: string;
+    name: string;
+    country_name: string;
+    country_code?: string | null;
+    flag_emoji?: string | null;
+  } | null;
+}
+
 export default function TopUpPage() {
   const { t, locale } = useTranslation();
   const prefix = locale === 'de' ? '' : `/${locale}`;
@@ -61,6 +75,11 @@ export default function TopUpPage() {
   // Unlimited Configurator state
   const [unlimitedDays, setUnlimitedDays]     = useState(7);
   const [selectedPkgCode, setSelectedPkgCode] = useState<string | null>(null);
+
+  // User eSIMs quick selector state
+  const [userEsims, setUserEsims] = useState<UserEsim[]>([]);
+  const [selectedEsimId, setSelectedEsimId] = useState<string>('manual');
+  const [loadingUserEsims, setLoadingUserEsims] = useState<boolean>(true);
 
   const doSearch = useCallback(async (code: string) => {
     const value = code.trim();
@@ -118,13 +137,56 @@ export default function TopUpPage() {
     await doSearch(iccid);
   }
 
-  // Prefill the ICCID from the dashboard "Aufladen" link (?iccid=…) and auto-search.
+  // Fetch logged-in user's eSIMs and handle ?orderId= / ?iccid= prefill
   useEffect(() => {
-    const param = new URLSearchParams(window.location.search).get('iccid');
-    if (param) {
-      setIccid(param);
-      doSearch(param);
+    let isCancelled = false;
+    async function initTopup() {
+      const params = new URLSearchParams(window.location.search);
+      const paramOrderId = params.get('orderId');
+      const paramIccid = params.get('iccid');
+
+      try {
+        const res = await fetch('/api/db-query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: 'userEsims' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!isCancelled && Array.isArray(data) && data.length > 0) {
+            setUserEsims(data);
+
+            let matched: UserEsim | null = null;
+            if (paramOrderId) {
+              matched = data.find((e: UserEsim) => e.id === paramOrderId) ?? null;
+            }
+            if (!matched && paramIccid) {
+              matched = data.find((e: UserEsim) => e.iccid === paramIccid) ?? null;
+            }
+
+            if (matched) {
+              setSelectedEsimId(matched.id);
+              setIccid(matched.iccid);
+              doSearch(matched.iccid);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        // Guest or unauthenticated, ignore error
+      } finally {
+        if (!isCancelled) setLoadingUserEsims(false);
+      }
+
+      // Guest / manual fallback if parameter was present
+      if (paramIccid) {
+        setIccid(paramIccid);
+        doSearch(paramIccid);
+      }
     }
+
+    initTopup();
+    return () => { isCancelled = true; };
   }, [doSearch]);
 
   const originCountrySlug = useMemo(() => {
@@ -222,6 +284,84 @@ export default function TopUpPage() {
           {t('topup_page_sub')}
         </p>
       </div>
+
+      {/* Quick eSIM Selector for Logged-In Customers */}
+      {userEsims.length > 0 && (
+        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <h2 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <span>📱</span>
+            <span>{t('topup_select_title')}</span>
+          </h2>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {userEsims.map((e) => {
+              const isSelected = selectedEsimId === e.id;
+              const last4 = e.iccid ? e.iccid.slice(-4) : '••••';
+              const tariffName = e.tariffs?.name ?? 'eSIM';
+              const countryName = e.tariffs?.country_name ?? '';
+              const flag = e.tariffs?.flag_emoji ?? '🌐';
+
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedEsimId(e.id);
+                    setIccid(e.iccid);
+                    doSearch(e.iccid);
+                  }}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all min-h-[44px] cursor-pointer ${
+                    isSelected
+                      ? 'border-brand-600 bg-brand-50/70 ring-2 ring-brand-500 shadow-xs'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-2xl shrink-0" aria-hidden="true">{flag}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate">
+                      {countryName || tariffName}
+                    </p>
+                    <p className="text-xs text-slate-500 font-mono">
+                      {tariffName} · ...{last4}
+                    </p>
+                  </div>
+                  {isSelected && (
+                    <span className="text-brand-600 text-sm font-bold shrink-0">✓</span>
+                  )}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedEsimId('manual');
+                setIccid('');
+                setPackages([]);
+                setEligibility(null);
+                setOrderInfo(null);
+                setSearched(false);
+              }}
+              className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all min-h-[44px] cursor-pointer ${
+                selectedEsimId === 'manual'
+                  ? 'border-brand-600 bg-brand-50/70 ring-2 ring-brand-500 shadow-xs'
+                  : 'border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300'
+              }`}
+            >
+              <span className="text-xl shrink-0" aria-hidden="true">✏️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-800">
+                  {t('topup_select_manual')}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {t('topup_iccid_ph')}
+                </p>
+              </div>
+              {selectedEsimId === 'manual' && (
+                <span className="text-brand-600 text-sm font-bold shrink-0">✓</span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ICCID form */}
       <form onSubmit={handleSearch} className="mb-8">

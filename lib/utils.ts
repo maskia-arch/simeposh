@@ -11,13 +11,36 @@ export function isUuid(str: unknown): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
 }
 
-export function formatEur(amount: number | string | null | undefined): string {
+const LOCALE_MAP: Record<string, string> = {
+  de: 'de-DE',
+  en: 'en-US',
+  fr: 'fr-FR',
+  es: 'es-ES',
+  it: 'it-IT',
+  nl: 'nl-NL',
+  pl: 'pl-PL',
+  pt: 'pt-PT',
+  tr: 'tr-TR',
+  sv: 'sv-SE',
+  da: 'da-DK',
+  fi: 'fi-FI',
+  cs: 'cs-CZ',
+  ro: 'ro-RO',
+  hu: 'hu-HU',
+};
+
+export function formatCurrencyEuro(amount: number | string | null | undefined, locale: string = 'de'): string {
   const val = typeof amount === 'number' ? amount : Number(amount || 0);
-  if (isNaN(val)) return '0,00\u00A0€';
-  return new Intl.NumberFormat('de-DE', {
-    style:    'currency',
+  const safeVal = isNaN(val) ? 0 : val;
+  const tag = LOCALE_MAP[locale.toLowerCase().slice(0, 2)] || 'de-DE';
+  return new Intl.NumberFormat(tag, {
+    style: 'currency',
     currency: 'EUR',
-  }).format(val);
+  }).format(safeVal);
+}
+
+export function formatEur(amount: number | string | null | undefined, locale: string = 'de'): string {
+  return formatCurrencyEuro(amount, locale);
 }
 
 export function formatGb(gb: number | string | null | undefined, unlimitedText = 'Unbegrenzt'): string {

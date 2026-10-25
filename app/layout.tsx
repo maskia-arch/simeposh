@@ -164,7 +164,7 @@ export default async function RootLayout({
             <CartProvider>
               <TicketProvider>
                 <Navbar />
-                <main id="main-content" className="flex-1 min-h-[calc(100svh-5.25rem)] outline-none" tabIndex={-1}>{children}</main>
+                <main id="main-content" className="flex-1 outline-none" tabIndex={-1}>{children}</main>
                 <Footer />
                 <CartDrawer />
                 <ChatWidgetLoader />

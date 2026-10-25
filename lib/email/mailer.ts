@@ -639,4 +639,71 @@ export async function sendUnderpaymentEmail(data: UnderpaymentData): Promise<voi
   });
 }
 
+const PWD_CHANGED_SUBJECTS: Record<string, string> = {
+  de: 'Dein PureSim-Passwort wurde geändert',
+  en: 'Your PureSim password has been changed',
+  fr: 'Votre mot de passe PureSim a été modifié',
+  es: 'Tu contraseña de PureSim ha sido modificada',
+  it: 'La tua password PureSim è stata modificata',
+  nl: 'Je PureSim-wachtwoord is gewijzigd',
+  pl: 'Twoje hasło do PureSim zostało zmienione',
+  pt: 'A sua palavra-passe da PureSim foi alterada',
+  tr: 'PureSim şifreniz değiştirildi',
+  sv: 'Ditt PureSim-lösenord har ändrats',
+  da: 'Din PureSim-adgangskode er blevet ændret',
+  fi: 'PureSim-salasanasi on vaihdettu',
+  cs: 'Vaše heslo k PureSim bylo změněno',
+  ro: 'Parola dvs. PureSim a fost modificată',
+  hu: 'A PureSim jelszava megváltozott',
+};
+
+export async function sendPasswordChangedEmail(data: {
+  to: string;
+  locale?: string;
+  userName?: string;
+}): Promise<void> {
+  const normLoc = normalizeEmailLocale(data.locale);
+  const subject = PWD_CHANGED_SUBJECTS[normLoc] || PWD_CHANGED_SUBJECTS.de;
+  const isDe = normLoc === 'de';
+
+  const greeting = data.userName ? `Hallo ${data.userName},` : (isDe ? 'Hallo,' : 'Hello,');
+  const mainText = isDe
+    ? 'Das Passwort für dein PureSim-Konto wurde soeben erfolgreich geändert. Aus Sicherheitsgründen wurden alle anderen aktiven Sitzungen und Geräte abgemeldet.'
+    : 'The password for your PureSim account has just been successfully changed. For security reasons, all other active sessions and devices have been logged out.';
+  const warningText = isDe
+    ? 'Falls du diese Änderung nicht selbst vorgenommen hast, kontaktiere bitte umgehend unseren Support, um dein Konto zu sichern.'
+    : 'If you did not make this change, please contact our support team immediately to secure your account.';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px;">
+  <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="font-size: 36px;">🔒</span>
+      <h2 style="color: #0f172a; margin: 12px 0 4px 0; font-size: 20px;">${subject}</h2>
+    </div>
+    <p style="color: #334155; font-size: 14px; line-height: 1.6;">${greeting}</p>
+    <p style="color: #334155; font-size: 14px; line-height: 1.6;">${mainText}</p>
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px; margin: 20px 0;">
+      <p style="color: #991b1b; font-size: 13px; line-height: 1.5; margin: 0;"><strong>⚠️ ${warningText}</strong></p>
+    </div>
+    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+    <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">PureSim.net – Global eSIM Shop</p>
+  </div>
+</body>
+</html>`;
+
+  const text = `${greeting}\n\n${mainText}\n\n${warningText}\n\nPureSim.net`;
+
+  await sendMailThroughTransporter({
+    to: data.to,
+    subject,
+    html,
+    text,
+    emailType: 'passwort_geandert',
+  });
+}
+
+
 

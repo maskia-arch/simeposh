@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { Price } from '@/components/Price';
 import { getAccountExpirationInfo } from '@/lib/cashback-expiration';
+import { formatPercent } from '@/lib/i18n/plural';
+import { formatCurrencyEuro } from '@/lib/utils';
 
 export interface EsimCashAccount {
   id: string;
@@ -143,20 +145,17 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
             </h3>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                {balance.toFixed(2)}
+                {formatCurrencyEuro(balance, locale)}
               </span>
-              <span className="text-xl font-bold text-slate-500">€</span>
             </div>
             
-            {(() => {
+            {balance > 0 && (() => {
               const expInfo = getAccountExpirationInfo(account, locale);
               return (
                 <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
                   <span>⏳</span>
                   <span>
-                    {expInfo.isRegistered
-                      ? `Gültigkeit: 730 Tage (verfällt am ${expInfo.expiryDateFormatted})`
-                      : `Gültigkeit: 90 Tage (verfällt am ${expInfo.expiryDateFormatted})`}
+                    {t('dash_validity_expires', { days: expInfo.validityDays, date: expInfo.expiryDateFormatted })}
                   </span>
                 </div>
               );
@@ -205,16 +204,16 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                 {t('cash_rank' as any) || 'Aktueller Status'}
               </h3>
               <span className={`inline-flex items-center rounded-full bg-gradient-to-r ${rankInfo.colorClass} px-3 py-1 text-xs font-extrabold shadow-sm tracking-wide`}>
-                {getRankBadgeLabel(rankInfo.rank)} ({rankInfo.rate}%)
+                {getRankBadgeLabel(rankInfo.rank)} ({formatPercent(rankInfo.rate, locale)})
               </span>
             </div>
 
             {/* Ranks list progress bar */}
-            <div className="mt-6">
-              <div className="flex justify-between text-xs text-slate-500 mb-2 font-medium">
-                <span>{totalSpend.toFixed(2)} € {t('dash_spent')}</span>
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-slate-500 mb-1.5 font-medium">
+                <span>{formatCurrencyEuro(totalSpend, locale)} {t('dash_spent')}</span>
                 {rankInfo.nextThreshold !== null ? (
-                  <span>{rankInfo.nextThreshold} €</span>
+                  <span>{formatCurrencyEuro(rankInfo.nextThreshold, locale)}</span>
                 ) : (
                   <span>{t('cash_max_tier' as any) || 'Maximum'}</span>
                 )}
@@ -228,12 +227,12 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
             </div>
           </div>
 
-          <div className="mt-6 text-xs text-slate-500 border-t border-slate-100 pt-4">
+          <div className="mt-4 text-xs text-slate-500 border-t border-slate-100 pt-3">
             {rankInfo.nextThreshold !== null ? (
               <p className="flex items-center gap-1.5 font-medium text-slate-700">
                 <span>🚀</span>
                 <span>
-                  {(t('cash_next_tier_desc' as any) || 'Noch {amount} € Umsatz bis zum {rank}-Rang').replace('{amount}', remainingSpend.toFixed(2)).replace('{rank}', getRankBadgeLabel(getRankInfo(rankInfo.nextThreshold).rank))}
+                  {(t('cash_next_tier_desc' as any) || 'Noch {amount} Umsatz bis zum {rank}-Rang').replace('{amount}', formatCurrencyEuro(remainingSpend, locale)).replace('{rank}', getRankBadgeLabel(getRankInfo(rankInfo.nextThreshold).rank))}
                 </span>
               </p>
             ) : (
@@ -253,10 +252,10 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { name: 'Bronze', spendNum: 0, rate: '5%', color: 'border-amber-200 bg-amber-50/20 text-amber-800' },
-            { name: 'Silver', spendNum: 100, rate: '6%', color: 'border-slate-200 bg-slate-50/20 text-slate-700' },
-            { name: 'Gold', spendNum: 500, rate: '8%', color: 'border-yellow-200 bg-yellow-50/20 text-yellow-800' },
-            { name: 'Platinum', spendNum: 1000, rate: '10%', color: 'border-indigo-200 bg-indigo-50/20 text-indigo-800' }
+            { name: 'Bronze', spendNum: 0, rateNum: 5, color: 'border-amber-200 bg-amber-50/20 text-amber-800' },
+            { name: 'Silver', spendNum: 100, rateNum: 6, color: 'border-slate-200 bg-slate-50/20 text-slate-700' },
+            { name: 'Gold', spendNum: 500, rateNum: 8, color: 'border-yellow-200 bg-yellow-50/20 text-yellow-800' },
+            { name: 'Platinum', spendNum: 1000, rateNum: 10, color: 'border-indigo-200 bg-indigo-50/20 text-indigo-800' }
           ].map((tier) => {
             const isCurrent = rankInfo.rank.toLowerCase() === tier.name.toLowerCase();
             return (
@@ -274,9 +273,9 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                 <p className="font-extrabold text-sm">{getRankBadgeLabel(tier.name)}</p>
                 <p className="text-[10px] opacity-75 mt-1">
                   {t('dest_from_price_prefix' as any) || 'ab'}{' '}
-                  <Price eur={tier.spendNum} className="inline font-semibold text-slate-700" />
+                  <span className="inline font-semibold text-slate-700">{formatCurrencyEuro(tier.spendNum, locale)}</span>
                 </p>
-                <p className="text-2xl font-black mt-2">{tier.rate}</p>
+                <p className="text-2xl font-black mt-2">{formatPercent(tier.rateNum, locale)}</p>
               </div>
             );
           })}
@@ -310,7 +309,7 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                     setIsEditing(true);
                     setUpdateError('');
                   }}
-                  className="text-xs font-bold text-brand-600 hover:text-brand-800 transition-colors flex items-center gap-1"
+                  className="min-h-[44px] px-3 py-2 text-xs font-bold text-brand-600 hover:text-brand-800 transition-colors flex items-center gap-1 rounded-lg"
                 >
                   ✏️ {t('cash_personalize_link' as any) || 'Personalize link'}
                 </button>
@@ -329,21 +328,21 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     placeholder="MEINCODE"
-                    className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                    className="flex-1 min-h-[44px] rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                   />
                 </div>
                 <div className="flex gap-2">
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50"
+                    className="min-h-[44px] rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50"
                   >
                     {saving ? '...' : (t('cash_save' as any) || 'Save')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200"
+                    className="min-h-[44px] rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200"
                   >
                     {t('cash_cancel' as any) || 'Cancel'}
                   </button>
@@ -358,12 +357,12 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                   type="text"
                   readOnly
                   value={referralLink}
-                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 font-mono text-xs text-slate-600 focus:outline-none select-all"
+                  className="flex-1 min-h-[44px] rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 font-mono text-xs text-slate-600 focus:outline-none select-all"
                 />
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className={`rounded-xl px-4 py-2.5 text-xs font-bold text-white transition-all shrink-0 shadow-sm flex items-center gap-1.5 ${
+                  className={`min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-bold text-white transition-all shrink-0 shadow-sm flex items-center gap-1.5 ${
                     copied 
                       ? 'bg-green-600 hover:bg-green-700' 
                       : 'bg-brand-600 hover:bg-brand-700'
@@ -443,7 +442,7 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                       </span>
                     ) : (
                       <span className={`text-sm font-extrabold ${isEarn ? 'text-green-600' : 'text-red-500'}`}>
-                        {isEarn ? '+' : ''}{amount.toFixed(2)} €
+                        {isEarn ? '+' : ''}{formatCurrencyEuro(amount, locale)}
                       </span>
                     )}
                   </div>

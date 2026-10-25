@@ -6,28 +6,22 @@ import { createServiceClient } from '@/lib/supabase/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const queryEmail = searchParams.get('email');
-
     const cookieStore = await cookies();
     const token = cookieStore.get('session_token')?.value;
     const sessionUser = token ? await verifyJwt(token) : null;
 
-    let targetEmail = sessionUser?.email ? sessionUser.email.trim().toLowerCase() : null;
-    if (!targetEmail && queryEmail) {
-      targetEmail = queryEmail.trim().toLowerCase();
+    if (!sessionUser || !sessionUser.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!targetEmail) {
-      return NextResponse.json({ tickets: [] });
-    }
+    const targetEmail = sessionUser.email.trim().toLowerCase();
 
     const db = createServiceClient();
     const { data: tickets, error } = await db
       .from('support_tickets')
-      .select('*')
+      .select('id, ticket_number, customer_email, customer_name, subject, category, status, priority, invoice_id, iccid, created_at, updated_at')
       .eq('customer_email', targetEmail)
       .order('updated_at', { ascending: false });
 

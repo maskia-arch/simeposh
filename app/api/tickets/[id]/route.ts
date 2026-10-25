@@ -14,19 +14,21 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const ticketId = params.id;
-    const { searchParams } = new URL(request.url);
-    const queryEmail = searchParams.get('email');
 
     const cookieStore = await cookies();
     const token = cookieStore.get('session_token')?.value;
     const sessionUser = token ? await verifyJwt(token) : null;
+
+    if (!sessionUser || !sessionUser.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const db = createServiceClient();
 
     // 1. Fetch ticket
     const { data: ticket, error: ticketErr } = await db
       .from('support_tickets')
-      .select('*')
+      .select('id, ticket_number, customer_email, customer_name, subject, category, status, priority, invoice_id, iccid, created_at, updated_at')
       .eq('id', ticketId)
       .single();
 
@@ -34,19 +36,18 @@ export async function GET(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
 
-    // 2. Validate email ownership
-    const userEmail = sessionUser?.email?.trim().toLowerCase();
-    const reqEmail = queryEmail?.trim().toLowerCase();
+    // 2. Validate email ownership strictly via session
+    const userEmail = sessionUser.email.trim().toLowerCase();
     const ticketOwnerEmail = ticket.customer_email.trim().toLowerCase();
 
-    if (userEmail !== ticketOwnerEmail && reqEmail !== ticketOwnerEmail) {
+    if (userEmail !== ticketOwnerEmail) {
       return NextResponse.json({ error: 'Zugriff verweigert' }, { status: 403 });
     }
 
     // 3. Fetch message thread (excluding internal notes for customer view)
     const { data: messages, error: msgErr } = await db
       .from('ticket_messages')
-      .select('*')
+      .select('id, ticket_id, sender_type, sender_email, sender_name, message, attachments, created_at')
       .eq('ticket_id', ticketId)
       .eq('is_internal_note', false)
       .order('created_at', { ascending: true });
@@ -69,7 +70,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   try {
     const ticketId = params.id;
     const body = await request.json();
-    const { message, email, attachments = [] } = body;
+    const { message, attachments = [] } = body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return NextResponse.json({ error: 'Nachricht darf nicht leer sein' }, { status: 400 });
@@ -79,12 +80,16 @@ export async function POST(request: Request, { params }: RouteParams) {
     const token = cookieStore.get('session_token')?.value;
     const sessionUser = token ? await verifyJwt(token) : null;
 
+    if (!sessionUser || !sessionUser.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const db = createServiceClient();
 
     // Fetch ticket
     const { data: ticket, error: ticketErr } = await db
       .from('support_tickets')
-      .select('*')
+      .select('id, ticket_number, customer_email, customer_name, subject, category, status, priority')
       .eq('id', ticketId)
       .single();
 
@@ -96,17 +101,16 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Dieses Ticket ist geschlossen und kann nicht mehr beantwortet werden.' }, { status: 400 });
     }
 
-    // Validate ownership
-    const userEmail = sessionUser?.email?.trim().toLowerCase();
-    const reqEmail = email?.trim().toLowerCase();
+    // Validate ownership strictly via session
+    const userEmail = sessionUser.email.trim().toLowerCase();
     const ticketOwnerEmail = ticket.customer_email.trim().toLowerCase();
 
-    if (userEmail !== ticketOwnerEmail && reqEmail !== ticketOwnerEmail) {
+    if (userEmail !== ticketOwnerEmail) {
       return NextResponse.json({ error: 'Zugriff verweigert' }, { status: 403 });
     }
 
     const cleanMsg = message.trim();
-    const senderName = sessionUser?.user_metadata?.full_name || ticket.customer_name || 'Kunde';
+    const senderName = sessionUser.fullName || sessionUser.user_metadata?.full_name || ticket.customer_name || 'Kunde';
 
     // Insert message
     const { data: newMsg, error: insertErr } = await db
@@ -114,82 +118,48 @@ export async function POST(request: Request, { params }: RouteParams) {
       .insert({
         ticket_id: ticketId,
         sender_type: 'customer',
-        sender_email: ticketOwnerEmail,
+        sender_email: userEmail,
         sender_name: senderName,
         message: cleanMsg,
-        is_internal_note: false,
-        attachments: JSON.stringify(Array.isArray(attachments) ? attachments : []),
+        attachments: Array.isArray(attachments) ? JSON.stringify(attachments) : null,
       })
-      .select('*')
+      .select('id, ticket_id, sender_type, sender_email, sender_name, message, attachments, created_at')
       .single();
 
-    if (insertErr || !newMsg) {
-      console.error('[Ticket Reply API] DB Error:', insertErr);
-      return NextResponse.json({ error: 'Antwort konnte nicht gespeichert werden' }, { status: 500 });
+    if (insertErr) {
+      console.error('[Ticket Reply Error]', insertErr);
+      return NextResponse.json({ error: 'Nachricht konnte nicht gespeichert werden' }, { status: 500 });
     }
 
-    // Update ticket timestamp
+    // Update ticket status to customer_reply and update timestamp
     await db
       .from('support_tickets')
       .update({
+        status: 'customer_reply',
         updated_at: new Date().toISOString(),
       })
       .eq('id', ticketId);
+
+    // Send admin notification
+    try {
+      await sendTicketAdminAlertEmail({
+        ticketNumber: ticket.ticket_number,
+        customerEmail: userEmail,
+        customerName: senderName,
+        subject: `[Antwort] ${ticket.subject}`,
+        category: ticket.category,
+        description: cleanMsg,
+      });
+    } catch (mailErr) {
+      console.error('[Ticket Reply Admin Mail Error]', mailErr);
+    }
 
     return NextResponse.json({
       success: true,
       message: newMsg,
     });
   } catch (err: any) {
-    console.error('[Ticket Reply API] Exception:', err);
-    return NextResponse.json({ error: err.message || 'Serverfehler' }, { status: 500 });
-  }
-}
-
-export async function PATCH(request: Request, { params }: RouteParams) {
-  try {
-    const ticketId = params.id;
-    const body = await request.json();
-    const { action, email } = body;
-
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-    const sessionUser = token ? await verifyJwt(token) : null;
-
-    const db = createServiceClient();
-
-    const { data: ticket } = await db
-      .from('support_tickets')
-      .select('*')
-      .eq('id', ticketId)
-      .single();
-
-    if (!ticket) {
-      return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
-    }
-
-    const userEmail = sessionUser?.email?.trim().toLowerCase();
-    const reqEmail = email?.trim().toLowerCase();
-    const ticketOwnerEmail = ticket.customer_email.trim().toLowerCase();
-
-    if (userEmail !== ticketOwnerEmail && reqEmail !== ticketOwnerEmail) {
-      return NextResponse.json({ error: 'Zugriff verweigert' }, { status: 403 });
-    }
-
-    if (action === 'close') {
-      await db
-        .from('support_tickets')
-        .update({
-          status: 'closed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', ticketId);
-
-      return NextResponse.json({ success: true, status: 'closed' });
-    }
-
-    return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
-  } catch (err: any) {
+    console.error('[Ticket Reply Exception]', err);
     return NextResponse.json({ error: err.message || 'Serverfehler' }, { status: 500 });
   }
 }

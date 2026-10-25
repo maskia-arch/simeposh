@@ -119,7 +119,7 @@ export function HeaderSearch({ destinations, placeholder, onSearchClose }: Props
 
   return (
     <div ref={boxRef} className="relative w-full text-left">
-      <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white hover:border-slate-400 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500 px-3.5 py-1.5 shadow-sm hover:shadow transition-all duration-150">
+      <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white hover:border-slate-400 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500 px-3.5 py-1.5 min-h-[44px] shadow-sm hover:shadow transition-all duration-150">
         <svg className="h-4 w-4 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>

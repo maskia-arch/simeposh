@@ -98,17 +98,13 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
       setUser(data.user);
       if (data.user) {
         setEmail(data.user.email || '');
-        (supabase
-          .from('esim_cash_accounts')
-          .select('balance_eur, total_spend_eur, extra_cashback_queue')
-          .maybeSingle() as any)
-          .then(({ data: acc }: any) => {
-            if (acc) {
-              setBalance(Number(acc.balance_eur) || 0);
-              setTotalSpend(Number(acc.total_spend_eur) || 0);
-              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-            }
-          });
+        supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+          if (acc) {
+            setBalance(Number(acc.balance_eur) || 0);
+            setTotalSpend(Number(acc.total_spend_eur) || 0);
+            setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+          }
+        });
       }
     });
 
@@ -118,17 +114,13 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
         setUser(u);
         if (u) {
           setEmail(u.email || '');
-          (supabase
-            .from('esim_cash_accounts')
-            .select('balance_eur, total_spend_eur, extra_cashback_queue')
-            .maybeSingle() as any)
-            .then(({ data: acc }: any) => {
-              if (acc) {
-                setBalance(Number(acc.balance_eur) || 0);
-                setTotalSpend(Number(acc.total_spend_eur) || 0);
-                setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-              }
-            });
+          supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+            if (acc) {
+              setBalance(Number(acc.balance_eur) || 0);
+              setTotalSpend(Number(acc.total_spend_eur) || 0);
+              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+            }
+          });
         } else {
           setBalance(0);
           setTotalSpend(0);
@@ -155,33 +147,21 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
               : (t('checkout_cancelled_empty_banner' as any) || (locale === 'de' ? 'Zahlung abgebrochen.' : 'Payment cancelled.'))}
           </span>
         </div>
-        {mounted ? (
-          items.length > 0 ? (
-            <button
-              type="button"
-              data-testid="checkout-cancelled-again-btn"
-              onClick={() => {
-                const target = document.querySelector('input[type="email"]') || document.getElementById('checkout-email-input') || document.querySelector('form');
-                if (target) {
-                  (target as HTMLElement).focus();
-                  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }}
-              className="btn-primary min-h-[44px] px-5 py-2.5 text-xs font-bold shadow-sm whitespace-nowrap cursor-pointer shrink-0"
-            >
-              {t('btn_checkout_again' as any) || (locale === 'de' ? 'Erneut zur Kasse' : 'Checkout again')} →
-            </button>
-          ) : (
-            <Link
-              href={tariffsLink}
-              data-testid="checkout-cancelled-action-btn"
-              className="btn-primary min-h-[44px] px-5 py-2.5 text-xs font-bold shadow-sm whitespace-nowrap cursor-pointer shrink-0 inline-flex items-center justify-center"
-            >
-              {t('cart_discover')} →
-            </Link>
-          )
-        ) : (
-          <div className="min-h-[44px] min-w-[140px] opacity-0" aria-hidden="true" />
+        {mounted && items.length > 0 && (
+          <button
+            type="button"
+            data-testid="checkout-cancelled-again-btn"
+            onClick={() => {
+              const target = document.querySelector('input[type="email"]') || document.getElementById('checkout-email-input') || document.querySelector('form');
+              if (target) {
+                (target as HTMLElement).focus();
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }}
+            className="btn-primary min-h-[44px] px-5 py-2.5 text-xs font-bold shadow-sm whitespace-nowrap cursor-pointer shrink-0"
+          >
+            {t('btn_checkout_again' as any) || (locale === 'de' ? 'Erneut zur Kasse' : 'Checkout again')} →
+          </button>
         )}
       </div>
     );
@@ -213,7 +193,7 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
           <CartIcon size={64} className="text-slate-300" />
         </div>
         <h1 className="mb-2 text-2xl font-bold text-slate-900">
-          {paymentCancelled ? (t('cart_cancelled_title' as any) || (locale === 'de' ? 'Zahlung abgebrochen' : 'Payment cancelled')) : t('cart_empty_title')}
+          {t('cart_empty_title')}
         </h1>
         <p className="mb-6 text-slate-500">{t('cart_empty_sub')}</p>
         <Link href={tariffsLink} className="rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white hover:bg-brand-700 transition-colors inline-block">

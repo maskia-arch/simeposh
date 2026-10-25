@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { getTicketTranslations } from '@/lib/i18n/ticket-translations';
 
@@ -23,6 +23,10 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
   const { locale } = useTranslation();
   const t = getTicketTranslations(locale);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<any>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isEmailLocked, setIsEmailLocked] = useState(false);
@@ -35,6 +39,58 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdTicket, setCreatedTicket] = useState<{ id: string; ticket_number: string } | null>(null);
+
+  // Focus management, focus trap & Esc listener
+  useEffect(() => {
+    if (!isOpen) return;
+    previousActiveElementRef.current = (document.activeElement as HTMLElement) || null;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab') {
+        if (!dialogRef.current) return;
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    const timer = setTimeout(() => {
+      if (firstInputRef.current) {
+        firstInputRef.current.focus();
+      } else if (dialogRef.current) {
+        const first = dialogRef.current.querySelector<HTMLElement>('input:not([readonly]), select, textarea, button');
+        first?.focus();
+      }
+    }, 60);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+      if (previousActiveElementRef.current) {
+        previousActiveElementRef.current.focus();
+      }
+    };
+  }, [isOpen, onClose]);
 
   // Intelligent pre-filling whenever modal opens
   useEffect(() => {
@@ -164,21 +220,29 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ticket-modal-title"
+        ref={dialogRef}
+        className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600 font-bold text-lg">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600 font-bold text-lg" aria-hidden="true">
               🎫
             </span>
             <div>
-              <h3 className="font-bold text-slate-900 text-lg leading-tight">{t.modalTitle}</h3>
+              <h3 id="ticket-modal-title" className="font-bold text-slate-900 text-lg leading-tight">{t.modalTitle}</h3>
               <p className="text-xs text-slate-500">{t.modalSub}</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            aria-label={t.closeBtn}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             ✕
           </button>
@@ -186,8 +250,14 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
 
         {/* Response Time Info Callout */}
         <div className="mt-3 rounded-xl bg-blue-50/80 border border-blue-200/80 p-3 text-xs text-blue-900 flex items-start gap-2 shadow-2xs">
-          <span className="text-sm leading-none shrink-0 mt-0.5">⏱️</span>
+          <span className="text-sm leading-none shrink-0 mt-0.5" aria-hidden="true">⏱️</span>
           <span className="font-medium leading-relaxed">{t.responseTimeNotice}</span>
+        </div>
+
+        {/* aria-live status container */}
+        <div aria-live="polite" className="sr-only">
+          {error && `Fehler: ${error}`}
+          {createdTicket && `${t.successTitle} ${t.successBadge} ${createdTicket.ticket_number}`}
         </div>
 
         {/* Form Body */}
@@ -208,13 +278,14 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
               <div className="pt-4 flex flex-col gap-2">
                 <a
                   href="/dashboard?tab=tickets"
-                  className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors text-center"
+                  className="min-h-[44px] inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors text-center shadow-xs"
                 >
                   {t.viewDashboardBtn}
                 </a>
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
+                  className="min-h-[44px] inline-flex items-center justify-center rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition-colors"
                 >
                   {t.closeBtn}
                 </button>
@@ -223,7 +294,7 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 text-sm">
               {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-medium text-red-700">
+                <div id="ticket-modal-error" role="alert" className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-medium text-red-700">
                   {error}
                 </div>
               )}
@@ -231,34 +302,38 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
               {/* Email & Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="ticket-modal-email" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t.emailLabel}
                   </label>
                   <input
+                    id="ticket-modal-email"
                     type="email"
                     required
                     readOnly={isEmailLocked}
+                    ref={isEmailLocked ? undefined : firstInputRef}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="deine@email.de"
-                    className={`w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none ${
+                    aria-describedby={error ? "ticket-modal-error" : undefined}
+                    className={`w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100 ${
                       isEmailLocked ? 'bg-slate-100 cursor-not-allowed text-slate-600 font-medium' : 'bg-white'
                     }`}
                   />
                   {isEmailLocked && (
-                    <span className="text-[10px] text-emerald-600 font-medium">✓ Aus deinem Nutzerkonto vorausgefüllt</span>
+                    <span className="text-[10px] text-emerald-600 font-medium mt-1 block">✓ Aus deinem Nutzerkonto vorausgefüllt</span>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="ticket-modal-name" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t.nameLabel}
                   </label>
                   <input
+                    id="ticket-modal-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Max Mustermann"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   />
                 </div>
               </div>
@@ -266,13 +341,15 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
               {/* Category & Subject */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="ticket-modal-category" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t.categoryLabel}
                   </label>
                   <select
+                    id="ticket-modal-category"
+                    ref={isEmailLocked ? firstInputRef : undefined}
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none bg-white"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100 bg-white"
                   >
                     <option value="general">{t.catGeneral}</option>
                     <option value="activation">{t.catActivation}</option>
@@ -283,16 +360,18 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="ticket-modal-subject" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t.subjectLabel}
                   </label>
                   <input
+                    id="ticket-modal-subject"
                     type="text"
                     required
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="z. B. QR-Code lässt sich nicht scannen"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none"
+                    aria-describedby={error ? "ticket-modal-error" : undefined}
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   />
                 </div>
               </div>
@@ -300,57 +379,62 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
               {/* Invoice ID & ICCID (Intelligent Context Fields) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="ticket-modal-invoice" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t.invoiceIdLabel}
                   </label>
                   <input
+                    id="ticket-modal-invoice"
                     type="text"
                     value={invoiceId}
                     onChange={(e) => setInvoiceId(e.target.value)}
                     placeholder="INV-..."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 text-sm font-mono focus:border-brand-600 focus:outline-none bg-slate-50/60"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 text-sm font-mono focus:border-brand-600 focus:outline-none bg-slate-50/60"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="ticket-modal-iccid" className="block text-xs font-semibold text-slate-700 mb-1">
                     {t.iccidLabel}
                   </label>
                   <input
+                    id="ticket-modal-iccid"
                     type="text"
                     value={iccid}
                     onChange={(e) => setIccid(e.target.value)}
                     placeholder="89853..."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 text-sm font-mono focus:border-brand-600 focus:outline-none bg-slate-50/60"
+                    className="w-full min-h-[44px] rounded-xl border border-slate-300 px-3.5 py-2 text-slate-900 text-sm font-mono focus:border-brand-600 focus:outline-none bg-slate-50/60"
                   />
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="ticket-modal-desc" className="block text-xs font-semibold text-slate-700 mb-1">
                   {t.descriptionLabel}
                 </label>
                 <textarea
+                  id="ticket-modal-desc"
                   required
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Bitte beschreibe dein Anliegen..."
-                  className="w-full rounded-xl border border-slate-300 p-3 text-slate-900 text-sm focus:border-brand-600 focus:outline-none"
+                  aria-describedby={error ? "ticket-modal-error" : undefined}
+                  className="w-full rounded-xl border border-slate-300 p-3 text-slate-900 text-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
                 />
               </div>
 
               {/* File Upload / Attachments */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="ticket-modal-file" className="block text-xs font-semibold text-slate-700 mb-1">
                   {t.attachmentsLabel}
                 </label>
                 <input
+                  id="ticket-modal-file"
                   type="file"
                   multiple
                   accept="image/*,.pdf"
                   onChange={handleFileChange}
-                  className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+                  className="block w-full min-h-[44px] text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
                 />
                 {attachments.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -363,7 +447,8 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
                         <button
                           type="button"
                           onClick={() => removeAttachment(idx)}
-                          className="text-red-500 hover:text-red-700"
+                          className="min-h-[30px] min-w-[30px] inline-flex items-center justify-center text-red-500 hover:text-red-700"
+                          aria-label={`Anhang ${file.name} entfernen`}
                         >
                           ✕
                         </button>
@@ -378,14 +463,14 @@ export function TicketModal({ isOpen, onClose, options }: TicketModalProps) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+                  className="min-h-[44px] rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center justify-center"
                 >
                   {t.cancelBtn}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="min-h-[44px] rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2 shadow-xs"
                 >
                   {isSubmitting ? t.submitting : t.submitBtn}
                 </button>

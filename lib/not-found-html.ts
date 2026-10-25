@@ -7,7 +7,7 @@ export interface NotFoundText {
 export const NOT_FOUND_TEXTS: Record<string, NotFoundText> = {
   de: {
     title: 'Seite nicht gefunden',
-    desc: 'Die angeforderte Einrichtungsseite oder Webshop-Seite ist unter dieser Adresse nicht erreichbar.',
+    desc: 'Die gewünschte Seite ist unter dieser Adresse leider nicht erreichbar.',
     btn: 'Zum PureSim Webshop',
   },
   en: {

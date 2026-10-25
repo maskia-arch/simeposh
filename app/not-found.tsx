@@ -9,7 +9,6 @@ export default async function NotFound() {
   return (
     <>
       <title>{pageTitle}</title>
-      <meta name="robots" content="noindex, nofollow" />
       <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center px-4 py-16 font-sans text-slate-100">
       <div className="max-w-md mx-auto space-y-6">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-brand-600/20 border border-brand-500/30 text-brand-400">

@@ -7,7 +7,7 @@
 import { NextResponse }        from 'next/server';
 import { priceToUsd, bytesToGb, getVolumeBytes, detectTariffType } from '@/lib/esimaccess/client';
 import { calculateSalePrice, getUnlimitedPriceTable }  from '@/lib/pricing';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient, createClient } from '@/lib/supabase/server';
 import { toPublicTariff }       from '@/lib/tariffs';
 import { getTopUpEligibility, getEsimRecord, fetchTopUpPackagesCached } from '@/lib/topup';
 
@@ -21,28 +21,50 @@ function slugify(str: string): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const iccid = searchParams.get('iccid')?.trim();
+  const orderId = searchParams.get('orderId')?.trim();
 
-  if (!iccid) {
-    return NextResponse.json({ error: 'iccid parameter is required' }, { status: 400 });
+  if (!iccid && !orderId) {
+    return NextResponse.json({ error: 'iccid or orderId parameter is required' }, { status: 400 });
   }
 
   try {
     const supabase = createServiceClient();
+    const userClient = await createClient();
+    const { data: { user: sessionUser } } = await userClient.auth.getUser();
 
-    // 1. Check if this ICCID belongs to an existing order in our database
-    const { data: existingOrder } = await supabase
+    // 1. Check if this ICCID / Order belongs to an existing order in our database
+    let orderQuery = supabase
       .from('orders')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .select('id, period_num, tariffs(id, slug, name, country_name, country_code, flag_emoji, data_gb, validity_days, tariff_type, speed_kbps, package_code, raw_data, active_type, support_top_up_type)')
-      .eq('iccid', iccid)
+      .select('id, user_id, iccid, period_num, tariffs(id, slug, name, country_name, country_code, flag_emoji, data_gb, validity_days, tariff_type, speed_kbps, package_code, raw_data, active_type, support_top_up_type)')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle() as any;
+      .limit(1);
+
+    if (orderId) {
+      orderQuery = orderQuery.eq('id', orderId);
+    } else if (iccid) {
+      orderQuery = orderQuery.eq('iccid', iccid);
+    }
+
+    const { data: existingOrder } = await orderQuery.maybeSingle() as any;
+
+    // Strict customer ownership check: if order belongs to a registered customer,
+    // deny access (403) if not authenticated as that exact customer.
+    if (existingOrder?.user_id) {
+      if (!sessionUser || sessionUser.id !== existingOrder.user_id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
+    const effectiveIccid = (iccid || existingOrder?.iccid || '').trim();
+    if (!effectiveIccid) {
+      return NextResponse.json({ error: 'No ICCID found for this order' }, { status: 400 });
+    }
 
     const existingTariff = existingOrder?.tariffs ?? null;
 
     // 2. Gatekeeper check: eSIM topup limit (max 9/9)
-    const esim = await getEsimRecord(iccid);
+    const esim = await getEsimRecord(effectiveIccid);
     if (esim && esim.topup_count >= 9) {
       return NextResponse.json(
         {
@@ -88,13 +110,13 @@ export async function GET(request: Request) {
     // 4. Fetch top-up packages from esimaccess (slug-based & cached)
     let rawPackages: any[] = [];
     try {
-      rawPackages = await fetchTopUpPackagesCached(iccid, originTariffSlug);
+      rawPackages = await fetchTopUpPackagesCached(effectiveIccid, originTariffSlug);
     } catch (fetchErr: any) {
       const errCode = String(fetchErr.message || fetchErr);
       const isInvalidIccid =
         ['310409', '310006', '310401', '310204', '310410', '310411'].includes(errCode) ||
         errCode.includes('iccid');
-      console.warn(`[topup/packages] Failed to fetch top-up packages for ICCID ${iccid}: code ${errCode}`);
+      console.warn(`[topup/packages] Failed to fetch top-up packages for ICCID ${effectiveIccid}: code ${errCode}`);
       return NextResponse.json(
         { error: isInvalidIccid ? 'topup_error_invalid_iccid' : 'topup_error_general' },
         { status: 400 }

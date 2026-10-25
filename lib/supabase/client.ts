@@ -140,19 +140,22 @@ class BrowserQueryBuilder<T extends TableName = any, R = Row<T>, Single extends 
 
   private async execute(): Promise<{ data: any; error: any; count?: number }> {
     try {
+      // Map known tables to whitelisted named queries; NEVER send table, selectFields, or filters over the wire!
+      let queryName: string | null = null;
+      if (this.table === 'esim_cash_accounts') queryName = 'userCashAccount';
+      else if (this.table === 'orders') queryName = 'userOrders';
+      else if (this.table === 'support_tickets') queryName = 'userTickets';
+      else if (this.table === 'users') queryName = 'userProfile';
+      else if (this.table === 'user_sessions') queryName = 'userSessions';
+
+      if (!queryName) {
+        return { data: null, error: { message: `Query on table "${this.table}" is not allowed from browser clients.` }, count: 0 };
+      }
+
       const res = await fetch('/api/db-query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table: this.table,
-          selectFields: this.selectFields,
-          filters: this.whereFilters,
-          orFilters: this.orFilters,
-          limitVal: this.limitVal,
-          offsetVal: this.offsetVal,
-          isSingle: this.isSingle,
-          isMaybeSingle: this.isMaybeSingle,
-        }),
+        body: JSON.stringify({ query: queryName }),
       });
 
       if (!res.ok) {
@@ -269,9 +272,27 @@ class BrowserAuthClient {
   }
 }
 
+export async function fetchNamedQuery(queryName: string, params?: Record<string, any>) {
+  try {
+    const res = await fetch('/api/db-query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: queryName, params }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { data: null, error: { message: body.error || 'Query failed' } };
+    }
+    return await res.json();
+  } catch (err: any) {
+    return { data: null, error: { message: err.message } };
+  }
+}
+
 export function createClient() {
   return {
     from: <T extends TableName = any>(table: T) => new BrowserQueryBuilder<T>(table),
     auth: new BrowserAuthClient(),
+    namedQuery: (queryName: string, params?: Record<string, any>) => fetchNamedQuery(queryName, params),
   };
 }

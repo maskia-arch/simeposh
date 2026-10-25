@@ -46,11 +46,7 @@ export function CheckoutModal({
       setUser(data.user);
       if (data.user) {
         setEmail(data.user.email || '');
-        (supabase
-          .from('esim_cash_accounts')
-          .select('balance_eur, total_spend_eur, extra_cashback_queue')
-          .maybeSingle() as any)
-          .then(({ data: acc }: any) => {
+        supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
             if (acc) {
               setBalance(Number(acc.balance_eur) || 0);
               setTotalSpend(Number(acc.total_spend_eur) || 0);
@@ -66,11 +62,7 @@ export function CheckoutModal({
         setUser(u);
         if (u) {
           setEmail(u.email || '');
-          (supabase
-            .from('esim_cash_accounts')
-            .select('balance_eur, total_spend_eur, extra_cashback_queue')
-            .maybeSingle() as any)
-            .then(({ data: acc }: any) => {
+          supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
               if (acc) {
                 setBalance(Number(acc.balance_eur) || 0);
                 setTotalSpend(Number(acc.total_spend_eur) || 0);

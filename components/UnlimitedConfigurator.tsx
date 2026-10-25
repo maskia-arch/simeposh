@@ -195,10 +195,6 @@ export function DaySlider({
               </span>
             )}
           </p>
-        ) : nextTier ? (
-          <p className="text-[11px] leading-4 text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
-            <span>{t('cfg_disc_hint', { n: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale) })}</span>
-          </p>
         ) : (
           <div className="w-full h-[46px] opacity-0 pointer-events-none select-none" aria-hidden="true" />
         )}
@@ -837,7 +833,7 @@ export function UnlimitedConfigurator({
                     const nextTier = (currentPriceTable?.tiers || []).find((tier) => tier.minDays > days && tier.discountPct > discountPct);
 
                     return (
-                      <div className="min-h-[90px] lg:min-h-[92px] flex items-center justify-center" role="status" aria-live="polite">
+                      <div className="h-[96px] min-h-[96px] max-h-[96px] flex items-center justify-center" role="status" aria-live="polite">
                         {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
                           const diffDays = betterDealDays - days;
                           const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
@@ -874,30 +870,36 @@ export function UnlimitedConfigurator({
                                 <button
                                   type="button"
                                   onClick={() => setDays(betterDealDays)}
-                                  className="min-w-[44px] min-h-[24px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline cursor-pointer"
+                                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline cursor-pointer"
                                 >
                                   {btnText}
                                 </button>
                               </div>
                             </div>
                           );
-                        })() : nextTier ? (
-                          <div className="w-full h-full text-left rounded-xl bg-amber-50/70 border border-amber-200/80 p-2.5 text-[13px] text-amber-950 flex flex-col justify-between gap-1 shadow-2xs">
-                            <span className="font-medium [text-wrap:pretty] leading-tight flex items-center gap-1.5">
-                              <span>🏷️</span>
-                              <span>{t('cfg_next_tier_hint' as any, { days: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale, { negative: true }) }) || `Ab ${nextTier.minDays} Tagen ${formatPercent(nextTier.discountPct, locale, { negative: true })}`}</span>
-                            </span>
-                            <div className="flex justify-end pt-0.5">
-                              <button
-                                type="button"
-                                onClick={() => setDays(nextTier.minDays)}
-                                className="min-w-[44px] min-h-[24px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline cursor-pointer"
-                              >
-                                {t('cfg_next_tier_btn' as any, { days: nextTier.minDays }) || (isDe ? `Auf ${nextTier.minDays} Tage wechseln →` : `Switch to ${nextTier.minDays} days →`)}
-                              </button>
+                        })() : nextTier ? (() => {
+                          const nextTierBtnText = (locale === 'cs' && nextTier.minDays >= 2 && nextTier.minDays <= 4)
+                            ? `Změnit na ${nextTier.minDays} dny →`
+                            : (t('cfg_next_tier_btn' as any, { days: nextTier.minDays }) || (isDe ? `Auf ${nextTier.minDays} Tage wechseln →` : `Switch to ${nextTier.minDays} days →`));
+
+                          return (
+                            <div className="w-full h-full text-left rounded-xl bg-amber-50/70 border border-amber-200/80 p-2.5 text-[13px] text-amber-950 flex flex-col justify-between gap-1 shadow-2xs">
+                              <span className="font-medium [text-wrap:pretty] leading-tight flex items-center gap-1.5">
+                                <span>🏷️</span>
+                                <span>{t('cfg_next_tier_hint' as any, { days: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale, { negative: true }) }) || `Ab ${nextTier.minDays} Tagen ${formatPercent(nextTier.discountPct, locale, { negative: true })}`}</span>
+                              </span>
+                              <div className="flex justify-end pt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setDays(nextTier.minDays)}
+                                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[13px] font-bold text-amber-950 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 underline cursor-pointer"
+                                >
+                                  {nextTierBtnText}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
+                          );
+                        })() : (
                           <div className="w-full h-full text-left rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-2.5 text-[13px] text-emerald-950 flex flex-col justify-center gap-1 shadow-2xs">
                             <span className="font-semibold [text-wrap:pretty] leading-tight flex items-center gap-1.5">
                               <span>✓</span>
