@@ -3,7 +3,7 @@ import { getAllDestinations } from '@/lib/destinations';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, BASE_URL, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
 import { isoName, regionLabel, isRegionCode } from '@/lib/tariff-display';
-import { DestinationsOverviewClient, type OverviewDestination } from '@/components/DestinationsOverviewClient';
+import { DestinationsOverviewClient, type CompactDestination } from '@/components/DestinationsOverviewClient';
 
 export const revalidate = 600;
 
@@ -92,33 +92,32 @@ export default async function EsimPage() {
   const locale = await getServerLocale();
   const rawDestinations = await getAllDestinations();
 
-  const destinations: OverviewDestination[] = rawDestinations.map((d) => {
+  const destinations: CompactDestination[] = rawDestinations.map((d) => {
     const isRegion = isRegionCode(d.code) || REGION_CODES.has(d.code);
     const localizedName = isRegion
       ? regionLabel(d.code, locale)
       : (isoName(d.code, locale) || d.name);
 
-    let regionGroup: OverviewDestination['regionGroup'] = 'global';
+    let regionGroup: CompactDestination[5] = 'global';
     if (REGION_CODES.has(d.code)) {
       regionGroup = 'global';
     } else if (CONTINENT_MAP[d.code]) {
       regionGroup = CONTINENT_MAP[d.code];
     }
 
-    return {
-      code: d.code,
-      name: d.name,
+    // Tuple: [0: code, 1: slug, 2: flag, 3: localizedName, 4: minPrice, 5: regionGroup]
+    return [
+      d.code,
+      d.slug,
+      d.flag,
       localizedName,
-      slug: d.slug,
-      flag: d.flag,
-      minPrice: d.minPrice || 0,
-      count: d.count || 0,
+      d.minPrice || 0,
       regionGroup,
-    };
+    ];
   });
 
-  // Sort alphabetically by localized name within each region
-  destinations.sort((a, b) => a.localizedName.localeCompare(b.localizedName, locale));
+  // Sort alphabetically by localized name
+  destinations.sort((a, b) => a[3].localeCompare(b[3], locale));
 
   return (
     <DestinationsOverviewClient

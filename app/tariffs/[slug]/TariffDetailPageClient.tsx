@@ -248,7 +248,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                     )}
                     {breakoutIp && (
                       <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700 font-mono">
-                        {breakoutIp === 'UK' ? '🇬🇧 Breakout IP: UK' : breakoutIp === 'NL' ? '🇳🇱 Breakout IP: NL' : `Breakout IP: ${breakoutIp}`}
+                        {breakoutIp === 'UK' ? '🇬🇧 Europa IP' : breakoutIp === 'NL' ? '🇳🇱 Breakout IP: NL' : `Breakout IP: ${breakoutIp}`}
                       </span>
                     )}
                   </div>

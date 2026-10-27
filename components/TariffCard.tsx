@@ -65,6 +65,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
 
   return (
     <div
+      data-tariff-id={tariff.id}
+      data-tariff-card="true"
       className={`group relative flex flex-col rounded-2xl bg-white shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden ${
         isRecommended
           ? 'border-2 border-brand-500 shadow-md ring-2 ring-brand-100/80 hover:border-brand-600'
@@ -376,7 +378,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <span
               className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-xs font-mono font-medium text-slate-700"
             >
-              {breakoutIp === 'UK' ? '🇬🇧 UK IP' : breakoutIp === 'NL' ? '🇳🇱 NL IP' : `${breakoutIp} IP`}
+              {breakoutIp === 'UK' ? '🇬🇧 Europa IP' : breakoutIp === 'NL' ? '🇳🇱 NL IP' : `${breakoutIp} IP`}
             </span>
           ) : null}
         </div>

@@ -2514,7 +2514,7 @@ export const tr = {
   "feat_travel_premium_title": "Travel Premium: Çift Ağ ve İngiltere Yönlendirme",
   "feat_travel_premium_desc": "Maksimum güvenilirlik için 2 bağımsız ağa (Vodafone & Türk Telekom) erişim ve İngiltere üzerinden internet yönlendirmesi sağlar.",
   "feat_travel_premium_price_note": "Ağlar arası otomatik geçiş ile kesintisiz bağlantı garantisi.",
-  "feat_tr_premium_title": "Türkiye Travel Premium: Vodafone + Türk Telekom / UK IP",
+  "feat_tr_premium_title": "Türkiye Travel Premium: Vodafone + Türk Telekom / Optimiertes Routing",
   "feat_tr_premium_desc": "İki büyük operatöre (Vodafone & Türk Telekom/Avea) aynı anda erişim sunar. Bir ağ çekmediğinde cihaz otomatik diğerine geçer.",
   "feat_tr_premium_price_note": "Otomatik şebeke geçişi sayesinde tatil beldeleri, kırsal ve şehirlerde kesintisiz kapsama.",
   "filter_tier_all": "Tüm Seyahat Planları",

@@ -5,19 +5,18 @@ import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { formatCurrencyEuro } from '@/lib/currency';
 
-export interface OverviewDestination {
-  code: string;
-  name: string;
-  localizedName: string;
-  slug: string;
-  flag: string | null;
-  minPrice: number;
-  count: number;
-  regionGroup: 'europe' | 'asia' | 'americas' | 'middle_east' | 'africa' | 'oceania' | 'global';
-}
+// Tuple: [0: code, 1: slug, 2: flag, 3: localizedName, 4: minPrice, 5: regionGroup]
+export type CompactDestination = [
+  code: string,
+  slug: string,
+  flag: string | null,
+  name: string,
+  minPrice: number,
+  regionGroup: 'europe' | 'asia' | 'americas' | 'middle_east' | 'africa' | 'oceania' | 'global'
+];
 
 interface DestinationsOverviewClientProps {
-  destinations: OverviewDestination[];
+  destinations: CompactDestination[];
   totalDestinations: number;
 }
 
@@ -56,23 +55,22 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
     if (q) {
       list = list.filter(
         (d) =>
-          d.localizedName.toLowerCase().includes(q) ||
-          d.name.toLowerCase().includes(q) ||
-          d.code.toLowerCase() === q ||
-          d.slug.toLowerCase().includes(q)
+          d[3].toLowerCase().includes(q) ||
+          d[0].toLowerCase() === q ||
+          d[1].toLowerCase().includes(q)
       );
     }
     if (activeGroup !== 'all') {
-      list = list.filter((d) => d.regionGroup === activeGroup);
+      list = list.filter((d) => d[5] === activeGroup);
     }
     return list;
   }, [destinations, searchQuery, activeGroup]);
 
   // Group filtered results by region
   const groupedResults = useMemo(() => {
-    const map = new Map<string, OverviewDestination[]>();
+    const map = new Map<string, CompactDestination[]>();
     for (const d of filteredDestinations) {
-      const g = d.regionGroup;
+      const g = d[5];
       const arr = map.get(g) || [];
       arr.push(d);
       map.set(g, arr);
@@ -83,23 +81,22 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24">
       {/* Hero Header */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-indigo-950 text-white py-14 px-4 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent)] pointer-events-none" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-indigo-950 text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center relative z-10">
-          <span className="inline-block rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm mb-3 text-brand-200">
+          <span className="inline-block rounded-full bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider mb-3 text-brand-200">
             {t('nav_tagline')} · PureSim
           </span>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
             {t('esim_overview_h1' as any) || (isDe ? 'Alle eSIM Reiseziele im Überblick' : 'All eSIM Destinations Worldwide')}
           </h1>
-          <p className="mt-3 text-base md:text-lg text-brand-100 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-3 text-sm md:text-base text-brand-100 max-w-2xl mx-auto leading-relaxed">
             {t('esim_overview_subtitle' as any) || (isDe
               ? `Entdecke ${totalDestinations} Länder und Regionen mit schnellem Roaming und flexiblen Datenpaketen ab 0,59 €.`
               : `Explore ${totalDestinations} countries and regions with fast roaming and flexible data plans starting from €0.59.`)}
           </p>
 
           {/* Search Box */}
-          <div className="mt-8 max-w-xl mx-auto">
+          <div className="mt-6 max-w-lg mx-auto">
             <div className="relative">
               <input
                 type="text"
@@ -107,10 +104,10 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('search_destinations_placeholder' as any) || (isDe ? 'Reiseziel oder Land suchen...' : 'Search country or region...')}
                 aria-label={t('search_destinations_placeholder' as any) || 'Reiseziel suchen'}
-                className="w-full rounded-2xl bg-white px-5 py-3.5 pl-12 text-slate-900 placeholder-slate-600 shadow-xl border border-transparent focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-400/30 text-sm md:text-base font-medium"
+                className="w-full rounded-xl bg-white px-4 py-3 pl-11 text-slate-900 placeholder-slate-500 shadow-lg border-0 focus:ring-2 focus:ring-brand-400 text-sm font-medium"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </span>
@@ -118,7 +115,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-800 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                 >
                   ✕
                 </button>
@@ -127,10 +124,10 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
           </div>
 
           {/* CTA Link to Tariffs */}
-          <div className="mt-6 flex justify-center">
+          <div className="mt-5 flex justify-center">
             <Link
               href={`${prefix}/tariffs`}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 text-xs md:text-sm font-bold backdrop-blur-md transition-all border border-white/20 shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white px-4 py-2 text-xs md:text-sm font-bold border border-white/20 transition-all"
             >
               <span>{t('btn_compare_all_tariffs' as any) || (isDe ? 'Alle Tarife im Detail vergleichen' : 'Compare All Tariffs in Detail')}</span>
               <span aria-hidden="true">→</span>
@@ -140,9 +137,9 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
       </section>
 
       {/* Main Content Area */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6">
         {/* Region Filter Bar */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6">
           {['all', ...groupOrder].map((g) => {
             const isSelected = activeGroup === g;
             return (
@@ -152,10 +149,10 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                 onClick={() => setActiveGroup(g)}
                 aria-pressed={isSelected}
                 aria-controls="destinations-grid"
-                className={`min-h-[44px] rounded-full px-4 py-2 text-xs md:text-sm font-bold transition-all cursor-pointer ${
+                className={`min-h-[44px] rounded-full px-3.5 py-1.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:text-slate-900 shadow-2xs'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 {groupLabels[g]}
@@ -164,69 +161,64 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
           })}
         </div>
 
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200">
+        {/* Results Count & Comparison link */}
+        <div className="flex items-center justify-between mb-5 pb-2 border-b border-slate-200">
           <p className="text-sm font-semibold text-slate-700">
             {filteredDestinations.length}{' '}
             {isDe
-              ? filteredDestinations.length === 1 ? 'Reiseziel gefunden' : 'Reiseziele gefunden'
-              : filteredDestinations.length === 1 ? 'destination found' : 'destinations found'}
+              ? filteredDestinations.length === 1 ? 'Reiseziel' : 'Reiseziele'
+              : filteredDestinations.length === 1 ? 'destination' : 'destinations'}
           </p>
           <Link
             href={`${prefix}/tariffs`}
-            className="text-xs md:text-sm font-bold text-brand-600 hover:text-brand-700 transition-colors"
+            className="text-xs md:text-sm font-bold text-brand-600 hover:text-brand-700"
           >
             {t('btn_compare_all_tariffs' as any) || (isDe ? 'Alle Tarife vergleichen →' : 'Compare all tariffs →')}
           </Link>
         </div>
 
         {/* Destination Sections */}
-        <div id="destinations-grid" className="space-y-12">
+        <div id="destinations-grid" className="space-y-8">
           {groupOrder.map((groupKey) => {
             const list = groupedResults.get(groupKey);
             if (!list || list.length === 0) return null;
 
             return (
-              <section key={groupKey} className="space-y-4">
+              <section key={groupKey} className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                  <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">
                     {groupLabels[groupKey]}
                   </h2>
-                  <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700">
                     {list.length}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
                   {list.map((d) => (
                     <Link
-                      key={d.code}
-                      href={`${prefix}/esim/${d.slug}`}
-                      className="group relative flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs hover:border-brand-300 hover:shadow-md transition-all duration-200 min-h-[58px]"
+                      key={d[0]}
+                      href={`${prefix}/esim/${d[1]}`}
+                      className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:border-brand-300 hover:shadow-sm transition-all min-h-[50px]"
                     >
-                      <div className="flex items-center gap-3 min-w-0 pr-2">
-                        <span className="text-2xl shrink-0 leading-none select-none" role="img" aria-label={d.localizedName}>
-                          {d.flag || '🌍'}
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <span className="text-xl shrink-0 leading-none select-none">
+                          {d[2] || '🌍'}
                         </span>
-                        <div className="min-w-0">
-                          <span className="block truncate text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
-                            {d.localizedName}
-                          </span>
-                          <span className="block text-[11px] text-slate-600">
-                            {d.count} {isDe ? (d.count === 1 ? 'Tarif' : 'Tarife') : (d.count === 1 ? 'plan' : 'plans')}
-                          </span>
-                        </div>
+                        <span className="truncate text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                          {d[3]}
+                        </span>
                       </div>
 
-                      <div className="shrink-0 text-right pl-2">
-                        {d.minPrice > 0 ? (
-                          <span className="inline-block rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-800 group-hover:bg-brand-50 group-hover:text-brand-700 transition-colors">
+                      <div className="shrink-0 text-right pl-1">
+                        {d[4] > 0 ? (
+                          <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-800 group-hover:bg-brand-50 group-hover:text-brand-700 transition-colors">
                             {isDe ? 'ab ' : 'from '}
-                            {formatCurrencyEuro(d.minPrice, locale)}
+                            {formatCurrencyEuro(d[4], locale)}
                           </span>
                         ) : (
-                          <span className="text-xs font-bold text-brand-600 group-hover:underline">
-                            Details →
+                          <span className="text-xs font-bold text-brand-600">
+                            →
                           </span>
                         )}
                       </div>
@@ -238,20 +230,20 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
           })}
 
           {filteredDestinations.length === 0 && (
-            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 shadow-xs">
-              <span className="text-4xl mb-3 block">🔍</span>
-              <h3 className="text-lg font-bold text-slate-900">
+            <div className="text-center py-12 bg-white rounded-xl border border-slate-200 p-6">
+              <span className="text-3xl mb-2 block">🔍</span>
+              <h3 className="text-base font-bold text-slate-900">
                 {isDe ? 'Keine Reiseziele gefunden' : 'No destinations found'}
               </h3>
-              <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                 {isDe
-                  ? `Für "${searchQuery}" wurde kein passendes Land gefunden. Versuche einen anderen Suchbegriff oder stöbere in der Gesamttarifliste.`
-                  : `No destination matched "${searchQuery}". Try a different search term or view the full tariff directory.`}
+                  ? `Für "${searchQuery}" wurde kein passendes Land gefunden.`
+                  : `No destination matched "${searchQuery}".`}
               </p>
-              <div className="mt-4">
+              <div className="mt-3">
                 <Link
                   href={`${prefix}/tariffs`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-brand-500 transition-all"
+                  className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-500"
                 >
                   {isDe ? 'Alle Tarife ansehen' : 'View all plans'} →
                 </Link>

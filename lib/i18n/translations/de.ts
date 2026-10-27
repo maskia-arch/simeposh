@@ -332,7 +332,7 @@ const de = {
   "feat_topup_title": "Top-Up fähig",
   "feat_tr_premium_desc": "Bietet gleichzeitigen Zugriff auf zwei Top-Netze (Vodafone & Türk Telekom/Avea). Fällt ein Netz regional aus oder hat schwachen Empfang, weicht dein Gerät automatisch aus. Datenverkehr wird über Großbritannien (UK) geroutet.",
   "feat_tr_premium_price_note": "Maximale Netzabdeckung in Städten, Küsten- & Urlaubsregionen sowie im Inland durch automatisches Netz-Fallback.",
-  "feat_tr_premium_title": "Türkei Travel Premium: Vodafone + Türk Telekom / UK IP",
+  "feat_tr_premium_title": "Türkei Travel Premium: Vodafone + Türk Telekom / Optimiertes Routing",
   "feat_travel_premium_badge": "Travel Premium",
   "feat_travel_premium_desc": "Premium-Tarif mit technisch überlegenem Routing: lokale IP-Adresse, mehrere IP-Standorte oder direkter Datenverkehr ohne Umweg über Hongkong.",
   "feat_travel_premium_price_note": "Der minimale Aufpreis sichert unterbrechungsfreies Roaming über mehrere Partnernetze.",
