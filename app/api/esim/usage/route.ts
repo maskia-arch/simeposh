@@ -8,25 +8,43 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const iccid = searchParams.get('iccid')?.trim();
+    const iccidParam = searchParams.get('iccid')?.trim();
+    const setupToken = searchParams.get('setupToken')?.trim();
+    const orderId = searchParams.get('orderId')?.trim();
 
-    if (!iccid) {
-      return NextResponse.json({ error: 'ICCID erforderlich' }, { status: 400 });
+    const db = createServiceClient();
+    let order: any = null;
+
+    if (setupToken) {
+      const { data } = await db
+        .from('orders')
+        .select('id, iccid, created_at, status, period_num, esim_status, smdp_status, data_remaining_bytes, data_total_bytes, esim_expired_at, esim_usage_updated_at, tariffs(data_gb)')
+        .eq('setup_token', setupToken)
+        .in('status', ['completed', 'paid', 'provisioning'])
+        .maybeSingle();
+      order = data;
+    } else if (orderId) {
+      const { data } = await db
+        .from('orders')
+        .select('id, iccid, created_at, status, period_num, esim_status, smdp_status, data_remaining_bytes, data_total_bytes, esim_expired_at, esim_usage_updated_at, tariffs(data_gb)')
+        .eq('id', orderId)
+        .in('status', ['completed', 'paid', 'provisioning'])
+        .maybeSingle();
+      order = data;
+    } else if (iccidParam) {
+      const { data: orders } = await db
+        .from('orders')
+        .select('id, iccid, created_at, status, period_num, esim_status, smdp_status, data_remaining_bytes, data_total_bytes, esim_expired_at, esim_usage_updated_at, tariffs(data_gb)')
+        .eq('iccid', iccidParam)
+        .in('status', ['completed', 'paid', 'provisioning']);
+      order = orders && orders.length > 0 ? (orders[0] as any) : null;
     }
 
-    // Security & Anti-tampering Check: Verify that the ICCID exists in our database
-    const db = createServiceClient();
-    const { data: orders } = await db
-      .from('orders')
-      .select('id, created_at, status, period_num, esim_status, smdp_status, data_remaining_bytes, data_total_bytes, esim_expired_at, esim_usage_updated_at, tariffs(data_gb)')
-      .eq('iccid', iccid)
-      .in('status', ['completed', 'paid', 'provisioning']);
-
-    const order = orders && orders.length > 0 ? (orders[0] as any) : null;
-
-    if (!order) {
+    if (!order || !order.iccid) {
       return NextResponse.json({ error: 'eSIM nicht gefunden oder ungültig' }, { status: 404 });
     }
+
+    const iccid = order.iccid;
 
     console.log('[esim/usage] Querying status for ICCID:', iccid);
     const statusRes = await getEsimStatus(iccid);

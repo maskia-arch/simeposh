@@ -45,6 +45,11 @@ const COUNTRY_NAME_OVERRIDES: Record<string, Record<string, string>> = {
     en: 'United States', de: 'Vereinigte Staaten', fr: 'États-Unis', es: 'Estados Unidos', it: 'Stati Uniti',
     nl: 'Verenigde Staten', pl: 'Stany Zjednoczone', pt: 'Estados Unidos', tr: 'Amerika Birleşik Devletleri', sv: 'USA',
     da: 'USA', fi: 'Yhdysvallat', cs: 'Spojené státy', ro: 'Statele Unite', hu: 'Egyesült Államok'
+  },
+  LA: {
+    en: 'Laos', de: 'Laos', fr: 'Laos', es: 'Laos', it: 'Laos',
+    nl: 'Laos', pl: 'Laos', pt: 'Laos', tr: 'Laos', sv: 'Laos',
+    da: 'Laos', fi: 'Laos', cs: 'Laos', ro: 'Laos', hu: 'Laosz'
   }
 };
 
@@ -88,7 +93,7 @@ const REGION_LABELS: Record<string, Record<string, string>> = {
     nl: 'Noord-Amerika', pl: 'Ameryka Północna', pt: 'América do Norte', tr: 'Kuzey Amerika', sv: 'Nordamerika',
     da: 'Nordamerika', fi: 'Pohjois-Amerikka', cs: 'Severní Amerika', ro: 'America de Nord', hu: 'Észak-Amerika'
   },
-  LA: {
+  LATAM: {
     en: 'Latin America', de: 'Lateinamerika', fr: 'Amérique latine', es: 'Latinoamérica', it: 'America Latina',
     nl: 'Latijns-Amerika', pl: 'Ameryka Łacińska', pt: 'América Latina', tr: 'Latin Amerika', sv: 'Latinamerika',
     da: 'Latinamerika', fi: 'Latinalainen Amerikka', cs: 'Latinská Amerika', ro: 'America Latină', hu: 'Latin-Amerika'
@@ -214,7 +219,8 @@ export function coverageLabel(t: TariffLike, locale = 'en'): string | null {
 export function cleanTariffName(name: string | null | undefined): string {
   if (!name) return '';
   return name
-    .replace(/\s*\(\s*non-?hk-?ip\s*\)/gi, '')
+    .replace(/\s*\(\s*(?:AUIP|USIP(?:-FIFA)?|IIJ|MYIP|non-?hk-?ip|\d+\s*areas)\s*\)/gi, '')
+    .replace(/\s+Premium\b/gi, '')
     .replace(/\s+non-?hk-?ip\b/gi, '')
     .replace(/\s+FUP\d+(?:[km]bps)?/gi, '')
     .trim();
@@ -467,18 +473,7 @@ export function isPremiumTariff(tariff: {
 }): boolean {
   if (typeof tariff.is_premium === 'boolean') return tariff.is_premium;
   if (tariff.tariff_type === 'travel_premium') return true;
-
-  const nameStr = (tariff.name ?? '').toLowerCase();
-  const codeStr = (tariff.package_code ?? '').toLowerCase();
-  const descStr = (tariff.description ?? '').toLowerCase();
-  const slugStr = (tariff.slug ?? '').toLowerCase();
-
-  return (
-    nameStr.includes('premium') ||
-    codeStr.includes('premium') ||
-    descStr.includes('premium') ||
-    slugStr.includes('premium')
-  );
+  return false;
 }
 
 /**
@@ -512,6 +507,7 @@ export interface TariffSpecialFeature {
   icon: string;
   cls: string;
   extra?: string;
+  vars?: Record<string, string | number>;
 }
 
 export interface ReloadabilityInfo {
@@ -630,6 +626,27 @@ const DUAL_NETWORK_LABEL: Record<string, string> = {
   hu: '(2 Hálózat)',
 };
 
+export function isLocalIpTariff(tariff: {
+  country_code?: string | null;
+  breakout_ip?: string | null;
+  name?: string | null;
+  package_code?: string | null;
+  raw_data?: any;
+}): boolean {
+  const code = (tariff.country_code ?? '').toUpperCase();
+  const ip = (getTariffBreakoutIp(tariff as any) ?? '').toUpperCase();
+  if (code && ip && (code === ip || (code === 'USA' && ip === 'US') || (code === 'GB' && ip === 'UK'))) {
+    return true;
+  }
+  const name = (tariff.name ?? '').toUpperCase();
+  const pkg = (tariff.package_code ?? '').toUpperCase();
+  if (name.includes('AUIP') || pkg.includes('AUIP') || (code === 'AU' && ip === 'AU')) return true;
+  if (name.includes('USIP') || pkg.includes('USIP') || (code === 'US' && ip === 'US')) return true;
+  if (name.includes('MYIP') || pkg.includes('MYIP') || (code === 'MY' && ip === 'MY')) return true;
+  if (name.includes('IIJ') || pkg.includes('IIJ') || (code === 'JP' && (ip === 'JP' || name.includes('IIJ')))) return true;
+  return false;
+}
+
 export function getTariffSpecialFeatures(
   tariff: {
     name?: string | null;
@@ -652,27 +669,45 @@ export function getTariffSpecialFeatures(
 ): TariffSpecialFeature[] {
   const features: TariffSpecialFeature[] = [];
 
-  // 0. Travel Premium (Dual-Network Redundancy & Breakout IP)
+  // 0. Travel Premium Advantage Chip (exactly one chip: Local IP, Non-HK, or Multi-IP)
   if (isPremiumTariff(tariff)) {
-    const isTR = isTurkeyTariff(tariff as any);
-    const ip = getTariffBreakoutIp(tariff);
-    const dualLabel = DUAL_NETWORK_LABEL[locale] || DUAL_NETWORK_LABEL.en;
-    features.push({
-      id: 'travel_premium',
-      badgeKey: 'feat_travel_premium_badge',
-      titleKey: isTR ? 'feat_tr_premium_title' : 'feat_travel_premium_title',
-      descKey: isTR ? 'feat_tr_premium_desc' : 'feat_travel_premium_desc',
-      priceNoteKey: isTR ? 'feat_tr_premium_price_note' : 'feat_travel_premium_price_note',
-      icon: '👑',
-      cls: 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 font-bold',
-      extra: isTR
-        ? `Vodafone & Türk Telekom/Avea ${dualLabel} · Breakout IP: UK`
-        : (ip ? `Breakout IP: ${ip}` : undefined),
-    });
+    const isLocal = isLocalIpTariff(tariff as any);
+    const isNonHk = isNonHkIpTariff(tariff as any);
+    const countryName = displayCountryName(tariff as any, locale);
+
+    if (isLocal) {
+      features.push({
+        id: 'travel_premium',
+        badgeKey: 'feat_prem_adv_local_ip',
+        titleKey: 'feat_prem_adv_local_ip',
+        descKey: 'feat_prem_adv_local_ip_desc',
+        icon: '📍',
+        cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
+        vars: { country: countryName },
+      });
+    } else if (isNonHk) {
+      features.push({
+        id: 'travel_premium',
+        badgeKey: 'feat_prem_adv_non_hk',
+        titleKey: 'feat_prem_adv_non_hk',
+        descKey: 'feat_prem_adv_non_hk_desc',
+        icon: '🛡️',
+        cls: 'bg-indigo-50 text-indigo-950 border-indigo-200 hover:bg-indigo-100 font-bold',
+      });
+    } else {
+      features.push({
+        id: 'travel_premium',
+        badgeKey: 'feat_prem_adv_multi_ip',
+        titleKey: 'feat_prem_adv_multi_ip',
+        descKey: 'feat_prem_adv_multi_ip_desc',
+        icon: '🌐',
+        cls: 'bg-sky-50 text-sky-950 border-sky-200 hover:bg-sky-100 font-bold',
+      });
+    }
   }
 
-  // 1. Non-HK IP
-  if (isNonHkIpTariff(tariff)) {
+  // 1. Non-HK IP (for Travel Standard tariffs that route outside HK)
+  if (!isPremiumTariff(tariff) && isNonHkIpTariff(tariff)) {
     const ipExp = getTariffBreakoutIp(tariff);
     features.push({
       id: 'non_hk_ip',

@@ -30,7 +30,7 @@ export async function generateMetadata({ searchParams }: DashboardPageProps): Pr
   else if (tab === 'settings') tabTitle = t('dash_meta_settings');
 
   return {
-    title: `${tabTitle} | PureSim`,
+    title: { absolute: `${tabTitle} | PureSim` },
     robots: {
       index: false,
       follow: false,
@@ -75,7 +75,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Fetch the user's orders with tariff details (strictly no raw_data or supplier fields)
   const { data: rawOrders } = await service
     .from('orders')
-    .select('id, status, order_type, amount_eur, iccid, short_url, qr_code_url, activation_code, smdp_address, apn, top_up_iccid, period_num, esim_status, esim_status_at, created_at, checkout_ref, tariffs(id, slug, name, country_name, country_code, data_gb, validity_days, flag_emoji, tariff_type, active_type, support_top_up_type)')
+    .select('id, status, order_type, amount_eur, iccid, short_url, qr_code_url, activation_code, smdp_address, apn, top_up_iccid, period_num, esim_status, esim_status_at, created_at, checkout_ref, setup_token, tariffs(id, slug, name, country_name, country_code, data_gb, validity_days, flag_emoji, tariff_type, active_type, support_top_up_type)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -132,7 +132,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       status: o.status,
       order_type: o.order_type,
       amount_eur: o.amount_eur,
-      iccid: o.iccid,
+      iccid: o.iccid ? `•••• ${o.iccid.slice(-4)}` : null,
+      has_iccid: Boolean(o.iccid),
+      setup_token: o.setup_token || null,
       short_url: o.short_url,
       top_up_iccid: o.top_up_iccid,
       period_num: o.period_num,

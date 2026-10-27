@@ -34,6 +34,8 @@ export interface OrderType {
   order_type:   string;
   amount_eur:   number;
   iccid:        string | null;
+  has_iccid?:   boolean;
+  setup_token?: string | null;
   short_url:    string | null;
   top_up_iccid: string | null;
   period_num:   number | null;
@@ -423,7 +425,9 @@ export function DashboardClient({
               {completed.map((order) => {
                 const session = allSessions.find((s) => s.order_ids?.includes(order.id));
                 const txId = session?.id ?? (order as any).checkout_ref ?? order.id;
-                const overviewUrl = order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null;
+                const overviewUrl = order.setup_token
+                  ? `https://esim.puresim.net/s/${order.setup_token}`
+                  : (order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null);
                 const esimRecord = order.iccid ? (esimMap[order.iccid] ?? { iccid: order.iccid, topup_count: 0 }) : null;
 
                 return (
@@ -506,6 +510,62 @@ function DashboardOrderRow({
   prefix?: string;
   locale?: string;
 }) {
+  const [revealedIccid, setRevealedIccid] = useState<string | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleRevealIccid = async () => {
+    if (revealedIccid) return;
+    setIsRevealing(true);
+    try {
+      const res = await fetch('/api/esim/reveal-iccid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.iccid) {
+        setRevealedIccid(data.iccid);
+      }
+    } catch (err) {
+      console.error('Failed to reveal ICCID', err);
+    } finally {
+      setIsRevealing(false);
+    }
+  };
+
+  const handleCopyIccid = async () => {
+    let toCopy = revealedIccid;
+    if (!toCopy) {
+      setIsRevealing(true);
+      try {
+        const res = await fetch('/api/esim/reveal-iccid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        const data = await res.json();
+        if (res.ok && data.iccid) {
+          toCopy = data.iccid;
+          setRevealedIccid(data.iccid);
+        }
+      } catch (err) {
+        console.error('Failed to reveal and copy ICCID', err);
+      } finally {
+        setIsRevealing(false);
+      }
+    }
+    if (toCopy) {
+      try {
+        await navigator.clipboard.writeText(toCopy);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (err) {
+        console.error('Clipboard copy failed', err);
+      }
+    }
+  };
+
   const tariff = order.tariffs;
   const lifecycle = (order.esim_status as EsimLifecycle | null) ?? 'unknown';
   const lifeMeta = LIFECYCLE_META[lifecycle] ?? LIFECYCLE_META.unknown;
@@ -547,7 +607,7 @@ function DashboardOrderRow({
       <div className="flex flex-wrap items-center gap-3 p-4">
         <span className="text-2xl" aria-hidden="true">{tariff?.flag_emoji ?? '🌐'}</span>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800 text-sm truncate">
+          <p className="font-semibold text-slate-800 text-sm break-words">
             {tariff?.country_name ?? 'Unbekannt'}
             {order.order_type === 'top_up' && (
               <span className="ml-2 text-xs bg-brand-100 text-brand-700 rounded-full px-2 py-0.5">Top-Up</span>
@@ -586,6 +646,7 @@ function DashboardOrderRow({
           {/* 9 Segments */}
           <div
             role="progressbar"
+            aria-label="Datenverbrauch"
             aria-valuemin={0}
             aria-valuemax={9}
             aria-valuenow={used}
@@ -633,9 +694,43 @@ function DashboardOrderRow({
       {showEsim && order.status === 'completed' && (
         <div className="border-t border-slate-100 px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
           {order.iccid ? (
-            <div className="flex items-center gap-1.5 py-1">
-              <span className="text-xs text-slate-400">ICCID:</span>
-              <span className="text-xs font-mono text-slate-600">{order.iccid}</span>
+            <div className="flex items-center gap-2 py-1 flex-wrap">
+              <span className="text-xs text-slate-400 font-semibold select-none">ICCID:</span>
+              <span className="text-xs font-mono font-bold text-slate-700 select-all tracking-wider">
+                {revealedIccid || order.iccid}
+              </span>
+              {!revealedIccid ? (
+                <button
+                  type="button"
+                  onClick={handleRevealIccid}
+                  disabled={isRevealing}
+                  className="min-h-[44px] px-2 text-xs font-bold text-brand-600 hover:text-brand-800 underline underline-offset-2 cursor-pointer inline-flex items-center"
+                  aria-label={`${t('esim_reveal_btn') || 'Vollständige ICCID aufdecken für'} ${tariff?.country_name || 'eSIM'}`}
+                >
+                  {isRevealing ? '...' : (t('esim_reveal_btn') || 'Anzeigen')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleCopyIccid}
+                className="min-h-[44px] px-2.5 py-1 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer inline-flex items-center gap-1 transition-colors"
+                aria-label={`${t('esim_copy_btn') || 'ICCID kopieren für'} ${tariff?.country_name || 'eSIM'}`}
+              >
+                {isCopied ? (
+                  <>
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span className="text-emerald-700">{t('copied') || 'Kopiert'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📋</span>
+                    <span>{t('copy') || 'Kopieren'}</span>
+                  </>
+                )}
+              </button>
+              <span role="status" aria-live="polite" className="sr-only">
+                {isCopied ? (t('copied') || 'Kopiert') : ''}
+              </span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 py-1">
@@ -650,7 +745,8 @@ function DashboardOrderRow({
               </span>
             ) : (
               <Link
-                href={`/reviews/new?orderId=${order.id}&token=${generateFeedbackToken(order.id, userEmail)}`}
+                href={`${prefix}/reviews/new?orderId=${order.id}`}
+                prefetch={false}
                 className="min-h-[44px] inline-flex items-center rounded-lg bg-gradient-to-r from-amber-50 to-amber-100/80 border border-amber-300 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs gap-1 cursor-pointer"
                 title="Jetzt bewerten und 1% eSIM Cash Belohnung sichern"
               >
@@ -659,7 +755,7 @@ function DashboardOrderRow({
             )}
 
             <Link
-              href={`/dashboard/orders/${order.id}`}
+              href={`${prefix}/dashboard/orders/${order.id}`}
               className="min-h-[44px] inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-brand-700 transition-colors cursor-pointer"
             >
               {t('dash_details')}
@@ -690,7 +786,7 @@ function DashboardOrderRow({
                   </button>
                 ) : (
                   <Link
-                    href={`${prefix}/topup?orderId=${order.id}&iccid=${encodeURIComponent(order.iccid)}`}
+                    href={`${prefix}/topup?orderId=${order.id}`}
                     className="min-h-[44px] inline-flex items-center justify-center rounded-lg bg-brand-50 border border-brand-200 px-3.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors cursor-pointer"
                   >
                     {t('dash_topup')}

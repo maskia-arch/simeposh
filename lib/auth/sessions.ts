@@ -2,7 +2,7 @@
  * Helpers for user session display and management.
  */
 
-export function parseUserAgent(uaString: string | null | undefined): {
+export function parseUserAgent(uaString: string | null | undefined, locale = 'de'): {
   browser: string;
   os: string;
   device: string;
@@ -10,7 +10,7 @@ export function parseUserAgent(uaString: string | null | undefined): {
 } {
   const ua = uaString || '';
 
-  let os = 'Unbekanntes System';
+  let os = locale === 'de' ? 'Unbekanntes System' : 'Unknown System';
   if (/Windows/i.test(ua)) os = 'Windows';
   else if (/iPhone/i.test(ua)) os = 'iPhone (iOS)';
   else if (/iPad/i.test(ua)) os = 'iPad (iPadOS)';
@@ -26,14 +26,15 @@ export function parseUserAgent(uaString: string | null | undefined): {
   else if (/Opera|OPR\//i.test(ua)) browser = 'Opera';
 
   let device = 'Desktop';
-  if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) device = 'Smartphone';
+  if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) device = locale === 'de' ? 'Smartphone' : 'Mobile';
   else if (/iPad|Tablet/i.test(ua)) device = 'Tablet';
 
+  const preposition = locale === 'de' ? 'unter' : 'on';
   return {
     browser,
     os,
     device,
-    description: `${browser} unter ${os}`,
+    description: `${browser} ${preposition} ${os}`,
   };
 }
 

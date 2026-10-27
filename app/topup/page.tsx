@@ -81,9 +81,10 @@ export default function TopUpPage() {
   const [selectedEsimId, setSelectedEsimId] = useState<string>('manual');
   const [loadingUserEsims, setLoadingUserEsims] = useState<boolean>(true);
 
-  const doSearch = useCallback(async (code: string) => {
-    const value = code.trim();
-    if (!value) return;
+  const doSearch = useCallback(async (opts: { iccid?: string; orderId?: string }) => {
+    const value = (opts.iccid || '').trim();
+    const oid = (opts.orderId || '').trim();
+    if (!value && !oid) return;
 
     setLoading(true);
     setError('');
@@ -94,7 +95,10 @@ export default function TopUpPage() {
     setSelectedPkgCode(null);
 
     try {
-      const res  = await fetch(`/api/topup/packages?iccid=${encodeURIComponent(value)}`);
+      const url = oid
+        ? `/api/topup/packages?orderId=${encodeURIComponent(oid)}`
+        : `/api/topup/packages?iccid=${encodeURIComponent(value)}`;
+      const res  = await fetch(url);
       const data = await res.json();
 
       if (data.eligibility) {
@@ -134,7 +138,7 @@ export default function TopUpPage() {
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    await doSearch(iccid);
+    await doSearch({ iccid });
   }
 
   // Fetch logged-in user's eSIMs and handle ?orderId= / ?iccid= prefill
@@ -167,7 +171,7 @@ export default function TopUpPage() {
             if (matched) {
               setSelectedEsimId(matched.id);
               setIccid(matched.iccid);
-              doSearch(matched.iccid);
+              doSearch({ orderId: matched.id });
               return;
             }
           }
@@ -179,9 +183,11 @@ export default function TopUpPage() {
       }
 
       // Guest / manual fallback if parameter was present
-      if (paramIccid) {
+      if (paramOrderId) {
+        doSearch({ orderId: paramOrderId });
+      } else if (paramIccid) {
         setIccid(paramIccid);
-        doSearch(paramIccid);
+        doSearch({ iccid: paramIccid });
       }
     }
 
@@ -307,7 +313,7 @@ export default function TopUpPage() {
                   onClick={() => {
                     setSelectedEsimId(e.id);
                     setIccid(e.iccid);
-                    doSearch(e.iccid);
+                    doSearch({ orderId: e.id });
                   }}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all min-h-[44px] cursor-pointer ${
                     isSelected

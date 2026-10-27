@@ -30,7 +30,7 @@ export async function getAllDestinations(): Promise<Destination[]> {
     `SELECT country_code, country_name, flag_emoji, count(*) as count, min(sale_price_eur) as min_price,
             COUNT(*) FILTER (WHERE tariff_type LIKE 'unlimited%' OR data_gb = 0) as unlimited_count
      FROM tariffs
-     WHERE is_active = true AND country_code IS NOT NULL
+     WHERE is_active = true AND country_code IS NOT NULL AND hidden_reason IS NULL
      GROUP BY country_code, country_name, flag_emoji
      ORDER BY country_name ASC`
   );
@@ -160,9 +160,9 @@ export async function getCountryTariffs(countryCode: string): Promise<PublicTari
       const { rows } = await query(
         `SELECT id, package_code, slug, name, description, country_code, country_name, region,
                 flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
-                speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, raw_data
+                speed_kbps, label, is_top_up_eligible, is_premium, breakout_ip, active_type, support_top_up_type, discount_rule_code, raw_data
          FROM tariffs
-         WHERE is_active = true AND country_code = $1
+         WHERE is_active = true AND country_code = $1 AND hidden_reason IS NULL
          ORDER BY sale_price_eur ASC`,
         [upperCode]
       );

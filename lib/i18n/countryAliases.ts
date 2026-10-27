@@ -80,6 +80,7 @@ export const COUNTRY_ALIASES: Record<string, string> = {
   'kirgisistan':         'KG', 'kirghizistan':         'KG', 'kyrgyzstan':    'KG',
 
   // ── L ──────────────────────────────────────────────────────────
+  'laos':                'LA', 'laosz':                'LA',
   'lettland':            'LV', 'lettonie':             'LV', 'letonia':       'LV', 'latvia':         'LV', 'letonya': 'LV', 'latvija': 'LV',
   'libanon':             'LB', 'liban':                'LB', 'líbano':        'LB', 'libano':         'LB',
   'litauen':             'LT', 'lituanie':             'LT', 'lituania':      'LT', 'lituânia':       'LT', 'litvanya': 'LT', 'liettua': 'LT', 'litva': 'LT', 'lietuva': 'LT',
@@ -195,10 +196,11 @@ export const REGION_ALIASES: Record<string, string> = {
   'norteamérica':        'NA', 'america del nord':     'NA', 'noord-amerika':    'NA',
   'ameryka północna':    'NA', 'kuzey amerika':        'NA',
 
-  // ── Latin America / LA ─────────────────────────────────────────
-  'lateinamerika':       'LA', 'latin america':        'LA', 'amérique latine':  'LA',
-  'latinoamérica':       'LA', 'amérique centrale':    'LA', 'america latina':   'LA',
-  'latijns-amerika':     'LA', 'ameryka łacińska':     'LA',
+  // ── Latin America / LATAM ─────────────────────────────────────────
+  'lateinamerika':       'LATAM', 'latin america':        'LATAM', 'amérique latine':  'LATAM',
+  'latinoamérica':       'LATAM', 'amérique centrale':    'LATAM', 'america latina':   'LATAM',
+  'latijns-amerika':     'LATAM', 'ameryka łacińska':     'LATAM', 'latin-amerika':    'LATAM',
+  'latina':              'LATAM', 'latam':                'LATAM',
 
   // ── Oceania / OC ───────────────────────────────────────────────
   'ozeanien':            'OC', 'oceania':              'OC', 'océanie':          'OC',

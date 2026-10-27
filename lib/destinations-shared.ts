@@ -26,39 +26,46 @@ export function slugify(text: string): string {
  * Mapping of virtual regions to canonical SEO slugs.
  */
 export const REGION_SLUGS: Record<string, string> = {
-  EU:   'europe',
-  AS:   'asia',
-  SEA:  'southeast-asia',
-  ME:   'middle-east',
-  NA:   'north-america',
-  LA:   'latin-america',
-  OC:   'oceania',
-  AF:   'africa',
-  GLOB: 'global',
+  EU:    'europe',
+  AS:    'asia',
+  SEA:   'southeast-asia',
+  ME:    'middle-east',
+  NA:    'north-america',
+  LATAM: 'latin-america',
+  OC:    'oceania',
+  AF:    'africa',
+  GLOB:  'global',
 };
 
 /**
  * Common slug overrides for ISO codes to ensure clean, human-friendly URLs.
  */
 export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
-  DE: 'germany',
-  TR: 'turkey',
-  US: 'united-states',
-  GB: 'united-kingdom',
-  AE: 'united-arab-emirates',
-  KR: 'south-korea',
-  HK: 'hong-kong',
-  MO: 'macao',
-  DO: 'dominican-republic',
-  ZA: 'south-africa',
-  CZ: 'czech-republic',
-  XK: 'kosovo',
+  DE:    'germany',
+  TR:    'turkey',
+  US:    'united-states',
+  GB:    'united-kingdom',
+  AE:    'united-arab-emirates',
+  KR:    'south-korea',
+  HK:    'hong-kong',
+  MO:    'macao',
+  DO:    'dominican-republic',
+  ZA:    'south-africa',
+  CZ:    'czech-republic',
+  XK:    'kosovo',
+  LA:    'laos',
+  LATAM: 'latin-america',
 };
 
 /**
  * Known custom aliases for instant slug lookup.
  */
 export const CUSTOM_ALIASES: Record<string, string> = {
+  laos: 'LA',
+  la: 'LA',
+  'latin-america': 'LATAM',
+  latam: 'LATAM',
+  lateinamerika: 'LATAM',
   kosovo: 'XK',
   xk: 'XK',
   usa: 'US',
@@ -115,7 +122,6 @@ export const CUSTOM_ALIASES: Record<string, string> = {
   asien: 'AS',
   asia: 'AS',
   nordamerika: 'NA',
-  lateinamerika: 'LA',
   ozeanien: 'OC',
   oceania: 'OC',
   afrika: 'AF',

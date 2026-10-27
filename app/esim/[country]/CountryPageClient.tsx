@@ -9,8 +9,8 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
 import { formatGb } from '@/lib/utils';
-import { displayCountryName, getTariffOperators, bestNetworkType } from '@/lib/tariff-display';
-import { TravelGlobeIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon } from '@/components/Icons';
+import { displayCountryName, getTariffOperators, bestNetworkType, isPremiumTariff } from '@/lib/tariff-display';
+import { TravelGlobeIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 interface CountryPageClientProps {
   destination: Destination;
@@ -27,24 +27,54 @@ export function CountryPageClient({
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
 
-  type CategoryTab = 'all' | 'travel' | 'unlimited';
+  type CategoryTab = 'all' | 'travel_standard' | 'travel_premium' | 'unlimited';
   const [activeTab, setActiveTab] = useState<CategoryTab>('all');
+
+  const sortTariffs = (list: PublicTariff[]): PublicTariff[] => {
+    return [...list].sort((a, b) => {
+      // 1. Data volume GB ASC
+      const gbA = Number(a.data_gb ?? 0);
+      const gbB = Number(b.data_gb ?? 0);
+      if (gbA !== gbB) return gbA - gbB;
+
+      // 2. Validity days ASC
+      const daysA = Number(a.validity_days ?? 0);
+      const daysB = Number(b.validity_days ?? 0);
+      if (daysA !== daysB) return daysA - daysB;
+
+      // 3. Price ASC
+      const priceA = Number(a.customer_price_eur ?? a.sale_price_eur ?? 0);
+      const priceB = Number(b.customer_price_eur ?? b.sale_price_eur ?? 0);
+      return priceA - priceB;
+    });
+  };
 
   const travelTariffs = useMemo(
     () => tariffs.filter((t) => t.tariff_type === 'travel' || !t.tariff_type?.startsWith('unlimited')),
     [tariffs]
   );
 
+  const travelStandardTariffs = useMemo(
+    () => sortTariffs(travelTariffs.filter((t) => !isPremiumTariff(t))),
+    [travelTariffs]
+  );
+
+  const travelPremiumTariffs = useMemo(
+    () => sortTariffs(travelTariffs.filter((t) => isPremiumTariff(t))),
+    [travelTariffs]
+  );
+
   const unlimitedTariffs = useMemo(
-    () => tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0),
+    () => sortTariffs(tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0)),
     [tariffs]
   );
 
-  const displayedTariffs = useMemo(() => {
-    if (activeTab === 'travel') return travelTariffs;
-    if (activeTab === 'unlimited') return unlimitedTariffs;
-    return tariffs;
-  }, [activeTab, tariffs, travelTariffs, unlimitedTariffs]);
+  const displayedCount = useMemo(() => {
+    if (activeTab === 'travel_standard') return travelStandardTariffs.length;
+    if (activeTab === 'travel_premium') return travelPremiumTariffs.length;
+    if (activeTab === 'unlimited') return unlimitedTariffs.length;
+    return tariffs.length;
+  }, [activeTab, tariffs.length, travelStandardTariffs.length, travelPremiumTariffs.length, unlimitedTariffs.length]);
 
   // Dynamic pricing metrics
   const minPrice = tariffs.length > 0
@@ -177,12 +207,13 @@ export function CountryPageClient({
       </section>
 
       {/* ── Category Filter Switcher ── */}
-      <section className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 p-1 bg-slate-100/80 rounded-2xl border border-slate-200">
+      <section className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100/80 rounded-2xl border border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`rounded-xl px-4 py-2 text-xs md:text-sm font-bold transition-all ${
+            aria-pressed={activeTab === 'all'}
+            className={`min-h-[44px] rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'all'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -191,18 +222,35 @@ export function CountryPageClient({
             {t('all_plans' as any) || (isDe ? 'Alle Tarife' : 'All Plans')} ({tariffs.length})
           </button>
 
-          {travelTariffs.length > 0 && (
+          {travelStandardTariffs.length > 0 && (
             <button
               type="button"
-              onClick={() => setActiveTab('travel')}
-              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs md:text-sm font-bold transition-all ${
-                activeTab === 'travel'
+              onClick={() => setActiveTab('travel_standard')}
+              aria-pressed={activeTab === 'travel_standard'}
+              className={`min-h-[44px] flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'travel_standard'
                   ? 'bg-white text-brand-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TravelGlobeIcon size={14} className="currentColor" />
-              <span>{t('tab_travel_data' as any) || (isDe ? 'Datenpakete' : 'Travel Data')}</span> ({travelTariffs.length})
+              <span>Travel Standard</span> ({travelStandardTariffs.length})
+            </button>
+          )}
+
+          {travelPremiumTariffs.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('travel_premium')}
+              aria-pressed={activeTab === 'travel_premium'}
+              className={`min-h-[44px] flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'travel_premium'
+                  ? 'bg-white text-amber-900 shadow-xs ring-1 ring-amber-300'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <TravelPremiumGlobeIcon size={14} className="text-amber-800" />
+              <span>Travel Premium</span> ({travelPremiumTariffs.length})
             </button>
           )}
 
@@ -210,7 +258,8 @@ export function CountryPageClient({
             <button
               type="button"
               onClick={() => setActiveTab('unlimited')}
-              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs md:text-sm font-bold transition-all ${
+              aria-pressed={activeTab === 'unlimited'}
+              className={`min-h-[44px] flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'unlimited'
                   ? 'bg-white text-emerald-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -223,9 +272,9 @@ export function CountryPageClient({
         </div>
 
         <p className="text-xs text-slate-500">
-          {t('plans_for_country' as any, { count: displayedTariffs.length, country: countryLabel }) || (isDe
-            ? `${displayedTariffs.length} Tarife für ${countryLabel}`
-            : `${displayedTariffs.length} plans for ${countryLabel}`)}
+          {t('plans_for_country' as any, { count: displayedCount, country: countryLabel }) || (isDe
+            ? `${displayedCount} Tarife für ${countryLabel}`
+            : `${displayedCount} plans for ${countryLabel}`)}
         </p>
       </section>
 
@@ -257,10 +306,49 @@ export function CountryPageClient({
         </section>
       )}
 
-      {/* ── Tariffs Grid ── */}
-      <section className="mb-14">
-        <TariffsGrid tariffs={displayedTariffs} />
-      </section>
+      {/* ── Tariffs Sections in Fixed Order: Travel Standard -> Travel Premium -> Unlimited ── */}
+      <div className="space-y-12 mb-14">
+        {(activeTab === 'all' || activeTab === 'travel_standard') && travelStandardTariffs.length > 0 && (
+          <section id="section-travel-standard">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+              <TravelGlobeIcon size={20} className="text-brand-600" />
+              <span>Travel Standard</span>
+              <span className="text-sm font-normal text-slate-400">({travelStandardTariffs.length})</span>
+            </h2>
+            <TariffsGrid tariffs={travelStandardTariffs} />
+          </section>
+        )}
+
+        {(activeTab === 'all' || activeTab === 'travel_premium') && travelPremiumTariffs.length > 0 && (
+          <section id="section-travel-premium">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+              <TravelPremiumGlobeIcon size={20} className="text-amber-700" />
+              <span>Travel Premium</span>
+              <span className="text-sm font-normal text-slate-400">({travelPremiumTariffs.length})</span>
+            </h2>
+            <TariffsGrid tariffs={travelPremiumTariffs} />
+          </section>
+        )}
+
+        {(activeTab === 'all' || activeTab === 'unlimited') && unlimitedTariffs.length > 0 && (
+          <section id="section-unlimited">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <InfinityIcon size={20} className="text-emerald-600" />
+                <span>Unlimited</span>
+                <span className="text-sm font-normal text-slate-400">({unlimitedTariffs.length})</span>
+              </h2>
+              <Link
+                href={`${prefix}/unlimited/${destination.slug}`}
+                className="text-xs md:text-sm font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
+              >
+                {t('btn_go_unlimited_builder' as any) || (isDe ? 'Zum Unlimited-Builder' : 'Go to Unlimited Builder')} →
+              </Link>
+            </div>
+            <TariffsGrid tariffs={unlimitedTariffs} />
+          </section>
+        )}
+      </div>
 
       {/* ── SEO & FAQ Section ── */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-10 shadow-xs">

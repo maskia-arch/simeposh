@@ -427,11 +427,12 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                             : (t('cash_tx_spend' as any) || 'Redemption')
                       )}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {new Date(tx.created_at).toLocaleString(locale === 'de' ? 'de-DE' : 'en-US', {
+                    <p className="text-[11px] text-slate-400 mt-0.5" suppressHydrationWarning>
+                      {new Intl.DateTimeFormat(locale === 'de' ? 'de-DE' : 'en-US', {
                         day: '2-digit', month: '2-digit', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
+                        hour: '2-digit', minute: '2-digit',
+                        timeZone: 'Europe/Berlin',
+                      }).format(new Date(tx.created_at))}
                     </p>
                   </div>
                   

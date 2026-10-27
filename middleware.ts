@@ -4,6 +4,7 @@ import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
 import { render404Html, UNLIMITED_ENABLED_CODES } from '@/lib/not-found-html';
+import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard'];
@@ -75,7 +76,7 @@ export async function middleware(request: NextRequest) {
 
   const isStandardUserRoute =
     normalizedPath === '/' ||
-    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success)(\/|$)/i.test(normalizedPath) ||
+    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s|esim-overview)(\/|$)/i.test(normalizedPath) ||
     /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath) ||
     pathname.startsWith('/api/');
 
@@ -125,6 +126,13 @@ export async function middleware(request: NextRequest) {
   }
 
 
+  // ── 301 Redirect /topup with iccid query param: strip iccid permanently ──
+  if (normalizedPath === '/topup' && request.nextUrl.searchParams.has('iccid')) {
+    const cleanUrl = request.nextUrl.clone();
+    cleanUrl.searchParams.delete('iccid');
+    return NextResponse.redirect(cleanUrl, 301);
+  }
+
   // ── 301 Redirect old filter URLs: /tariffs?q=Germany -> /esim/germany ──
   if (normalizedPath === '/tariffs') {
     const q = request.nextUrl.searchParams.get('q');
@@ -137,9 +145,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── 301 Redirect old soft-404 country URLs: /tariffs/germany -> /esim/germany ──
+  // ── 301 Redirect 14 hidden USA duplicate tariffs: /tariffs/{duplicateSlug} -> /tariffs/{winnerSlug} ──
   if (normalizedPath.startsWith('/tariffs/')) {
     const slug = normalizedPath.replace(/^\/tariffs\//, '').trim();
+    if (slug && TARIFF_DUPLICATE_REDIRECTS[slug]) {
+      const winnerSlug = TARIFF_DUPLICATE_REDIRECTS[slug];
+      return NextResponse.redirect(new URL(`${langPrefix}/tariffs/${winnerSlug}`, request.url), 301);
+    }
     if (slug) {
       const code = resolveCountryOrRegionCode(slug);
       if (code) {
@@ -287,26 +299,26 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/esim-overview')) {
         // Proceed normally
       }
-      // 2. If path is root '/' or webshop route, REDIRECT to main domain (puresim.net)
+      // 2. If path is /s/... (the opaque setup token route), allow pass-through
+      else if (pathname.startsWith('/s/')) {
+        // Proceed normally
+      }
+      // 3. If path is root '/' or webshop route, REDIRECT to main domain (puresim.net)
       else if (
         pathname === '/' ||
         /^\/(tariffs|esim|unlimited|cart|checkout|dashboard|login|register|reviews|blog|agb|datenschutz|refund-policy|order|topup)/i.test(normalizedPath)
       ) {
         return NextResponse.redirect(new URL(pathname + request.nextUrl.search, `https://${mainDomain}`), 302);
       }
-      // 3. If path is an installation URL (e.g. /[token]/[iccid]), REWRITE to /esim-overview/[token]/[iccid]
+      // 4. If path is an installation URL (e.g. /[token]/[iccid]), REWRITE to /esim-overview/[token]/[iccid]
       else {
         return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
       }
     }
   } else {
-    // On main domain (puresim.net), redirect any /esim-overview/... path to esim.puresim.net
+    // On main domain (puresim.net), allow /esim-overview/... to proceed directly to route.ts for 301 to /s/<token>
     if (pathname.startsWith('/esim-overview/')) {
-      const esimPath = pathname.replace(/^\/esim-overview/, '');
-      const esimHost = cleanHost.startsWith('www.')
-        ? `esim.${cleanHost.replace(/^www\./, '')}`
-        : `esim.${cleanHost}`;
-      return NextResponse.redirect(new URL(esimPath + request.nextUrl.search, `https://${esimHost}`), 302);
+      // Proceed normally
     }
   }
 
@@ -322,7 +334,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/llms.txt' ||
     pathname.includes('.');
 
-  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success)(\/|$)/i;
+  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s)(\/|$)/i;
 
   const isValidPageRoute =
     normalizedPath === '/' ||
@@ -508,10 +520,18 @@ export async function middleware(request: NextRequest) {
 
   // ── Cache-Control for storefront pages (Cloudflare caching & fresh pricing) ──
   const isPriceBearingRoute =
+    normalizedPath === '/' ||
+    normalizedPath === '/topup' ||
     normalizedPath === '/tariffs' ||
     normalizedPath.startsWith('/tariffs/') ||
     normalizedPath.startsWith('/esim/') ||
     normalizedPath.startsWith('/unlimited/');
+
+  if (normalizedPath === '/topup' && request.nextUrl.search) {
+    response.headers.set('X-Robots-Tag', 'noindex, follow');
+  } else if (normalizedPath.startsWith('/s/') || pathname.startsWith('/esim-overview')) {
+    response.headers.set('X-Robots-Tag', 'noindex, follow');
+  }
 
   const isCartOrCheckout =
     normalizedPath.startsWith('/cart') ||

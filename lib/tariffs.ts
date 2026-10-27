@@ -285,7 +285,7 @@ export function toPublicTariff(row: any): PublicTariff {
     slug:                 String(row.slug ?? (row.package_code ? String(row.package_code).toLowerCase() : '')),
     package_code:         String(row.package_code ?? row.packageCode ?? ''),
     name:                 cleanName || String(row.name ?? ''),
-    description:          row.description ? String(row.description) : null,
+    description:          row.description ? cleanTariffName(String(row.description)) : null,
     country_code:         String(row.country_code ?? row.locationCode ?? 'XX').toUpperCase(),
     country_name:         String(row.country_name ?? row.locationCode ?? 'Global'),
     region:               row.region ? String(row.region) : null,

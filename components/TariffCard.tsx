@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import type { PublicTariff } from '@/lib/tariffs';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
@@ -88,7 +89,25 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           <div className="flex items-center gap-3 min-w-0 max-w-full">
             <CountryFlag countryCode={tariff.country_code} countryName={countryLabel} size={40} />
             <div className="min-w-0">
-              <p className="font-bold text-slate-800 leading-tight break-words" title={countryLabel}>{countryLabel}</p>
+              {isTravel ? (
+                <>
+                  <p className="text-xs text-slate-500 font-medium leading-tight truncate" title={countryLabel}>
+                    {countryLabel}
+                  </p>
+                  <p className="font-extrabold text-slate-900 leading-snug break-words text-base">
+                    {formatGb(tariff.data_gb)} · {formatDaysWithUnit(tariff.validity_days, locale)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold text-slate-800 leading-tight break-words" title={countryLabel}>
+                    {countryLabel}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                    {tariff.tariff_type === 'unlimited_eco' ? 'Unlimited Eco' : tariff.tariff_type === 'unlimited_pro' ? 'Unlimited Pro' : 'Unlimited'}
+                  </p>
+                </>
+              )}
               {coverage && (
                 <div className="relative inline-flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
                   <span>🌍 {coverage}</span>
@@ -121,9 +140,9 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             {isPremium && isTravel ? (
               <span
                 title={t('type_travel_premium_desc' as any)}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-2 py-0.5 text-xs font-extrabold text-amber-900 shadow-2xs"
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold text-amber-950 shadow-2xs"
               >
-                <TravelPremiumGlobeIcon size={14} className="text-amber-800" /> {t('badge_travel_premium' as any)}
+                <TravelPremiumGlobeIcon size={14} className="text-amber-900" /> {t('badge_travel_premium' as any)}
               </span>
             ) : badge && !isRecommended ? (
               <span
@@ -161,14 +180,14 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                   className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all cursor-pointer ${feat.cls} ${
                     isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-xs' : ''
                   }`}
-                  title={`${t(feat.titleKey as any)} – ${t('card_details')}`}
+                  title={`${t(feat.titleKey as any, feat.vars)} – ${t('card_details')}`}
                 >
                   {feat.id === 'travel_premium' ? (
-                    <TravelPremiumGlobeIcon size={13} className="text-amber-800" />
+                    <TravelPremiumGlobeIcon size={13} className="text-amber-950" />
                   ) : (
                     <span>{feat.icon}</span>
                   )}
-                  <span>{t(feat.badgeKey as any)}</span>
+                  <span>{t(feat.badgeKey as any, feat.vars)}</span>
                   <span className="opacity-60 text-xs">ⓘ</span>
                 </button>
               );
@@ -197,11 +216,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1 mb-1">
               <span className="font-extrabold flex items-center gap-1 text-indigo-900 text-xs">
                 {activeFeature.id === 'travel_premium' ? (
-                  <TravelPremiumGlobeIcon size={14} className="text-amber-800" />
+                  <TravelPremiumGlobeIcon size={14} className="text-amber-950" />
                 ) : (
                   <span>{activeFeature.icon}</span>
                 )}
-                <span>{t(activeFeature.titleKey as any)}</span>
+                <span>{t(activeFeature.titleKey as any, activeFeature.vars)}</span>
               </span>
               <button
                 type="button"
@@ -215,7 +234,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 ✕
               </button>
             </div>
-            <p className="leading-relaxed text-xs font-medium">{t(activeFeature.descKey as any)}</p>
+            <p className="leading-relaxed text-xs font-medium">{t(activeFeature.descKey as any, activeFeature.vars)}</p>
             {activeFeature.priceNoteKey && (
               <p className="mt-1 text-xs text-indigo-800 bg-indigo-100/70 rounded-md p-1.5 font-semibold leading-tight">
                 💡 {t(activeFeature.priceNoteKey as any)}

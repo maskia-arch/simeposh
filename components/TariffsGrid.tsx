@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TariffCard }        from './TariffCard';
 import { CheckoutModal }     from './CheckoutModal';
 import { TariffDetailModal } from './TariffDetailModal';
@@ -45,13 +45,29 @@ export function TariffsGrid({
   const [checkout, setCheckout] = useState<Tariff | null>(null);
   const [detail,   setDetail]   = useState<Tariff | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(INITIAL_CHUNK_SIZE);
+  const [focusTariffId, setFocusTariffId] = useState<string | null>(null);
+  const [liveAnnouncement, setLiveAnnouncement] = useState<string>('');
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // If tariffs change (e.g. filter/search change), reset visible count
   const [prevTariffs, setPrevTariffs] = useState(tariffs);
   if (prevTariffs !== tariffs) {
     setPrevTariffs(tariffs);
     setVisibleCount(INITIAL_CHUNK_SIZE);
+    setFocusTariffId(null);
   }
+
+  // After loading more, focus on first newly loaded card
+  useEffect(() => {
+    if (focusTariffId && cardRefs.current[focusTariffId]) {
+      const el = cardRefs.current[focusTariffId];
+      if (el) {
+        el.tabIndex = -1;
+        el.focus({ preventScroll: false });
+      }
+      setFocusTariffId(null);
+    }
+  }, [focusTariffId]);
 
   // If recommendedTariffId was explicitly provided (e.g. from CountryPageClient or TariffsPageClient with country search), use it.
   // Otherwise, if tariffs belong to a single destination country, auto-calculate.
@@ -80,29 +96,52 @@ export function TariffsGrid({
   const remainingCount = tariffs.length - visibleCount;
   const loadMoreText = LOAD_MORE_LABELS[locale] || LOAD_MORE_LABELS.en;
 
+  const handleLoadMore = () => {
+    const nextCount = visibleCount + CHUNK_INCREMENT;
+    const firstNewIndex = visibleCount;
+    const firstNewTariff = tariffs[firstNewIndex];
+    const addedAmount = Math.min(remainingCount, CHUNK_INCREMENT);
+
+    if (firstNewTariff) {
+      setFocusTariffId(firstNewTariff.id);
+    }
+    setVisibleCount(nextCount);
+    setLiveAnnouncement(
+      locale === 'de'
+        ? `${addedAmount} weitere Tarife geladen. ${Math.min(nextCount, tariffs.length)} von ${tariffs.length} sichtbar.`
+        : `${addedAmount} more plans loaded. ${Math.min(nextCount, tariffs.length)} of ${tariffs.length} visible.`
+    );
+  };
+
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div id="tariffs-grid" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {visibleTariffs.map((t) => (
-          <TariffCard
+          <div
             key={t.id}
-            tariff={t}
-            isRecommended={t.id === effectiveRecommendedId}
-            onBuy={(tariff) => setCheckout(tariff)}
-            onDetail={(tariff) => setDetail(tariff)}
-          />
+            ref={(el) => { cardRefs.current[t.id] = el; }}
+            className="outline-none"
+          >
+            <TariffCard
+              tariff={t}
+              isRecommended={t.id === effectiveRecommendedId}
+              onBuy={(tariff) => setCheckout(tariff)}
+              onDetail={(tariff) => setDetail(tariff)}
+            />
+          </div>
         ))}
       </div>
 
       {remainingCount > 0 && (
         <div className="mt-8 flex flex-col items-center justify-center gap-2">
           <div role="status" aria-live="polite" className="sr-only">
-            {tariffs.length - remainingCount} / {tariffs.length}
+            {liveAnnouncement || `${tariffs.length - remainingCount} / ${tariffs.length}`}
           </div>
           <button
             type="button"
-            onClick={() => setVisibleCount((prev) => prev + CHUNK_INCREMENT)}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm hover:border-brand-500 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+            aria-controls="tariffs-grid"
+            onClick={handleLoadMore}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm hover:border-brand-500 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer min-h-[44px]"
           >
             {loadMoreText} (+{Math.min(remainingCount, CHUNK_INCREMENT)}) · {tariffs.length - remainingCount} / {tariffs.length}
           </button>

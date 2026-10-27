@@ -102,7 +102,8 @@ export default async function sitemap({
     const { data: tariffs, error } = await supabase
       .from('tariffs')
       .select('slug, updated_at')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .is('hidden_reason', null);
 
     if (error) {
       console.error('[Sitemap] Tariffs fetch error:', error.message);

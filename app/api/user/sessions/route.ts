@@ -7,8 +7,9 @@ import { parseUserAgent, maskIp } from '@/lib/auth/sessions';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const locale = request.headers.get('x-locale') || 'de';
     const cookieStore = await cookies();
     const token = cookieStore.get('session_token')?.value;
     const sessionUser = token ? await verifyJwt(token) : null;
@@ -29,7 +30,7 @@ export async function GET() {
     const currentSessionId = sessionUser.sessionId || null;
 
     const sessions = res.rows.map((row: any) => {
-      const uaInfo = parseUserAgent(row.user_agent);
+      const uaInfo = parseUserAgent(row.user_agent, locale);
       return {
         id: row.id,
         isCurrent: Boolean(currentSessionId && row.id === currentSessionId),

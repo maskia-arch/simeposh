@@ -105,14 +105,17 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
 
-    // 1. Strict security check: reject requests containing client-specified tables, columns, or filters
+    // 1. Strict security check: reject requests containing client-specified tables, columns, filters, or user identifiers
     if (
       body.table !== undefined ||
       body.select !== undefined ||
       body.selectFields !== undefined ||
       body.columns !== undefined ||
       body.filter !== undefined ||
-      body.filters !== undefined
+      body.filters !== undefined ||
+      body.user_id !== undefined ||
+      body.userId !== undefined ||
+      body.email !== undefined
     ) {
       return NextResponse.json({ error: 'Invalid query parameters' }, { status: 400 });
     }
@@ -170,7 +173,14 @@ export async function POST(request: Request) {
           .eq('user_id', sessionUserId)
           .order('created_at', { ascending: false })
           .limit(50);
-        resData = await builder;
+        const rows = await builder;
+        resData = Array.isArray(rows)
+          ? rows.map((o: any) => ({
+              ...o,
+              iccid: o.iccid ? `•••• ${String(o.iccid).slice(-4)}` : null,
+              has_iccid: Boolean(o.iccid),
+            }))
+          : rows;
         break;
       }
 
@@ -234,7 +244,14 @@ export async function POST(request: Request) {
           .eq('status', 'completed')
           .order('created_at', { ascending: false })
           .limit(50);
-        resData = await builder;
+        const rows = await builder;
+        resData = Array.isArray(rows)
+          ? rows.map((o: any) => ({
+              ...o,
+              iccid: o.iccid ? `•••• ${String(o.iccid).slice(-4)}` : null,
+              has_iccid: Boolean(o.iccid),
+            }))
+          : rows;
         break;
       }
 

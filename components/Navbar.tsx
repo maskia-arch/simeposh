@@ -139,8 +139,9 @@ function DashboardDropdown({ t, prefix }: { t: any; prefix: string }) {
 }
 
 export function Navbar() {
-  const [user, setUser]     = useState<User | null>(null);
-  const [menuOpen, setMenu] = useState(false);
+  const [user, setUser]               = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [menuOpen, setMenu]           = useState(false);
   const supabase            = createClient();
   const { t, locale }       = useTranslation();
   const prefix              = locale === 'de' ? '' : `/${locale}`;
@@ -196,7 +197,8 @@ export function Navbar() {
       .catch((err) => {
         console.error('Error fetching current user:', err);
         setUser(null);
-      });
+      })
+      .finally(() => setAuthLoading(false));
   }, [pathname]);
 
   const cashbackRate = user ? (user as any).cashback_rate ?? 5 : null;
@@ -306,7 +308,9 @@ export function Navbar() {
           <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             {t('nav_topup')}
           </Link>
-          {user ? (
+          {authLoading ? (
+            <div className="h-12 w-[90px] rounded-xl bg-slate-100 animate-pulse shrink-0" aria-hidden="true" />
+          ) : user ? (
             <>
               <Link
                 href={`${prefix}/dashboard`}
@@ -323,15 +327,13 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <>
-              <Link
-                href={`${prefix}/login`}
-                prefetch={false}
-                className="btn-primary !h-12 !px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-              >
-                {t('nav_login')}
-              </Link>
-            </>
+            <Link
+              href={`${prefix}/login`}
+              prefetch={false}
+              className="btn-primary !h-12 !px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              {t('nav_login')}
+            </Link>
           )}
           <CartButton />
           <LocaleCurrencyControls />
@@ -374,7 +376,9 @@ export function Navbar() {
             <Link href={`${prefix}/blog`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
             <Link href={`${prefix}/tariffs`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
             <Link href={`${prefix}/topup`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
-            {user ? (
+            {authLoading ? (
+              <div className="h-9 w-24 bg-slate-100 animate-pulse rounded-lg" aria-hidden="true" />
+            ) : user ? (
               <>
  
                 <div className="flex flex-col gap-2 border-l-2 border-slate-100 pl-3">
@@ -391,9 +395,7 @@ export function Navbar() {
                 <button onClick={handleLogout} className="text-left text-red-600">{t('nav_logout')}</button>
               </>
             ) : (
-              <>
-                <Link href={`${prefix}/login`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
-              </>
+              <Link href={`${prefix}/login`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700 font-semibold">{t('nav_login')}</Link>
             )}
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">

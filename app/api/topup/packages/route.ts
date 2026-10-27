@@ -5,9 +5,11 @@
  * applies our pricing formula, and returns the enriched packages.
  */
 import { NextResponse }        from 'next/server';
+import { cookies }             from 'next/headers';
 import { priceToUsd, bytesToGb, getVolumeBytes, detectTariffType } from '@/lib/esimaccess/client';
 import { calculateSalePrice, getUnlimitedPriceTable }  from '@/lib/pricing';
 import { createServiceClient, createClient } from '@/lib/supabase/server';
+import { verifyJwt }            from '@/lib/auth/jwt';
 import { toPublicTariff }       from '@/lib/tariffs';
 import { getTopUpEligibility, getEsimRecord, fetchTopUpPackagesCached } from '@/lib/topup';
 
@@ -29,8 +31,23 @@ export async function GET(request: Request) {
 
   try {
     const supabase = createServiceClient();
-    const userClient = await createClient();
-    const { data: { user: sessionUser } } = await userClient.auth.getUser();
+    let currentUserId: string | null = null;
+    try {
+      const userClient = await createClient();
+      const { data: { user: sessionUser } } = await userClient.auth.getUser();
+      if (sessionUser?.id) currentUserId = sessionUser.id;
+    } catch {}
+
+    if (!currentUserId) {
+      try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get('session_token')?.value;
+        if (token) {
+          const payload = await verifyJwt(token);
+          if (payload?.id) currentUserId = payload.id;
+        }
+      } catch {}
+    }
 
     // 1. Check if this ICCID / Order belongs to an existing order in our database
     let orderQuery = supabase
@@ -51,7 +68,7 @@ export async function GET(request: Request) {
     // Strict customer ownership check: if order belongs to a registered customer,
     // deny access (403) if not authenticated as that exact customer.
     if (existingOrder?.user_id) {
-      if (!sessionUser || sessionUser.id !== existingOrder.user_id) {
+      if (!currentUserId || currentUserId !== existingOrder.user_id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
