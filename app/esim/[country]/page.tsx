@@ -31,14 +31,15 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
     locale
   );
 
-  const tariffs = await getCountryTariffs(destination.code);
-  if (tariffs.length === 0) {
-    return {
-      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
-      robots: { index: false, follow: false },
-    };
+  let minPrice = 0.59;
+  try {
+    const tariffs = await getCountryTariffs(destination.code);
+    if (tariffs.length > 0) {
+      minPrice = Math.min(...tariffs.map((t) => t.customer_price_eur ?? t.sale_price_eur));
+    }
+  } catch {
+    // Preserve valid meta on transient DB failure
   }
-  const minPrice = Math.min(...tariffs.map((t) => t.customer_price_eur ?? t.sale_price_eur));
 
   const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
   const baseUrl = BASE_URL;
@@ -106,8 +107,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
   }
 
   const tariffs = await getCountryTariffs(destination.code);
-  if (tariffs.length === 0) {
-    notFound();
+  if (!tariffs || tariffs.length === 0) {
+    throw new Error(`[CountryPage] Tariffs temporarily unavailable for ${destination.slug} (${destination.code})`);
   }
 
   const countryLabel = displayCountryName(

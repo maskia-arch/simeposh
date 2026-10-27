@@ -32,27 +32,28 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
     locale
   );
 
-  const tariffs = await getCountryTariffs(destination.code);
-  const unlimited = tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0);
-  if (unlimited.length === 0) {
-    return {
-      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
-      robots: { index: false, follow: false },
-    };
+  let minPrice = 0.59;
+  try {
+    const tariffs = await getCountryTariffs(destination.code);
+    const unlimited = tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0);
+    if (unlimited.length > 0) {
+      const oneDayPrices = await Promise.all(
+        unlimited.map((t) =>
+          getDayPassPrice(
+            {
+              sale_price_eur: t.sale_price_eur,
+              validity_days: t.validity_days || 1,
+              discount_rule_code: t.discount_rule_code,
+            },
+            1
+          )
+        )
+      );
+      minPrice = Math.min(...oneDayPrices);
+    }
+  } catch {
+    // Preserve valid meta on transient DB failure
   }
-  const oneDayPrices = await Promise.all(
-    unlimited.map((t) =>
-      getDayPassPrice(
-        {
-          sale_price_eur: t.sale_price_eur,
-          validity_days: t.validity_days || 1,
-          discount_rule_code: t.discount_rule_code,
-        },
-        1
-      )
-    )
-  );
-  const minPrice = Math.min(...oneDayPrices);
   const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
 
   // Next.js layout template is '%s | PureSim', so title must NOT end with '| PureSim'
@@ -125,7 +126,7 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
   );
 
   if (rawUnlimitedTariffs.length === 0) {
-    notFound();
+    throw new Error(`[UnlimitedPage] Unlimited tariffs temporarily unavailable for ${destination.slug} (${destination.code})`);
   }
 
   // Sanitize package names so raw provider strings like "Germany 1GB/Day" are displayed cleanly as "Unlimited Eco" or "Unlimited Pro"

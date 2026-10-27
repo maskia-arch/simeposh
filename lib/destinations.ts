@@ -185,7 +185,7 @@ export async function getCountryTariffs(countryCode: string): Promise<PublicTari
       if (cached?.data) {
         return cached.data;
       }
-      return [];
+      throw new Error(`[getCountryTariffs] Database query failed for ${upperCode}: ${err?.message || err}`);
     } finally {
       inFlightTariffQueries.delete(upperCode);
     }
