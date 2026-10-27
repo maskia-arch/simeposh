@@ -756,7 +756,24 @@ export const CLIENT_TRANSLATION_KEYS = [
   "cfg_tier_discount_badge",
   "cfg_discount_subtotal",
   "cfg_duration_better_deal",
-  "cfg_you_save"
+  "cfg_you_save",
+  "cat_travel_premium_subtitle",
+  "meta_esim_overview_title",
+  "meta_esim_overview_desc",
+  "esim_overview_h1",
+  "esim_overview_subtitle",
+  "btn_compare_all_tariffs",
+  "search_destinations_placeholder",
+  "region_europe",
+  "region_asia",
+  "region_americas",
+  "region_middle_east",
+  "region_africa",
+  "region_oceania",
+  "region_global",
+  "footer_faq",
+  "network_singular",
+  "networks_plural"
 ] as const;
 
 export type ClientTranslationKey = typeof CLIENT_TRANSLATION_KEYS[number];

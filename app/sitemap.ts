@@ -40,7 +40,9 @@ export default async function sitemap({
   // 1. Core static routes (checkout, cart, order are omitted)
   const routes = [
     '',
+    '/esim',
     '/tariffs',
+    '/faq',
     '/topup',
     '/ai',
     '/blog',

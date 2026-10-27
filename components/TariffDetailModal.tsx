@@ -304,9 +304,9 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                       <span className="text-sm">
                         {feat.id === 'travel_premium' ? <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> : feat.icon}
                       </span>
-                      <span>{t(feat.titleKey as any)}</span>
+                      <span>{t(feat.titleKey as any, feat.vars)}</span>
                     </div>
-                    <p className="leading-relaxed text-indigo-900/90 text-[11px]">{t(feat.descKey as any)}</p>
+                    <p className="leading-relaxed text-indigo-900/90 text-[11px]">{t(feat.descKey as any, feat.vars)}</p>
                     {feat.priceNoteKey && (
                       <p className="mt-2 text-[10px] text-indigo-900 font-semibold bg-indigo-100/80 rounded-xl p-2 leading-tight">
                         💡 {t(feat.priceNoteKey as any)}

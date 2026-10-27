@@ -213,6 +213,7 @@ export function CountryPageClient({
             type="button"
             onClick={() => setActiveTab('all')}
             aria-pressed={activeTab === 'all'}
+            aria-controls="tariffs-list"
             className={`min-h-[44px] rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'all'
                 ? 'bg-white text-slate-900 shadow-xs'
@@ -227,6 +228,7 @@ export function CountryPageClient({
               type="button"
               onClick={() => setActiveTab('travel_standard')}
               aria-pressed={activeTab === 'travel_standard'}
+              aria-controls="tariffs-list"
               className={`min-h-[44px] flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'travel_standard'
                   ? 'bg-white text-brand-700 shadow-xs'
@@ -243,13 +245,14 @@ export function CountryPageClient({
               type="button"
               onClick={() => setActiveTab('travel_premium')}
               aria-pressed={activeTab === 'travel_premium'}
+              aria-controls="tariffs-list"
               className={`min-h-[44px] flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'travel_premium'
-                  ? 'bg-white text-amber-900 shadow-xs ring-1 ring-amber-300'
+                  ? 'bg-white text-amber-950 shadow-xs ring-1 ring-amber-400'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <TravelPremiumGlobeIcon size={14} className="text-amber-800" />
+              <TravelPremiumGlobeIcon size={14} className="text-amber-950" />
               <span>Travel Premium</span> ({travelPremiumTariffs.length})
             </button>
           )}
@@ -259,6 +262,7 @@ export function CountryPageClient({
               type="button"
               onClick={() => setActiveTab('unlimited')}
               aria-pressed={activeTab === 'unlimited'}
+              aria-controls="tariffs-list"
               className={`min-h-[44px] flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
                 activeTab === 'unlimited'
                   ? 'bg-white text-emerald-700 shadow-xs'
@@ -307,13 +311,13 @@ export function CountryPageClient({
       )}
 
       {/* ── Tariffs Sections in Fixed Order: Travel Standard -> Travel Premium -> Unlimited ── */}
-      <div className="space-y-12 mb-14">
+      <div id="tariffs-list" className="space-y-12 mb-14">
         {(activeTab === 'all' || activeTab === 'travel_standard') && travelStandardTariffs.length > 0 && (
           <section id="section-travel-standard">
             <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-5 flex items-center gap-2">
               <TravelGlobeIcon size={20} className="text-brand-600" />
               <span>Travel Standard</span>
-              <span className="text-sm font-normal text-slate-400">({travelStandardTariffs.length})</span>
+              <span className="text-sm font-normal text-slate-600">({travelStandardTariffs.length})</span>
             </h2>
             <TariffsGrid tariffs={travelStandardTariffs} />
           </section>
@@ -324,7 +328,7 @@ export function CountryPageClient({
             <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-5 flex items-center gap-2">
               <TravelPremiumGlobeIcon size={20} className="text-amber-700" />
               <span>Travel Premium</span>
-              <span className="text-sm font-normal text-slate-400">({travelPremiumTariffs.length})</span>
+              <span className="text-sm font-normal text-slate-600">({travelPremiumTariffs.length})</span>
             </h2>
             <TariffsGrid tariffs={travelPremiumTariffs} />
           </section>
@@ -336,7 +340,7 @@ export function CountryPageClient({
               <h2 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2">
                 <InfinityIcon size={20} className="text-emerald-600" />
                 <span>Unlimited</span>
-                <span className="text-sm font-normal text-slate-400">({unlimitedTariffs.length})</span>
+                <span className="text-sm font-normal text-slate-600">({unlimitedTariffs.length})</span>
               </h2>
               <Link
                 href={`${prefix}/unlimited/${destination.slug}`}

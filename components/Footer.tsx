@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import { useTicket } from '@/components/TicketContext';
 
 export function Footer() {
   const { t, locale } = useTranslation();
+  const pathname = usePathname();
+  const isFaqPage = pathname === '/faq' || (pathname ? /^\/[a-z]{2}\/faq$/.test(pathname) : false);
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
   const { openTicketModal } = useTicket();
@@ -28,48 +31,57 @@ export function Footer() {
 
   return (
     <footer className="border-t border-slate-200 bg-slate-50/40 mt-10 md:mt-12">
-      {/* FAQ Section */}
-      <div className="mx-auto max-w-4xl px-4 py-10 md:py-12 border-b border-slate-200/80">
-        <h2 className="text-2xl font-bold text-center text-slate-900 mb-6 tracking-tight">
-          {t('faq_title' as any) || 'Häufig gestellte Fragen (FAQ)'}
-        </h2>
-        
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => {
-            const isOpen = openFaqIndex === idx;
-            return (
-              <div 
-                key={idx} 
-                className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden transition-all duration-300 hover:border-slate-300"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleFaq(idx)}
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between px-6 py-5 min-h-[52px] text-left font-semibold text-slate-800 hover:text-brand-650 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                >
-                  <span className="text-sm md:text-base pr-4 leading-snug">{faq.q}</span>
-                  <span className={`text-slate-400 shrink-0 transform transition-transform duration-300 ${isOpen ? 'rotate-180 text-brand-600' : ''}`}>
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
-                </button>
-                
+      {/* FAQ Section (omitted on /faq to prevent duplicate questions in HTML) */}
+      {!isFaqPage && (
+        <div className="mx-auto max-w-4xl px-4 py-10 md:py-12 border-b border-slate-200/80">
+          <h2 className="text-2xl font-bold text-center text-slate-900 mb-6 tracking-tight">
+            {t('faq_title' as any) || 'Häufig gestellte Fragen (FAQ)'}
+          </h2>
+          
+          <div className="space-y-3">
+            {faqs.map((faq, idx) => {
+              const isOpen = openFaqIndex === idx;
+              const btnId = `footer-faq-btn-${idx}`;
+              const ansId = `footer-faq-ans-${idx}`;
+              return (
                 <div 
-                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isOpen ? 'max-h-[250px] border-t border-slate-100' : 'max-h-0'
-                  }`}
+                  key={idx} 
+                  className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden transition-all duration-300 hover:border-slate-300"
                 >
-                  <div className="px-6 py-5 text-sm text-slate-500 leading-relaxed bg-slate-50/20">
-                    {faq.a}
+                  <button
+                    type="button"
+                    id={btnId}
+                    aria-controls={ansId}
+                    onClick={() => toggleFaq(idx)}
+                    aria-expanded={isOpen}
+                    className="flex w-full items-center justify-between px-6 py-5 min-h-[52px] text-left font-semibold text-slate-800 hover:text-brand-650 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                  >
+                    <span className="text-sm md:text-base pr-4 leading-snug">{faq.q}</span>
+                    <span className={`text-slate-400 shrink-0 transform transition-transform duration-300 ${isOpen ? 'rotate-180 text-brand-600' : ''}`}>
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </button>
+                  
+                  <div 
+                    id={ansId}
+                    role="region"
+                    aria-labelledby={btnId}
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      isOpen ? 'max-h-[300px] border-t border-slate-100' : 'max-h-0'
+                    }`}
+                  >
+                    <div className="px-6 py-5 text-sm text-slate-500 leading-relaxed bg-slate-50/20">
+                      {faq.a}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Footer Links */}
       <div className="bg-white">
@@ -98,6 +110,7 @@ export function Footer() {
                     className="relative inline-flex items-center min-h-[44px] py-2 hover:text-brand-700 transition-colors after:absolute after:-inset-y-2 after:-inset-x-2 after:content-['']"
                   >{t('footer_browse')}</Link></li>
                   <li><Link href={`${prefix}/topup`}     className="hover:text-brand-700 transition-colors">{t('footer_topup')}</Link></li>
+                  <li><Link href={`${prefix}/faq`}       className="hover:text-brand-700 transition-colors">{t('footer_faq' as any) || (isDe ? 'Häufige Fragen (FAQ)' : 'FAQ')}</Link></li>
                   <li><Link href={`${prefix}/dashboard`} className="hover:text-brand-700 transition-colors">{t('footer_dashboard')}</Link></li>
                   <li><Link href={`${prefix}/blog`}      className="hover:text-brand-700 transition-colors">{t('footer_blog' as any) || 'Blog'}</Link></li>
                   <li><Link href={`${prefix}/ai`}        className="hover:text-brand-700 transition-colors">{t('footer_ai')}</Link></li>

@@ -3,7 +3,7 @@ import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
-import { render404Html, UNLIMITED_ENABLED_CODES } from '@/lib/not-found-html';
+import { render404Html } from '@/lib/not-found-html';
 import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
 
 // Routes that require authentication
@@ -350,7 +350,7 @@ export async function middleware(request: NextRequest) {
   } else if (normalizedPath.startsWith('/unlimited/')) {
     const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim();
     const code = slug ? resolveCountryOrRegionCode(slug) : null;
-    if (!code || !UNLIMITED_ENABLED_CODES.has(code)) {
+    if (!code) {
       isKnownCountryOrRegion = false;
     }
   }

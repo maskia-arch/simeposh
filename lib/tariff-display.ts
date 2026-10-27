@@ -250,15 +250,27 @@ export function formatLocalizedTariffName(
     candidateNames.push('United States', 'USA');
   } else if (enName.toLowerCase() === 'united kingdom' || enName.toLowerCase() === 'uk') {
     candidateNames.push('United Kingdom', 'UK');
+  } else if (enName.toLowerCase() === 'latin america' || enName.toLowerCase() === 'latam' || enName.toLowerCase() === 'south america') {
+    candidateNames.push('Latin America', 'South America', 'Lateinamerika');
   }
 
   // Check if tariffName starts with any of the candidate names
+  const SOUTH_AMERICA_LOCALIZED: Record<string, string> = {
+    de: 'Südamerika', es: 'Sudamérica', fr: 'Amérique du Sud', pt: 'América do Sul',
+    it: 'Sud America', nl: 'Zuid-Amerika', pl: 'Ameryka Południowa', tr: 'Güney Amerika',
+    sv: 'Sydamerika', da: 'Sydamerika', fi: 'Etelä-Amerikka', cs: 'Jižní Amerika',
+    ro: 'America de Sud', hu: 'Dél-Amerika', en: 'South America'
+  };
+
   let matchedPrefix = '';
   for (const cand of candidateNames) {
     const regex = new RegExp(`^${cand}\\b`, 'i');
     if (regex.test(name)) {
       matchedPrefix = cand;
-      name = name.replace(regex, countryLabel);
+      const repl = cand.toLowerCase() === 'south america'
+        ? (SOUTH_AMERICA_LOCALIZED[locale] || countryLabel)
+        : countryLabel;
+      name = name.replace(regex, repl);
       break;
     }
   }

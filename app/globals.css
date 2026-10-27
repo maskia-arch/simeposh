@@ -92,6 +92,16 @@ html[data-checkout-open="true"] #vs25-inv {
   display: none !important;
 }
 
+@media (max-width: 640px) {
+  #vs25-bbl {
+    bottom: 0.75rem !important;
+    right: 0.75rem !important;
+    width: 2.875rem !important;
+    height: 2.875rem !important;
+    opacity: 0.92;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;

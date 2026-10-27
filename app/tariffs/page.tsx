@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { createClient }      from '@/lib/supabase/server';
+import { getPool } from '@/lib/db';
 import { TariffsPageClient } from './TariffsPageClient';
 import { toPublicTariff, getCachedTariffsPage, setCachedTariffsPage, type PublicTariff } from '@/lib/tariffs';
 import { getTariffMinCustomerPrice } from '@/lib/pricing';
@@ -42,35 +42,26 @@ async function getTariffs(): Promise<PublicTariff[]> {
 
   inFlightTariffsPromise = (async () => {
     try {
-      const supabase = await createClient();
-      const PAGE = 1000;
+      const pool = getPool();
+      const { rows } = await pool.query(`
+        SELECT id, package_code, slug, name, description, country_code, country_name, region,
+               flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
+               speed_kbps, label, is_top_up_eligible, is_premium, breakout_ip, active_type,
+               support_top_up_type, discount_rule_code, raw_data
+        FROM tariffs
+        WHERE is_active = true AND hidden_reason IS NULL
+        ORDER BY country_name ASC, sale_price_eur ASC, id ASC
+      `);
+
       const all: PublicTariff[] = [];
-
-      for (let from = 0; from < 200_000; from += PAGE) {
-        const { data, error } = await supabase
-          .from('tariffs')
-          .select('id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, is_premium, breakout_ip, active_type, support_top_up_type, discount_rule_code, raw_data')
-          .is('hidden_reason', null)
-          .eq('is_active', true)
-          .order('country_name', { ascending: true })
-          .order('sale_price_eur', { ascending: true })
-          .range(from, from + PAGE - 1);
-
-        if (error) {
-          console.error('[tariffs] Query error:', error.message);
-          break;
+      for (const row of rows) {
+        const t = toPublicTariff(row);
+        if (t.tariff_type?.startsWith('unlimited') || t.data_gb === 0) {
+          t.customer_price_eur = await getTariffMinCustomerPrice(row);
+        } else {
+          t.customer_price_eur = t.sale_price_eur;
         }
-        if (!data || data.length === 0) break;
-        for (const row of data) {
-          const t = toPublicTariff(row);
-          if (t.tariff_type?.startsWith('unlimited') || t.data_gb === 0) {
-            t.customer_price_eur = await getTariffMinCustomerPrice(row);
-          } else {
-            t.customer_price_eur = t.sale_price_eur;
-          }
-          all.push(t);
-        }
-        if (data.length < PAGE) break; // last (short) page
+        all.push(t);
       }
 
       if (all.length > 0) {

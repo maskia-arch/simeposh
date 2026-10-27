@@ -152,14 +152,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 {badge.icon} {t(badge.labelKey)}
               </span>
             ) : null}
-            {!tariff.is_reloadable && (
-              <span
-                title={t('feat_topup_none_desc' as any) || (isDe ? 'Diese eSIM kann nicht aufgeladen werden (Einweg-eSIM)' : 'This eSIM cannot be reloaded (Single-use)')}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 shadow-2xs"
-              >
-                <span>🚫</span> {t('feat_topup_none_badge' as any) || (isDe ? 'Einweg-eSIM' : 'Single-use')}
-              </span>
-            )}
+
           </div>
         </div>
 
@@ -177,7 +170,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                     setActiveAbbr(null);
                     setActiveFeature(isSelected ? null : feat);
                   }}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all cursor-pointer ${feat.cls} ${
+                  className={`relative min-h-[36px] inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] ${feat.cls} ${
                     isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-xs' : ''
                   }`}
                   title={`${t(feat.titleKey as any, feat.vars)} – ${t('card_details')}`}
@@ -192,18 +185,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 </button>
               );
             })}
-            {hiddenCount > 0 && onDetail && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDetail(tariff);
-                }}
-                className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                +{hiddenCount}
-              </button>
-            )}
+
           </div>
         )}
 
@@ -351,45 +333,30 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             </span>
           )}
 
-          {/* Interactive Dual-Netz Pill */}
-          {isDualNet && (
+          {/* Neutral Multi-Network Pill with exact network count (slate styling) */}
+          {ops.length >= 2 && (
             <button
               type="button"
               data-testid="dual-net-pill"
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveFeature(null);
-                setActiveAbbr(activeAbbr?.label === t('card_dual_net_pill') ? null : {
-                  label: t('card_dual_net_pill'),
-                  text: t('feat_dual_net_desc'),
+                const netLabel = `${ops.length} ${ops.length === 1 ? (t('network_singular' as any) || (isDe ? 'Netz' : 'Network')) : (t('networks_plural' as any) || (isDe ? 'Netze' : 'Networks'))}`;
+                setActiveAbbr(activeAbbr?.label === netLabel ? null : {
+                  label: netLabel,
+                  text: ops.map((o) => o.name).join(' · '),
                 });
               }}
-              aria-label={t('card_dual_net_aria') || `${t('card_dual_net_pill')} - ${t('feat_dual_net_desc')}`}
-              className="dual-net-pill relative min-h-[44px] inline-flex items-center justify-center rounded-md bg-emerald-50 border border-emerald-300 px-2 py-2.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors shadow-2xs after:absolute after:-inset-y-[12px] after:-inset-x-1.5 after:content-[''] after:z-10"
-              title={t('feat_dual_net_desc')}
+              aria-label={`${ops.length} ${ops.length === 1 ? 'Netz' : 'Netze'}`}
+              className="dual-net-pill relative min-h-[44px] inline-flex items-center justify-center rounded-md bg-slate-100 border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors shadow-2xs after:absolute after:-inset-y-[12px] after:-inset-x-1.5 after:content-[''] after:z-10"
+              title={ops.map((o) => o.name).join(' · ')}
             >
-              <span>{t('card_dual_net_pill')} ⓘ</span>
+              <span>{`${ops.length} ${t('networks_plural' as any) || (isDe ? 'Netze' : 'Networks')} ⓘ`}</span>
             </button>
           )}
 
-          {/* Interactive Routing Pill (HK IP / Non-HK IP / Specific Breakout IP) */}
-          {isNonHk ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveFeature(null);
-                setActiveAbbr(activeAbbr?.label === 'Non-HK IP' ? null : {
-                  label: 'Non-HK IP',
-                  text: t('feat_non_hk_ip_desc'),
-                });
-              }}
-              className="rounded-md bg-indigo-50 border border-indigo-300 px-1.5 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
-              title={t('feat_non_hk_ip_desc')}
-            >
-              Non-HK IP ⓘ
-            </button>
-          ) : isHk ? (
+          {/* Interactive Routing Pill (HK IP / Specific Breakout IP) */}
+          {isHk ? (
             <button
               type="button"
               onClick={(e) => {

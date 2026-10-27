@@ -281,7 +281,7 @@ export function TariffsPageClient({
                     ? 'text-amber-100'
                     : 'text-amber-900'
                 }`}>
-                  {t('card_dual_net_pill')} • UK IP
+                  {t('cat_travel_premium_subtitle' as any)}
                 </span>
               </div>
             </div>

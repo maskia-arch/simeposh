@@ -44,6 +44,8 @@ export function FaqPageClient({ title, subtitle, faqs }: FaqPageClientProps) {
               >
                 <button
                   type="button"
+                  id={`faq-btn-${idx}`}
+                  aria-controls={`faq-ans-${idx}`}
                   onClick={() => toggle(idx)}
                   aria-expanded={isOpen}
                   className="flex w-full items-center justify-between px-6 py-5 min-h-[52px] text-left font-semibold text-slate-900 hover:text-brand-650 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
@@ -61,6 +63,9 @@ export function FaqPageClient({ title, subtitle, faqs }: FaqPageClientProps) {
                 </button>
 
                 <div
+                  id={`faq-ans-${idx}`}
+                  role="region"
+                  aria-labelledby={`faq-btn-${idx}`}
                   className={`transition-all duration-300 ease-in-out overflow-hidden ${
                     isOpen ? 'max-h-[500px] border-t border-slate-100' : 'max-h-0'
                   }`}
