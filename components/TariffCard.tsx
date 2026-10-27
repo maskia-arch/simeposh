@@ -274,7 +274,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             </p>
             <p className="text-xs text-slate-500 mt-0.5">{t('card_data')}</p>
             {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
-              <p className="text-xs text-brand-500">{formatGb(tariff.data_gb)} {t('unit_per_day')}</p>
+              <p className="text-xs text-brand-700 font-medium">{formatGb(tariff.data_gb)} {t('unit_per_day')}</p>
             )}
           </div>
           <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-center">
@@ -325,12 +325,12 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
               {ops.length > 1 && (
-                <span className="text-slate-400 font-normal">{t('card_network_count' as any, { count: ops.length }) || `(${ops.length})`}</span>
+                <span className="text-slate-600 font-normal">{t('card_network_count' as any, { count: ops.length }) || `(${ops.length})`}</span>
               )}
             </button>
           ) : (
-            <span className="h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-500">
-              <NetworkIcon size={13} className="text-slate-400" />
+            <span className="h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-600">
+              <NetworkIcon size={13} className="text-slate-600" />
               <span>{t('card_best_network')}</span>
             </span>
           )}

@@ -140,7 +140,7 @@ export function Footer() {
               </div>
             </div>
           </div>
-          <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-400">
+          <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-600">
             {t('footer_copy', { year })}
           </div>
         </div>

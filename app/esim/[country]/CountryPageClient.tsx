@@ -187,18 +187,18 @@ export function CountryPageClient({
                 className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between group hover:text-brand-600 transition-colors"
                 title={isDe ? `Unlimited-Tarif für ${countryLabel} anpassen` : `Customize Unlimited plan for ${countryLabel}`}
               >
-                <span className="flex items-center gap-1 font-semibold text-emerald-700 group-hover:underline">
-                  <InfinityIcon size={12} className="text-emerald-600" /> Unlimited
+                <span className="flex items-center gap-1 font-semibold text-emerald-800 group-hover:underline">
+                  <InfinityIcon size={12} className="text-emerald-800" /> Unlimited
                 </span>
-                <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
+                <span className="font-bold text-emerald-800 inline-flex items-center gap-1">
                   <span>{t('from_prefix' as any) || (isDe ? 'ab ' : 'from ')}</span><Price eur={minUnlimitedPerDay} /> {t('unit_per_day')} →
                 </span>
               </Link>
             )}
 
             {operators.length > 0 && (
-              <div className="text-[11px] text-slate-500 border-t border-slate-100 pt-2 flex items-center gap-1.5">
-                <NetworkIcon size={12} className="text-slate-400 shrink-0" />
+              <div className="text-[11px] text-slate-600 border-t border-slate-100 pt-2 flex items-center gap-1.5">
+                <NetworkIcon size={12} className="text-slate-600 shrink-0" />
                 <span className="truncate">{operators.join(' · ')}</span>
               </div>
             )}
