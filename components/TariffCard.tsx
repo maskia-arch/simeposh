@@ -272,7 +272,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <p className="text-lg font-bold text-brand-700 leading-tight">
               {isUnlimited ? '∞' : formatGb(tariff.data_gb)}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">{t('card_data')}</p>
+            <p className="text-xs text-slate-600 font-medium mt-0.5">{t('card_data')}</p>
             {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
               <p className="text-xs text-brand-700 font-medium">{formatGb(tariff.data_gb)} {t('unit_per_day')}</p>
             )}
@@ -281,7 +281,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <p className="text-lg font-bold text-slate-700 leading-tight">
               {tariff.validity_days}<span className="text-sm">{t('card_days')}</span>
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">{t('card_validity')}</p>
+            <p className="text-xs text-slate-600 font-medium mt-0.5">{t('card_validity')}</p>
           </div>
         </div>
 
