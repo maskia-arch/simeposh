@@ -190,7 +190,7 @@ export function DaySlider({
           <p className="text-[11px] leading-4 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 flex-wrap">
             <span>{t('cfg_disc_incl', { pct: formatPercent(currentDiscountPct, locale) })}</span>
             {nextTier && (
-              <span className="text-emerald-600 font-normal">
+              <span className="text-emerald-800 font-medium">
                 {' '}· {t('cfg_disc_next', { n: nextTier.minDays, pct: formatPercent(nextTier.discountPct, locale) })}
               </span>
             )}
