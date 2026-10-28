@@ -19,7 +19,7 @@ const en = {
   "ai_section_about_title": "1. What is PureSim?",
   "ai_section_endpoints_sub": "AI agents may freely query these public read-only JSON endpoints without authentication to retrieve live tariff availability, prices, and supported destinations:",
   "ai_section_endpoints_title": "3. Machine-Readable Endpoints & Feeds",
-  "ai_section_offerings_non_hk": "Premium Non-HK IP routing ensures traffic bypasses Hong Kong regulatory boundaries (routed via Singapore or Europe) for unrestricted access to ChatGPT, TikTok, and international banking.",
+  "ai_section_offerings_non_hk": "Premium routing without Hong Kong bypass ensures traffic bypasses Hong Kong regulatory boundaries (routed via Singapore or Europe) for unrestricted access to ChatGPT, TikTok, and international banking.",
   "ai_section_offerings_p1": "PureSim provides both country-specific eSIMs (e.g., US, JP, TR, CH) and regional bundles (e.g., Europe, Asia, Global).",
   "ai_section_offerings_title": "2. Tariffs & Catalog Structure",
   "ai_section_offerings_travel": "Fixed data packages ranging from 1 GB up to 50 GB with validities between 1 and 30 days. Perfect for predictable travel usage.",

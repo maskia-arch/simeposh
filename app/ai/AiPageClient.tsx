@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -181,7 +181,7 @@ export function AiPageClient({ locale }: { locale: LocaleCode }) {
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-xs text-indigo-800">
                   <span>🛡️</span>
-                  <span>Non-HK IP Routing</span>
+                  <span>{t('feat_prem_adv_non_hk')}</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {t('ai_section_offerings_non_hk')}
