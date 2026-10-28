@@ -23,7 +23,6 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
   if (!destination) {
     return {
       title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
-      robots: { index: false, follow: false },
     };
   }
 

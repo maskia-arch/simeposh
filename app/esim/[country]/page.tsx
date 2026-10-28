@@ -22,7 +22,6 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   if (!destination) {
     return {
       title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
-      robots: { index: false, follow: false },
     };
   }
 

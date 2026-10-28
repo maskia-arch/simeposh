@@ -50,10 +50,6 @@ export async function generateMetadata(): Promise<Metadata> {
     const notFoundTitle = `${dict.page_not_found_title || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} | PureSim`;
     return {
       title: { absolute: notFoundTitle },
-      robots: {
-        index: false,
-        follow: false,
-      },
       alternates: {
         canonical: undefined,
       },
