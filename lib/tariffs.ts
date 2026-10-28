@@ -118,7 +118,7 @@ export interface PublicTariff {
 
   // Serverseitig sauber aufbereitete Felder (ersetzen raw_data vollständig, einheitlich snake_case):
   operators:            TariffOperator[];
-  breakout_ip:          string | null;
+  breakout_ip?: string | null;
   best_network_type:    string | null;
   is_premium:           boolean;
   is_non_hk_ip:         boolean;
@@ -303,8 +303,7 @@ export function toPublicTariff(row: any): PublicTariff {
 
     // Derived whitelisted fields (strictly snake_case)
     operators:            ops,
-    breakout_ip:          breakout,
-    best_network_type:    bestNet,
+        best_network_type:    bestNet,
     is_premium:           isPrem,
     is_non_hk_ip:         isNonHk,
     is_reloadable:        reload.isReloadable,

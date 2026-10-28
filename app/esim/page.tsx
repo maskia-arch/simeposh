@@ -12,9 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = getServerT(locale);
   const isDe = locale === 'de';
 
-  const title = t('meta_esim_overview_title' as any) || (isDe
-    ? 'eSIM Länder & Regionen im Überblick | PureSim'
-    : 'eSIM Destinations & Countries Overview | PureSim');
+  const rawTitle = t('meta_esim_overview_title' as any) || (isDe
+    ? 'eSIM Länder & Regionen im Überblick'
+    : 'eSIM Destinations & Countries Overview');
+  const title = rawTitle.replace(/\s*\|\s*PureSim\b/gi, '').trim();
 
   const description = t('meta_esim_overview_desc' as any) || (isDe
     ? 'Entdecke günstige eSIM-Tarife für über 200 Länder und Regionen weltweit. Schnelles Daten-Roaming ohne Vertrag und ohne Roaming-Gebühren – ab 0,59 €.'

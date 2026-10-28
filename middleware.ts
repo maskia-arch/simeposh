@@ -3,7 +3,6 @@ import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
-import { render404Html } from '@/lib/not-found-html';
 import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
 
 // Routes that require authentication
@@ -125,6 +124,38 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 308);
   }
 
+
+    // ── 301 Redirect canonical country aliases for /esim/{alias} -> /esim/{slug} ──
+  if (normalizedPath.startsWith('/esim/')) {
+    const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim();
+    if (slug) {
+      const code = resolveCountryOrRegionCode(slug);
+      if (code) {
+        const canonicalSlug = countryCodeToSlug(code, slug);
+        if (canonicalSlug && slug.toLowerCase() !== canonicalSlug) {
+          return NextResponse.redirect(new URL(`${langPrefix}/esim/${canonicalSlug}${request.nextUrl.search}`, request.url), 301);
+        }
+      }
+    }
+  }
+
+  // ── 301 Redirect /unlimited/{alias} -> canonical, and countries without unlimited -> /esim/{slug} ──
+  const NO_UNLIMITED_CODES = new Set(['CF', 'GG', 'JM', 'LR', 'MG', 'ML', 'MZ', 'PR', 'SD']);
+  if (normalizedPath.startsWith('/unlimited/')) {
+    const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim();
+    if (slug) {
+      const code = resolveCountryOrRegionCode(slug);
+      if (code) {
+        const canonicalSlug = countryCodeToSlug(code, slug);
+        if (NO_UNLIMITED_CODES.has(code)) {
+          return NextResponse.redirect(new URL(`${langPrefix}/esim/${canonicalSlug}${request.nextUrl.search}`, request.url), 301);
+        }
+        if (canonicalSlug && slug.toLowerCase() !== canonicalSlug) {
+          return NextResponse.redirect(new URL(`${langPrefix}/unlimited/${canonicalSlug}${request.nextUrl.search}`, request.url), 301);
+        }
+      }
+    }
+  }
 
   // ── 301 Redirect /topup with iccid query param: strip iccid permanently ──
   if (normalizedPath === '/topup' && request.nextUrl.searchParams.has('iccid')) {
@@ -357,34 +388,7 @@ export async function middleware(request: NextRequest) {
 
   const is404Route = !isExemptFrom404 && (!isValidPageRoute || !isKnownCountryOrRegion);
 
-  if (is404Route) {
-    const isRsc = request.headers.has('rsc') ||
-                  request.headers.has('next-router-prefetch') ||
-                  request.headers.has('next-router-state-tree') ||
-                  (request.headers.get('accept') || '').includes('text/x-component') ||
-                  request.nextUrl.searchParams.has('_rsc') ||
-                  request.url.includes('_rsc=');
-
-    if (!isRsc) {
-      return new NextResponse(render404Html(detectedLocale), {
-        status: 404,
-        headers: {
-          'content-type': 'text/html; charset=utf-8',
-          'cache-control': 'private, no-cache, no-store, max-age=0, must-revalidate',
-          'x-robots-tag': 'noindex, nofollow',
-        },
-      });
-    }
-
-    return new NextResponse('', {
-      status: 404,
-      headers: {
-        'content-type': 'text/plain; charset=utf-8',
-        'cache-control': 'private, no-cache, no-store, max-age=0, must-revalidate',
-        'x-robots-tag': 'noindex, nofollow',
-      },
-    });
-  }
+  // is404Route is handled natively by Next.js app/not-found.tsx inside standard layout
 
   let effectiveLocale = detectedLocale;
   if (!isPrefixed && normalizedPath.startsWith('/checkout/crypto/')) {
@@ -412,8 +416,16 @@ export async function middleware(request: NextRequest) {
   }
 
   if (normalizedPath.startsWith('/checkout')) {
-    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-  }
+      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    }
+    if (is404Route) {
+      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    }
+    if (normalizedPath.startsWith('/s/')) {
+      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    }
 
   // ── Affiliate Referral Link cookie tracker ──
   const refCode = request.nextUrl.searchParams.get('ref');
@@ -465,6 +477,8 @@ export async function middleware(request: NextRequest) {
     pathname.includes('_rsc=');
 
   const isNeutralOrExcludedPath =
+    normalizedPath === '/esim' ||
+    normalizedPath === '/faq' ||
     normalizedPath === '/topup' ||
     normalizedPath === '/login' ||
     normalizedPath === '/register' ||

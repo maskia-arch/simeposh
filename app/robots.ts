@@ -15,7 +15,10 @@ export default function robots(): MetadataRoute.Robots {
           '/api/topup/packages',
         ],
         disallow: [
+          '/s/',
+          '/*/s/',
           '/dashboard',
+          '/*/dashboard',
           '/checkout',
           '/*/checkout',
           '/cart',

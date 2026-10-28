@@ -84,7 +84,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
       <section className="relative overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-indigo-950 text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center relative z-10">
           <span className="inline-block rounded-full bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider mb-3 text-brand-200">
-            {t('nav_tagline')} · PureSim
+            {t('nav_tagline')}
           </span>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
             {t('esim_overview_h1' as any) || (isDe ? 'Alle eSIM Reiseziele im Überblick' : 'All eSIM Destinations Worldwide')}
@@ -102,6 +102,12 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filteredDestinations.length > 0) {
+                    e.preventDefault();
+                    window.location.href = `${prefix}/esim/${filteredDestinations[0][1]}`;
+                  }
+                }}
                 placeholder={t('search_destinations_placeholder' as any) || (isDe ? 'Reiseziel oder Land suchen...' : 'Search country or region...')}
                 aria-label={t('search_destinations_placeholder' as any) || 'Reiseziel suchen'}
                 className="w-full rounded-xl bg-white px-4 py-3 pl-11 text-slate-900 placeholder-slate-500 shadow-lg border-0 focus:ring-2 focus:ring-brand-400 text-sm font-medium"
@@ -149,7 +155,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                 onClick={() => setActiveGroup(g)}
                 aria-pressed={isSelected}
                 aria-controls="destinations-grid"
-                className={`min-h-[44px] rounded-full px-3.5 py-1.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
+                className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full px-3.5 py-1.5 text-xs md:text-sm font-bold transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-brand-600 text-white shadow-sm'
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
@@ -163,15 +169,15 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
 
         {/* Results Count & Comparison link */}
         <div className="flex items-center justify-between mb-5 pb-2 border-b border-slate-200">
-          <p className="text-sm font-semibold text-slate-700">
+          <p className="text-sm font-semibold text-slate-700" aria-live="polite">
             {filteredDestinations.length}{' '}
             {isDe
-              ? filteredDestinations.length === 1 ? 'Reiseziel' : 'Reiseziele'
-              : filteredDestinations.length === 1 ? 'destination' : 'destinations'}
+              ? filteredDestinations.length === 1 ? 'Reiseziel gefunden' : 'Reiseziele gefunden'
+              : filteredDestinations.length === 1 ? 'destination found' : 'destinations found'}
           </p>
           <Link
             href={`${prefix}/tariffs`}
-            className="text-xs md:text-sm font-bold text-brand-600 hover:text-brand-700"
+            className="text-xs md:text-sm font-bold text-brand-600 hover:text-brand-700 min-h-[44px] inline-flex items-center"
           >
             {t('btn_compare_all_tariffs' as any) || (isDe ? 'Alle Tarife vergleichen →' : 'Compare all tariffs →')}
           </Link>
@@ -205,7 +211,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                         <span className="text-xl shrink-0 leading-none select-none">
                           {d[2] || '🌍'}
                         </span>
-                        <span className="truncate text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                        <span className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2 break-words leading-snug">
                           {d[3]}
                         </span>
                       </div>
@@ -213,7 +219,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
                       <div className="shrink-0 text-right pl-1">
                         {d[4] > 0 ? (
                           <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-800 group-hover:bg-brand-50 group-hover:text-brand-700 transition-colors">
-                            {isDe ? 'ab ' : 'from '}
+                            {t('price_from' as any) || (isDe ? 'ab ' : 'from ')}
                             {formatCurrencyEuro(d[4], locale)}
                           </span>
                         ) : (
@@ -233,19 +239,19 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
             <div className="text-center py-12 bg-white rounded-xl border border-slate-200 p-6">
               <span className="text-3xl mb-2 block">🔍</span>
               <h3 className="text-base font-bold text-slate-900">
-                {isDe ? 'Keine Reiseziele gefunden' : 'No destinations found'}
+                {t('no_destinations_found' as any) || (isDe ? 'Keine Reiseziele gefunden' : 'No destinations found')}
               </h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                {isDe
+                {t('no_destinations_matched' as any, { query: searchQuery }) || (isDe
                   ? `Für "${searchQuery}" wurde kein passendes Land gefunden.`
-                  : `No destination matched "${searchQuery}".`}
+                  : `No destination matched "${searchQuery}".`)}
               </p>
               <div className="mt-3">
                 <Link
                   href={`${prefix}/tariffs`}
-                  className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-500"
+                  className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-500 min-h-[44px]"
                 >
-                  {isDe ? 'Alle Tarife ansehen' : 'View all plans'} →
+                  {t('view_all_plans' as any) || (isDe ? 'Alle Tarife ansehen' : 'View all plans')} →
                 </Link>
               </div>
             </div>

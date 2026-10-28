@@ -76,6 +76,54 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
         ],
       },
+      {
+        source: '/esim',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/esim/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/esim',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/esim/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/faq',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/faq',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/unlimited/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
+      {
+        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/unlimited/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
+        ],
+      },
     ];
   },
 };

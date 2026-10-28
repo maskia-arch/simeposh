@@ -93,7 +93,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <div className="min-w-0">
               {isTravel ? (
                 <>
-                  <p className="text-xs text-slate-500 font-medium leading-tight truncate" title={countryLabel}>
+                  <p className="text-xs text-slate-500 font-medium leading-tight line-clamp-2 break-words" title={countryLabel}>
                     {countryLabel}
                   </p>
                   <p className="font-extrabold text-slate-900 leading-snug break-words text-base">
@@ -146,7 +146,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               >
                 <TravelPremiumGlobeIcon size={14} className="text-amber-900" /> {t('badge_travel_premium' as any)}
               </span>
-            ) : badge && !isRecommended ? (
+            ) : badge ? (
               <span
                 title={t(badge.descKey)}
                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.cls}`}

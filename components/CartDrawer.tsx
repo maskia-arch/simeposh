@@ -279,7 +279,7 @@ export function CartDrawer() {
                             )}
                             {isNonHk && (
                               <span className="shrink-0 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full">
-                                🛡️ Non-HK
+                                🛡️ {t('feat_prem_adv_non_hk')}
                               </span>
                             )}
                           </p>

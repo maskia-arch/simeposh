@@ -9,6 +9,7 @@ import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
 import { formatGb } from '@/lib/utils';
+import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { displayCountryName, getTariffOperators, bestNetworkType, isPremiumTariff } from '@/lib/tariff-display';
 import { TravelGlobeIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
@@ -113,14 +114,14 @@ export function CountryPageClient({
     <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
       {/* ── Breadcrumb ── */}
       <nav aria-label={t('aria_breadcrumb' as any) || 'Breadcrumb'} className="mb-6 flex items-center gap-2 text-xs text-slate-500">
-        <Link href={prefix || "/"} className="hover:text-brand-600 transition-colors">
+        <Link href={prefix || "/"} className="relative inline-flex items-center min-h-[44px] text-xs text-slate-500 hover:text-brand-600 transition-colors after:absolute after:-inset-y-[14px] after:-inset-x-2 after:content-['']">
           {t('nav_home' as any) || 'Home'}
         </Link>
         <span>/</span>
         <Link
           href={`${prefix}/tariffs`}
           data-testid="breadcrumb-tariffs-link"
-          className="relative inline-flex items-center text-xs text-slate-500 hover:text-brand-600 transition-colors after:absolute after:-inset-y-[14px] after:-inset-x-2 after:content-['']"
+          className="relative inline-flex items-center min-h-[44px] text-xs text-slate-500 hover:text-brand-600 transition-colors after:absolute after:-inset-y-[14px] after:-inset-x-2 after:content-['']"
         >
           {t('nav_tariffs') || 'eSIM'}
         </Link>
@@ -176,7 +177,7 @@ export function CountryPageClient({
 
             {minTravelTariff && (
               <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
-                <span>{formatGb(minTravelTariff.data_gb)} ({minTravelTariff.validity_days} {t('unit_days' as any) || (isDe ? 'Tage' : 'Days')})</span>
+                <span>{formatGb(minTravelTariff.data_gb)} ({formatDaysWithUnit(minTravelTariff.validity_days, locale)})</span>
                 <span className="font-bold text-slate-800"><Price eur={minTravelTariff.sale_price_eur} /></span>
               </div>
             )}
@@ -354,71 +355,25 @@ export function CountryPageClient({
         )}
       </div>
 
-      {/* ── SEO & FAQ Section ── */}
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-10 shadow-xs">
-        <h2 className="text-2xl font-bold text-slate-900 mb-6">
-          {t('faq_country_title' as any, { country: countryLabel }) || (isDe
-            ? `Häufig gestellte Fragen zur eSIM für ${countryLabel}`
-            : `Frequently Asked Questions about eSIM for ${countryLabel}`)}
-        </h2>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
-            <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_country_q1' as any, { country: countryLabel }) || (isDe
-                ? `Wie aktiviere ich die eSIM in ${countryLabel}?`
-                : `How do I activate the eSIM in ${countryLabel}?`)}
-            </h3>
-            <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_country_a1' as any, { country: countryLabel }) || (isDe
-                ? 'Nach dem Kauf erhältst du sofort einen QR-Code per E-Mail und in deinem Dashboard. Scanne den Code einfach mit deiner Smartphone-Kamera unter Einstellungen > Mobilfunk > eSIM hinzufügen.'
-                : 'Immediately after purchase, you will receive a QR code via email and in your dashboard. Simply scan it under Settings > Cellular/Mobile > Add eSIM.')}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
-            <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_country_q2' as any, { country: countryLabel }) || (isDe
-                ? `Welche Netze werden in ${countryLabel} genutzt?`
-                : `Which networks are used in ${countryLabel}?`)}
-            </h3>
-            <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {operators.length > 0
-                ? t('faq_country_a2_ops' as any, { operators: operators.join(', '), country: countryLabel }) || (isDe
-                  ? `PureSim verbindet sich automatisch mit den führenden lokalen Mobilfunknetzen (${operators.join(', ')}), um dir stets die beste Signalstärke und höchste Bandbreite (LTE/5G) zu bieten.`
-                  : `PureSim connects automatically to leading local carriers (${operators.join(', ')}), providing optimal coverage and high-speed data.`)
-                : t('faq_country_a2_fallback' as any, { country: countryLabel }) || (isDe
-                  ? 'PureSim verbindet sich automatisch mit den stärksten lokalen Mobilfunkpartnern vor Ort.'
-                  : 'PureSim connects automatically to local top-tier carriers.')}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
-            <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_country_q3' as any, { country: countryLabel }) || (isDe
-                ? 'Wann beginnt die Gültigkeit des Tarifs?'
-                : 'When does the validity period start?')}
-            </h3>
-            <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_country_a3' as any, { country: countryLabel }) || (isDe
-                ? 'Bei PureSim beginnt die gebuchte Laufzeit erst in dem Moment, in dem sich deine eSIM zum ersten Mal mit einem Mobilfunknetz vor Ort verbindet.'
-                : 'With PureSim, your plan validity only starts when your eSIM first connects to a supported cellular network at your destination.')}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-50/70 p-5 border border-slate-100">
-            <h3 className="font-bold text-slate-900 text-sm md:text-base mb-2">
-              {t('faq_country_q4' as any, { country: countryLabel }) || (isDe
-                ? 'Behalte ich meine gewohnte WhatsApp-Nummer?'
-                : 'Can I keep my existing WhatsApp number?')}
-            </h3>
-            <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              {t('faq_country_a4' as any, { country: countryLabel }) || (isDe
-                ? 'Ja! Deine eSIM dient als reine Datenverbindung. Alle Messenger-Dienste wie WhatsApp, Telegram und Signal funktionieren unverändert mit deiner gewohnten Rufnummer weiter.'
-                : 'Yes! Your eSIM handles mobile data. All apps including WhatsApp, Telegram, and iMessage continue working with your existing phone number.')}
-            </p>
-          </div>
+      {/* ── FAQ Reference Link ── */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-1">
+            {t('faq_title' as any) || (isDe ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)')}
+          </h2>
+          <p className="text-xs md:text-sm text-slate-600">
+            {isDe
+              ? `Antworten zu Aktivierung, Netzabdeckung und Kompatibilität für ${countryLabel}.`
+              : `Answers about activation, network coverage, and compatibility for ${countryLabel}.`}
+          </p>
         </div>
+        <Link
+          href={`${prefix}/faq`}
+          className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-brand-50 border border-brand-200 px-5 py-2.5 text-xs md:text-sm font-bold text-brand-700 hover:bg-brand-100 transition-all shrink-0"
+        >
+          <span>{isDe ? 'Häufige Fragen ansehen' : 'View FAQ'}</span>
+          <span aria-hidden="true">→</span>
+        </Link>
       </section>
     </div>
   );

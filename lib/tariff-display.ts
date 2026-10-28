@@ -223,6 +223,7 @@ export function cleanTariffName(name: string | null | undefined): string {
     .replace(/\s+Premium\b/gi, '')
     .replace(/\s+non-?hk-?ip\b/gi, '')
     .replace(/\s+FUP\d+(?:[km]bps)?/gi, '')
+    .replace(/\b(?:AUIP|USIP|IIJ|MYIP|nonhkip)\b/gi, '')
     .trim();
 }
 
@@ -575,7 +576,7 @@ export function getReloadabilityInfo(tariff: {
       badgeKey: 'feat_topup_none_badge',
       titleKey: 'feat_topup_none_title',
       descKey: 'feat_topup_none_desc',
-      icon: '🚫',
+      icon: '',
       isReloadable: false,
     };
   }
@@ -612,7 +613,7 @@ export function getReloadabilityInfo(tariff: {
     badgeKey: 'feat_topup_none_badge',
     titleKey: 'feat_topup_none_title',
     descKey: 'feat_topup_none_desc',
-    icon: '🚫',
+    icon: '',
     isReloadable: false,
   };
 }
@@ -718,18 +719,17 @@ export function getTariffSpecialFeatures(
     }
   }
 
-  // 1. Non-HK IP (for Travel Standard tariffs that route outside HK)
-  if (!isPremiumTariff(tariff) && isNonHkIpTariff(tariff)) {
-    const ipExp = getTariffBreakoutIp(tariff);
+  // 1. Non-HK IP (for Unlimited tariffs that route outside HK, NOT for Travel Standard cards)
+  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  if (isUnlimited && isNonHkIpTariff(tariff)) {
     features.push({
       id: 'non_hk_ip',
-      badgeKey: 'feat_non_hk_ip_badge',
-      titleKey: 'feat_non_hk_ip_title',
-      descKey: 'feat_non_hk_ip_desc',
+      badgeKey: 'feat_prem_adv_non_hk',
+      titleKey: 'feat_prem_adv_non_hk',
+      descKey: 'feat_prem_adv_non_hk_desc',
       priceNoteKey: 'feat_non_hk_ip_price_note',
       icon: '🛡️',
       cls: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
-      extra: ipExp ? `IP Export: ${ipExp}` : undefined,
     });
   }
 

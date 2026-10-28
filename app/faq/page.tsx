@@ -9,9 +9,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const t = getServerT(locale);
   const title = t('faq_title' as any) || (locale === 'de' ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)');
-  const description = locale === 'de'
+  const description = t('meta_faq_desc' as any) || (locale === 'de'
     ? 'Alle Antworten zu PureSim eSIM: Kompatibilität, Aktivierung per QR-Code, Aufladung (Top-Up), Zahlung und Cashback.'
-    : 'Answers to all your PureSim eSIM questions: device compatibility, QR code activation, top-ups, crypto payments, and cashback.';
+    : 'Answers to all your PureSim eSIM questions: device compatibility, QR code activation, top-ups, crypto payments, and cashback.');
 
   return {
     title,
@@ -42,9 +42,9 @@ export default async function FaqPage() {
   ];
 
   const title = t('faq_title' as any) || (locale === 'de' ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)');
-  const subtitle = locale === 'de'
+  const subtitle = t('meta_faq_subtitle' as any) || (locale === 'de'
     ? 'Finde schnell Antworten zu unseren eSIM-Tarifen, Installation, Datenpaketen und Bezahlung.'
-    : 'Quick answers about our eSIM plans, setup, data packages, and payments.';
+    : 'Quick answers about our eSIM plans, setup, data packages, and payments.');
 
   const faqJsonLd = {
     '@context': 'https://schema.org',

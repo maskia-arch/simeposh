@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Deine eSIM einrichten | PureSim',
+  title: { absolute: 'Deine eSIM einrichten | PureSim' },
   robots: { index: false, follow: false },
 };
 

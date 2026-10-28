@@ -11,6 +11,5 @@ README.md
 Dockerfile
 .dockerignore
 scratch
-supabase/migrations
 *.tsbuildinfo
 next-env.d.ts

@@ -99,7 +99,7 @@ export async function generateMetadata({
     const dest = await getDestinationBySlug(slug);
     if (dest) {
       return {
-        title: `eSIM ${dest.name} | PureSim`,
+        title: { absolute: `eSIM ${dest.name} | PureSim` },
       };
     }
     notFound();

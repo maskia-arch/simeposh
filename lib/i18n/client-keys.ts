@@ -773,7 +773,18 @@ export const CLIENT_TRANSLATION_KEYS = [
   "region_global",
   "footer_faq",
   "network_singular",
-  "networks_plural"
+  "networks_plural",
+  "filter_all",
+  "price_from",
+  "no_destinations_found",
+  "no_destinations_matched",
+  "view_all_plans",
+  "meta_faq_desc",
+  "meta_faq_subtitle",
+  "hero_title_highlight",
+  "settings_sessions_current_device",
+  "price_from",
+  "no_destinations_found",
 ] as const;
 
 export type ClientTranslationKey = typeof CLIENT_TRANSLATION_KEYS[number];
