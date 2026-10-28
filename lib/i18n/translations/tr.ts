@@ -941,7 +941,7 @@ const tr = {
   "price_from": "başlayan fiyatlarla ",
   "no_destinations_found": "Hedef bulunamadı",
   "no_destinations_matched": "\"{query}\" için eşleşen hedef bulunamadı.",
-  "view_all_plans": "Tüm tarifeleri görüntüle",,
+  "view_all_plans": "Tüm tarifeleri görüntüle",
   "meta_faq_desc": "PureSim eSIM ile ilgili tüm sorularınızın yanıtları: cihaz uyumluluğu, QR kod ile etkinleştirme, yüklemeler, kripto ödemeleri ve geri ödeme."
 } as const;
 export default tr;

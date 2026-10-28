@@ -946,7 +946,7 @@ const cs = {
   "price_from": "od ",
   "no_destinations_found": "Nebyly nalezeny žádné cíle",
   "no_destinations_matched": "Pro \"{query}\" nebyl nalezen žádný odpovídající cíl.",
-  "view_all_plans": "Zobrazit všechny tarify",,
+  "view_all_plans": "Zobrazit všechny tarify",
   "meta_faq_desc": "Odpovědi na všechny otázky ohledně PureSim eSIM: kompatibilita zařízení, aktivace přes QR kód, dobíjení, kryptoplatby a cashback."
 } as const;
 export default cs;

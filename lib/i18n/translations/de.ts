@@ -964,7 +964,7 @@ const de = {
   "price_from": "ab ",
   "no_destinations_found": "Keine Reiseziele gefunden",
   "no_destinations_matched": "Für „{query}“ wurde kein passendes Reiseziel gefunden.",
-  "view_all_plans": "Alle Tarife ansehen",,
+  "view_all_plans": "Alle Tarife ansehen",
   "meta_faq_desc": "Alle Antworten zu PureSim eSIM: Kompatibilität, Aktivierung per QR-Code, Aufladung (Top-Up), Kryptozahlungen und Cashback."
 } as const;
 export default de;
