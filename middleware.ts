@@ -115,13 +115,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 301);
   }
 
-  // ── 308 Permanent Redirect /de or /de/* to root / or /* ──
+  // ── 301 Permanent Redirect /de or /de/* to root / or /* ──
   if (pathname === '/de') {
-    return NextResponse.redirect(new URL('/' + request.nextUrl.search, request.url), 308);
+    return NextResponse.redirect(new URL('/' + request.nextUrl.search, request.url), 301);
   }
   if (pathname.startsWith('/de/')) {
     const deTarget = pathname.replace(/^\/de/, '') || '/';
-    return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 308);
+    return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
   }
 
 

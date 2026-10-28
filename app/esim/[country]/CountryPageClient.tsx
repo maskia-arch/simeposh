@@ -185,7 +185,7 @@ export function CountryPageClient({
             {minUnlimitedPerDay !== null && (
               <Link
                 href={`${prefix}/unlimited/${destination.slug}`}
-                className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between group hover:text-brand-600 transition-colors"
+                className="min-h-[44px] text-xs text-slate-600 border-t border-slate-100 pt-1.5 pb-1 flex items-center justify-between group hover:text-brand-600 transition-colors"
                 title={isDe ? `Unlimited-Tarif für ${countryLabel} anpassen` : `Customize Unlimited plan for ${countryLabel}`}
               >
                 <span className="flex items-center gap-1 font-semibold text-emerald-800 group-hover:underline">

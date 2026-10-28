@@ -941,7 +941,8 @@ const fi = {
   "price_from": "alkaen ",
   "no_destinations_found": "Kohteita ei löytynyt",
   "no_destinations_matched": "Hakua \"{query}\" vastaavaa kohdetta ei löytynyt.",
-  "view_all_plans": "Katso kaikki liittymät",
+  "view_all_plans": "Katso kaikki liittymät",,
+  "meta_faq_desc": "Vastaukset kaikkiin PureSim eSIM -kysymyksiisi: laitteiden yhteensopivuus, QR-koodiaktivointi, lataukset, kryptomaksut ja cashback."
 } as const;
 export default fi;
 export type TranslationKeys = keyof typeof fi;

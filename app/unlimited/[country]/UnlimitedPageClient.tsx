@@ -50,19 +50,19 @@ export function UnlimitedPageClient({
     <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
       {/* ── Breadcrumb ── */}
       <nav aria-label={t('aria_breadcrumb' as any) || 'Breadcrumb'} className="mb-6 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        <Link href={prefix || "/"} className="hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">
+        <Link href={prefix || "/"} className="min-h-[44px] inline-flex items-center py-2 px-1 hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">
           {t('nav_home' as any) || 'Home'}
         </Link>
         <span>/</span>
         <Link
           href={`${prefix}/tariffs`}
           data-testid="breadcrumb-tariffs-link"
-          className="relative inline-flex items-center text-xs text-slate-500 hover:text-brand-600 transition-colors after:absolute after:-inset-y-[14px] after:-inset-x-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm"
+          className="relative min-h-[44px] inline-flex items-center py-2 px-1 text-xs text-slate-500 hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm"
         >
           {t('nav_tariffs') || 'eSIM'}
         </Link>
         <span>/</span>
-        <Link href={`${prefix}/esim/${destination.slug}`} className="hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">
+        <Link href={`${prefix}/esim/${destination.slug}`} className="min-h-[44px] inline-flex items-center py-2 px-1 hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">
           {countryLabel}
         </Link>
         <span>/</span>
@@ -122,10 +122,10 @@ export function UnlimitedPageClient({
               </div>
             )}
 
-            <div className="text-[11px] text-slate-500 border-t border-slate-100 pt-2 flex items-center justify-between">
+            <div className="text-[11px] text-slate-500 border-t border-slate-100 pt-1 flex items-center justify-between">
               <Link
                 href={`${prefix}/esim/${destination.slug}`}
-                className="text-brand-600 hover:text-brand-700 font-medium hover:underline inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm"
+                className="min-h-[44px] text-brand-600 hover:text-brand-700 font-medium hover:underline inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm py-2 px-1"
               >
                 ← {t('all_plans_country' as any, { country: countryLabel }) || (isDe ? `Alle Tarife für ${countryLabel}` : `All plans for ${countryLabel}`)}
               </Link>

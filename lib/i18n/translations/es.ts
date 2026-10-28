@@ -941,7 +941,8 @@ const es = {
   "price_from": "desde ",
   "no_destinations_found": "No se encontraron destinos",
   "no_destinations_matched": "No se encontró ningún destino coincidente para \"{query}\".",
-  "view_all_plans": "Ver todos los planes",
+  "view_all_plans": "Ver todos los planes",,
+  "meta_faq_desc": "Respuestas a todas tus preguntas sobre PureSim eSIM: compatibilidad de dispositivos, activación por código QR, recargas, pagos cripto y cashback."
 } as const;
 export default es;
 export type TranslationKeys = keyof typeof es;

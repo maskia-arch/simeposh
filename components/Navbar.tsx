@@ -262,7 +262,7 @@ export function Navbar() {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm supports-[not(backdrop-filter:blur(1px))]:bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
-        <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+        <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px]">
           <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
           <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
             PureSim
@@ -436,7 +436,7 @@ export function Navbar() {
       {/* Announcement Bar under the Header */}
       <Link
         href={user ? `${prefix}/dashboard?tab=cash` : `${prefix}/blog/${locale === 'en' ? 'puresim-esim-cash-cashback-program-save-on-every-plan-purchase' : 'puresim-esim-cash-cashback-programm'}`}
-        className="w-full bg-gradient-to-r from-brand-600 via-brand-700 to-brand-800 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer"
+        className="w-full bg-gradient-to-r from-brand-600 via-brand-700 to-brand-800 text-white text-center py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer min-h-[44px]"
       >
         <CoinsIcon size={16} />
         {user ? (

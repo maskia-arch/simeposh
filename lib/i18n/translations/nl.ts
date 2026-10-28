@@ -941,7 +941,8 @@ const nl = {
   "price_from": "vanaf ",
   "no_destinations_found": "Geen bestemmingen gevonden",
   "no_destinations_matched": "Geen overeenkomende bestemming gevonden voor \"{query}\".",
-  "view_all_plans": "Bekijk alle tarieven",
+  "view_all_plans": "Bekijk alle tarieven",,
+  "meta_faq_desc": "Antwoorden op al je vragen over PureSim eSIM: apparaatcompatibiliteit, activering via QR-code, opwaarderen, cryptobetalingen en cashback."
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

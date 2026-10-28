@@ -172,7 +172,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                     setActiveAbbr(null);
                     setActiveFeature(isSelected ? null : feat);
                   }}
-                  className={`relative min-h-[36px] inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] ${feat.cls} ${
+                  className={`relative min-h-[44px] inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] ${feat.cls} ${
                     isSelected ? 'ring-2 ring-indigo-400 font-bold shadow-xs' : ''
                   }`}
                   title={`${t(feat.titleKey as any, feat.vars)} – ${t('card_details')}`}
@@ -307,27 +307,15 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             </span>
           )}
           {ops.length > 0 ? (
-            <button
-              type="button"
-              data-testid="network-coverage-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveFeature(null);
-                const covLabel = t('det_coverage_label').replace(/:$/, '').trim();
-                setActiveAbbr(activeAbbr?.label === covLabel ? null : {
-                  label: covLabel,
-                  text: ops.map((o) => o.name).join(' · '),
-                });
-              }}
-              aria-label={`${t('det_coverage_label').replace(/:$/, '').trim()}: ${ops.map((o) => o.name).join(' · ')}`}
-              className="relative h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-700 truncate font-medium hover:text-brand-700 cursor-pointer text-left transition-colors after:absolute after:-inset-y-[11px] after:-inset-x-1 after:content-[''] after:z-10"
+            <span
+              className="relative h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-700 truncate font-medium text-left"
             >
               <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
               {ops.length > 1 && (
                 <span className="text-slate-600 font-normal">{t('card_network_count' as any, { count: ops.length }) || `(${ops.length})`}</span>
               )}
-            </button>
+            </span>
           ) : (
             <span className="h-[22px] mr-2 inline-flex items-center gap-1 text-xs text-slate-600">
               <NetworkIcon size={13} className="text-slate-600" />
@@ -369,7 +357,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                   text: t('feat_hk_ip_desc'),
                 });
               }}
-              className="rounded-md bg-slate-100 border border-slate-300 px-1.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
+              className="min-h-[44px] inline-flex items-center rounded-md bg-slate-100 border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
               title={t('feat_hk_ip_desc')}
             >
               HK IP ⓘ

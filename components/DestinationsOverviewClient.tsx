@@ -133,7 +133,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
           <div className="mt-5 flex justify-center">
             <Link
               href={`${prefix}/tariffs`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white px-4 py-2 text-xs md:text-sm font-bold border border-white/20 transition-all"
+              className="min-h-[44px] inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 text-xs md:text-sm font-bold border border-white/20 transition-all"
             >
               <span>{t('btn_compare_all_tariffs' as any) || (isDe ? 'Alle Tarife im Detail vergleichen' : 'Compare All Tariffs in Detail')}</span>
               <span aria-hidden="true">→</span>

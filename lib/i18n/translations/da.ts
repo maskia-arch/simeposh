@@ -941,7 +941,8 @@ const da = {
   "price_from": "fra ",
   "no_destinations_found": "Ingen destinationer fundet",
   "no_destinations_matched": "Ingen matchende destination fundet for \"{query}\".",
-  "view_all_plans": "Se alle abonnementer",
+  "view_all_plans": "Se alle abonnementer",,
+  "meta_faq_desc": "Svar på alle dine spørgsmål om PureSim eSIM: enhedskompatibilitet, QR-kodeaktivering, optankning, kryptobetalinger og cashback."
 } as const;
 export default da;
 export type TranslationKeys = keyof typeof da;

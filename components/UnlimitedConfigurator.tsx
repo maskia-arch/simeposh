@@ -574,7 +574,7 @@ export function UnlimitedConfigurator({
             />
 
             <div className="flex flex-wrap items-center gap-1 pt-0.5">
-              <span className="text-[10px] font-bold text-slate-400 mr-1">Beliebt:</span>
+              <span className="text-[10px] font-bold text-slate-500 mr-1">Beliebt:</span>
               {POPULAR_DESTINATIONS.map((code) => {
                 const item = countries.find((c) => c.code === code);
                 if (!item) return null;
@@ -695,7 +695,7 @@ export function UnlimitedConfigurator({
                 <label id="cfg-volume-label" className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                   {t('cfg_step2_volume' as any) || '2. Tägliches Highspeed-Volumen'}
                 </label>
-                <span className="text-[10px] text-slate-400">{t('cfg_renew_daily' as any) || 'Renews every day'}</span>
+                <span className="text-[10px] text-slate-500">{t('cfg_renew_daily' as any) || 'Renews every day'}</span>
               </div>
 
               {gbOptions.length === 0 ? (
@@ -780,7 +780,7 @@ export function UnlimitedConfigurator({
                 <div data-testid="price-box" className="py-3 space-y-2 border-b border-slate-100">
                   <div className="flex items-start justify-between min-h-[46px]">
                     <div className="flex flex-col gap-1 min-h-[42px] justify-center">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block leading-none">
                         {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                       </span>
                       <div className="h-[22px] flex items-center">
@@ -947,7 +947,7 @@ export function UnlimitedConfigurator({
       {syntheticTariff && finalPrice !== null && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 shadow-2xl flex items-center justify-between gap-3">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total' : 'Gesamt')} ({formatDaysWithUnit(days, locale)})</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500 block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total' : 'Gesamt')} ({formatDaysWithUnit(days, locale)})</span>
             <Price eur={finalPrice} className="text-lg font-black text-slate-900" />
           </div>
           <div className="flex gap-2">
