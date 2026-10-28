@@ -87,7 +87,7 @@ export async function middleware(request: NextRequest) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    if (!isStandardUserRoute) {
+    if (!isStandardUserRoute && !is404Route) {
       // 2. Block requests with empty/missing User-Agent on non-user routes
       if (!userAgent.trim()) {
         console.warn(`[Bot Blocked] Empty User-Agent accessing: "${pathname}"`);

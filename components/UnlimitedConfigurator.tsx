@@ -173,8 +173,8 @@ export function DaySlider({
                 type="button"
                 onClick={() => onChange(m)}
                 style={{ left: `${(i / lastIdx) * 100}%`, transform }}
-                className={`absolute top-0 text-[10px] leading-none transition-colors hover:text-brand-600 ${
-                  days === m ? 'text-brand-600 font-extrabold' : 'text-slate-400'
+                className={`absolute -top-3 pt-3 pb-2 min-h-[44px] min-w-[36px] inline-flex items-center justify-center text-[10px] leading-none transition-colors hover:text-brand-600 ${
+                  days === m ? 'text-brand-600 font-extrabold' : 'text-slate-600'
                 }`}
               >
                 {formatDayMark(m, locale)}
@@ -538,7 +538,7 @@ export function UnlimitedConfigurator({
               ref={changeCountryBtnRef}
               type="button"
               onClick={() => setIsChangingCountry(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 min-h-[44px] text-xs font-bold text-slate-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 transition-all cursor-pointer"
             >
               <span>{t('cfg_change_destination' as any) || (isDe ? '🔍 Zielgebiet ändern' : '🔍 Change destination')}</span>
             </button>

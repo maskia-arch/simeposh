@@ -345,7 +345,7 @@ export function CountryPageClient({
               </h2>
               <Link
                 href={`${prefix}/unlimited/${destination.slug}`}
-                className="text-xs md:text-sm font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
+                className="min-h-[44px] inline-flex items-center text-xs md:text-sm font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
               >
                 {t('btn_go_unlimited_builder' as any) || (isDe ? 'Zum Unlimited-Builder' : 'Go to Unlimited Builder')} →
               </Link>
