@@ -285,16 +285,21 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       const locationCodes = parseLocationCodes(pkg);
       const isMulti       = locationCodes.length > 1;
 
-      const countryCode = isMulti ? getRegionCode(locationCodes) : (locationCodes[0] ?? 'XX');
+      let countryCode = isMulti ? getRegionCode(locationCodes, pkg) : (locationCodes[0] ?? 'XX');
       let countryName   = getCountryName(pkg);
-      if (isMulti) {
+
+      const rawPkgName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
+      if ((countryCode === 'LA' || countryCode === 'LATAM') && (rawPkgName.includes('latin') || rawPkgName.includes('south america') || countryName.toLowerCase().includes('latin'))) {
+        countryCode = 'LATAM';
+        countryName = 'Latin America';
+      } else if (isMulti) {
         const sortedKey = [...locationCodes].sort().join(',');
         const aiName = aiDisplayNames.get(sortedKey);
         if (aiName) {
           countryName = aiName;
         }
       }
-      const region      = isMulti ? countryName : null;
+      const region      = isMulti ? countryName : (countryCode === 'LATAM' ? 'Latin America' : null);
 
       const flagEmoji = !isMulti && locationCodes.length === 1
         ? getFlagEmoji(locationCodes[0])

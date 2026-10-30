@@ -171,7 +171,7 @@ export const REGIONS: RegionInfo[] = [
     minMatch: 2,
   },
   {
-    code: 'LA', name: 'Latin America',
+    code: 'LATAM', name: 'Latin America',
     members: ['BR','AR','CL','CO','PE','VE','EC','BO','PY','UY','CR','PA','GT','HN',
                'SV','NI','DO','CU','JM','TT','BB','GY','SR'],
     minMatch: 4,
@@ -240,6 +240,11 @@ export function isoCountryName(code: string): string {
  * Never returns ugly placeholders like "2 Countries" / "30 Länder".
  */
 export function getCountryName(pkg: EsimAccessPackage): string {
+  const rawName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
+  if (rawName.includes('latin america') || rawName.includes('south america')) {
+    return 'Latin America';
+  }
+
   const codes = parseLocationCodes(pkg);
 
   // ── Single country ──────────────────────────────────────────
@@ -272,9 +277,23 @@ export function getCountryName(pkg: EsimAccessPackage): string {
 }
 
 /** Virtual region code for multi-country packages */
-export function getRegionCode(codes: string[]): string {
+export function getRegionCode(codes: string[], pkg?: EsimAccessPackage): string {
+  if (pkg) {
+    const rawName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
+    if (rawName.includes('latin america') || rawName.includes('south america')) {
+      return 'LATAM';
+    }
+  }
   if (codes.length === 0) return 'XX';
-  if (codes.length === 1) return codes[0];
+  if (codes.length === 1) {
+    if (codes[0] === 'LA' && pkg) {
+      const rawName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
+      if (rawName.includes('latin') || rawName.includes('south america')) {
+        return 'LATAM';
+      }
+    }
+    return codes[0];
+  }
   const region = detectRegion(codes);
   return region?.code ?? 'GLOB';
 }

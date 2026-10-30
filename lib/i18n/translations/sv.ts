@@ -942,7 +942,10 @@ const sv = {
   "no_destinations_found": "Inga destinationer hittades",
   "no_destinations_matched": "Ingen matchande destination hittades för \"{query}\".",
   "view_all_plans": "Visa alla planer",
-  "meta_faq_desc": "Svar på alla dina frågor om PureSim eSIM: enhetskompatibilitet, QR-kodaktivering, påfyllningar, kryptobetalningar och cashback."
+  "meta_faq_desc": "Svar på alla dina frågor om PureSim eSIM: enhetskompatibilitet, QR-kodaktivering, påfyllningar, kryptobetalningar och cashback.",
+  "faq_teaser_desc": "{country}: aktivering, nätverkstäckning och kompatibilitet.",
+  "faq_teaser_unlimited_desc": "{country}: dagliga kvoter, hastighetsbegränsning och aktivering för Unlimited eSIM.",
+  "faq_teaser_btn": "Visa vanliga frågor",
 } as const;
 export default sv;
 export type TranslationKeys = keyof typeof sv;

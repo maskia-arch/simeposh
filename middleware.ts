@@ -111,23 +111,24 @@ export async function middleware(request: NextRequest) {
   // ── 301 Permanent Redirect www.puresim.com (or www.*) to root domain ──
   if (cleanHost.startsWith('www.')) {
     const canonicalHost = cleanHost.replace(/^www\./, '');
-    const redirectUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${canonicalHost}`);
+    const cleanP = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+    const redirectUrl = new URL(cleanP + request.nextUrl.search, `https://${canonicalHost}`);
     return NextResponse.redirect(redirectUrl, 301);
   }
 
-  // ── 301 Permanent Redirect /de or /de/* to root / or /* ──
-  if (pathname === '/de') {
+  // ── 301 Permanent Redirect /de or /de/* to root / or /* (single hop, strip trailing slashes) ──
+  if (pathname === '/de' || pathname === '/de/') {
     return NextResponse.redirect(new URL('/' + request.nextUrl.search, request.url), 301);
   }
   if (pathname.startsWith('/de/')) {
-    const deTarget = pathname.replace(/^\/de/, '') || '/';
+    const deTarget = pathname.replace(/^\/de/, '').replace(/\/+$/, '') || '/';
     return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
   }
 
-
-    // ── 301 Redirect canonical country aliases for /esim/{alias} -> /esim/{slug} ──
-  if (normalizedPath.startsWith('/esim/')) {
-    const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim();
+  // ── 301 Redirect canonical country aliases for /esim/{alias} -> /esim/{slug} ──
+  const cleanNorm = normalizedPath.length > 1 ? normalizedPath.replace(/\/+$/, '') : normalizedPath;
+  if (cleanNorm.startsWith('/esim/')) {
+    const slug = cleanNorm.replace(/^\/esim\//, '').split('/')[0].trim();
     if (slug) {
       const code = resolveCountryOrRegionCode(slug);
       if (code) {
@@ -141,8 +142,8 @@ export async function middleware(request: NextRequest) {
 
   // ── 301 Redirect /unlimited/{alias} -> canonical, and countries without unlimited -> /esim/{slug} ──
   const NO_UNLIMITED_CODES = new Set(['CF', 'GG', 'JM', 'LR', 'MG', 'ML', 'MZ', 'PR', 'SD']);
-  if (normalizedPath.startsWith('/unlimited/')) {
-    const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim();
+  if (cleanNorm.startsWith('/unlimited/')) {
+    const slug = cleanNorm.replace(/^\/unlimited\//, '').split('/')[0].trim();
     if (slug) {
       const code = resolveCountryOrRegionCode(slug);
       if (code) {
@@ -155,6 +156,12 @@ export async function middleware(request: NextRequest) {
         }
       }
     }
+  }
+
+  // ── 301 Redirect trailing slash to non-trailing slash (preserve query string) ──
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    const cleanPath = pathname.replace(/\/+$/, '');
+    return NextResponse.redirect(new URL(cleanPath + request.nextUrl.search, request.url), 301);
   }
 
   // ── 301 Redirect /topup with iccid query param: strip iccid permanently ──

@@ -785,6 +785,9 @@ export const CLIENT_TRANSLATION_KEYS = [
   "settings_sessions_current_device",
   "price_from",
   "no_destinations_found",
+  "faq_teaser_desc",
+  "faq_teaser_unlimited_desc",
+  "faq_teaser_btn",
 ] as const;
 
 export type ClientTranslationKey = typeof CLIENT_TRANSLATION_KEYS[number];

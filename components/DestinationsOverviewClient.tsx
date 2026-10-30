@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { formatCurrencyEuro } from '@/lib/currency';
+import { formatDestinationsFound } from '@/lib/i18n/plural';
 
 // Tuple: [0: code, 1: slug, 2: flag, 3: localizedName, 4: minPrice, 5: regionGroup]
 export type CompactDestination = [
@@ -170,10 +171,7 @@ export function DestinationsOverviewClient({ destinations, totalDestinations }: 
         {/* Results Count & Comparison link */}
         <div className="flex items-center justify-between mb-5 pb-2 border-b border-slate-200">
           <p className="text-sm font-semibold text-slate-700" aria-live="polite">
-            {filteredDestinations.length}{' '}
-            {isDe
-              ? filteredDestinations.length === 1 ? 'Reiseziel gefunden' : 'Reiseziele gefunden'
-              : filteredDestinations.length === 1 ? 'destination found' : 'destinations found'}
+            {formatDestinationsFound(filteredDestinations.length, locale)}
           </p>
           <Link
             href={`${prefix}/tariffs`}

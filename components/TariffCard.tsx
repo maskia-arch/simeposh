@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
-import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatDaysWithUnit, formatCountriesWithUnit, getPerDayAriaUnit } from '@/lib/i18n/plural';
+import { formatCurrencyEuro } from '@/lib/currency';
 import type { PublicTariff } from '@/lib/tariffs';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
-import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, isNonHkIpTariff, getTariffBreakoutIp, isTurkeyTariff, type TariffSpecialFeature } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, isNonHkIpTariff, getTariffBreakoutIp, isTurkeyTariff, getReloadabilityInfo, type TariffSpecialFeature } from '@/lib/tariff-display';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon, ShieldIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
 
@@ -53,6 +54,13 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
   const coverage     = coverageLabel(tariff, locale);
   const features     = getTariffSpecialFeatures(tariff, locale);
   const cleanedTitle = cleanTariffName(tariff.name);
+  const reloadInfo   = getReloadabilityInfo(tariff);
+
+  const countryCount = (tariff.location_codes ?? []).length;
+  const isMultiCountry = countryCount > 1;
+  const cardTitle = isMultiCountry
+    ? `${countryLabel} · ${formatCountriesWithUnit(countryCount, locale)}`
+    : countryLabel;
 
   // Determine abbreviations
   const isNonHk = isNonHkIpTariff(tariff);
@@ -93,8 +101,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <div className="min-w-0">
               {isTravel ? (
                 <>
-                  <p className="text-xs text-slate-500 font-medium leading-tight line-clamp-2 break-words" title={countryLabel}>
-                    {countryLabel}
+                  <p className="text-xs text-slate-500 font-medium leading-tight line-clamp-2 break-words" title={cardTitle}>
+                    {cardTitle}
                   </p>
                   <p className="font-extrabold text-slate-900 leading-snug break-words text-base">
                     {formatGb(tariff.data_gb)} · {formatDaysWithUnit(tariff.validity_days, locale)}
@@ -102,8 +110,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 </>
               ) : (
                 <>
-                  <p className="font-bold text-slate-800 leading-tight break-words" title={countryLabel}>
-                    {countryLabel}
+                  <p className="font-bold text-slate-800 leading-tight break-words" title={cardTitle}>
+                    {cardTitle}
                   </p>
                   <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
                     {tariff.tariff_type === 'unlimited_eco' ? 'Unlimited Eco' : tariff.tariff_type === 'unlimited_pro' ? 'Unlimited Pro' : 'Unlimited'}
@@ -369,14 +377,41 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               {breakoutIp === 'UK' ? '🇬🇧 Europa IP' : breakoutIp === 'NL' ? '🇳🇱 NL IP' : `${breakoutIp} IP`}
             </span>
           ) : null}
+
+          {/* Neutral reloadability badge */}
+          <span
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${
+              reloadInfo.isReloadable
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-slate-50 text-slate-600 border border-slate-200'
+            }`}
+            title={t(reloadInfo.titleKey as any)}
+          >
+            <ShieldIcon size={12} className={reloadInfo.isReloadable ? 'text-emerald-600 shrink-0' : 'text-slate-400 shrink-0'} />
+            <span>{t(reloadInfo.badgeKey as any)}</span>
+          </span>
         </div>
 
         {/* ── Price ── */}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
-          <Price
-            eur={tariff.customer_price_eur ?? tariff.sale_price_eur}
-            className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
-          />
+          <div
+            className="flex items-baseline gap-1"
+            aria-label={
+              isUnlimited
+                ? `${formatCurrencyEuro(tariff.customer_price_eur ?? tariff.sale_price_eur, locale)} ${getPerDayAriaUnit(locale)}`
+                : undefined
+            }
+          >
+            <Price
+              eur={tariff.customer_price_eur ?? tariff.sale_price_eur}
+              className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
+            />
+            {isUnlimited && (
+              <span className="text-xs font-semibold text-slate-500">
+                {t('unit_per_day')}
+              </span>
+            )}
+          </div>
           {onDetail && (
             <Link
               href={tariff.slug ? `${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}` : `${isDe ? '' : `/${locale}`}/tariffs`}

@@ -55,6 +55,153 @@ export function formatDaysWithUnit(days: number, locale: string = 'de'): string 
 }
 
 /**
+ * Returns the localized country count with grammatical pluralization
+ * (e.g. "6 Länder", "6 countries", "6 pays", "6 zemí", "20 de țări").
+ */
+export function formatCountriesWithUnit(count: number, locale: string = 'de'): string {
+  const pr = new Intl.PluralRules(locale);
+  const rule = pr.select(count);
+
+  switch (locale) {
+    case 'de':
+      return rule === 'one' ? `${count} Land` : `${count} Länder`;
+    case 'en':
+      return rule === 'one' ? `${count} country` : `${count} countries`;
+    case 'fr':
+      return `${count} pays`;
+    case 'es':
+      return rule === 'one' ? `${count} país` : `${count} países`;
+    case 'it':
+      return rule === 'one' ? `${count} paese` : `${count} paesi`;
+    case 'nl':
+      return rule === 'one' ? `${count} land` : `${count} landen`;
+    case 'pl':
+      if (rule === 'one') return `${count} kraj`;
+      if (rule === 'few') return `${count} kraje`;
+      return `${count} krajów`;
+    case 'pt':
+      return rule === 'one' ? `${count} país` : `${count} países`;
+    case 'tr':
+      return `${count} ülke`;
+    case 'sv':
+      return rule === 'one' ? `${count} land` : `${count} länder`;
+    case 'da':
+      return rule === 'one' ? `${count} land` : `${count} lande`;
+    case 'fi':
+      return rule === 'one' ? `${count} maa` : `${count} maata`;
+    case 'cs':
+      if (rule === 'one') return `${count} země`;
+      if (rule === 'few') return `${count} země`;
+      return `${count} zemí`;
+    case 'ro':
+      if (rule === 'one') return `${count} țară`;
+      if (rule === 'few') return `${count} țări`;
+      return `${count} de țări`;
+    case 'hu':
+      return `${count} ország`;
+    default:
+      return rule === 'one' ? `${count} country` : `${count} countries`;
+  }
+}
+
+/**
+ * Returns localized destinations found text with correct grammatical pluralization
+ * (e.g. "0 Reiseziele gefunden", "1 Reiseziel gefunden", "208 Reiseziele gefunden",
+ * "1 destination found", "208 destinations found",
+ * "0 nalezených destinací", "1 nalezená destinace", "208 nalezených destinací", etc.)
+ */
+export function formatDestinationsFound(count: number, locale: string = 'de'): string {
+  if (count === 0) {
+    switch (locale) {
+      case 'de': return '0 Reiseziele gefunden';
+      case 'en': return '0 destinations found';
+      case 'fr': return '0 destination trouvée';
+      case 'es': return '0 destinos encontrados';
+      case 'it': return '0 destinazioni trovate';
+      case 'nl': return '0 bestemmingen gevonden';
+      case 'pl': return '0 znalezionych celów podróży';
+      case 'pt': return '0 destinos encontrados';
+      case 'tr': return '0 hedef bulundu';
+      case 'sv': return '0 resmål hittades';
+      case 'da': return '0 destinationer fundet';
+      case 'fi': return '0 matkakohdetta löydetty';
+      case 'cs': return '0 nalezených destinací';
+      case 'ro': return '0 destinații găsite';
+      case 'hu': return '0 úti cél található';
+      default: return '0 destinations found';
+    }
+  }
+
+  const pr = new Intl.PluralRules(locale);
+  const rule = pr.select(count);
+
+  switch (locale) {
+    case 'de':
+      return rule === 'one' ? `${count} Reiseziel gefunden` : `${count} Reiseziele gefunden`;
+    case 'en':
+      return rule === 'one' ? `${count} destination found` : `${count} destinations found`;
+    case 'fr':
+      return rule === 'one' ? `${count} destination trouvée` : `${count} destinations trouvées`;
+    case 'es':
+      return rule === 'one' ? `${count} destino encontrado` : `${count} destinos encontrados`;
+    case 'it':
+      return rule === 'one' ? `${count} destinazione trovata` : `${count} destinazioni trovate`;
+    case 'nl':
+      return rule === 'one' ? `${count} bestemming gevonden` : `${count} bestemmingen gevonden`;
+    case 'pl':
+      if (rule === 'one') return `${count} znaleziony cel podróży`;
+      if (rule === 'few') return `${count} znalezione cele podróży`;
+      return `${count} znalezionych celów podróży`;
+    case 'pt':
+      return rule === 'one' ? `${count} destino encontrado` : `${count} destinos encontrados`;
+    case 'tr':
+      return `${count} hedef bulundu`;
+    case 'sv':
+      return `${count} resmål hittades`;
+    case 'da':
+      return rule === 'one' ? `${count} destination fundet` : `${count} destinationer fundet`;
+    case 'fi':
+      return rule === 'one' ? `${count} matkakohde löydetty` : `${count} matkakohdetta löydetty`;
+    case 'cs':
+      if (rule === 'one') return `${count} nalezená destinace`;
+      if (rule === 'few') return `${count} nalezené destinace`;
+      return `${count} nalezených destinací`;
+    case 'ro':
+      if (rule === 'one') return `${count} destinație găsită`;
+      if (rule === 'few') return `${count} destinații găsite`;
+      return `${count} de destinații găsite`;
+    case 'hu':
+      return `${count} úti cél található`;
+    default:
+      return rule === 'one' ? `${count} destination found` : `${count} destinations found`;
+  }
+}
+
+/**
+ * Returns localized "per day" aria-label preposition phrase (e.g. "pro Tag", "per day", "par jour").
+ */
+export function getPerDayAriaUnit(locale: string = 'de'): string {
+  switch (locale) {
+    case 'de': return 'pro Tag';
+    case 'en': return 'per day';
+    case 'fr': return 'par jour';
+    case 'es': return 'por día';
+    case 'it': return 'al giorno';
+    case 'nl': return 'per dag';
+    case 'pl': return 'za dzień';
+    case 'pt': return 'por dia';
+    case 'tr': return 'günlük';
+    case 'sv': return 'per dag';
+    case 'da': return 'pr. dag';
+    case 'fi': return 'päivässä';
+    case 'cs': return 'za den';
+    case 'ro': return 'pe zi';
+    case 'hu': return 'naponta';
+    default: return 'per day';
+  }
+}
+
+/**
  * Returns the localized day range with unit (e.g. "4 Tage", "5–9 Tage", "30+ Tage").
  */
 export function formatDayRangeWithUnit(minDays: number, maxDays: number, locale: string = 'de'): string {

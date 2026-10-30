@@ -40,6 +40,8 @@ scripts/*
 !scripts/test-cancellation-and-expiry.mjs
 !scripts/smoke_test_live.mjs
 !scripts/verify_fix2_live.ts
+!scripts/test_sync_latam.ts
+!scripts/test_nachfix_requirements.ts
 fix*.txt
 
 

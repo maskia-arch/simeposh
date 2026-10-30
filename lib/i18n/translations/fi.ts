@@ -942,7 +942,10 @@ const fi = {
   "no_destinations_found": "Kohteita ei löytynyt",
   "no_destinations_matched": "Hakua \"{query}\" vastaavaa kohdetta ei löytynyt.",
   "view_all_plans": "Katso kaikki liittymät",
-  "meta_faq_desc": "Vastaukset kaikkiin PureSim eSIM -kysymyksiisi: laitteiden yhteensopivuus, QR-koodiaktivointi, lataukset, kryptomaksut ja cashback."
+  "meta_faq_desc": "Vastaukset kaikkiin PureSim eSIM -kysymyksiisi: laitteiden yhteensopivuus, QR-koodiaktivointi, lataukset, kryptomaksut ja cashback.",
+  "faq_teaser_desc": "{country}: aktivointi, verkon kattavuus ja yhteensopivuus.",
+  "faq_teaser_unlimited_desc": "{country}: päivittäiset kiintiöt, nopeuden rajoitus ja Unlimited eSIM -aktivointi.",
+  "faq_teaser_btn": "Katso usein kysytyt kysymykset",
 } as const;
 export default fi;
 export type TranslationKeys = keyof typeof fi;

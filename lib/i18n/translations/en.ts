@@ -942,7 +942,10 @@ const en = {
   "no_destinations_found": "No destinations found",
   "no_destinations_matched": "No matching destination found for \"{query}\".",
   "view_all_plans": "View all plans",
-  "meta_faq_desc": "Answers to all your PureSim eSIM questions: device compatibility, QR code activation, top-ups, crypto payments, and cashback."
+  "meta_faq_desc": "Answers to all your PureSim eSIM questions: device compatibility, QR code activation, top-ups, crypto payments, and cashback.",
+  "faq_teaser_desc": "{country}: Answers about activation, network coverage, and compatibility.",
+  "faq_teaser_unlimited_desc": "{country}: Answers about daily allowances, speed throttling, and activation for Unlimited eSIM.",
+  "faq_teaser_btn": "View FAQ",
 } as const;
 export default en;
 export type TranslationKeys = keyof typeof en;

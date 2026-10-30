@@ -942,7 +942,10 @@ const ro = {
   "no_destinations_found": "Nu au fost găsite destinații",
   "no_destinations_matched": "Nu a fost găsită nicio destinație potrivită pentru „{query}”.",
   "view_all_plans": "Vezi toate planurile",
-  "meta_faq_desc": "Răspunsuri la toate întrebările despre PureSim eSIM: compatibilitate dispozitive, activare prin cod QR, reîncărcare, plăți crypto și cashback."
+  "meta_faq_desc": "Răspunsuri la toate întrebările despre PureSim eSIM: compatibilitate dispozitive, activare prin cod QR, reîncărcare, plăți crypto și cashback.",
+  "faq_teaser_desc": "{country}: activare, acoperire de rețea și compatibilitate.",
+  "faq_teaser_unlimited_desc": "{country}: cote zilnice, limitare de viteză și activare pentru Unlimited eSIM.",
+  "faq_teaser_btn": "Vezi întrebările frecvente",
 } as const;
 export default ro;
 export type TranslationKeys = keyof typeof ro;

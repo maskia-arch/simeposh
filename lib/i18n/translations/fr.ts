@@ -942,7 +942,10 @@ const fr = {
   "no_destinations_found": "Aucune destination trouvée",
   "no_destinations_matched": "Aucune destination correspondante trouvée pour « {query} ».",
   "view_all_plans": "Voir tous les forfaits",
-  "meta_faq_desc": "Toutes les réponses sur PureSim eSIM : compatibilité des appareils, activation par code QR, recharges, paiements crypto et cashback."
+  "meta_faq_desc": "Toutes les réponses sur PureSim eSIM : compatibilité des appareils, activation par code QR, recharges, paiements crypto et cashback.",
+  "faq_teaser_desc": "{country} : activation, couverture réseau et compatibilité.",
+  "faq_teaser_unlimited_desc": "{country} : forfaits journaliers, débit réduit et activation pour eSIM Unlimited.",
+  "faq_teaser_btn": "Consulter la FAQ",
 } as const;
 export default fr;
 export type TranslationKeys = keyof typeof fr;

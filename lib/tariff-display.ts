@@ -6,7 +6,7 @@
  * WITHOUT requiring a re-sync. Future syncs already store clean names.
  */
 import type { Database } from '@/lib/supabase/types';
-import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatDaysWithUnit, formatCountriesWithUnit } from '@/lib/i18n/plural';
 import { formatGb } from '@/lib/utils';
 
 type TariffLike = Pick<
@@ -199,17 +199,11 @@ export function bestNetworkType(ops: TariffOperator[]): string | null {
   return null;
 }
 
-/** Short coverage hint, e.g. "33 Länder" / "33 countries" for region tariffs. */
+/** Short coverage hint, e.g. "33 Länder" / "33 countries" / "6 países" for region tariffs. */
 export function coverageLabel(t: TariffLike, locale = 'en'): string | null {
   const codes = t.location_codes ?? [];
   if (codes.length <= 1) return null;
-  const words: Record<string, string> = {
-    de: 'Länder', en: 'countries', fr: 'pays', es: 'países', it: 'paesi',
-    nl: 'landen', pl: 'krajów', pt: 'países', tr: 'ülke', sv: 'länder',
-    da: 'lande', fi: 'maata', cs: 'zemí', ro: 'țări', hu: 'ország'
-  };
-  const word = words[locale] || 'countries';
-  return `${codes.length} ${word}`;
+  return formatCountriesWithUnit(codes.length, locale);
 }
 
 /**

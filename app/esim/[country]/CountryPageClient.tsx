@@ -362,16 +362,14 @@ export function CountryPageClient({
             {t('faq_title' as any) || (isDe ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)')}
           </h2>
           <p className="text-xs md:text-sm text-slate-600">
-            {isDe
-              ? `Antworten zu Aktivierung, Netzabdeckung und Kompatibilität für ${countryLabel}.`
-              : `Answers about activation, network coverage, and compatibility for ${countryLabel}.`}
+            {t('faq_teaser_desc' as any, { country: countryLabel })}
           </p>
         </div>
         <Link
           href={`${prefix}/faq`}
           className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-brand-50 border border-brand-200 px-5 py-2.5 text-xs md:text-sm font-bold text-brand-700 hover:bg-brand-100 transition-all shrink-0"
         >
-          <span>{isDe ? 'Häufige Fragen ansehen' : 'View FAQ'}</span>
+          <span>{t('faq_teaser_btn' as any)}</span>
           <span aria-hidden="true">→</span>
         </Link>
       </section>

@@ -942,7 +942,10 @@ const hu = {
   "no_destinations_found": "Nem található úti cél",
   "no_destinations_matched": "Nem található megfelelő úti cél ehhez: „{query}”.",
   "view_all_plans": "Minden díjcsomag megtekintése",
-  "meta_faq_desc": "Válaszok a PureSim eSIM-mel kapcsolatos kérdésekre: készülék-kompatibilitás, QR-kódos aktiválás, feltöltés, kriptofizetés és cashback."
+  "meta_faq_desc": "Válaszok a PureSim eSIM-mel kapcsolatos kérdésekre: készülék-kompatibilitás, QR-kódos aktiválás, feltöltés, kriptofizetés és cashback.",
+  "faq_teaser_desc": "{country}: aktiválás, hálózati lefedettség és kompatibilitás.",
+  "faq_teaser_unlimited_desc": "{country}: napi keretek, sebességkorlátozás és aktiválás Unlimited eSIM-hez.",
+  "faq_teaser_btn": "Gyakori kérdések megtekintése",
 } as const;
 export default hu;
 export type TranslationKeys = keyof typeof hu;

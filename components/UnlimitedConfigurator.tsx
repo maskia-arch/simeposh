@@ -11,10 +11,10 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { CountryFlag } from '@/components/CountryFlag';
 import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
 import { useTranslation } from '@/lib/i18n';
-import { formatDaysWithUnit, formatDayMark, formatPercent, getPluralKeySuffix } from '@/lib/i18n/plural';
+import { formatDaysWithUnit, formatDayMark, formatPercent, getPluralKeySuffix, formatCountriesWithUnit } from '@/lib/i18n/plural';
 import { useCart } from '@/components/CartProvider';
-import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType, displayCountryName } from '@/lib/tariff-display';
-import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon } from '@/components/Icons';
+import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType, displayCountryName, getReloadabilityInfo } from '@/lib/tariff-display';
+import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon, ShieldIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
 type TariffType = 'unlimited_eco' | 'unlimited_pro';
@@ -432,15 +432,40 @@ export function UnlimitedConfigurator({
     );
   }, [tariffs, selectedCountry, tariffType]);
 
-  const gbOptions = useMemo(() => {
+  // Unique country coverage options (e.g. [6, 20]) for regional packages
+  const coverageOptions = useMemo(() => {
     const set = new Set<number>();
     availablePackages.forEach((t) => {
+      const count = (t.location_codes ?? []).length;
+      if (count > 1) set.add(count);
+    });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [availablePackages]);
+
+  const [selectedCoverage, setSelectedCoverage] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (coverageOptions.length > 0) {
+      if (selectedCoverage === null || !coverageOptions.includes(selectedCoverage)) {
+        setSelectedCoverage(coverageOptions[0]);
+      }
+    } else {
+      setSelectedCoverage(null);
+    }
+  }, [coverageOptions, selectedCoverage]);
+
+  const gbOptions = useMemo(() => {
+    const set = new Set<number>();
+    const filtered = selectedCoverage !== null
+      ? availablePackages.filter((t) => (t.location_codes ?? []).length === selectedCoverage)
+      : availablePackages;
+    filtered.forEach((t) => {
       if (t.data_gb !== null && Number(t.data_gb) > 0) {
         set.add(Number(t.data_gb));
       }
     });
     return Array.from(set).sort((a, b) => a - b);
-  }, [availablePackages]);
+  }, [availablePackages, selectedCoverage]);
 
   useEffect(() => {
     if (gbOptions.length > 0 && (selectedGb === null || !gbOptions.includes(selectedGb))) {
@@ -451,10 +476,13 @@ export function UnlimitedConfigurator({
   // ── Step 4: Price & supplier product resolution ───────────────────────────
   const bestPackage = useMemo<Tariff | null>(() => {
     if (selectedGb === null || availablePackages.length === 0) return null;
-    const matching = availablePackages.filter((t) => Number(t.data_gb) === selectedGb);
+    let matching = availablePackages.filter((t) => Number(t.data_gb) === selectedGb);
+    if (selectedCoverage !== null && matching.some((t) => (t.location_codes ?? []).length === selectedCoverage)) {
+      matching = matching.filter((t) => (t.location_codes ?? []).length === selectedCoverage);
+    }
     if (matching.length === 0) return availablePackages[0];
     return matching.reduce((best, t) => (perDayEur(t) < perDayEur(best) ? t : best));
-  }, [availablePackages, selectedGb]);
+  }, [availablePackages, selectedGb, selectedCoverage]);
 
   const bestPerDay = useMemo(() => {
     return bestPackage ? perDayEur(bestPackage) : null;
@@ -689,6 +717,35 @@ export function UnlimitedConfigurator({
               )}
             </div>
 
+            {/* Country Coverage Option (e.g. 6 vs 20 countries for Latin America) */}
+            {coverageOptions.length > 1 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <label id="cfg-coverage-label" className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                    {isDe ? 'Länderabdeckung' : 'Country Coverage'}
+                  </label>
+                </div>
+                <div role="radiogroup" aria-labelledby="cfg-coverage-label" className="flex flex-wrap gap-1.5">
+                  {coverageOptions.map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      role="radio"
+                      aria-checked={selectedCoverage === count}
+                      onClick={() => setSelectedCoverage(count)}
+                      className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl border px-3.5 py-2 font-extrabold text-xs transition-all cursor-pointer ${
+                        selectedCoverage === count
+                          ? 'border-brand-600 bg-brand-600 text-white shadow-xs ring-2 ring-brand-600 ring-offset-1'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50'
+                      }`}
+                    >
+                      {formatCountriesWithUnit(count, locale)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 2. Daily Data Volume Pills */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
               <div className="flex items-center justify-between">
@@ -743,7 +800,11 @@ export function UnlimitedConfigurator({
               <div className="flex items-center gap-3 pb-3 border-b border-slate-100 min-h-[60px]">
                 <CountryFlag countryCode={selectedCountryData.code} countryName={localizedCountry} size={32} className="shrink-0 rounded-md shadow-xs" />
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-extrabold text-slate-900 text-base leading-tight truncate">{localizedCountry}</h4>
+                  <h4 className="font-extrabold text-slate-900 text-base leading-tight truncate">
+                    {bestPackage?.location_codes && bestPackage.location_codes.length > 1
+                      ? `${localizedCountry} · ${formatCountriesWithUnit(bestPackage.location_codes.length, locale)}`
+                      : localizedCountry}
+                  </h4>
                   <p className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-1 min-h-[34px] sm:min-h-[18px]">
                     {tariffType === 'unlimited_eco' ? (
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><EcoIcon size={14} /> Eco</span>
@@ -773,6 +834,21 @@ export function UnlimitedConfigurator({
                       <span>{t(feat.badgeKey as any)}</span>
                     </span>
                   ))}
+                  {bestPackage && (() => {
+                    const reload = getReloadabilityInfo(bestPackage);
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                          reload.isReloadable
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                        }`}
+                      >
+                        <ShieldIcon size={11} className={reload.isReloadable ? 'text-emerald-600 shrink-0' : 'text-slate-400 shrink-0'} />
+                        <span>{t(reload.badgeKey as any)}</span>
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 

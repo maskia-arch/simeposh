@@ -942,7 +942,10 @@ const tr = {
   "no_destinations_found": "Hedef bulunamadı",
   "no_destinations_matched": "\"{query}\" için eşleşen hedef bulunamadı.",
   "view_all_plans": "Tüm tarifeleri görüntüle",
-  "meta_faq_desc": "PureSim eSIM ile ilgili tüm sorularınızın yanıtları: cihaz uyumluluğu, QR kod ile etkinleştirme, yüklemeler, kripto ödemeleri ve geri ödeme."
+  "meta_faq_desc": "PureSim eSIM ile ilgili tüm sorularınızın yanıtları: cihaz uyumluluğu, QR kod ile etkinleştirme, yüklemeler, kripto ödemeleri ve geri ödeme.",
+  "faq_teaser_desc": "{country}: Etkinleştirme, ağ kapsamı ve uyumluluk yanıtları.",
+  "faq_teaser_unlimited_desc": "{country}: Unlimited eSIM için günlük kotalar, hız sınırlaması ve etkinleştirme yanıtları.",
+  "faq_teaser_btn": "SSS'yi Görüntüle",
 } as const;
 export default tr;
 export type TranslationKeys = keyof typeof tr;

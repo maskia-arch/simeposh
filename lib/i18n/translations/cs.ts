@@ -947,7 +947,10 @@ const cs = {
   "no_destinations_found": "Nebyly nalezeny žádné cíle",
   "no_destinations_matched": "Pro \"{query}\" nebyl nalezen žádný odpovídající cíl.",
   "view_all_plans": "Zobrazit všechny tarify",
-  "meta_faq_desc": "Odpovědi na všechny otázky ohledně PureSim eSIM: kompatibilita zařízení, aktivace přes QR kód, dobíjení, kryptoplatby a cashback."
+  "meta_faq_desc": "Odpovědi na všechny otázky ohledně PureSim eSIM: kompatibilita zařízení, aktivace přes QR kód, dobíjení, kryptoplatby a cashback.",
+  "faq_teaser_desc": "{country}: aktivace, pokrytí sítě a kompatibilita.",
+  "faq_teaser_unlimited_desc": "{country}: denní kvóty, omezení rychlosti a aktivace pro Unlimited eSIM.",
+  "faq_teaser_btn": "Zobrazit časté dotazy",
 } as const;
 export default cs;
 export type TranslationKeys = keyof typeof cs;
