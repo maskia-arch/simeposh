@@ -46,6 +46,7 @@ export default async function sitemap({
     '/topup',
     '/ai',
     '/blog',
+    '/telegram',
     '/agb',
     '/datenschutz',
     '/refund-policy',

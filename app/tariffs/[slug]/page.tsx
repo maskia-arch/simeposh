@@ -13,7 +13,7 @@ import { formatGb } from '@/lib/utils';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { formatCurrencyEuro } from '@/lib/currency';
 
-const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, raw_data';
+const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, is_premium, is_premium_override, breakout_ip, raw_data';
 
 const tariffDetailCache = new Map<string, { data: PublicTariff | null; timestamp: number }>();
 const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();
@@ -33,13 +33,16 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
   const promise = (async () => {
     try {
       const supabase = await createClient();
-      
-      // 1. Try slug match
-      let { data } = await supabase
+      const codeUpper = slug.toUpperCase();
+      const codeUnderscore = slug.replace(/-/g, '_').toUpperCase();
+
+      // Combined single query matching slug or package_code via indexes
+      const { data } = await supabase
         .from('tariffs')
         .select(PUBLIC_SELECT_FIELDS)
-        .eq('slug', slug)
+        .or(`slug.eq.${slug},package_code.eq.${codeUpper},package_code.eq.${codeUnderscore}`)
         .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
 
       if (data) {
@@ -49,36 +52,11 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
         return res;
       }
 
-      // 2. Try package_code match (case-insensitive fallback)
-      const codeTry = slug.replace(/-/g, '_').toUpperCase();
-      const { data: dataCode } = await supabase
-        .from('tariffs')
-        .select(PUBLIC_SELECT_FIELDS)
-        .eq('package_code', codeTry)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (dataCode) {
-        const res = toPublicTariff(dataCode);
-        res.customer_price_eur = await getTariffMinCustomerPrice(dataCode);
-        tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
-        return res;
-      }
-
-      // 3. Try original slug as package_code directly
-      const { data: dataCodeDirect } = await supabase
-        .from('tariffs')
-        .select(PUBLIC_SELECT_FIELDS)
-        .eq('package_code', slug.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle();
-
-      const res = dataCodeDirect ? toPublicTariff(dataCodeDirect) : null;
-      if (res && dataCodeDirect) {
-        res.customer_price_eur = await getTariffMinCustomerPrice(dataCodeDirect);
-      }
-      tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
-      return res;
+      tariffDetailCache.set(normalizedSlug, { data: null, timestamp: Date.now() });
+      return null;
+    } catch (err) {
+      console.error('[getTariff] lookup error:', slug, err);
+      return null;
     } finally {
       inFlightTariffPromises.delete(normalizedSlug);
     }

@@ -107,7 +107,12 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   if (data && !data.found) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <p className="mb-4 text-5xl">⏳</p>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200">
+          <svg className="h-7 w-7 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+        </div>
         <h1 className="mb-2 text-2xl font-bold text-slate-900">{t('op_processing_title')}</h1>
         <p className="text-slate-500">{t('op_processing_sub')}</p>
         {tries > 8 && (
@@ -123,9 +128,11 @@ export function OrderView({ orderRef }: { orderRef: string }) {
     <div className="mx-auto max-w-3xl px-4 py-10 md:py-16">
       {/* Top Banner */}
       {isExpired ? (
-        <div className="mb-8 rounded-3xl p-6 text-center border shadow-lg bg-gradient-to-b from-rose-50/80 via-white to-rose-50/30 border-rose-200/80 shadow-rose-500/5">
+        <div className="mb-8 rounded-3xl p-6 text-center border shadow-lg bg-gradient-to-b from-rose-50/80 via-white to-rose-50/30 border-rose-200/80 shadow-rose-500/5 min-h-[170px]">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-rose-100">
-            <span className="text-3xl">⏱️</span>
+            <svg className="h-7 w-7 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
             Zahlungszeit abgelaufen
@@ -138,9 +145,11 @@ export function OrderView({ orderRef }: { orderRef: string }) {
           </Link>
         </div>
       ) : isPending ? (
-        <div className="mb-8 rounded-3xl p-6 text-center border shadow-lg bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5">
+        <div className="mb-8 rounded-3xl p-6 text-center border shadow-lg bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5 min-h-[170px]">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100">
-            <span className="text-3xl">⏳</span>
+            <svg className="h-7 w-7 text-amber-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
             Warte auf Zahlungseingang...
@@ -150,13 +159,21 @@ export function OrderView({ orderRef }: { orderRef: string }) {
           </p>
         </div>
       ) : (
-        <div className={`mb-8 rounded-3xl p-6 text-center border shadow-lg transition-all ${
+        <div className={`mb-8 rounded-3xl p-6 text-center border shadow-lg transition-all min-h-[170px] ${
           allDone && failed.length === 0
             ? 'bg-gradient-to-b from-emerald-50/80 via-white to-emerald-50/30 border-emerald-200/80 shadow-emerald-500/5'
             : 'bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 border-amber-200/80 shadow-amber-500/5'
         }`}>
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100">
-            <span className="text-3xl">{allDone && failed.length === 0 ? '✨' : '⚡'}</span>
+            {allDone && failed.length === 0 ? (
+              <svg className="h-7 w-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="h-7 w-7 text-amber-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
           </div>
           <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
             {getBannerTitle()}

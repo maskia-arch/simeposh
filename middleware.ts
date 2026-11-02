@@ -5,6 +5,7 @@ import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
 import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
 import { GUIDE_SLUGS } from '@/lib/guide-links';
+import { checkOrderRateLimit } from '@/lib/rate-limit';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard'];
@@ -79,6 +80,22 @@ export async function middleware(request: NextRequest) {
     /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s|esim-overview|faq|telegram)(\/|$)/i.test(normalizedPath) ||
     /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath) ||
     pathname.startsWith('/api/');
+
+  // Rate limiting for order status access via query param
+  if (normalizedPath === '/order' && request.nextUrl.searchParams.has('ref')) {
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const rl = checkOrderRateLimit(clientIp);
+    if (!rl.allowed) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: {
+          'Retry-After': String(rl.retryAfter || 60),
+          'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+  }
 
   if (!isTrustedM2M && !isPublicMeta) {
     // 1. Block suspicious path probes (e.g. php admin portals, env files)
@@ -374,17 +391,7 @@ export async function middleware(request: NextRequest) {
       ) {
         return NextResponse.redirect(new URL(pathname + request.nextUrl.search, `https://${mainDomain}`), 302);
       }
-      // 4. Any other unknown route on esim.puresim.net -> 404 Not Found (no rewrite to non-existent longlinks)
-      else {
-        return new NextResponse('Not Found', {
-          status: 404,
-          headers: {
-            'Content-Type': 'text/plain',
-            'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
-            'X-Robots-Tag': 'noindex, nofollow',
-          },
-        });
-      }
+      // 4. Any other unknown route on esim.puresim.net -> proceed to Next.js catchall 404 (rendered HTML shell)
     }
   } else {
     // On main domain (puresim.net), allow /esim-overview/... to proceed directly to route.ts for 301 to /s/<token>
@@ -499,7 +506,7 @@ export async function middleware(request: NextRequest) {
   const secFetchMode = (request.headers.get('sec-fetch-mode') || '').toLowerCase();
   const secFetchDest = (request.headers.get('sec-fetch-dest') || '').toLowerCase();
 
-  const isRscOrPrefetch =
+  const isRscRequest = Boolean(
     rscHeader === '1' ||
     Boolean(request.headers.get('rsc')) ||
     xIsRsc === '1' ||
@@ -516,7 +523,10 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.searchParams.has('_rsc') ||
     request.nextUrl.search.includes('_rsc=') ||
     request.url.includes('_rsc=') ||
-    pathname.includes('_rsc=');
+    pathname.includes('_rsc=')
+  );
+
+  const isRscOrPrefetch = isRscRequest;
 
   const isNeutralOrExcludedPath =
     normalizedPath === '/esim' ||
@@ -597,7 +607,12 @@ export async function middleware(request: NextRequest) {
     normalizedPath.startsWith('/checkout') ||
     normalizedPath.startsWith('/api/crypto/checkout');
 
-  if (isCartOrCheckout) {
+  if (isRscRequest) {
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    response.headers.set('Vary', 'RSC, Next-Router-Prefetch, Next-Router-State-Tree, Accept-Encoding');
+  } else if (isCartOrCheckout) {
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   } else if (!user && isPriceBearingRoute && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
     // 5 minutes in CDN, browser always validates with server (0 stale-while-revalidate)
@@ -605,11 +620,13 @@ export async function middleware(request: NextRequest) {
       'Cache-Control',
       'public, max-age=0, s-maxage=300'
     );
-  } else if (!user && normalizedPath === '/ai' && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
+    response.headers.set('Vary', 'Accept-Encoding');
+  } else if (!user && (normalizedPath === '/ai' || normalizedPath === '/telegram') && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
     response.headers.set(
       'Cache-Control',
       'public, max-age=600, s-maxage=3600'
     );
+    response.headers.set('Vary', 'Accept-Encoding');
   }
 
   // Strip internal next.js middleware cookie header from public responses

@@ -7,6 +7,7 @@
  */
 export const COUNTRY_ALIASES: Record<string, string> = {
   // ── A ──────────────────────────────────────────────────────────
+  'afghanistan':         'AF', 'afghánistán':          'AF',
   'albanien':            'AL', 'albanie':              'AL', 'albania':       'AL',
   'algerien':            'DZ', 'algérie':              'DZ', 'argelia':       'DZ',
   'armenien':            'AM', 'arménie':              'AM', 'armenia':       'AM',
@@ -87,6 +88,7 @@ export const COUNTRY_ALIASES: Record<string, string> = {
   'luxemburg':           'LU', 'luxembourg':           'LU', 'lussemburgo':   'LU',
 
   // ── M ──────────────────────────────────────────────────────────
+  'montenegro':          'ME', 'černá hora':           'ME', 'crna gora':     'ME',
   'malaysia':            'MY', 'malaisie':             'MY', 'malasia':       'MY',
   'malta':               'MT',
   'mexiko':              'MX', 'mexique':              'MX', 'méxico':        'MX', 'messico':        'MX', 'meksika': 'MX', 'meksiko': 'MX',
@@ -95,6 +97,7 @@ export const COUNTRY_ALIASES: Record<string, string> = {
   'marokko':             'MA', 'maroc':                'MA', 'marruecos':     'MA', 'marocco':        'MA', 'fas': 'MA', 'morocco': 'MA',
 
   // ── N ──────────────────────────────────────────────────────────
+  'namibia':             'NA', 'namibie':              'NA',
   'nepal':               'NP',
   'niederlande':         'NL', 'pays-bas':             'NL', 'países bajos':  'NL', 'paesi bassi':    'NL', 'nederland': 'NL', 'holandia': 'NL', 'países baixos': 'NL', 'hollanda': 'NL', 'alankomaat': 'NL', 'nizozemsko': 'NL', 'hollandia': 'NL',
   'neuseeland':          'NZ', 'nouvelle-zélande':     'NZ', 'nueva zelanda': 'NZ', 'new zealand':    'NZ', 'uusi-seelanti': 'NZ',
@@ -186,17 +189,17 @@ export const REGION_ALIASES: Record<string, string> = {
   'südostasien':         'SEA', 'southeast asia':      'SEA', 'asie du sud-est': 'SEA',
   'sudeste asiatico':    'SEA', 'asie sud-est':        'SEA', 'güneydoğu asya':  'SEA',
 
-  // ── Middle East / ME ───────────────────────────────────────────
-  'naher osten':         'ME', 'middle east':          'ME', 'moyen-orient':    'ME',
-  'oriente medio':       'ME', 'medio oriente':        'ME', 'orta doğu':       'ME',
-  'midden-oosten':       'ME', 'bliski wschód':        'ME', 'oriente médio':   'ME',
+  // ── Middle East / MIDDLE_EAST ──────────────────────────────────
+  'naher osten':         'MIDDLE_EAST', 'middle east':          'MIDDLE_EAST', 'moyen-orient':    'MIDDLE_EAST',
+  'oriente medio':       'MIDDLE_EAST', 'medio oriente':        'MIDDLE_EAST', 'orta doğu':       'MIDDLE_EAST',
+  'midden-oosten':       'MIDDLE_EAST', 'bliski wschód':        'MIDDLE_EAST', 'oriente médio':   'MIDDLE_EAST',
 
-  // ── North America / NA ─────────────────────────────────────────
-  'nordamerika':         'NA', 'north america':        'NA', 'amérique du nord': 'NA',
-  'norteamérica':        'NA', 'america del nord':     'NA', 'noord-amerika':    'NA',
-  'ameryka północna':    'NA', 'kuzey amerika':        'NA',
+  // ── North America / NORTH_AMERICA ──────────────────────────────
+  'nordamerika':         'NORTH_AMERICA', 'north america':        'NORTH_AMERICA', 'amérique du nord': 'NORTH_AMERICA',
+  'norteamérica':        'NORTH_AMERICA', 'america del nord':     'NORTH_AMERICA', 'noord-amerika':    'NORTH_AMERICA',
+  'ameryka północna':    'NORTH_AMERICA', 'kuzey amerika':        'NORTH_AMERICA',
 
-  // ── Latin America / LATAM ─────────────────────────────────────────
+  // ── Latin America / LATAM ──────────────────────────────────────
   'lateinamerika':       'LATAM', 'latin america':        'LATAM', 'amérique latine':  'LATAM',
   'latinoamérica':       'LATAM', 'amérique centrale':    'LATAM', 'america latina':   'LATAM',
   'latijns-amerika':     'LATAM', 'ameryka łacińska':     'LATAM', 'latin-amerika':    'LATAM',
@@ -206,9 +209,9 @@ export const REGION_ALIASES: Record<string, string> = {
   'ozeanien':            'OC', 'oceania':              'OC', 'océanie':          'OC',
   'oceanía':             'OC', 'okyanusya':            'OC',
 
-  // ── Africa / AF ────────────────────────────────────────────────
-  'afrika':              'AF', 'africa':               'AF', 'afrique':          'AF',
-  'áfrica':              'AF', 'afrique sub':          'AF',
+  // ── Africa / AFRICA ────────────────────────────────────────────
+  'afrika':              'AFRICA', 'africa':               'AFRICA', 'afrique':          'AFRICA',
+  'áfrica':              'AFRICA', 'afrique sub':          'AFRICA',
 
   // ── Global / GLOB ──────────────────────────────────────────────
   'global':              'GLOB', 'worldwide':          'GLOB', 'weltweit':        'GLOB',

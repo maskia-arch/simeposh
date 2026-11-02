@@ -3,22 +3,47 @@
  *
  * Public lookup of a checkout's orders by its unguessable checkout_ref.
  * Used by the /order page to poll until all eSIMs are provisioned.
+ *
+ * Security: Strictly requires exact full UUID references. Prefix and short-ID
+ * queries return 404 without leaking order existence.
+ * Rate limited to 30 requests per minute per IP.
  */
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getEsimOverviewUrl } from '@/lib/url';
 import { isUuid } from '@/lib/utils';
+import { checkOrderRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const ref = searchParams.get('ref');
-  if (!ref) return NextResponse.json({ error: 'ref required' }, { status: 400 });
+  const ref = searchParams.get('ref')?.trim();
+
+  // Rate Limiting (30 requests/min per IP)
+  const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+  const { allowed, retryAfter } = checkOrderRateLimit(clientIp);
+  if (!allowed) {
+    const rateRes = NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    rateRes.headers.set('Retry-After', String(retryAfter || 60));
+    rateRes.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    rateRes.headers.set('Referrer-Policy', 'no-referrer');
+    rateRes.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return rateRes;
+  }
+
+  // Strictly require exact, full UUID reference
+  if (!ref || !isUuid(ref)) {
+    const notFoundRes = NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    notFoundRes.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    notFoundRes.headers.set('Referrer-Policy', 'no-referrer');
+    notFoundRes.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return notFoundRes;
+  }
 
   const service = createServiceClient();
-  const selectFields = 'id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, order_type, top_up_iccid, setup_token, tariffs(name, country_name, flag_emoji, data_gb, validity_days)';
+  const selectFields = 'id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, order_type, top_up_iccid, setup_token, tariffs(name, country_code, country_name, flag_emoji, data_gb, validity_days)';
 
   const { data: initialData, error } = await service
     .from('orders')
@@ -28,26 +53,28 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[order/status] query error:', error.message);
-    return NextResponse.json({ error: 'lookup failed' }, { status: 500 });
+    const errRes = NextResponse.json({ error: 'lookup failed' }, { status: 500 });
+    errRes.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    errRes.headers.set('Referrer-Policy', 'no-referrer');
+    return errRes;
   }
 
   let data = initialData;
   if (!data || data.length === 0) {
-    // Fallback 1: match by order id
-    if (isUuid(ref)) {
-      const { data: byId } = await service
-        .from('orders')
-        .select(selectFields)
-        .eq('id', ref);
-      if (byId && byId.length > 0) data = byId;
-    }
-    // Fallback 2: match by crypto session id (exact UUID or prefix like 18a963b3)
+    // Fallback 1: match by exact order id
+    const { data: byId } = await service
+      .from('orders')
+      .select(selectFields)
+      .eq('id', ref);
+    if (byId && byId.length > 0) data = byId;
+
+    // Fallback 2: match by exact crypto session id
     if (!data || data.length === 0) {
       try {
         const { query } = await import('@/lib/db');
         const sessionRes = await query(
-          'SELECT order_ids FROM crypto_sessions WHERE id::text LIKE $1 LIMIT 1',
-          [`${ref}%`]
+          'SELECT order_ids FROM crypto_sessions WHERE id = $1 LIMIT 1',
+          [ref]
         );
         if (sessionRes.rows && sessionRes.rows.length > 0) {
           const orderIds = sessionRes.rows[0].order_ids;
@@ -61,15 +88,16 @@ export async function GET(request: Request) {
           }
         }
       } catch (sessErr) {
-        console.warn('[order/status] crypto session prefix lookup failed:', sessErr);
+        console.warn('[order/status] crypto session lookup failed:', sessErr);
       }
     }
   }
 
   if (!data || data.length === 0) {
-    const notFoundRes = NextResponse.json({ ref, found: false, orders: [] }, { status: 200 });
+    const notFoundRes = NextResponse.json({ error: 'Order not found' }, { status: 404 });
     notFoundRes.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
-    notFoundRes.headers.set('Vary', 'Cookie');
+    notFoundRes.headers.set('Referrer-Policy', 'no-referrer');
+    notFoundRes.headers.set('X-Robots-Tag', 'noindex, nofollow');
     return notFoundRes;
   }
 
@@ -90,33 +118,33 @@ export async function GET(request: Request) {
         const sOrderIds = Array.isArray(s.order_ids) ? s.order_ids : [];
         return validOrderIds.some((id: string) => sOrderIds.includes(id));
       });
-        if (session) {
-          // Trigger instant direct chain check if session is active
-          if (['pending', 'detected', 'partially_paid'].includes(session.status)) {
-            try {
-              const { syncSessionWithGateway } = await import('@/app/api/crypto/session/[id]/route');
-              await syncSessionWithGateway(session.id, service);
-              
-              // Refetch updated session status
-              const { data: updatedS } = await service
-                .from('crypto_sessions')
-                .select('status, expires_at')
-                .eq('id', session.id)
-                .maybeSingle();
-              if (updatedS) {
-                session.status = updatedS.status;
-                session.expires_at = updatedS.expires_at;
-              }
-            } catch (syncErr) {
-              console.warn('[order/status] Instant sync warning:', syncErr);
+      if (session) {
+        // Trigger instant direct chain check if session is active
+        if (['pending', 'detected', 'partially_paid'].includes(session.status)) {
+          try {
+            const { syncSessionWithGateway } = await import('@/app/api/crypto/session/[id]/route');
+            await syncSessionWithGateway(session.id, service);
+            
+            // Refetch updated session status
+            const { data: updatedS } = await service
+              .from('crypto_sessions')
+              .select('status, expires_at')
+              .eq('id', session.id)
+              .maybeSingle();
+            if (updatedS) {
+              session.status = updatedS.status;
+              session.expires_at = updatedS.expires_at;
             }
+          } catch (syncErr) {
+            console.warn('[order/status] Instant sync warning:', syncErr);
           }
+        }
 
-          txId = session.id;
-          const now = Date.now();
-          const expiresMs = session.expires_at ? new Date(session.expires_at).getTime() : 0;
-          const isExpired = session.status === 'pending' && expiresMs > 0 && expiresMs <= now;
-          paymentStatus = isExpired ? 'expired' : session.status;
+        txId = session.id;
+        const now = Date.now();
+        const expiresMs = session.expires_at ? new Date(session.expires_at).getTime() : 0;
+        const isExpired = session.status === 'pending' && expiresMs > 0 && expiresMs <= now;
+        paymentStatus = isExpired ? 'expired' : session.status;
 
         // If payment expired/cancelled, update pending orders in DB
         if ((paymentStatus === 'expired' || paymentStatus === 'cancelled') && validOrderIds.length > 0) {
@@ -144,6 +172,7 @@ export async function GET(request: Request) {
       id:             o.id,
       status:         o.status,
       amountEur:      o.amount_eur,
+      countryCode:    o.tariffs?.country_code ?? null,
       countryName:    o.tariffs?.country_name ?? 'eSIM',
       flag:           o.tariffs?.flag_emoji ?? null,
       dataGb:         o.tariffs?.data_gb ?? null,
@@ -168,8 +197,8 @@ export async function GET(request: Request) {
   const totalPaid = isPaid ? orders.reduce((s, o) => s + (o.amountEur ?? 0), 0) : 0;
 
   const res = NextResponse.json({ ref, found: true, allDone, isPaid, paymentStatus, totalPaid, orders });
-  res.headers.set('Cache-Control', 'private, no-store');
-  res.headers.set('Vary', 'Cookie');
+  res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
   res.headers.set('Referrer-Policy', 'no-referrer');
+  res.headers.set('X-Robots-Tag', 'noindex, nofollow');
   return res;
 }

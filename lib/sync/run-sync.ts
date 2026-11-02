@@ -33,6 +33,7 @@ import type { EsimAccessPackage }              from '@/lib/esimaccess/types';
 import { revalidatePath }                      from 'next/cache';
 import { query as runRawQuery }                from '@/lib/db';
 import { syncDiscountRules }                   from '@/lib/sync/discount-rules';
+import { classifyAllTariffs }                  from '@/lib/sync/classify-tariffs';
 import { clearCountryTariffsCache }             from '@/lib/destinations';
 import { clearTariffsPageCache }               from '@/lib/tariffs';
 
@@ -522,6 +523,14 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       console.error('[sync] deactivation error (non-fatal):', deactivateError.message);
     } else {
       console.log('[sync] Deactivated stale packages (last_synced_at < syncStart)');
+    }
+
+    // ── 8.5. Reclassify tariffs (Fix 1 Rule: lowest price in group = standard, higher = premium) ──
+    try {
+      const { updated } = await classifyAllTariffs();
+      console.log(`[sync] Reclassified tariffs according to Fix 1 Rule (${updated} travel tariffs ranked).`);
+    } catch (classifyErr: any) {
+      console.error('[sync] Tariff reclassification error (non-fatal):', classifyErr.message);
     }
 
     // ── 9. Finalize ─────────────────────────────────────────────

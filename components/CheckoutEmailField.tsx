@@ -32,11 +32,25 @@ export function CheckoutEmailField({
       </label>
 
       {user ? (
-        <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2">
-          <span className="text-xs font-bold text-slate-800 truncate">{user.email}</span>
-          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-            Eingeloggt
-          </span>
+        <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2 min-h-[44px]">
+          <div className="min-w-0 flex-1">
+            <span className="text-xs font-bold text-slate-800 truncate block">{user.email}</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+              <span>{t('checkout_not_you')}</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    window.location.reload();
+                  } catch {}
+                }}
+                className="font-bold text-brand-600 hover:text-brand-800 underline cursor-pointer"
+              >
+                {t('checkout_sign_out')}
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
         <div>

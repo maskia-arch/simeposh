@@ -309,7 +309,7 @@ export function CartPageClient({
             </div>
 
             {/* Cashback Promo Banner */}
-            <div className="rounded-xl p-3 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 shadow-sm">
+            <div className="rounded-xl p-3 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 shadow-sm min-h-[58px]">
               {user ? (
                 <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 leading-normal">
                   {t('checkout_cashback_earned' as any, { 

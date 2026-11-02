@@ -161,7 +161,7 @@ export function HomePageClient({
       </section>
 
       {/* Popular Destinations */}
-      <section className="mx-auto max-w-6xl px-4 py-8 md:py-10">
+      <section className="mx-auto max-w-6xl px-4 py-8 md:py-10 overflow-hidden">
         <div className="mb-8 flex items-end justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">{t('section_popular')}</h2>
@@ -176,7 +176,8 @@ export function HomePageClient({
           </Link>
         </div>
 
-        <div className="grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+        <div className="w-full max-w-full overflow-hidden">
+          <div className="grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
           {popularDestinations.map((dest) => {
             const countryLabel = displayCountryName(dest, locale);
             const slug = countryCodeToSlug(dest.country_code, dest.country_name);
@@ -215,6 +216,7 @@ export function HomePageClient({
               </Link>
             );
           })}
+        </div>
         </div>
       </section>
 

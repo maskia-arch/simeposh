@@ -3,6 +3,7 @@ import { cookies, headers } from 'next/headers';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BrowserLanguageBanner } from '@/components/BrowserLanguageBanner';
 import { LanguageProvider } from '@/components/i18n/LanguageProvider';
 import { getServerDict, getClientDict } from '@/lib/i18n/server';
 import { CartProvider } from '@/components/CartProvider';
@@ -145,6 +146,7 @@ export default async function RootLayout({
           <CurrencyProvider>
             <CartProvider>
               <TicketProvider>
+                <BrowserLanguageBanner />
                 <Navbar />
                 <main id="main-content" className="flex-1 outline-none" tabIndex={-1}>{children}</main>
                 <Footer />

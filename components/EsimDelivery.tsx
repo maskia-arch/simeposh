@@ -7,12 +7,14 @@ import { useTranslation } from '@/lib/i18n';
 import { formatGb } from '@/lib/utils';
 import { CountryFlag } from '@/components/CountryFlag';
 import { isoName } from '@/lib/tariff-display';
+import { resolveCountryOrRegionCode } from '@/lib/destinations-shared';
 import { getEsimQuickInstallLink, getRawLpaString, detectDeviceOs, type DeviceOs } from '@/lib/esim-install';
 import { getGuideUrl } from '@/lib/guide-links';
 
 export interface DeliveredEsim {
   id:             string;
   countryName:    string;
+  countryCode?:   string | null;
   flag:           string | null;
   dataGb:         number | null;
   validityDays:   number;
@@ -106,8 +108,9 @@ export function EsimDelivery({
   }
 
   const formattedVolume = formatGb(esim.dataGb, t('card_unlimited'));
-  const countryNameLocalized = (esim.flag && esim.flag.length === 2)
-    ? isoName(esim.flag, locale)
+  const countryCode = esim.countryCode || (esim.flag && /^[A-Za-z]{2}$/.test(esim.flag) ? esim.flag : resolveCountryOrRegionCode(esim.countryName));
+  const countryNameLocalized = countryCode
+    ? isoName(countryCode, locale)
     : esim.countryName;
 
   const topupUrl = esim.iccid ? `${prefix}/topup?iccid=${esim.iccid}` : `${prefix}/topup`;
@@ -233,7 +236,7 @@ export function EsimDelivery({
                   <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
                     {t('esim_interactive_page')}
                   </p>
-                  <p className="text-xs font-bold text-slate-900 truncate">
+                  <p className="text-xs font-bold text-slate-900 break-words">
                     {t('esim_personal_page')}
                   </p>
                 </div>
@@ -243,12 +246,12 @@ export function EsimDelivery({
                   rel="noopener noreferrer"
                   className="shrink-0 min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer"
                 >
-                  <span>{t('esim_open')}</span>
+                  <span>{t('esim_open').replace(/[\s↗→]+$/, '')}</span>
                   <span aria-hidden="true">↗</span>
                 </a>
               </div>
               <div className="rounded-xl bg-white border border-slate-200 px-3 py-2 flex items-center justify-between gap-2 min-w-0 w-full">
-                <p className="truncate min-w-0 flex-1 font-mono text-[11px] text-slate-600">{esim.overviewUrl}</p>
+                <p className="break-all min-w-0 flex-1 font-mono text-[11px] text-slate-600">{esim.overviewUrl}</p>
                 <button
                   type="button"
                   onClick={async () => {
@@ -273,11 +276,14 @@ export function EsimDelivery({
           {/* Manual Installation Details */}
           <details className="group rounded-2xl border border-slate-200 bg-slate-50/50 transition-all min-w-0 w-full">
             <summary className="flex min-h-[44px] cursor-pointer items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 hover:text-brand-600 transition-colors">
-              <span className="flex items-center gap-2 truncate">
-                <svg className="h-4 w-4 text-slate-400 group-open:text-brand-600 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <span className="flex items-start gap-2.5 min-w-0">
+                <svg className="h-4 w-4 text-slate-400 group-open:text-brand-600 transition-colors shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
-                <span className="truncate">{t('esim_manual_hint')} ({t('esim_manual_sub')})</span>
+                <span className="flex flex-col text-left">
+                  <span className="font-bold text-slate-900 leading-snug">{t('esim_manual_hint')}</span>
+                  <span className="text-[11px] font-normal text-slate-500 leading-snug">{t('esim_manual_sub')}</span>
+                </span>
               </span>
               <svg className="h-4 w-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -335,8 +341,11 @@ export function EsimDelivery({
 
             {/* Roaming & APN Line */}
             <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-slate-700">
-                📶 {t('order_roaming_apn_line')}
+              <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                </svg>
+                <span>{t('order_roaming_apn_line')}</span>
               </span>
               <Link
                 href={`${prefix}/faq`}

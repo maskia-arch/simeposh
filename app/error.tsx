@@ -15,6 +15,25 @@ export default function ErrorBoundary({
 
   useEffect(() => {
     console.error('[Global Error]', error);
+
+    // Auto-reload once on ChunkLoadError or new deployment asset mismatch
+    const isChunkError =
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('ChunkLoadError');
+
+    if (isChunkError && typeof window !== 'undefined') {
+      try {
+        const reloaded = sessionStorage.getItem('puresim_error_auto_reload');
+        if (!reloaded) {
+          sessionStorage.setItem('puresim_error_auto_reload', '1');
+          window.location.reload();
+          return;
+        }
+      } catch {}
+    }
+
     const loc = detectErrorLocale();
     setLocale(loc);
     document.documentElement.lang = loc;
@@ -34,6 +53,15 @@ export default function ErrorBoundary({
   const t = ERROR_I18N[locale] || ERROR_I18N.de;
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
+
+  const handleReload = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('puresim_error_auto_reload');
+      } catch {}
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center px-4 py-16 font-sans text-slate-100">
@@ -67,6 +95,16 @@ export default function ErrorBoundary({
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
+            onClick={handleReload}
+            className="w-full sm:w-auto inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{t.reloadPage}</span>
+          </button>
+          <button
+            type="button"
             onClick={() => reset()}
             className="w-full sm:w-auto inline-flex min-h-[48px] items-center justify-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 px-6 py-3 text-sm font-semibold text-slate-200 transition-colors cursor-pointer"
           >
@@ -74,10 +112,10 @@ export default function ErrorBoundary({
           </button>
           <a
             href={prefix || '/'}
-            className="w-full sm:w-auto inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 active:bg-brand-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/20 transition-all cursor-pointer"
+            className="w-full sm:w-auto inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-slate-700 bg-transparent hover:bg-slate-900 active:bg-slate-800 px-5 py-3 text-sm font-medium text-slate-300 transition-colors cursor-pointer"
           >
             <span>{t.backHome}</span>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
           </a>
@@ -86,4 +124,3 @@ export default function ErrorBoundary({
     </div>
   );
 }
-

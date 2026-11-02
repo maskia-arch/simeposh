@@ -873,9 +873,9 @@ export function UnlimitedConfigurator({
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-2xl font-black text-slate-900 tracking-tight leading-tight whitespace-nowrap">
-                        {finalPrice !== null ? formatCurrencyEuro(finalPrice, locale) : '–'}
+                        {finalPrice !== null && finalPrice > 0 ? formatCurrencyEuro(finalPrice, locale) : '–'}
                       </p>
-                      {perDayDisplay !== null && (
+                      {perDayDisplay !== null && perDayDisplay > 0 && (
                         <span
                           aria-label={`${formatCurrencyEuro(perDayDisplay, locale)} ${t('unit_per_day')}`}
                           className="text-[11px] text-slate-500 font-semibold block mt-0.5 whitespace-nowrap"
@@ -888,7 +888,7 @@ export function UnlimitedConfigurator({
 
                   {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
                   <div className="space-y-0.5 text-xs text-slate-500 h-[42px] min-h-[42px] flex flex-col justify-center">
-                    {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 ? (
+                    {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 && finalPrice !== null && finalPrice > 0 ? (
                       <>
                         <div className="truncate text-xs">
                           {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
@@ -897,7 +897,7 @@ export function UnlimitedConfigurator({
                           {t('cfg_you_save' as any, { saved: formatCurrencyEuro(savedEur, locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(savedEur, locale)}` : `You save ${formatCurrencyEuro(savedEur, locale)}`)}
                         </div>
                       </>
-                    ) : (
+                    ) : frontPricePerDay > 0 && finalPrice !== null && finalPrice > 0 ? (
                       <>
                         <div className="truncate text-xs">
                           {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(finalPrice!, locale)}
@@ -906,6 +906,10 @@ export function UnlimitedConfigurator({
                           {t('cfg_standard_rate' as any) || (isDe ? 'Regulärer Tagespreis' : 'Regular daily rate')}
                         </div>
                       </>
+                    ) : (
+                      <div className="truncate text-xs text-slate-400">
+                        –
+                      </div>
                     )}
                   </div>
 

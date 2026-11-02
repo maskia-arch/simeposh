@@ -83,12 +83,7 @@ const REGION_LABELS: Record<string, Record<string, string>> = {
     nl: 'Zuidoost-Azië', pl: 'Azja Południowo-Wschodnia', pt: 'Sudeste Asiático', tr: 'Güneydoğu Asya', sv: 'Sydostasien',
     da: 'Sydøstasien', fi: 'Kaakkois-Aasia', cs: 'Jihovýchodní Asie', ro: 'Asia de Sud-Est', hu: 'Délkelet-Ázsia'
   },
-  ME: {
-    en: 'Middle East', de: 'Naher Osten', fr: 'Moyen-Orient', es: 'Oriente Medio', it: 'Medio Oriente',
-    nl: 'Midden-Oosten', pl: 'Bliski Wschód', pt: 'Oriente Médio', tr: 'Orta Doğu', sv: 'Mellanöstern',
-    da: 'Mellemøsten', fi: 'Lähi-itä', cs: 'Blízký východ', ro: 'Orientul Mijlociu', hu: 'Közel-Kelet'
-  },
-  NA: {
+  NORTH_AMERICA: {
     en: 'North America', de: 'Nordamerika', fr: 'Amérique du Nord', es: 'Norteamérica', it: 'Nord America',
     nl: 'Noord-Amerika', pl: 'Ameryka Północna', pt: 'América do Norte', tr: 'Kuzey Amerika', sv: 'Nordamerika',
     da: 'Nordamerika', fi: 'Pohjois-Amerikka', cs: 'Severní Amerika', ro: 'America de Nord', hu: 'Észak-Amerika'
@@ -102,11 +97,6 @@ const REGION_LABELS: Record<string, Record<string, string>> = {
     en: 'Oceania', de: 'Ozeanien', fr: 'Océanie', es: 'Oceanía', it: 'Oceania',
     nl: 'Oceanië', pl: 'Oceania', pt: 'Oceania', tr: 'Okyanusya', sv: 'Oceanien',
     da: 'Oceanien', fi: 'Oseania', cs: 'Oceánie', ro: 'Oceania', hu: 'Óceánia'
-  },
-  AF: {
-    en: 'Africa', de: 'Afrika', fr: 'Afrique', es: 'África', it: 'Africa',
-    nl: 'Afrika', pl: 'Afryka', pt: 'África', tr: 'Afrika', sv: 'Afrika',
-    da: 'Afrika', fi: 'Afrikka', cs: 'Afrika', ro: 'Africa', hu: 'Afrika'
   },
   AFRICA: {
     en: 'Africa', de: 'Afrika', fr: 'Afrique', es: 'África', it: 'Africa',
@@ -686,13 +676,28 @@ export function getTariffSpecialFeatures(
 ): TariffSpecialFeature[] {
   const features: TariffSpecialFeature[] = [];
 
-  // 0. Travel Premium Advantage Chip (exactly one chip: Local IP, Non-HK, or Multi-IP)
+  // 0. Travel Premium Advantage Chip (prioritizes multi-network redundancy, local IP, non-HK, or multi-IP)
   if (isPremiumTariff(tariff)) {
+    const ops = getTariffOperators(tariff, 10);
     const isLocal = isLocalIpTariff(tariff as any);
     const isNonHk = isNonHkIpTariff(tariff as any);
     const countryName = displayCountryName(tariff as any, locale);
 
-    if (isLocal) {
+    if (ops.length > 1) {
+      const opNames = ops.map((o) => o.name).filter(Boolean);
+      features.push({
+        id: 'travel_premium',
+        badgeKey: 'feat_prem_adv_multi_net',
+        titleKey: 'feat_prem_adv_multi_net',
+        descKey: 'feat_prem_adv_multi_net_desc',
+        icon: '📶',
+        cls: 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 font-bold',
+        vars: {
+          count: ops.length,
+          operators: opNames.join(' + ') || `${ops.length} Netze`,
+        },
+      });
+    } else if (isLocal) {
       features.push({
         id: 'travel_premium',
         badgeKey: 'feat_prem_adv_local_ip',

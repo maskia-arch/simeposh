@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = t('telegram_meta_desc');
 
   return {
-    title,
+    title: { absolute: title.endsWith('| PureSim') ? title : `${title} | PureSim` },
     description,
     alternates: buildAlternates(locale, { dePath: 'telegram', enPath: 'telegram' }),
     openGraph: {
@@ -165,20 +165,23 @@ export default async function TelegramPage() {
 
         {/* Ticket & Quick-Help Links Box */}
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 text-center space-y-3">
-          <p className="text-xs sm:text-sm font-semibold text-slate-700">
-            ✉️ {t('telegram_ticket_line')}
+          <p className="text-xs sm:text-sm font-semibold text-slate-700 flex items-center justify-center gap-1.5">
+            <svg className="h-4 w-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span>{t('telegram_ticket_line')}</span>
           </p>
           <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-bold text-brand-600">
             <Link href={`${prefix}/faq`} className="min-h-[44px] inline-flex items-center hover:text-brand-800 underline underline-offset-2">
-              Häufige Fragen (FAQ)
+              {t('telegram_help_faq')}
             </Link>
             <span className="text-slate-300 hidden sm:inline" aria-hidden="true">•</span>
             <Link href={getGuideUrl(locale)} className="min-h-[44px] inline-flex items-center hover:text-brand-800 underline underline-offset-2">
-              Schritt-für-Schritt-Anleitung iOS & Android
+              {t('telegram_help_guide')}
             </Link>
             <span className="text-slate-300 hidden sm:inline" aria-hidden="true">•</span>
             <Link href={`${prefix}/dashboard?tab=tickets`} className="min-h-[44px] inline-flex items-center hover:text-brand-800 underline underline-offset-2">
-              Support-Ticket
+              {t('telegram_help_ticket')}
             </Link>
           </div>
         </div>
