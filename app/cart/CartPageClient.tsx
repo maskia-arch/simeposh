@@ -15,9 +15,11 @@ import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
-  travel:        { icon: <TravelGlobeIcon size={13} className="currentColor text-sky-600" />, label: 'Travel Standard' },
-  unlimited_eco: { icon: <EcoIcon size={12} />, label: 'Unlimited Eco' },
-  unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, label: 'Unlimited Pro' },
+  travel:          { icon: <TravelGlobeIcon size={13} className="currentColor text-sky-600" />, label: 'Travel Standard' },
+  travel_standard: { icon: <TravelGlobeIcon size={13} className="currentColor text-sky-600" />, label: 'Travel Standard' },
+  travel_premium:  { icon: <TravelPremiumGlobeIcon size={13} className="text-amber-800" />, label: 'Travel Premium' },
+  unlimited_eco:   { icon: <EcoIcon size={12} />, label: 'Unlimited Eco' },
+  unlimited_pro:   { icon: <BoltIcon size={12} className="currentColor" />, label: 'Unlimited Pro' },
 };
 
 export function CartPageClient({

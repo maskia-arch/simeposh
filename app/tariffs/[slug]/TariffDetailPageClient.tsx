@@ -25,9 +25,11 @@ const NETWORK_COLORS: Record<string, string> = {
 };
 
 const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
-  travel:        { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
-  unlimited_eco: { icon: <EcoIcon size={14} />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
-  unlimited_pro: { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
+  travel:          { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  travel_standard: { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  travel_premium:  { icon: <TravelPremiumGlobeIcon size={14} className="text-amber-800" />, color: 'bg-amber-50 text-amber-900 border-amber-300', labelKey: 'badge_travel_premium', descKey: 'tp_travel_desc' },
+  unlimited_eco:   { icon: <EcoIcon size={14} />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
+  unlimited_pro:   { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
 
 export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
@@ -37,12 +39,12 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const { locale, t } = useTranslation();
   const { addItem } = useCart();
 
-  const isPremium   = isPremiumTariff(tariff);
+  const isPremium   = tariff.is_premium || tariff.tariff_type === 'travel_premium' || isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
   const isTR        = isTurkeyTariff(tariff);
   const ops         = getTariffOperators(tariff, 8);
   const typeInfo    = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
-  const isTravel    = (tariff.tariff_type ?? 'travel') === 'travel';
+  const isTravel    = !tariff.tariff_type || tariff.tariff_type === 'travel' || tariff.tariff_type === 'travel_standard' || tariff.tariff_type === 'travel_premium';
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
