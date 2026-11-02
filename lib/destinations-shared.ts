@@ -151,6 +151,16 @@ export const CUSTOM_ALIASES: Record<string, string> = {
  */
 export function countryCodeToSlug(code: string, fallbackName?: string): string {
   const upper = (code || '').toUpperCase().trim();
+  const lowerName = (fallbackName || '').toLowerCase().trim();
+  if (lowerName.includes('latin america') || lowerName.includes('lateinamerika')) {
+    return 'latin-america';
+  }
+  if (lowerName === 'middle east') {
+    return 'middle-east';
+  }
+  if (lowerName === 'africa' || lowerName === 'afrika') {
+    return 'africa';
+  }
   if (REGION_SLUGS[upper]) {
     return REGION_SLUGS[upper];
   }
