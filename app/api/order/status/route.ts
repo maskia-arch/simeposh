@@ -18,9 +18,11 @@ export async function GET(request: Request) {
   if (!ref) return NextResponse.json({ error: 'ref required' }, { status: 400 });
 
   const service = createServiceClient();
-  const { data, error } = await service
+  const selectFields = 'id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, order_type, top_up_iccid, setup_token, tariffs(name, country_name, flag_emoji, data_gb, validity_days)';
+
+  const { data: initialData, error } = await service
     .from('orders')
-    .select('id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, order_type, top_up_iccid, setup_token, tariffs(name, country_name, flag_emoji, data_gb, validity_days)')
+    .select(selectFields)
     .eq('checkout_ref', ref)
     .order('created_at', { ascending: true });
 
@@ -28,6 +30,50 @@ export async function GET(request: Request) {
     console.error('[order/status] query error:', error.message);
     return NextResponse.json({ error: 'lookup failed' }, { status: 500 });
   }
+
+  let data = initialData;
+  if (!data || data.length === 0) {
+    // Fallback 1: match by order id
+    if (isUuid(ref)) {
+      const { data: byId } = await service
+        .from('orders')
+        .select(selectFields)
+        .eq('id', ref);
+      if (byId && byId.length > 0) data = byId;
+    }
+    // Fallback 2: match by crypto session id (exact UUID or prefix like 18a963b3)
+    if (!data || data.length === 0) {
+      if (isUuid(ref)) {
+        const { data: sessionData } = await service
+          .from('crypto_sessions')
+          .select('order_ids')
+          .eq('id', ref)
+          .maybeSingle();
+        if (sessionData?.order_ids && sessionData.order_ids.length > 0) {
+          const { data: bySession } = await service
+            .from('orders')
+            .select(selectFields)
+            .in('id', sessionData.order_ids)
+            .order('created_at', { ascending: true });
+          if (bySession && bySession.length > 0) data = bySession;
+        }
+      } else if (/^[0-9a-fA-F-]{6,36}$/.test(ref)) {
+        const { data: sessions } = await (service.from('crypto_sessions') as any)
+          .select('id, order_ids')
+          .limit(100);
+        const matching = (sessions as any[])?.find((s) => s.id?.toLowerCase().startsWith(ref.toLowerCase()));
+        if (matching?.order_ids && matching.order_ids.length > 0) {
+          const { data: bySession } = await service
+            .from('orders')
+            .select(selectFields)
+            .in('id', matching.order_ids)
+            .order('created_at', { ascending: true });
+          if (bySession && bySession.length > 0) data = bySession;
+        }
+      }
+    }
+  }
+
   if (!data || data.length === 0) {
     return NextResponse.json({ ref, found: false, orders: [] }, { status: 200 });
   }
