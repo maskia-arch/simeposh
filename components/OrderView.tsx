@@ -27,7 +27,7 @@ interface StatusResp {
 }
 
 export function OrderView({ orderRef }: { orderRef: string }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [data, setData]   = useState<StatusResp | null>(null);
   const [tries, setTries] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | 'all'>('all');
@@ -66,6 +66,16 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   const isPaid       = data?.isPaid ?? orders.some(o => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
   const isExpired    = data?.paymentStatus === 'expired' || data?.paymentStatus === 'cancelled' || (orders.length > 0 && orders.every(o => o.status === 'expired' || o.status === 'cancelled'));
   const isPending    = !isPaid && !isExpired && orders.some(o => o.status === 'pending');
+
+  // Clear cart upon successful order completion so badge resets to 0
+  useEffect(() => {
+    if (isPaid || allDone || completed.length > 0) {
+      try {
+        localStorage.removeItem('esim_cart');
+        window.dispatchEvent(new Event('cart-updated'));
+      } catch { /* ignore */ }
+    }
+  }, [isPaid, allDone, completed.length]);
 
   const getBannerTitle = () => {
     if (!allDone || failed.length > 0) return t('op_provisioning_title');
@@ -151,13 +161,16 @@ export function OrderView({ orderRef }: { orderRef: string }) {
           <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
             {getBannerTitle()}
           </h1>
-          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+          <p className="text-xs font-mono font-bold text-slate-500 mt-1">
+            {t('order_number_label')}: #{orderRef.slice(0, 8)}
+          </p>
+          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed mt-1">
             {getBannerSub()}
           </p>
           {data?.totalPaid != null && data.totalPaid > 0 && (
             <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
               <span>{t('op_paid')}:</span>
-              <span className="font-extrabold text-brand-600">{formatEur(data.totalPaid)}</span>
+              <span className="font-extrabold text-brand-600">{formatEur(data.totalPaid, locale)}</span>
             </div>
           )}
         </div>
@@ -171,7 +184,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
           </span>
           <button
             onClick={() => setSelectedIndex('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               selectedIndex === 'all'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
@@ -183,7 +196,7 @@ export function OrderView({ orderRef }: { orderRef: string }) {
             <button
               key={o.id}
               onClick={() => setSelectedIndex(idx)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedIndex === idx
                   ? 'bg-brand-600 text-white shadow-sm'
                   : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
@@ -309,17 +322,17 @@ export function OrderView({ orderRef }: { orderRef: string }) {
               console.error('Open ticket error:', err);
             }
           }}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-xs"
+          className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-xs font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-xs cursor-pointer"
         >
-          <span>🎫</span> {t('order_support_btn')}
+          {t('order_support_btn')}
         </button>
       </div>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href="/dashboard" className="rounded-2xl bg-brand-600 px-6 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all active:scale-95">
+        <Link href="/dashboard" className="min-h-[44px] inline-flex items-center justify-center rounded-2xl bg-brand-600 px-6 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all active:scale-95">
           {t('op_to_orders')}
         </Link>
-        <Link href="/tariffs" className="rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95">
+        <Link href="/tariffs" className="min-h-[44px] inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95">
           {t('op_buy_more')}
         </Link>
       </div>

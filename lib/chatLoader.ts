@@ -251,7 +251,27 @@ export function loadChatScript(onLoad?: () => void) {
     };
 
     // If widget UI element is already built, execute callbacks immediately
+    const enhanceWidgetUI = () => {
+      const realBbl = document.querySelector('#vs25 #vs25-bbl') || document.querySelector('button#vs25-bbl');
+      if (realBbl) {
+        realBbl.setAttribute('aria-label', 'KI-Assistent');
+      }
+      if (!document.getElementById('vs25-custom-style')) {
+        const style = document.createElement('style');
+        style.id = 'vs25-custom-style';
+        style.textContent = `
+          @media (max-width: 768px) {
+            #vs25-bbl, #vs25 .vs25-bbl {
+              bottom: 84px !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    };
+
     if (document.getElementById('vs25-bbl') || (window as any).vs25) {
+      enhanceWidgetUI();
       triggerCallbacks();
     } else {
       let retries = 0;
@@ -259,6 +279,7 @@ export function loadChatScript(onLoad?: () => void) {
         retries++;
         if (document.getElementById('vs25-bbl') || (window as any).vs25 || retries > 25) {
           clearInterval(checkInterval);
+          enhanceWidgetUI();
           triggerCallbacks();
         }
       }, 50);

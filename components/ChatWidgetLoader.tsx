@@ -69,9 +69,9 @@ export function ChatWidgetLoader() {
     <button
       type="button"
       id="vs25-bbl"
-      aria-label={t('chat_open_support' as any) || (locale === 'de' ? 'Support-Chat öffnen' : 'Open support chat')}
+      aria-label={t('chat_ai_assistant') || 'KI-Assistent'}
       onClick={handleClickFakeBubble}
-      className="fixed bottom-5 right-5 z-50 flex h-14 w-14 sm:h-16 sm:w-16 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white shadow-xl hover:bg-brand-700 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-brand-400/40"
+      className="fixed bottom-[84px] md:bottom-5 right-5 z-40 flex h-14 w-14 sm:h-16 sm:w-16 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white shadow-xl hover:bg-brand-700 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-brand-400/40"
     >
       <svg
         className="h-7 w-7 text-white"

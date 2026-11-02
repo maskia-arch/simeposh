@@ -20,11 +20,22 @@ const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
   unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, label: 'Unlimited Pro' },
 };
 
-export function CartPageClient({ initialCancelled = false }: { initialCancelled?: boolean }) {
+export function CartPageClient({
+  initialCancelled = false,
+  initialUser = null,
+  initialEmail = '',
+}: {
+  initialCancelled?: boolean;
+  initialUser?: any;
+  initialEmail?: string;
+}) {
   const { locale, t } = useTranslation();
   const { items, total, count, setQuantity, removeItem, clear } = useCart();
   const [mounted, setMounted] = useState(false);
-  const [email, setEmail] = useState(() => {
+  const [user,       setUser]       = useState<any>(initialUser);
+  const [email, setEmail] = useState<string>(() => {
+    if (initialEmail) return initialEmail;
+    if (initialUser?.email) return initialUser.email;
     if (typeof window !== 'undefined') {
       try {
         return localStorage.getItem('esim_checkout_email') || '';
@@ -33,7 +44,6 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
     return '';
   });
   const [emailError, setEmailError] = useState('');
-  const [user,       setUser]       = useState<any>(null);
   const [balance,    setBalance]    = useState<number>(0);
   const [totalSpend, setTotalSpend] = useState<number>(0);
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
@@ -65,11 +75,11 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !user) {
       try {
         const savedEmail = localStorage.getItem('esim_checkout_email');
-        if (savedEmail && !user) {
-          setEmail(savedEmail);
+        if (savedEmail) {
+          setEmail((prev: string) => prev || savedEmail);
         }
       } catch {}
     }
@@ -77,7 +87,7 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
-    if (typeof window !== 'undefined') {
+    if (!user && typeof window !== 'undefined') {
       try {
         localStorage.setItem('esim_checkout_email', val);
       } catch {}
@@ -109,7 +119,7 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_, session) => {
+      (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
         if (u) {
@@ -122,6 +132,7 @@ export function CartPageClient({ initialCancelled = false }: { initialCancelled?
             }
           });
         } else {
+          setEmail('');
           setBalance(0);
           setTotalSpend(0);
           setExtraCashbackQueue(0);

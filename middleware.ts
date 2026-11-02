@@ -4,6 +4,7 @@ import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
 import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
+import { GUIDE_SLUGS } from '@/lib/guide-links';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard'];
@@ -75,7 +76,7 @@ export async function middleware(request: NextRequest) {
 
   const isStandardUserRoute =
     normalizedPath === '/' ||
-    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s|esim-overview|faq)(\/|$)/i.test(normalizedPath) ||
+    /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s|esim-overview|faq|telegram)(\/|$)/i.test(normalizedPath) ||
     /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath) ||
     pathname.startsWith('/api/');
 
@@ -209,9 +210,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${langPrefix}/unlimited/germany`, request.url), 301);
   }
 
+  // ── 301 Redirect /tgcontact, /contact, /kontakt, /support -> /telegram ──
+  if (
+    normalizedPath === '/tgcontact' ||
+    normalizedPath === '/contact' ||
+    normalizedPath === '/kontakt' ||
+    normalizedPath === '/support'
+  ) {
+    const res = NextResponse.redirect(new URL(`${langPrefix}/telegram${request.nextUrl.search}`, request.url), 301);
+    res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    return res;
+  }
+
   // ── 301 Redirect mismatched blog slugs between German (/blog/...) and English (/en/blog/...) ──
   if (normalizedPath.startsWith('/blog/')) {
     const blogSlug = normalizedPath.replace(/^\/blog\//, '').trim();
+
+    // ── 301 Redirect 15-language blog guide slugs to the authoritative language slug ──
+    const allGuideSlugs = new Set(Object.values(GUIDE_SLUGS));
+    if (allGuideSlugs.has(blogSlug)) {
+      const expectedSlug = GUIDE_SLUGS[detectedLocale] || GUIDE_SLUGS.en;
+      if (blogSlug !== expectedSlug) {
+        const targetPath = detectedLocale === 'de' ? `/blog/${expectedSlug}` : `/${detectedLocale}/blog/${expectedSlug}`;
+        const res = NextResponse.redirect(new URL(targetPath + request.nextUrl.search, request.url), 301);
+        res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+        return res;
+      }
+    }
+
     const BLOG_PAIRS: Record<string, { de: string; en: string }> = {
       'puresim-esim-cash-cashback-programm': {
         de: 'puresim-esim-cash-cashback-programm',
@@ -344,13 +370,20 @@ export async function middleware(request: NextRequest) {
       // 3. If path is root '/' or webshop route, REDIRECT to main domain (puresim.net)
       else if (
         pathname === '/' ||
-        /^\/(tariffs|esim|unlimited|cart|checkout|dashboard|login|register|reviews|blog|agb|datenschutz|refund-policy|order|topup)/i.test(normalizedPath)
+        /^\/(tariffs|esim|unlimited|cart|checkout|dashboard|login|register|reviews|blog|agb|datenschutz|refund-policy|order|topup|telegram|faq)/i.test(normalizedPath)
       ) {
         return NextResponse.redirect(new URL(pathname + request.nextUrl.search, `https://${mainDomain}`), 302);
       }
-      // 4. If path is an installation URL (e.g. /[token]/[iccid]), REWRITE to /esim-overview/[token]/[iccid]
+      // 4. Any other unknown route on esim.puresim.net -> 404 Not Found (no rewrite to non-existent longlinks)
       else {
-        return NextResponse.rewrite(new URL(`/esim-overview${pathname}`, request.url));
+        return new NextResponse('Not Found', {
+          status: 404,
+          headers: {
+            'Content-Type': 'text/plain',
+            'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+            'X-Robots-Tag': 'noindex, nofollow',
+          },
+        });
       }
     }
   } else {
@@ -372,7 +405,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/llms.txt' ||
     pathname.includes('.');
 
-  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s|faq)(\/|$)/i;
+  const VALID_PAGE_ROUTE_REGEX = /^\/(ai|cart|checkout|order|tariffs|esim|unlimited|configurator|blog|reviews|dashboard|agb|datenschutz|refund-policy|login|register|forgot-password|reset-password|topup|success|s|faq|telegram)(\/|$)/i;
 
   const isValidPageRoute =
     normalizedPath === '/' ||
@@ -526,7 +559,9 @@ export async function middleware(request: NextRequest) {
   if (isProtected && !user) {
     const loginUrl = new URL(`${langPrefix}/login`, request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    const redirectRes = NextResponse.redirect(loginUrl);
+    redirectRes.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    return redirectRes;
   }
 
   // Redirect logged-in users away from auth pages
@@ -535,6 +570,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Security Headers & Response Hygiene ──
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');

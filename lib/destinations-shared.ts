@@ -26,41 +26,56 @@ export function slugify(text: string): string {
  * Mapping of virtual regions to canonical SEO slugs.
  */
 export const REGION_SLUGS: Record<string, string> = {
-  EU:    'europe',
-  AS:    'asia',
-  SEA:   'southeast-asia',
-  ME:    'middle-east',
-  NA:    'north-america',
-  LATAM: 'latin-america',
-  OC:    'oceania',
-  AF:    'africa',
-  GLOB:  'global',
+  EU:          'europe',
+  AS:          'asia',
+  SEA:         'southeast-asia',
+  ME:          'middle-east',
+  MIDDLE_EAST: 'middle-east',
+  NA:          'north-america',
+  LATAM:       'latin-america',
+  OC:          'oceania',
+  AF:          'africa',
+  AFRICA:      'africa',
+  GLOB:        'global',
 };
 
 /**
  * Common slug overrides for ISO codes to ensure clean, human-friendly URLs.
  */
 export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
-  DE:    'germany',
-  TR:    'turkey',
-  US:    'united-states',
-  GB:    'united-kingdom',
-  AE:    'united-arab-emirates',
-  KR:    'south-korea',
-  HK:    'hong-kong',
-  MO:    'macao',
-  DO:    'dominican-republic',
-  ZA:    'south-africa',
-  CZ:    'czech-republic',
-  XK:    'kosovo',
-  LA:    'laos',
-  LATAM: 'latin-america',
+  DE:          'germany',
+  TR:          'turkey',
+  US:          'united-states',
+  GB:          'united-kingdom',
+  AE:          'united-arab-emirates',
+  KR:          'south-korea',
+  HK:          'hong-kong',
+  MO:          'macao',
+  DO:          'dominican-republic',
+  ZA:          'south-africa',
+  CZ:          'czech-republic',
+  XK:          'kosovo',
+  LA:          'laos',
+  LATAM:       'latin-america',
+  AFRICA:      'africa',
+  MIDDLE_EAST: 'middle-east',
+  AF:          'afghanistan',
+  ME:          'montenegro',
 };
 
 /**
  * Known custom aliases for instant slug lookup.
  */
 export const CUSTOM_ALIASES: Record<string, string> = {
+  af: 'AFRICA',
+  africa: 'AFRICA',
+  afrika: 'AFRICA',
+  me: 'MIDDLE_EAST',
+  'middle-east': 'MIDDLE_EAST',
+  'middle_east': 'MIDDLE_EAST',
+  nahost: 'MIDDLE_EAST',
+  afghanistan: 'AF',
+  montenegro: 'ME',
   laos: 'LA',
   la: 'LA',
   'latin-america': 'LATAM',
@@ -127,8 +142,6 @@ export const CUSTOM_ALIASES: Record<string, string> = {
   nordamerika: 'NA',
   ozeanien: 'OC',
   oceania: 'OC',
-  afrika: 'AF',
-  africa: 'AF',
   weltweit: 'GLOB',
   global: 'GLOB',
 };

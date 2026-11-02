@@ -108,6 +108,16 @@ const REGION_LABELS: Record<string, Record<string, string>> = {
     nl: 'Afrika', pl: 'Afryka', pt: 'África', tr: 'Afrika', sv: 'Afrika',
     da: 'Afrika', fi: 'Afrikka', cs: 'Afrika', ro: 'Africa', hu: 'Afrika'
   },
+  AFRICA: {
+    en: 'Africa', de: 'Afrika', fr: 'Afrique', es: 'África', it: 'Africa',
+    nl: 'Afrika', pl: 'Afryka', pt: 'África', tr: 'Afrika', sv: 'Afrika',
+    da: 'Afrika', fi: 'Afrikka', cs: 'Afrika', ro: 'Africa', hu: 'Afrika'
+  },
+  MIDDLE_EAST: {
+    en: 'Middle East', de: 'Naher Osten', fr: 'Moyen-Orient', es: 'Oriente Medio', it: 'Medio Oriente',
+    nl: 'Midden-Oosten', pl: 'Bliski Wschód', pt: 'Oriente Médio', tr: 'Orta Doğu', sv: 'Mellanöstern',
+    da: 'Mellemøsten', fi: 'Lähi-itä', cs: 'Blízký východ', ro: 'Orientul Mijlociu', hu: 'Közel-Kelet'
+  },
   GLOB: {
     en: 'Global', de: 'Weltweit', fr: 'Mondial', es: 'Global', it: 'Globale',
     nl: 'Wereldwijd', pl: 'Globalny', pt: 'Global', tr: 'Küresel', sv: 'Global',
@@ -749,37 +759,6 @@ export function getTariffSpecialFeatures(
       descKey: 'feat_5g_desc',
       icon: '⚡',
       cls: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100',
-    });
-  }
-
-  // 4. Reloadability Feature Badge (differentiated according to eSIMAccess API specs)
-  const reload = getReloadabilityInfo(tariff);
-  if (reload.type === 'days') {
-    features.push({
-      id: 'topup_days',
-      badgeKey: reload.badgeKey,
-      titleKey: reload.titleKey,
-      descKey: reload.descKey,
-      icon: reload.icon,
-      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
-    });
-  } else if (reload.type === 'data') {
-    features.push({
-      id: 'topup_data',
-      badgeKey: reload.badgeKey,
-      titleKey: reload.titleKey,
-      descKey: reload.descKey,
-      icon: reload.icon,
-      cls: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
-    });
-  } else {
-    features.push({
-      id: 'topup_none',
-      badgeKey: reload.badgeKey,
-      titleKey: reload.titleKey,
-      descKey: reload.descKey,
-      icon: reload.icon,
-      cls: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200',
     });
   }
 

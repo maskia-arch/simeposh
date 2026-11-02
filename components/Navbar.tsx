@@ -308,6 +308,9 @@ export function Navbar() {
           <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             {t('nav_topup')}
           </Link>
+          <Link href={`${prefix}/faq`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            FAQ
+          </Link>
           {authLoading ? (
             <div className="h-12 w-[90px] rounded-xl bg-slate-100 animate-pulse shrink-0" aria-hidden="true" />
           ) : user ? (
@@ -376,6 +379,7 @@ export function Navbar() {
             <Link href={`${prefix}/blog`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_blog' as any) || 'Blog'}</Link>
             <Link href={`${prefix}/tariffs`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_tariffs')}</Link>
             <Link href={`${prefix}/topup`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">{t('nav_topup')}</Link>
+            <Link href={`${prefix}/faq`} prefetch={false} onClick={() => setMenu(false)} className="text-slate-700">FAQ</Link>
             {authLoading ? (
               <div className="h-9 w-24 bg-slate-100 animate-pulse rounded-lg" aria-hidden="true" />
             ) : user ? (
@@ -404,18 +408,16 @@ export function Navbar() {
             </div>
 
             <div className="pt-2 border-t border-slate-100">
-              <a
-                href="https://t.me/autoacts"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`${prefix}/telegram`}
                 onClick={() => setMenu(false)}
                 className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-xs"
               >
                 <svg className="h-5 w-5 shrink-0 text-[#24A1DE]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
                 </svg>
-                <span>{t('nav_contact_telegram' as any) || 'Kontakt über Telegram'}</span>
-              </a>
+                <span>{t('footer_contact_telegram')}</span>
+              </Link>
             </div>
           </div>
         </div>

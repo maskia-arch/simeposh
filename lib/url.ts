@@ -34,21 +34,25 @@ export function getPublicBaseUrl(req?: Request): string {
 /**
  * Helper to construct the secure, standalone eSIM overview & installation URL.
  *
- * In production: https://esim.puresim.net/{token}/{iccid}
- * In local development: http://localhost:3000/esim-overview/{token}/{iccid}
+ * In production: https://esim.puresim.net/s/{token}
+ * In local development: http://localhost:3000/s/{token}
  */
-export function getEsimOverviewUrl(token?: string | null, iccid?: string | null): string {
-  if (!token || !iccid) return '';
+export function getEsimOverviewUrl(token?: string | null, _legacyIccid?: string | null): string {
+  if (!token) return '';
 
   const cleanToken = token.trim();
-  const cleanIccid = iccid.trim();
-  if (!cleanToken || !cleanIccid) return '';
+  if (!cleanToken) return '';
+
+  // If token is already a full URL
+  if (cleanToken.startsWith('http://') || cleanToken.startsWith('https://')) {
+    return cleanToken;
+  }
 
   const appUrl = getPublicBaseUrl();
   const isLocal = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
 
   if (isLocal) {
-    return `${appUrl}/esim-overview/${encodeURIComponent(cleanToken)}/${encodeURIComponent(cleanIccid)}`;
+    return `${appUrl}/s/${encodeURIComponent(cleanToken)}`;
   }
 
   try {
@@ -56,9 +60,9 @@ export function getEsimOverviewUrl(token?: string | null, iccid?: string | null)
     let hostname = urlObj.hostname.toLowerCase().replace(/^www\./, '');
     if (!hostname) hostname = 'puresim.net';
     const esimDomain = hostname.startsWith('esim.') ? hostname : `esim.${hostname}`;
-    return `https://${esimDomain}/${encodeURIComponent(cleanToken)}/${encodeURIComponent(cleanIccid)}`;
+    return `https://${esimDomain}/s/${encodeURIComponent(cleanToken)}`;
   } catch {
-    return `https://esim.puresim.net/${encodeURIComponent(cleanToken)}/${encodeURIComponent(cleanIccid)}`;
+    return `https://esim.puresim.net/s/${encodeURIComponent(cleanToken)}`;
   }
 }
 

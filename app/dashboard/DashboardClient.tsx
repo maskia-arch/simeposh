@@ -7,6 +7,7 @@ import { formatEur, formatGb, formatCurrencyEuro } from '@/lib/utils';
 import { formatPercent } from '@/lib/i18n/plural';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { countryCodeToSlug } from '@/lib/destinations-shared';
+import { displayCountryName } from '@/lib/tariff-display';
 import { getEsimOverviewUrl } from '@/lib/url';
 import { generateFeedbackToken } from '@/lib/feedback/token';
 import type { TranslationKeys } from '@/lib/i18n/translations/en';
@@ -160,6 +161,10 @@ export function DashboardClient({
     ? t('dash_h1_settings')
     : t('dash_h1_esims');
 
+  // Only count delivered eSIM orders (completed or with assigned iccid, exclude cancelled/expired checkout attempts)
+  const deliveredOrders = orderList.filter((o) => o.status === 'completed' || o.has_iccid);
+  const totalSpend = completed.reduce((s, o) => s + (Number(o.amount_eur) || 0), 0);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:py-12 pb-28 sm:pb-16">
       {/* Header */}
@@ -232,7 +237,7 @@ export function DashboardClient({
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-brand-700">{orderList.length}</p>
+          <p className="text-xl sm:text-2xl font-bold text-brand-700">{deliveredOrders.length}</p>
           <p className="text-xs font-semibold text-slate-600 mt-1">{t('dash_orders')}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 text-center shadow-2xs">
@@ -250,8 +255,8 @@ export function DashboardClient({
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-slate-800">
-            {formatCurrencyEuro(completed.reduce((s, o) => s + (o.amount_eur ?? 0), 0), locale)}
+          <p className="text-xl sm:text-2xl font-bold text-slate-900">
+            {formatCurrencyEuro(totalSpend, locale)}
           </p>
           <p className="text-xs font-semibold text-slate-600 mt-1">{t('dash_total')}</p>
         </div>
@@ -426,8 +431,8 @@ export function DashboardClient({
                 const session = allSessions.find((s) => s.order_ids?.includes(order.id));
                 const txId = session?.id ?? (order as any).checkout_ref ?? order.id;
                 const overviewUrl = order.setup_token
-                  ? `https://esim.puresim.net/s/${order.setup_token}`
-                  : (order.iccid ? getEsimOverviewUrl(txId, order.iccid) : null);
+                  ? getEsimOverviewUrl(order.setup_token)
+                  : null;
                 const esimRecord = order.iccid ? (esimMap[order.iccid] ?? { iccid: order.iccid, topup_count: 0 }) : null;
 
                 return (
@@ -608,7 +613,7 @@ function DashboardOrderRow({
         <span className="text-2xl" aria-hidden="true">{tariff?.flag_emoji ?? '🌐'}</span>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-800 text-sm break-words">
-            {tariff?.country_name ?? 'Unbekannt'}
+            {tariff ? displayCountryName(tariff as any, locale) : 'Unbekannt'}
             {order.order_type === 'top_up' && (
               <span className="ml-2 text-xs bg-brand-100 text-brand-700 rounded-full px-2 py-0.5">Top-Up</span>
             )}
@@ -619,12 +624,13 @@ function DashboardOrderRow({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {showEsim && order.iccid && (
+          {showEsim && order.iccid && order.status === 'completed' ? (
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${lifeMeta.cls}`} title="eSIM">
               {lifeLabel}
             </span>
+          ) : (
+            statusBadge(order.status, t)
           )}
-          {statusBadge(order.status, t)}
           <span className="font-bold text-slate-800 text-sm">
             {formatCurrencyEuro(order.amount_eur, locale)}
           </span>
@@ -741,16 +747,15 @@ function DashboardOrderRow({
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             {isReviewed ? (
               <span className="min-h-[44px] inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-700 gap-1">
-                <span>✓</span> Bewertet
+                <span>✓</span> {locale === 'de' ? 'Bewertet' : 'Reviewed'}
               </span>
             ) : (
               <Link
                 href={`${prefix}/reviews/new?orderId=${order.id}`}
                 prefetch={false}
-                className="min-h-[44px] inline-flex items-center rounded-lg bg-gradient-to-r from-amber-50 to-amber-100/80 border border-amber-300 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs gap-1 cursor-pointer"
-                title="Jetzt bewerten und 1% eSIM Cash Belohnung sichern"
+                className="min-h-[44px] inline-flex items-center rounded-lg border border-slate-300 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors shadow-2xs gap-1 cursor-pointer"
               >
-                <span>🎁</span> Bewerten (+1% Cash)
+                <span>⭐</span> {locale === 'de' ? 'Bewerten (+1%)' : 'Review (+1%)'}
               </Link>
             )}
 
@@ -795,15 +800,22 @@ function DashboardOrderRow({
               </>
             )}
 
-            {overviewUrl && (
+            {overviewUrl ? (
               <a
                 href={overviewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="min-h-[44px] inline-flex items-center justify-center rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 transition-colors cursor-pointer"
               >
-                Installieren
+                {t('btn_install')}
               </a>
+            ) : (
+              <button
+                disabled
+                className="min-h-[44px] inline-flex items-center justify-center rounded-lg bg-slate-100 border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed"
+              >
+                {t('link_generating')}
+              </button>
             )}
           </div>
         </div>

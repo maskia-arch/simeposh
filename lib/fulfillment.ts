@@ -71,8 +71,7 @@ export async function sendConsolidatedEmailForOrders(
         topUpIccid: o.top_up_iccid,
       };
     } else {
-      const finalToken = txId || o.checkout_ref || o.id;
-      const overviewUrl = o.iccid ? getEsimOverviewUrl(finalToken, o.iccid) : undefined;
+      const overviewUrl = o.setup_token ? getEsimOverviewUrl(o.setup_token) : undefined;
       return {
         orderId: o.id,
         type: 'new_esim' as const,

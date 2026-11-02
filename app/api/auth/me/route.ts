@@ -3,19 +3,26 @@ import { cookies } from 'next/headers';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { query } from '@/lib/db';
 
+function jsonWithPrivateNoStore(body: any, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set('Cache-Control', 'private, no-store');
+  res.headers.set('Vary', 'Cookie');
+  return res;
+}
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('session_token')?.value;
 
     if (!token) {
-      return NextResponse.json({ user: null });
+      return jsonWithPrivateNoStore({ user: null });
     }
 
     const decoded = await verifyJwt(token);
     if (!decoded || !decoded.id) {
       cookieStore.delete('session_token');
-      return NextResponse.json({ user: null });
+      return jsonWithPrivateNoStore({ user: null });
     }
 
     // Verify user in database: must exist, not be deleted, and be verified
@@ -28,7 +35,7 @@ export async function GET() {
     if (!userRow || !userRow.is_verified) {
       // Invalidate session if user account is not verified or no longer exists
       cookieStore.delete('session_token');
-      return NextResponse.json({ user: null });
+      return jsonWithPrivateNoStore({ user: null });
     }
 
     // Server-side query for the user's eSIM cashback account details
@@ -60,8 +67,8 @@ export async function GET() {
       },
     };
 
-    return NextResponse.json({ user });
+    return jsonWithPrivateNoStore({ user });
   } catch (err: any) {
-    return NextResponse.json({ user: null, error: err.message }, { status: 500 });
+    return jsonWithPrivateNoStore({ user: null, error: err.message }, { status: 500 });
   }
 }

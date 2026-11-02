@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Output standalone for Render deployment (efficient Docker-like builds)
+  // Output standalone for Coolify/Docker deployment
   output: 'standalone',
 
   experimental: {
@@ -29,7 +29,8 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Frame-Options',           value: 'DENY' },
+          { key: 'Strict-Transport-Security',  value: 'max-age=31536000; includeSubDomains; preload' },
+          { key: 'X-Frame-Options',           value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options',     value: 'nosniff' },
           { key: 'Referrer-Policy',            value: 'strict-origin-when-cross-origin' },
           {
@@ -50,78 +51,6 @@ const nextConfig = {
               "form-action 'self'",
             ].join('; '),
           },
-        ],
-      },
-      {
-        source: '/tariffs',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/tariffs/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/tariffs',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/tariffs/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/esim',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/esim/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/esim',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/esim/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/faq',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/faq',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/unlimited/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
-        ],
-      },
-      {
-        source: '/:locale(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)/unlimited/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=0, s-maxage=300' },
         ],
       },
     ];

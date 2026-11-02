@@ -170,6 +170,31 @@ class BrowserQueryBuilder<T extends TableName = any, R = Row<T>, Single extends 
   }
 }
 
+const authListeners = new Set<(event: string, session: any) => void>();
+let broadcastChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+  try {
+    broadcastChannel = new BroadcastChannel('puresim_auth_channel');
+    broadcastChannel.onmessage = (msg) => {
+      if (msg.data?.type === 'AUTH_STATE_CHANGE') {
+        notifyAuthListeners(msg.data.event, msg.data.session);
+      }
+    };
+  } catch {}
+}
+
+let lastKnownUserId: string | null = null;
+
+function notifyAuthListeners(event: string, session: any) {
+  authListeners.forEach((cb) => {
+    try {
+      cb(event, session);
+    } catch (e) {
+      console.error('[AuthClient] listener callback error:', e);
+    }
+  });
+}
+
 class BrowserAuthClient {
   async getUser() {
     try {
@@ -185,16 +210,56 @@ class BrowserAuthClient {
   }
 
   onAuthStateChange(callback: (event: string, session: any) => void) {
+    authListeners.add(callback);
+
     this.getUser().then(({ data }) => {
       const user = data?.user;
+      lastKnownUserId = user?.id || null;
       const session = user ? { user, access_token: 'dummy' } : null;
-      callback('SIGNED_IN', session);
+      callback(user ? 'SIGNED_IN' : 'SIGNED_OUT', session);
     });
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        this.getUser().then(({ data }) => {
+          const user = data?.user;
+          const currentId = user?.id || null;
+          if (currentId !== lastKnownUserId) {
+            lastKnownUserId = currentId;
+            const session = user ? { user, access_token: 'dummy' } : null;
+            notifyAuthListeners(user ? 'SIGNED_IN' : 'SIGNED_OUT', session);
+          }
+        });
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'puresim_auth_event' || e.key === 'esim_checkout_email') {
+        this.getUser().then(({ data }) => {
+          const user = data?.user;
+          const currentId = user?.id || null;
+          lastKnownUserId = currentId;
+          const session = user ? { user, access_token: 'dummy' } : null;
+          notifyAuthListeners(user ? 'SIGNED_IN' : 'SIGNED_OUT', session);
+        });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+      window.addEventListener('storage', handleStorage);
+    }
 
     return {
       data: {
         subscription: {
-          unsubscribe() {}
+          unsubscribe() {
+            authListeners.delete(callback);
+            if (typeof window !== 'undefined') {
+              document.removeEventListener('visibilitychange', handleVisibility);
+              window.removeEventListener('storage', handleStorage);
+            }
+          }
         }
       }
     };
@@ -237,6 +302,16 @@ class BrowserAuthClient {
       }
 
       const body = await res.json();
+      const user = body.user;
+      lastKnownUserId = user?.id || null;
+      const session = user ? { user, access_token: 'dummy' } : null;
+      notifyAuthListeners('SIGNED_IN', session);
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({ type: 'AUTH_STATE_CHANGE', event: 'SIGNED_IN', session });
+      }
+      try {
+        localStorage.setItem('puresim_auth_event', String(Date.now()));
+      } catch {}
       return { data: body, error: null };
     } catch (err: any) {
       return { data: null, error: { message: err.message } };
@@ -264,7 +339,14 @@ class BrowserAuthClient {
   async signOut() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.reload();
+      lastKnownUserId = null;
+      notifyAuthListeners('SIGNED_OUT', null);
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({ type: 'AUTH_STATE_CHANGE', event: 'SIGNED_OUT', session: null });
+      }
+      try {
+        localStorage.setItem('puresim_auth_event', String(Date.now()));
+      } catch {}
       return { error: null };
     } catch (err: any) {
       return { error: { message: err.message } };

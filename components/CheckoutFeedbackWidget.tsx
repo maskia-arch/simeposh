@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { formatCurrencyEuro } from '@/lib/utils';
 
 interface CheckoutFeedbackWidgetProps {
   orderRef?: string;
@@ -12,7 +13,7 @@ interface CheckoutFeedbackWidgetProps {
 }
 
 export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '', dark = false }: CheckoutFeedbackWidgetProps) {
-  const { locale } = useTranslation();
+  const { t, locale } = useTranslation();
   const isDe = locale === 'de';
 
   const [rating, setRating] = useState<number>(5);
@@ -196,7 +197,7 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
           <div className={`rounded-2xl p-3 text-xs font-bold max-w-sm mx-auto ${
             dark ? 'bg-amber-950/50 border border-amber-500/40 text-amber-300' : 'bg-amber-50 border border-amber-200 text-amber-900'
           }`}>
-            🎁 {isDe ? `+${cashbackReward.toFixed(2)} € eSIM Cash gutgeschrieben!` : `+€${cashbackReward.toFixed(2)} eSIM Cash credited!`}
+            🎁 +{formatCurrencyEuro(cashbackReward, locale)} eSIM Cash {isDe ? 'gutgeschrieben!' : 'credited!'}
           </div>
         )}
       </div>
@@ -219,23 +220,26 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
               <span>✓</span> {isDe ? 'Verifizierter Kauf berechtigt' : 'Verified Purchase Eligible'}
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-bold text-amber-400">
-              🎁 {cashbackReward > 0 ? (isDe ? `1% Belohnung: +${cashbackReward.toFixed(2)} €` : `1% Reward: +€${cashbackReward.toFixed(2)}`) : '1% eSIM Cash Belohnung'}
+              🎁 {cashbackReward > 0 ? `1% (${formatCurrencyEuro(cashbackReward, locale)})` : '1% eSIM Cash'}
             </span>
           </div>
           <h3 className={`text-lg font-black tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
             {isDe ? 'Wie war deine Erfahrung mit PureSim?' : 'How was your experience with PureSim?'}
           </h3>
-          <p className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <p className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             {isDe 
               ? 'Bewerte unseren Service und erhalte automatisch 1% eSIM Cash Guthaben auf dein Konto gutgeschrieben.' 
               : 'Rate our service and get 1% eSIM Cash automatically credited to your balance.'}
           </p>
         </div>
 
-        {/* Stars Interactive Header Preview */}
+        {/* Stars Interactive Header Preview (touch target >= 44x44px) */}
         <div className="flex items-center gap-1 shrink-0">
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = hoverRating !== null ? star <= hoverRating : star <= rating;
+            const starAriaLabel = star === 1
+              ? (t('rating_stars_one') || '1 Stern')
+              : (t('rating_stars_many', { count: star }) || `${star} Sterne`);
             return (
               <button
                 key={star}
@@ -243,8 +247,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(null)}
-                className="p-1 cursor-pointer transition-transform hover:scale-125 focus:outline-none"
-                aria-label={`${star} Sterne`}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center p-1 cursor-pointer transition-transform hover:scale-125 focus:outline-none"
+                aria-label={starAriaLabel}
               >
                 <svg
                   className={`h-7 w-7 transition-colors ${
@@ -270,8 +274,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Quick-Tags */}
         <div>
-          <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${
-            dark ? 'text-slate-400' : 'text-slate-400'
+          <label className={`block text-xs font-bold mb-2 ${
+            dark ? 'text-slate-300' : 'text-slate-700'
           }`}>
             {isDe ? 'Was hat dir besonders gefallen?' : 'What did you like most?'}
           </label>
@@ -283,10 +287,10 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`min-h-[44px] px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                     active
                       ? (dark ? 'bg-brand-950/60 border-brand-400 text-brand-300 shadow-2xs' : 'bg-brand-50 border-brand-400 text-brand-700 shadow-2xs')
-                      : (dark ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-50/80 border-slate-200/80 text-slate-650 hover:bg-slate-100 hover:border-slate-300')
+                      : (dark ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-50/80 border-slate-200/80 text-slate-700 hover:bg-slate-100 hover:border-slate-300')
                   }`}
                 >
                   {active ? `✓ ${tag}` : `+ ${tag}`}
@@ -298,8 +302,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
 
         {/* Comment Textarea */}
         <div>
-          <label htmlFor="checkout-feedback-comment" className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${
-            dark ? 'text-slate-400' : 'text-slate-400'
+          <label htmlFor="checkout-feedback-comment" className={`block text-xs font-bold mb-1.5 ${
+            dark ? 'text-slate-300' : 'text-slate-700'
           }`}>
             {isDe ? 'Dein Erfahrungsbericht (Optional)' : 'Your review (Optional)'}
           </label>
@@ -324,8 +328,8 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
 
         {/* Display Name Privacy Toggle */}
         <div>
-          <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-2 ${
-            dark ? 'text-slate-400' : 'text-slate-400'
+          <label className={`block text-xs font-bold mb-2 ${
+            dark ? 'text-slate-300' : 'text-slate-700'
           }`}>
             {isDe ? 'Veröffentlichung' : 'Publication'}
           </label>
@@ -333,10 +337,10 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
             <button
               type="button"
               onClick={() => setNameType('anon')}
-              className={`rounded-xl px-3.5 py-2.5 text-xs font-bold border transition-all cursor-pointer text-center ${
+              className={`min-h-[44px] rounded-xl px-3.5 py-3 text-xs font-bold border transition-all cursor-pointer text-center ${
                 nameType === 'anon'
                   ? (dark ? 'bg-brand-950/60 border-brand-500 text-brand-300 shadow-2xs' : 'bg-brand-50 border-brand-500 text-brand-800 shadow-2xs')
-                  : (dark ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50')
+                  : (dark ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-250 text-slate-700 hover:bg-slate-50')
               }`}
             >
               👤 {isDe ? 'Anonym posten' : 'Post Anonymously'}
@@ -344,10 +348,10 @@ export function CheckoutFeedbackWidget({ orderRef, orderId, token, className = '
             <button
               type="button"
               onClick={() => setNameType('alias')}
-              className={`rounded-xl px-3.5 py-2.5 text-xs font-bold border transition-all cursor-pointer text-center ${
+              className={`min-h-[44px] rounded-xl px-3.5 py-3 text-xs font-bold border transition-all cursor-pointer text-center ${
                 nameType === 'alias'
                   ? (dark ? 'bg-brand-950/60 border-brand-500 text-brand-300 shadow-2xs' : 'bg-brand-50 border-brand-500 text-brand-800 shadow-2xs')
-                  : (dark ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50')
+                  : (dark ? 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800' : 'bg-white border-slate-250 text-slate-700 hover:bg-slate-50')
               }`}
             >
               ✏️ {isDe ? 'Mit Alias / Name' : 'With Alias / Name'}

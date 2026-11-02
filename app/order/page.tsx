@@ -3,8 +3,21 @@ import Link from 'next/link';
 import { OrderView } from '@/components/OrderView';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Order' };
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const t = getServerT(locale);
+  const title = (locale === 'de' ? 'Deine eSIM' : 'Your eSIM');
+  return {
+    title: `${title} | PureSim`,
+    robots: {
+      index: false,
+      follow: false,
+    },
+    referrer: 'no-referrer',
+  };
+}
 
 export default async function OrderPage({
   searchParams,

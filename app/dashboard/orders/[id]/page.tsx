@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { displayCountryName } from '@/lib/tariff-display';
+import { getEsimOverviewUrl } from '@/lib/url';
 import { OrderDetailClient } from '@/components/OrderDetailClient';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,7 @@ export default async function OrderDetailPage({
   const service = createServiceClient();
   const { data: order } = await service
     .from('orders')
-    .select('id, status, amount_eur, iccid, checkout_ref, setup_token, payment_confirmed_at, created_at, tariffs(id, name, country_name, country_code, flag_emoji, data_gb, validity_days)')
+    .select('id, status, amount_eur, iccid, checkout_ref, setup_token, smdp_address, activation_code, qr_code_url, apn, short_url, esim_status, payment_confirmed_at, created_at, tariffs(id, name, country_name, country_code, flag_emoji, data_gb, validity_days)')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -63,6 +64,10 @@ export default async function OrderDetailPage({
     }
   }
 
+  const overviewUrl = (order as any).setup_token
+    ? getEsimOverviewUrl((order as any).setup_token)
+    : null;
+
   return (
     <OrderDetailClient
       order={{
@@ -70,9 +75,17 @@ export default async function OrderDetailPage({
         status: order.status,
         amount_eur: Number(order.amount_eur || 0),
         iccid: order.iccid ? `•••• ${order.iccid.slice(-4)}` : null,
+        rawIccid: order.iccid || null,
         created_at: order.created_at,
         checkout_ref: order.checkout_ref,
         setup_token: (order as any).setup_token,
+        smdp_address: (order as any).smdp_address,
+        activation_code: (order as any).activation_code,
+        qr_code_url: (order as any).qr_code_url,
+        apn: (order as any).apn,
+        short_url: (order as any).short_url,
+        esim_status: (order as any).esim_status,
+        overviewUrl,
       }}
       tariff={tariff}
       countryLabel={countryLabel}

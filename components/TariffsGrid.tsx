@@ -115,12 +115,12 @@ export function TariffsGrid({
 
   return (
     <>
-      <div id="tariffs-grid" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div id="tariffs-grid" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
         {visibleTariffs.map((t) => (
           <div
             key={t.id}
             ref={(el) => { cardRefs.current[t.id] = el; }}
-            className="outline-none"
+            className="outline-none h-full flex flex-col"
           >
             <TariffCard
               tariff={t}

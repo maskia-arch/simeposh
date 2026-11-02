@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
     : 'PureSim – Affordable Global eSIMs');
 
   const description = t('meta_home_desc' as any) || (locale === 'de'
-    ? 'Kaufe sofort einsatzbereite eSIMs für über 150 Länder. Günstiger Tarif, einfache Aktivierung, kein Aufpreis.'
-    : 'Buy ready-to-use eSIMs for 150+ countries. Affordable plans, instant QR code activation, no roaming fees.');
+    ? 'Kaufe in der Regel sofort einsatzbereite eSIMs für über 200 Reiseziele weltweit. Günstige Tarife, einfache Aktivierung per QR-Code.'
+    : 'Buy ready-to-use eSIMs for 200+ destinations worldwide. Affordable plans, easy QR code setup, no roaming fees.');
 
   return {
     title,
@@ -271,7 +271,7 @@ export default async function HomePage() {
     name: 'PureSim',
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
-    sameAs: ['https://t.me/autoacts'],
+    sameAs: ['https://t.me/PureSim'],
     contactPoint: {
       '@type': 'ContactPoint',
       url: 'https://t.me/autoacts',

@@ -63,7 +63,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: '%s | PureSim',
     },
     description:
-      dict.meta_home_desc || 'Kaufe sofort einsatzbereite eSIMs für über 150 Länder. Günstiger Tarif, einfache Aktivierung, kein Aufpreis.',
+      dict.meta_home_desc || 'Kaufe in der Regel sofort einsatzbereite eSIMs für über 200 Reiseziele weltweit. Günstige Tarife, einfache Aktivierung per QR-Code.',
     keywords: ['eSIM', 'Reise SIM', 'Datenpaket', 'Roaming', 'eSIM kaufen', 'PureSim'],
     icons: {
       icon: '/icon.png',
@@ -74,7 +74,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type:   'website',
       locale: locale === 'en' ? 'en_US' : `${locale}_${locale.toUpperCase()}`,
       title:  'PureSim',
-      description: dict.meta_home_desc || 'eSIMs für über 150 Länder – sofort verfügbar.',
+      description: dict.meta_home_desc || 'eSIMs für über 200 Reiseziele weltweit – in der Regel sofort verfügbar.',
     },
 
   };

@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const service = createServiceClient();
   const { data, error } = await service
     .from('orders')
-    .select('id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, order_type, top_up_iccid, tariffs(name, country_name, flag_emoji, data_gb, validity_days)')
+    .select('id, status, amount_eur, period_num, iccid, apn, smdp_address, activation_code, qr_code_url, esim_status, created_at, customer_email, order_type, top_up_iccid, setup_token, tariffs(name, country_name, flag_emoji, data_gb, validity_days)')
     .eq('checkout_ref', ref)
     .order('created_at', { ascending: true });
 
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orders = data.map((o: any) => {
-    const finalToken = txId || ref || o.id;
+    const installUrl = o.setup_token ? getEsimOverviewUrl(o.setup_token) : null;
     return {
       id:             o.id,
       status:         o.status,
@@ -109,7 +109,8 @@ export async function GET(request: Request) {
       validityDays:   o.period_num ?? o.tariffs?.validity_days ?? 0,
       iccid:          o.iccid,
       apn:            o.apn || 'internet',
-      shortUrl:       null,
+      shortUrl:       installUrl,
+      setupToken:     o.setup_token ?? null,
       smdpAddress:    o.smdp_address,
       activationCode: o.activation_code,
       qrCodeUrl:      o.qr_code_url,
@@ -117,7 +118,7 @@ export async function GET(request: Request) {
       orderType:      o.order_type || 'new_esim',
       topUpIccid:     o.top_up_iccid || o.iccid,
       tariffName:     o.tariffs?.name || (o.order_type === 'top_up' ? 'Top-Up' : 'eSIM'),
-      overviewUrl:    o.iccid ? getEsimOverviewUrl(finalToken, o.iccid) : null,
+      overviewUrl:    installUrl,
     };
   });
 
@@ -125,5 +126,9 @@ export async function GET(request: Request) {
   const isPaid = orders.some((o) => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
   const totalPaid = isPaid ? orders.reduce((s, o) => s + (o.amountEur ?? 0), 0) : 0;
 
-  return NextResponse.json({ ref, found: true, allDone, isPaid, paymentStatus, totalPaid, orders });
+  const res = NextResponse.json({ ref, found: true, allDone, isPaid, paymentStatus, totalPaid, orders });
+  res.headers.set('Cache-Control', 'private, no-store');
+  res.headers.set('Vary', 'Cookie');
+  res.headers.set('Referrer-Policy', 'no-referrer');
+  return res;
 }

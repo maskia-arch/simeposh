@@ -173,7 +173,9 @@ export function DaySlider({
                 type="button"
                 onClick={() => onChange(m)}
                 style={{ left: `${(i / lastIdx) * 100}%`, transform }}
-                className={`absolute -top-3 pt-3 pb-2 min-h-[44px] min-w-[36px] inline-flex items-center justify-center text-[10px] leading-none transition-colors hover:text-brand-600 ${
+                className={`absolute -top-3 pt-3 pb-2 min-h-[44px] min-w-[36px] items-center justify-center text-[10px] leading-none transition-colors hover:text-brand-600 ${
+                  i === 0 || i === lastIdx ? 'inline-flex' : 'hidden sm:inline-flex'
+                } ${
                   days === m ? 'text-brand-600 font-extrabold' : 'text-slate-600'
                 }`}
               >
@@ -722,7 +724,7 @@ export function UnlimitedConfigurator({
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <label id="cfg-coverage-label" className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                    {isDe ? 'Länderabdeckung' : 'Country Coverage'}
+                    {t('cfg_country_coverage')}
                   </label>
                 </div>
                 <div role="radiogroup" aria-labelledby="cfg-coverage-label" className="flex flex-wrap gap-1.5">
@@ -874,7 +876,10 @@ export function UnlimitedConfigurator({
                         {finalPrice !== null ? formatCurrencyEuro(finalPrice, locale) : '–'}
                       </p>
                       {perDayDisplay !== null && (
-                        <span className="text-[11px] text-slate-500 font-semibold block mt-0.5 whitespace-nowrap">
+                        <span
+                          aria-label={`${formatCurrencyEuro(perDayDisplay, locale)} ${t('unit_per_day')}`}
+                          className="text-[11px] text-slate-500 font-semibold block mt-0.5 whitespace-nowrap"
+                        >
                           ({formatCurrencyEuro(perDayDisplay, locale)} {t('unit_per_day')})
                         </span>
                       )}

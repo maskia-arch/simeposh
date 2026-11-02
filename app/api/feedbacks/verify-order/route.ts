@@ -6,13 +6,20 @@ import { checkRateLimit, getClientIp, verifyOrderAuthorization } from '@/lib/fee
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function jsonPrivate(body: any, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set('Cache-Control', 'private, no-store');
+  res.headers.set('Vary', 'Cookie');
+  return res;
+}
+
 export async function GET(request: Request) {
   try {
     // 0. Anti-scraping / Anti-enumeration Rate Limiting (60 queries per minute per IP)
     const ip = getClientIp(request);
     const rateCheck = checkRateLimit(`verify-order:${ip}`, 60, 60 * 1000);
     if (!rateCheck.allowed) {
-      return NextResponse.json(
+      return jsonPrivate(
         { success: false, error: 'Zu viele Anfragen. Bitte warte einen Moment.' },
         { status: 429, headers: { 'Retry-After': String(rateCheck.resetInSeconds) } }
       );
@@ -28,7 +35,7 @@ export async function GET(request: Request) {
     const orderIdentifier = rawOrderId || rawRef || rawInvoiceId || rawIccid;
 
     if (!orderIdentifier) {
-      return NextResponse.json({ success: false, error: 'Bestellungs- oder Transaktions-ID fehlt.' }, { status: 400 });
+      return jsonPrivate({ success: false, error: 'Bestellungs- oder Transaktions-ID fehlt.' }, { status: 400 });
     }
 
     // 1. Look up order: by UUID (orders.id), checkout_ref, crypto_sessions (invoiceId), or ICCID
@@ -119,7 +126,7 @@ export async function GET(request: Request) {
     }
 
     if (!orderRow) {
-      return NextResponse.json({ success: false, error: 'Bestellung oder Transaktion wurde nicht gefunden.' }, { status: 404 });
+      return jsonPrivate({ success: false, error: 'Bestellung oder Transaktion wurde nicht gefunden.' }, { status: 404 });
     }
 
     // 2. Validate that the order is paid
@@ -128,7 +135,7 @@ export async function GET(request: Request) {
                    !!orderRow.iccid;
 
     if (!isPaid) {
-      return NextResponse.json({ success: false, error: 'Diese Bestellung ist noch nicht bezahlt.' }, { status: 400 });
+      return jsonPrivate({ success: false, error: 'Diese Bestellung ist noch nicht bezahlt.' }, { status: 400 });
     }
 
     // 3. Cryptographic Tamper-Proofing & Multi-Factor Authorization Check
@@ -138,7 +145,7 @@ export async function GET(request: Request) {
     });
 
     if (!authCheck.authorized) {
-      return NextResponse.json({
+      return jsonPrivate({
         success: false,
         error: authCheck.reason || 'Zugriff verweigert: Bitte nutze den Bewertungslink aus deiner E-Mail.',
       }, { status: 403 });
@@ -155,7 +162,7 @@ export async function GET(request: Request) {
     );
 
     if (feedbackRows.length > 0) {
-      return NextResponse.json({ 
+      return jsonPrivate({ 
         success: true, 
         alreadySubmitted: true,
         orderId: realOrderId,
@@ -167,7 +174,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return NextResponse.json({
+    return jsonPrivate({
       success: true,
       alreadySubmitted: false,
       orderId: realOrderId,
@@ -180,6 +187,6 @@ export async function GET(request: Request) {
     });
   } catch (err: any) {
     console.error('[GET /api/feedbacks/verify-order] Error:', err.message);
-    return NextResponse.json({ success: false, error: 'Datenbankfehler bei der Verifizierung.' }, { status: 500 });
+    return jsonPrivate({ success: false, error: 'Datenbankfehler bei der Verifizierung.' }, { status: 500 });
   }
 }
