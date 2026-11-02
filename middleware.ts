@@ -468,8 +468,10 @@ export async function middleware(request: NextRequest) {
     }
 
   // ── Affiliate Referral Link cookie tracker ──
+  // Only trigger on shop pages (e.g. /?ref= or /esim/*?ref=), NEVER on /api/* or /order/*
   const refCode = request.nextUrl.searchParams.get('ref');
-  if (refCode) {
+  const isExcludedFromAffiliate = pathname.startsWith('/api') || pathname.startsWith('/order') || pathname.startsWith('/s/') || pathname === '/s';
+  if (refCode && !isExcludedFromAffiliate) {
     response.cookies.set('referred_by', refCode.trim(), {
       path:     '/',
       maxAge:   60 * 60 * 24 * 30, // 30 days
