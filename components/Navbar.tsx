@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -263,7 +264,7 @@ export function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
         <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px]">
-          <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
+          <Image src="/logo.webp" alt="PureSim Logo" width={28} height={28} priority className="h-7 w-7 object-contain" />
           <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
             PureSim
           </span>

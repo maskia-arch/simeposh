@@ -1,99 +1,421 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import { useTicket } from '@/components/TicketContext';
+import type { LocaleCode } from '@/lib/i18n/config';
+
+const FOOTER_STRINGS: Record<
+  LocaleCode,
+  {
+    availableIn: string;
+    discoverTitle: string;
+    helpTitle: string;
+    tariffs: string;
+    unlimited: string;
+    topup: string;
+    blog: string;
+    ai: string;
+    faq: string;
+    ticket: string;
+    telegram: string;
+    terms: string;
+    privacy: string;
+    refund: string;
+  }
+> = {
+  de: {
+    availableIn: 'In 200+ Reisezielen verfügbar',
+    discoverTitle: 'Entdecken',
+    helpTitle: 'Hilfe',
+    tariffs: 'Tarife',
+    unlimited: 'Unlimited',
+    topup: 'eSIM aufladen',
+    blog: 'Blog',
+    ai: 'KI-Agenten & API',
+    faq: 'FAQ',
+    ticket: 'Support-Ticket',
+    telegram: 'Kontakt über Telegram',
+    terms: 'AGB',
+    privacy: 'Datenschutz',
+    refund: 'Erstattungsrichtlinie',
+  },
+  en: {
+    availableIn: 'Available in 200+ destinations',
+    discoverTitle: 'Discover',
+    helpTitle: 'Help',
+    tariffs: 'Tariffs',
+    unlimited: 'Unlimited',
+    topup: 'Top up eSIM',
+    blog: 'Blog',
+    ai: 'AI Agents & API',
+    faq: 'FAQ',
+    ticket: 'Support Ticket',
+    telegram: 'Contact via Telegram',
+    terms: 'Terms & Conditions',
+    privacy: 'Privacy Policy',
+    refund: 'Refund Policy',
+  },
+  fr: {
+    availableIn: 'Disponible dans 200+ destinations',
+    discoverTitle: 'Découvrir',
+    helpTitle: 'Aide',
+    tariffs: 'Forfaits',
+    unlimited: 'Unlimited',
+    topup: "Recharger l'eSIM",
+    blog: 'Blog',
+    ai: 'Agents IA & API',
+    faq: 'FAQ',
+    ticket: "Ticket d'assistance",
+    telegram: 'Contacter via Telegram',
+    terms: 'CGV',
+    privacy: 'Politique de confidentialité',
+    refund: 'Politique de remboursement',
+  },
+  es: {
+    availableIn: 'Disponible en más de 200 destinos',
+    discoverTitle: 'Descubrir',
+    helpTitle: 'Ayuda',
+    tariffs: 'Tarifas',
+    unlimited: 'Unlimited',
+    topup: 'Recargar eSIM',
+    blog: 'Blog',
+    ai: 'Agentes IA & API',
+    faq: 'FAQ',
+    ticket: 'Ticket de soporte',
+    telegram: 'Contacto vía Telegram',
+    terms: 'Términos y Condiciones',
+    privacy: 'Política de Privacidad',
+    refund: 'Política de Reembolso',
+  },
+  it: {
+    availableIn: 'Disponibile in oltre 200 destinazioni',
+    discoverTitle: 'Scopri',
+    helpTitle: 'Aiuto',
+    tariffs: 'Tariffe',
+    unlimited: 'Unlimited',
+    topup: 'Ricarica eSIM',
+    blog: 'Blog',
+    ai: 'Agenti IA & API',
+    faq: 'FAQ',
+    ticket: 'Ticket di supporto',
+    telegram: 'Contatta via Telegram',
+    terms: 'Termini e Condizioni',
+    privacy: 'Informativa sulla Privacy',
+    refund: 'Politica di Rimborso',
+  },
+  nl: {
+    availableIn: 'Beschikbaar in 200+ bestemmingen',
+    discoverTitle: 'Ontdekken',
+    helpTitle: 'Hulp',
+    tariffs: 'Tarieven',
+    unlimited: 'Unlimited',
+    topup: 'eSIM opwaarderen',
+    blog: 'Blog',
+    ai: 'AI-agenten & API',
+    faq: 'FAQ',
+    ticket: 'Supportticket',
+    telegram: 'Contact via Telegram',
+    terms: 'Algemene Voorwaarden',
+    privacy: 'Privacybeleid',
+    refund: 'Terugbetalingsbeleid',
+  },
+  pl: {
+    availableIn: 'Dostępne w ponad 200 kierunkach',
+    discoverTitle: 'Odkryj',
+    helpTitle: 'Pomoc',
+    tariffs: 'Plany',
+    unlimited: 'Unlimited',
+    topup: 'Doładuj eSIM',
+    blog: 'Blog',
+    ai: 'Agenci AI i API',
+    faq: 'FAQ',
+    ticket: 'Zgłoszenie pomocy',
+    telegram: 'Kontakt przez Telegram',
+    terms: 'Regulamin',
+    privacy: 'Polityka prywatności',
+    refund: 'Zasady zwrotów',
+  },
+  pt: {
+    availableIn: 'Disponível em mais de 200 destinos',
+    discoverTitle: 'Descobrir',
+    helpTitle: 'Ajuda',
+    tariffs: 'Tarifas',
+    unlimited: 'Unlimited',
+    topup: 'Recarregar eSIM',
+    blog: 'Blog',
+    ai: 'Agentes IA & API',
+    faq: 'FAQ',
+    ticket: 'Ticket de apoio',
+    telegram: 'Contacto via Telegram',
+    terms: 'Termos e Condições',
+    privacy: 'Política de Privacidade',
+    refund: 'Política de Reembolso',
+  },
+  tr: {
+    availableIn: "200'den fazla destinasyonda mevcut",
+    discoverTitle: 'Keşfet',
+    helpTitle: 'Yardım',
+    tariffs: 'Tarifeler',
+    unlimited: 'Unlimited',
+    topup: 'eSIM Yükle',
+    blog: 'Blog',
+    ai: 'Yapay Zeka ve API',
+    faq: 'FAQ',
+    ticket: 'Destek Talebi',
+    telegram: 'Telegram ile İletişim',
+    terms: 'Kullanım Koşulları',
+    privacy: 'Gizlilik Politikası',
+    refund: 'Geri Ödeme Politikası',
+  },
+  sv: {
+    availableIn: 'Tillgänglig på över 200 resmål',
+    discoverTitle: 'Upptäck',
+    helpTitle: 'Hjälp',
+    tariffs: 'Abonnemang',
+    unlimited: 'Unlimited',
+    topup: 'Ladda eSIM',
+    blog: 'Blog',
+    ai: 'AI-agenter & API',
+    faq: 'FAQ',
+    ticket: 'Supportärende',
+    telegram: 'Kontakt via Telegram',
+    terms: 'Villkor',
+    privacy: 'Integritetspolicy',
+    refund: 'Återbetalningspolicy',
+  },
+  da: {
+    availableIn: 'Tilgængelig i 200+ destinationer',
+    discoverTitle: 'Opdag',
+    helpTitle: 'Hjælp',
+    tariffs: 'Planer',
+    unlimited: 'Unlimited',
+    topup: 'Optank eSIM',
+    blog: 'Blog',
+    ai: 'AI-agenter & API',
+    faq: 'FAQ',
+    ticket: 'Support-sag',
+    telegram: 'Kontakt via Telegram',
+    terms: 'Vilkår',
+    privacy: 'Privatlivspolitik',
+    refund: 'Refusionspolitik',
+  },
+  fi: {
+    availableIn: 'Saatavilla yli 200 kohteessa',
+    discoverTitle: 'Löydä',
+    helpTitle: 'Ohje',
+    tariffs: 'Liittymät',
+    unlimited: 'Unlimited',
+    topup: 'Lataa eSIM',
+    blog: 'Blog',
+    ai: 'Tekoälyagentit & API',
+    faq: 'FAQ',
+    ticket: 'Tukipyyntö',
+    telegram: 'Ota yhteyttä Telegramissa',
+    terms: 'Ehdot',
+    privacy: 'Tietosuojakäytäntö',
+    refund: 'Hyvityskäytäntö',
+  },
+  cs: {
+    availableIn: 'K dispozici ve více než 200 destinacích',
+    discoverTitle: 'Objevovat',
+    helpTitle: 'Nápověda',
+    tariffs: 'Tarify',
+    unlimited: 'Unlimited',
+    topup: 'Dobít eSIM',
+    blog: 'Blog',
+    ai: 'AI agenti a API',
+    faq: 'FAQ',
+    ticket: 'Požadavek na podporu',
+    telegram: 'Kontakt přes Telegram',
+    terms: 'Podmínky',
+    privacy: 'Zásady ochrany osobních údajů',
+    refund: 'Zásady vracení peněz',
+  },
+  ro: {
+    availableIn: 'Disponibil în peste 200 de destinații',
+    discoverTitle: 'Descoperă',
+    helpTitle: 'Ajutor',
+    tariffs: 'Tarife',
+    unlimited: 'Unlimited',
+    topup: 'Reîncarcă eSIM',
+    blog: 'Blog',
+    ai: 'Agenți AI și API',
+    faq: 'FAQ',
+    ticket: 'Tichet de asistență',
+    telegram: 'Contact prin Telegram',
+    terms: 'Termeni și condiții',
+    privacy: 'Politica de confidențialitate',
+    refund: 'Politica de rambursare',
+  },
+  hu: {
+    availableIn: 'Több mint 200 úti célon elérhető',
+    discoverTitle: 'Felfedezés',
+    helpTitle: 'Súgó',
+    tariffs: 'Tarifák',
+    unlimited: 'Unlimited',
+    topup: 'eSIM feltöltése',
+    blog: 'Blog',
+    ai: 'MI-ágensek és API',
+    faq: 'FAQ',
+    ticket: 'Támogatási jegy',
+    telegram: 'Kapcsolat Telegramon',
+    terms: 'Általános szerződési feltételek',
+    privacy: 'Adatvédelmi irányelvek',
+    refund: 'Visszatérítési szabályzat',
+  },
+};
 
 export function Footer() {
-  const { t, locale } = useTranslation();
-  const pathname = usePathname();
-  const isFaqPage = pathname === '/faq' || (pathname ? /^\/[a-z]{2}\/faq$/.test(pathname) : false);
+  const { locale } = useTranslation();
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
+  const telegramHref = isDe ? '/telegram' : `/${locale}/telegram`;
   const { openTicketModal } = useTicket();
-  const year  = new Date().getFullYear();
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const year = new Date().getFullYear();
 
-  const toggleFaq = (index: number) => {
-    setOpenFaqIndex(openFaqIndex === index ? null : index);
-  };
-
-  const faqs = [
-    { q: t('faq_q1' as any), a: t('faq_a1' as any) },
-    { q: t('faq_q2' as any), a: t('faq_a2' as any) },
-    { q: t('faq_q3' as any), a: t('faq_a3' as any) },
-    { q: t('faq_q4' as any), a: t('faq_a4' as any) },
-    { q: t('faq_q5' as any), a: t('faq_a5' as any) },
-    { q: t('faq_q6' as any), a: t('faq_a6' as any) },
-  ];
+  const labels = FOOTER_STRINGS[locale as LocaleCode] || FOOTER_STRINGS.de;
 
   return (
-    <footer className="border-t border-slate-200 bg-slate-50/40 mt-10 md:mt-12">
-      {/* Main Footer Links */}
-      <div className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 text-lg font-bold">
-                <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain" />
-                <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
-                  PureSim
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                {t('hero_badge')}
-              </p>
-              <div className="mt-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200/80 px-3 py-1 text-xs font-semibold text-slate-700">
-                  <span>🌍</span> {t('footer_destinations_badge')}
-                </span>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-8 md:col-span-2">
-              <div>
-                <p className="font-semibold text-slate-900 mb-3">{t('footer_nav_title')}</p>
-                <ul className="space-y-1 text-sm text-slate-700">
-                  <li><Link
+    <footer className="border-t border-slate-200 bg-slate-50 text-slate-600 pb-24 md:pb-8">
+      <div className="mx-auto max-w-6xl px-4 py-8 md:py-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* 1. Markenspalte */}
+          <div className="md:col-span-2">
+            <Link
+              href={prefix || '/'}
+              className="inline-flex items-center gap-2 font-extrabold text-xl text-[#1d4ed8] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+            >
+              <Image
+                src="/logo.webp"
+                alt="PureSim Logo"
+                width={28}
+                height={28}
+                loading="lazy"
+                className="h-7 w-7 object-contain"
+              />
+              <span>PureSim</span>
+            </Link>
+            <p className="mt-2 text-sm text-slate-500">
+              {labels.availableIn}
+            </p>
+          </div>
+
+          {/* Links Columns: 2 cols side-by-side on mobile and desktop */}
+          <div className="grid grid-cols-2 gap-6 md:col-span-2">
+            {/* 2. Gruppe „Entdecken“ (5 Links) */}
+            <nav aria-label={labels.discoverTitle}>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                {labels.discoverTitle}
+              </h3>
+              <ul className="space-y-1 text-sm font-normal text-slate-600">
+                <li>
+                  <Link
                     href={`${prefix}/tariffs`}
                     prefetch={false}
-                    data-testid="footer-browse-tariffs-link"
-                    className="relative inline-flex items-center min-h-[44px] min-w-[44px] py-2 hover:text-brand-700 transition-colors after:absolute after:-inset-y-2 after:-inset-x-2 after:content-[''] font-medium"
-                  >{t('footer_browse')}</Link></li>
-                  <li><Link href={`${prefix}/topup`}     className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_topup')}</Link></li>
-                  <li><Link href={`${prefix}/faq`}       className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_faq' as any) || (isDe ? 'Häufige Fragen (FAQ)' : 'FAQ')}</Link></li>
-                  <li><Link href={`${prefix}/dashboard`} className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_dashboard')}</Link></li>
-                  <li><Link href={`${prefix}/blog`}      className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_blog' as any) || 'Blog'}</Link></li>
-                  <li><Link href={`${prefix}/ai`}        className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_ai')}</Link></li>
-                  <li><button onClick={() => openTicketModal()} className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors text-left font-medium cursor-pointer">{t('footer_open_ticket')}</button></li>
-                  <li>
-                    <Link
-                      href={`${prefix}/telegram`}
-                      className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-brand-700 transition-colors min-h-[44px] min-w-[44px]"
-                    >
-                      <svg className="h-4 w-4 shrink-0 text-[#24A1DE]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-                      </svg>
-                      <span>{t('footer_contact_telegram')}</span>
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900 mb-3">{t('footer_legal_title')}</p>
-                <ul className="space-y-1 text-sm text-slate-700">
-                  <li><Link href={`${prefix}/agb`}         className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_terms')}</Link></li>
-                  <li><Link href={`${prefix}/datenschutz`} className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_privacy')}</Link></li>
-                  <li><Link href={`${prefix}/refund-policy`} className="min-h-[44px] min-w-[44px] inline-flex items-center hover:text-brand-700 transition-colors font-medium">{t('footer_refund')}</Link></li>
-                </ul>
-              </div>
-            </div>
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.tariffs}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/unlimited`}
+                    prefetch={false}
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.unlimited}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/topup`}
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.topup}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/blog`}
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.blog}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/ai`}
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
+                  >
+                    {labels.ai}
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+
+            {/* 3. Gruppe „Hilfe“ (3 Einträge) */}
+            <nav aria-label={labels.helpTitle}>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                {labels.helpTitle}
+              </h3>
+              <ul className="space-y-1 text-sm font-normal text-slate-600">
+                <li>
+                  <Link
+                    href={`${prefix}/faq`}
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.faq}
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openTicketModal()}
+                    className="flex items-center text-left min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
+                  >
+                    {labels.ticket}
+                  </button>
+                </li>
+                <li>
+                  <Link
+                    href={telegramHref}
+                    className="flex items-center min-h-[44px] md:min-h-[32px] md:py-1 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
+                  >
+                    {labels.telegram}
+                  </Link>
+                </li>
+              </ul>
+            </nav>
           </div>
-          <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-700 font-medium">
-            {t('footer_copy', { year })}
-          </div>
+        </div>
+
+        {/* 4. Untere Leiste: © links, AGB · Datenschutz · Erstattungsrichtlinie inline rechts */}
+        <div className="mt-8 pt-6 border-t border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <p>© {year} PureSim.net</p>
+          <nav aria-label="Legal" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <Link
+              href={`${prefix}/agb`}
+              className="min-h-[44px] md:min-h-0 flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+            >
+              {labels.terms}
+            </Link>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <Link
+              href={`${prefix}/datenschutz`}
+              className="min-h-[44px] md:min-h-0 flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+            >
+              {labels.privacy}
+            </Link>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <Link
+              href={`${prefix}/refund-policy`}
+              className="min-h-[44px] md:min-h-0 flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+            >
+              {labels.refund}
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

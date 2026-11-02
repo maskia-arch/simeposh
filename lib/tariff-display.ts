@@ -676,55 +676,73 @@ export function getTariffSpecialFeatures(
 ): TariffSpecialFeature[] {
   const features: TariffSpecialFeature[] = [];
 
-  // 0. Travel Premium Advantage Chip (prioritizes multi-network redundancy, local IP, non-HK, or multi-IP)
+  // 0. Travel Premium Genuine Difference Chip (Multi-Net with more ops than standard, Local IP, or Non-HK IP)
   if (isPremiumTariff(tariff)) {
-    const ops = getTariffOperators(tariff, 10);
-    const isLocal = isLocalIpTariff(tariff as any);
-    const isNonHk = isNonHkIpTariff(tariff as any);
+    const diffChip = (tariff as any).premium_diff_chip;
     const countryName = displayCountryName(tariff as any, locale);
 
-    if (ops.length > 1) {
-      const opNames = ops.map((o) => o.name).filter(Boolean);
-      features.push({
-        id: 'travel_premium',
-        badgeKey: 'feat_prem_adv_multi_net',
-        titleKey: 'feat_prem_adv_multi_net',
-        descKey: 'feat_prem_adv_multi_net_desc',
-        icon: '📶',
-        cls: 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 font-bold',
-        vars: {
-          count: ops.length,
-          operators: opNames.join(' + ') || `${ops.length} Netze`,
-        },
-      });
-    } else if (isLocal) {
-      features.push({
-        id: 'travel_premium',
-        badgeKey: 'feat_prem_adv_local_ip',
-        titleKey: 'feat_prem_adv_local_ip',
-        descKey: 'feat_prem_adv_local_ip_desc',
-        icon: '📍',
-        cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
-        vars: { country: countryName },
-      });
-    } else if (isNonHk) {
-      features.push({
-        id: 'travel_premium',
-        badgeKey: 'feat_prem_adv_non_hk',
-        titleKey: 'feat_prem_adv_non_hk',
-        descKey: 'feat_prem_adv_non_hk_desc',
-        icon: '🛡️',
-        cls: 'bg-indigo-50 text-indigo-950 border-indigo-200 hover:bg-indigo-100 font-bold',
-      });
-    } else {
-      features.push({
-        id: 'travel_premium',
-        badgeKey: 'feat_prem_adv_multi_ip',
-        titleKey: 'feat_prem_adv_multi_ip',
-        descKey: 'feat_prem_adv_multi_ip_desc',
-        icon: '🌐',
-        cls: 'bg-sky-50 text-sky-950 border-sky-200 hover:bg-sky-100 font-bold',
-      });
+    if (diffChip) {
+      // 1. Explicit multi-network difference chip from classification
+      const netMatch = diffChip.match(/^(\d+)\s+Netze:\s+(.+)$/);
+      if (netMatch) {
+        const count = parseInt(netMatch[1], 10);
+        const operators = netMatch[2];
+        features.push({
+          id: 'travel_premium',
+          badgeKey: 'feat_prem_adv_multi_net',
+          titleKey: 'feat_prem_adv_multi_net',
+          descKey: 'feat_prem_adv_multi_net_desc',
+          icon: '📶',
+          cls: 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 font-bold',
+          vars: { count, operators },
+        });
+      } else if (diffChip === 'Ohne Hongkong-Umweg') {
+        features.push({
+          id: 'travel_premium',
+          badgeKey: 'feat_prem_adv_non_hk',
+          titleKey: 'feat_prem_adv_non_hk',
+          descKey: 'feat_prem_adv_non_hk_desc',
+          icon: '🛡️',
+          cls: 'bg-indigo-50 text-indigo-950 border-indigo-200 hover:bg-indigo-100 font-bold',
+        });
+      } else if (diffChip === 'Lokale IP') {
+        features.push({
+          id: 'travel_premium',
+          badgeKey: 'feat_prem_adv_local_ip',
+          titleKey: 'feat_prem_adv_local_ip',
+          descKey: 'feat_prem_adv_local_ip_desc',
+          icon: '📍',
+          cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
+          vars: { country: countryName },
+        });
+      }
+    } else if (diffChip === undefined) {
+      // Fallback for runtime objects before DB column hydration
+      const ops = getTariffOperators(tariff, 10);
+      const isLocal = isLocalIpTariff(tariff as any);
+      const isNonHk = isNonHkIpTariff(tariff as any);
+
+      if (isNonHk) {
+        features.push({
+          id: 'travel_premium',
+          badgeKey: 'feat_prem_adv_non_hk',
+          titleKey: 'feat_prem_adv_non_hk',
+          descKey: 'feat_prem_adv_non_hk_desc',
+          icon: '🛡️',
+          cls: 'bg-indigo-50 text-indigo-950 border-indigo-200 hover:bg-indigo-100 font-bold',
+        });
+      } else if (isLocal) {
+        features.push({
+          id: 'travel_premium',
+          badgeKey: 'feat_prem_adv_local_ip',
+          titleKey: 'feat_prem_adv_local_ip',
+          descKey: 'feat_prem_adv_local_ip_desc',
+          icon: '📍',
+          cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
+          vars: { country: countryName },
+        });
+      }
+      // NO generic multi-net or multi-IP fallback without proven difference!
     }
   }
 

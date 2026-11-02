@@ -127,6 +127,8 @@ export interface PublicTariff {
   throttle_speed:       string | null; // Drosselungsgeschwindigkeit (ehemals fupPolicy/fup_policy)
   network_speed:        string | null;
   activates_on_arrival: boolean;       // steuert das Badge Activation on Arrival (activeType === 2)
+  premium_diff_chip?:   string | null;
+  needs_difference_review?: boolean;
 }
 
 /**
@@ -311,6 +313,8 @@ export function toPublicTariff(row: any): PublicTariff {
     throttle_speed:       safeThrottle,
     network_speed:        safeSpeed,
     activates_on_arrival: activatesOnArrival,
+    premium_diff_chip:    row.premium_diff_chip ? String(row.premium_diff_chip) : null,
+    needs_difference_review: Boolean(row.needs_difference_review),
   };
 }
 

@@ -409,7 +409,7 @@ const ro = {
   "op_provisioning_sub": "Your payment was successful. The eSIMs are being set up – one moment please.",
   "op_provisioning_title": "eSIMs are being set up…",
   "op_ready_many": "{count} eSIMs ready!",
-  "op_ready_one": "Your eSIM is ready!",
+  "op_ready_one": "eSIM-ul tău este gata!",
   "op_ready_sub": "Scan the QR code or open the install link. Everything was also e-mailed to you.",
   "op_section_new_esims": "eSIM-uri noi",
   "op_section_topups": "Reîncărcări active",

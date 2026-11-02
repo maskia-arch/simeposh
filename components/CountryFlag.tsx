@@ -12,14 +12,17 @@ interface CountryFlagProps {
  */
 const REGION_META: Record<string, { cdnCode?: string; emoji: string }> = {
   'EU': { cdnCode: 'eu', emoji: '🇪🇺' },
-  'AS': { emoji: '🌏' },
   'SEA': { emoji: '🌏' },
-  'ME': { emoji: '🌍' },
+  'ASIA': { emoji: '🌏' },
+  'MIDDLE_EAST': { emoji: '🌍' },
+  'NORTH_AMERICA': { emoji: '🌎' },
   'NA': { emoji: '🌎' },
-  'LA': { emoji: '🌎' },
+  'LATAM': { emoji: '🌎' },
+  'LA_REGION': { emoji: '🌎' },
   'OC': { emoji: '🌏' },
-  'AF': { emoji: '🌍' },
+  'AFRICA': { emoji: '🌍' },
   'GLOB': { emoji: '🌐' },
+  'GLOBAL': { emoji: '🌐' },
   'XX': { emoji: '🌐' },
 };
 
@@ -51,6 +54,22 @@ export function CountryFlag({ countryCode, countryName, size = 36, className = '
   const cdnWidth = size <= 20 ? 20 : size <= 40 ? 40 : size <= 80 ? 80 : 160;
 
   // Region / virtual codes
+  if (up === 'AS') {
+    const isAsia = countryName?.toLowerCase().includes('asia') || countryName?.toLowerCase().includes('asien');
+    if (isAsia) {
+      return (
+        <span
+          className={`inline-flex shrink-0 items-center justify-center select-none ${className}`}
+          style={{ fontSize: Math.round(size * 0.75), lineHeight: 1 }}
+          role="img"
+          aria-label={countryName ?? 'Asia'}
+        >
+          🌏
+        </span>
+      );
+    }
+  }
+
   if (REGION_META[up]) {
     const meta = REGION_META[up];
     if (meta.cdnCode) {

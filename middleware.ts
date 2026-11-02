@@ -83,7 +83,7 @@ export async function middleware(request: NextRequest) {
 
   // Rate limiting for order status access via query param
   if (normalizedPath === '/order' && request.nextUrl.searchParams.has('ref')) {
-    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
     const rl = checkOrderRateLimit(clientIp);
     if (!rl.allowed) {
       return new NextResponse('Too Many Requests', {
@@ -222,9 +222,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${langPrefix}/unlimited/germany`, request.url), 301);
   }
 
-  // ── 301 Redirect bare /unlimited or /configurator without country -> /unlimited/germany ──
+  // ── Rewrite bare /unlimited or /configurator without country -> /unlimited/germany (200 OK) ──
   if (normalizedPath === '/unlimited' || normalizedPath === '/configurator') {
-    return NextResponse.redirect(new URL(`${langPrefix}/unlimited/germany`, request.url), 301);
+    return NextResponse.rewrite(new URL(`${langPrefix}/unlimited/germany`, request.url));
   }
 
   // ── 301 Redirect /tgcontact, /contact, /kontakt, /support -> /telegram ──
@@ -581,24 +581,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${langPrefix}/dashboard`, request.url));
   }
 
+  const isOrderRoute = normalizedPath === '/order' || normalizedPath.startsWith('/order') || normalizedPath.startsWith('/api/order/status');
+  const isSetupRoute = normalizedPath === '/s' || normalizedPath.startsWith('/s/');
+
   // ── Security Headers & Response Hygiene ──
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  if (isOrderRoute) {
+    response.headers.set('Referrer-Policy', 'no-referrer');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  } else {
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  }
 
   // ── Cache-Control for storefront pages (Cloudflare caching & fresh pricing) ──
+  const isHomepage = normalizedPath === '/';
   const isPriceBearingRoute =
-    normalizedPath === '/' ||
     normalizedPath === '/topup' ||
     normalizedPath === '/tariffs' ||
     normalizedPath.startsWith('/tariffs/') ||
     normalizedPath.startsWith('/esim/') ||
     normalizedPath.startsWith('/unlimited/');
 
-  if (normalizedPath === '/topup' && request.nextUrl.search) {
+  if (isSetupRoute) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  } else if (normalizedPath === '/topup' && request.nextUrl.search) {
     response.headers.set('X-Robots-Tag', 'noindex, follow');
-  } else if (normalizedPath.startsWith('/s/') || pathname.startsWith('/esim-overview')) {
+  } else if (pathname.startsWith('/esim-overview')) {
     response.headers.set('X-Robots-Tag', 'noindex, follow');
   }
 
@@ -607,25 +618,38 @@ export async function middleware(request: NextRequest) {
     normalizedPath.startsWith('/checkout') ||
     normalizedPath.startsWith('/api/crypto/checkout');
 
+  const isNoStoreRoute = isCartOrCheckout || isOrderRoute || isSetupRoute || is404Route;
+
   if (isRscRequest) {
     response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
     response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
     response.headers.set('CDN-Cache-Control', 'no-store');
     response.headers.set('Vary', 'RSC, Next-Router-Prefetch, Next-Router-State-Tree, Accept-Encoding');
-  } else if (isCartOrCheckout) {
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  } else if (isNoStoreRoute) {
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+  } else if (isHomepage && !user && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
+    // Homepage: Never cache HTML document at Cloudflare Edge to prevent RSC header collisions across deployments
+    response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+    response.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding');
   } else if (!user && isPriceBearingRoute && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
     // 5 minutes in CDN, browser always validates with server (0 stale-while-revalidate)
     response.headers.set(
       'Cache-Control',
       'public, max-age=0, s-maxage=300'
     );
-    response.headers.set('Vary', 'Accept-Encoding');
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'max-age=300');
+    response.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding');
   } else if (!user && (normalizedPath === '/ai' || normalizedPath === '/telegram') && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
     response.headers.set(
       'Cache-Control',
       'public, max-age=600, s-maxage=3600'
     );
+    response.headers.set('Cloudflare-CDN-Cache-Control', 'max-age=3600');
+    response.headers.set('CDN-Cache-Control', 'max-age=3600');
     response.headers.set('Vary', 'Accept-Encoding');
   }
 

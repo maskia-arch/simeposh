@@ -11,7 +11,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
@@ -38,6 +38,8 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const [showCountryList, setShowCountryList] = useState(false);
   const { locale, t } = useTranslation();
   const { addItem } = useCart();
+  const specialFeatures = getTariffSpecialFeatures(tariff, locale);
+  const diffFeature = specialFeatures.find((f) => f.id === 'travel_premium');
 
   const isPremium   = tariff.is_premium || tariff.tariff_type === 'travel_premium' || isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
@@ -151,9 +153,17 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 </div>
 
                 {isPremium && isTravel ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-900 shadow-2xs">
-                    <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> {t('badge_travel_premium' as any)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-900 shadow-2xs">
+                      <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> {t('badge_travel_premium' as any)}
+                    </span>
+                    {diffFeature && (
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${diffFeature.cls}`}>
+                        <TravelPremiumGlobeIcon size={13} className="text-amber-950" />
+                        <span>{t(diffFeature.badgeKey as any, diffFeature.vars)}</span>
+                      </span>
+                    )}
+                  </div>
                 ) : typeInfo ? (
                   <div>
                     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${typeInfo.color}`}>

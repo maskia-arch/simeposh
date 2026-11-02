@@ -27,7 +27,7 @@ export function slugify(text: string): string {
  */
 export const REGION_SLUGS: Record<string, string> = {
   EU:            'europe',
-  AS:            'asia',
+  ASIA:          'asia',
   SEA:           'southeast-asia',
   MIDDLE_EAST:   'middle-east',
   NORTH_AMERICA: 'north-america',
@@ -62,6 +62,8 @@ export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
   NORTH_AMERICA: 'north-america',
   AF:            'afghanistan',
   ME:            'montenegro',
+  AS:            'american-samoa',
+  ASIA:          'asia',
 };
 
 /**
@@ -142,8 +144,10 @@ export const CUSTOM_ALIASES: Record<string, string> = {
   europa: 'EU',
   europe: 'EU',
   eu: 'EU',
-  asien: 'AS',
-  asia: 'AS',
+  asien: 'ASIA',
+  asia: 'ASIA',
+  'american-samoa': 'AS',
+  'amerikanisch-samoa': 'AS',
   ozeanien: 'OC',
   oceania: 'OC',
   weltweit: 'GLOB',
@@ -164,6 +168,12 @@ export function countryCodeToSlug(code: string, fallbackName?: string): string {
   }
   if (lowerName === 'africa' || lowerName === 'afrika') {
     return 'africa';
+  }
+  if (upper === 'AS') {
+    if (lowerName.includes('asia') || lowerName.includes('asien')) {
+      return 'asia';
+    }
+    return 'american-samoa';
   }
   if (REGION_SLUGS[upper]) {
     return REGION_SLUGS[upper];

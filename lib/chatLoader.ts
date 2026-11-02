@@ -250,11 +250,42 @@ export function loadChatScript(onLoad?: () => void) {
       }
     };
 
+const CHAT_I18N: Record<string, { title: string; open: string; tg: string; badge: string }> = {
+  de: { title: 'PureSim KI-Assistent – antwortet sofort', open: 'KI-Assistent öffnen', tg: 'Persönlicher Support über Telegram', badge: 'KI-Assistent' },
+  en: { title: 'PureSim AI Assistant – replies instantly', open: 'Open AI Assistant', tg: 'Personal support via Telegram', badge: 'AI Assistant' },
+  es: { title: 'Asistente de IA PureSim – responde al instante', open: 'Abrir asistente de IA', tg: 'Soporte personalizado vía Telegram', badge: 'Asistente de IA' },
+  fr: { title: 'Assistant IA PureSim – répond instantanément', open: "Ouvrir l'assistant IA", tg: 'Support personnalisé via Telegram', badge: 'Assistant IA' },
+  it: { title: "Assistente IA PureSim – risponde all'istante", open: 'Apri assistente IA', tg: 'Supporto personalizzato via Telegram', badge: 'Assistente IA' },
+  nl: { title: 'PureSim AI-assistent – antwoordt direct', open: 'Open AI-assistent', tg: 'Persoonlijke ondersteuning via Telegram', badge: 'AI-assistent' },
+  pl: { title: 'Asystent AI PureSim – odpowiada natychmiast', open: 'Otwórz asystenta AI', tg: 'Wsparcie indywidualne przez Telegram', badge: 'Asystent AI' },
+  pt: { title: 'Assistente de IA PureSim – responde instantaneamente', open: 'Abrir assistente de IA', tg: 'Suporte pessoal via Telegram', badge: 'Assistente de IA' },
+  tr: { title: 'PureSim Yapay Zeka Asistanı – anında yanıtlar', open: 'Yapay zeka asistanını aç', tg: 'Telegram üzerinden kişisel destek', badge: 'Yapay Zeka' },
+  sv: { title: 'PureSim AI-assistent – svarar direkt', open: 'Öppna AI-assistent', tg: 'Personlig support via Telegram', badge: 'AI-assistent' },
+  da: { title: 'PureSim AI-assistent – svarer med det samme', open: 'Åbn AI-assistent', tg: 'Personlig support via Telegram', badge: 'AI-assistent' },
+  fi: { title: 'PureSim-tekoälyavustaja – vastaa heti', open: 'Avaa tekoälyavustaja', tg: 'Henkilökohtainen tuki Telegramissa', badge: 'Tekoäly' },
+  cs: { title: 'PureSim AI asistent – odpovídá okamžitě', open: 'Otevřít AI asistenta', tg: 'Osobní podpora přes Telegram', badge: 'AI asistent' },
+  ro: { title: 'Asistent AI PureSim – răspunde instant', open: 'Deschide asistentul AI', tg: 'Suport personalizat prin Telegram', badge: 'Asistent AI' },
+  hu: { title: 'PureSim AI asszisztens – azonnal válaszol', open: 'AI asszisztens megnyitása', tg: 'Személyes támogatás Telegramon', badge: 'MI-asszisztens' },
+};
+
+function getChatLocale(): string {
+  if (typeof document === 'undefined') return 'de';
+  const htmlLang = document.documentElement.lang?.slice(0, 2)?.toLowerCase();
+  if (htmlLang && CHAT_I18N[htmlLang]) return htmlLang;
+  const path = window.location.pathname;
+  const match = path.match(/^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)(?=\/|$)/);
+  if (match && CHAT_I18N[match[1]]) return match[1];
+  return 'de';
+}
+
     // If widget UI element is already built, execute callbacks immediately
     const enhanceWidgetUI = () => {
+      const loc = getChatLocale();
+      const texts = CHAT_I18N[loc] || CHAT_I18N.de;
+
       const realBbl = document.querySelector('#vs25 #vs25-bbl') || document.querySelector('button#vs25-bbl');
       if (realBbl) {
-        realBbl.setAttribute('aria-label', 'KI-Assistent');
+        realBbl.setAttribute('aria-label', texts.open);
       }
       if (!document.getElementById('vs25-custom-style')) {
         const style = document.createElement('style');
@@ -262,11 +293,51 @@ export function loadChatScript(onLoad?: () => void) {
         style.textContent = `
           @media (max-width: 768px) {
             #vs25-bbl, #vs25 .vs25-bbl {
-              bottom: 84px !important;
+              bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
             }
+          }
+          .vs25-tg-banner {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 8px 14px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .vs25-tg-banner a {
+            color: #2563eb;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+          }
+          .vs25-tg-banner a:hover {
+            text-decoration: underline;
           }
         `;
         document.head.appendChild(style);
+      }
+
+      // Update header title & subtitle
+      const nameEl = document.querySelector('.vs25-hdr-name');
+      if (nameEl) {
+        nameEl.textContent = texts.title;
+      }
+      const subTextEl = document.getElementById('vs25-hdr-sub-text');
+      if (subTextEl && (subTextEl.textContent?.includes('Std') || subTextEl.textContent?.includes('hour') || !subTextEl.textContent?.includes('Online'))) {
+        subTextEl.textContent = 'Online';
+      }
+
+      // Inject visible Telegram support link banner into panel if not present
+      const pnl = document.getElementById('vs25-pnl');
+      const hdr = pnl?.querySelector('.vs25-hdr');
+      if (pnl && hdr && !pnl.querySelector('.vs25-tg-banner')) {
+        const banner = document.createElement('div');
+        banner.className = 'vs25-tg-banner';
+        banner.innerHTML = `<span>${texts.tg}</span><a href="https://t.me/autoacts" target="_blank" rel="noopener noreferrer">Telegram ↗</a>`;
+        hdr.insertAdjacentElement('afterend', banner);
       }
     };
 

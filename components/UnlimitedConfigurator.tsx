@@ -984,14 +984,14 @@ export function UnlimitedConfigurator({
                               </div>
                             </div>
                           );
-                        })() : (
+                        })() : discountPct > 0 ? (
                           <div className="w-full h-full text-left rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-2.5 text-[13px] text-emerald-950 flex flex-col justify-center gap-1 shadow-2xs">
                             <span className="font-semibold [text-wrap:pretty] leading-tight flex items-center gap-1.5">
                               <span>✓</span>
                               <span>{t('cfg_max_tier_hint' as any, { pct: formatPercent(discountPct, locale, { negative: true }) }) || `Maximaler Staffelrabatt (${formatPercent(discountPct, locale, { negative: true })}) aktiv`}</span>
                             </span>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })()}

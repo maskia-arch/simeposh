@@ -42,7 +42,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200/90 px-3 py-2 transition-colors hover:bg-slate-100/70 min-w-0 w-full">
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</p>
         <p className="truncate font-mono text-xs text-slate-900 font-semibold">{value}</p>
       </div>
       <button
@@ -125,7 +125,7 @@ export function EsimDelivery({
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-lg font-extrabold text-slate-900 tracking-tight truncate">{countryNameLocalized}</h3>
               {index && totalCount && totalCount > 1 && (
-                <span className="rounded-md bg-slate-900 text-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shrink-0 shadow-xs">
+                <span className="rounded-md bg-slate-900 text-white px-2 py-0.5 text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-xs">
                   {t('esim_index_of', { index, totalCount })}
                 </span>
               )}
@@ -158,7 +158,7 @@ export function EsimDelivery({
       <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] items-start min-w-0">
         {/* Center QR Code Display */}
         <div className="flex flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-slate-50 to-white border border-slate-200 p-4 shadow-sm text-center w-full max-w-[280px] mx-auto md:max-w-none">
-          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-wider text-slate-600">
             {t('esim_qr_scan_title')}
           </p>
           
@@ -233,7 +233,7 @@ export function EsimDelivery({
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2 min-w-0 w-full">
               <div className="flex items-center justify-between gap-2 min-w-0">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                     {t('esim_interactive_page')}
                   </p>
                   <p className="text-xs font-bold text-slate-900 break-words">
@@ -251,7 +251,7 @@ export function EsimDelivery({
                 </a>
               </div>
               <div className="rounded-xl bg-white border border-slate-200 px-3 py-2 flex items-center justify-between gap-2 min-w-0 w-full">
-                <p className="break-all min-w-0 flex-1 font-mono text-[11px] text-slate-600">{esim.overviewUrl}</p>
+                <p className="break-all min-w-0 flex-1 font-mono text-xs text-slate-600">{esim.overviewUrl}</p>
                 <button
                   type="button"
                   onClick={async () => {
@@ -282,7 +282,7 @@ export function EsimDelivery({
                 </svg>
                 <span className="flex flex-col text-left">
                   <span className="font-bold text-slate-900 leading-snug">{t('esim_manual_hint')}</span>
-                  <span className="text-[11px] font-normal text-slate-500 leading-snug">{t('esim_manual_sub')}</span>
+                  <span className="text-xs font-normal text-slate-500 leading-snug">{t('esim_manual_sub')}</span>
                 </span>
               </span>
               <svg className="h-4 w-4 text-slate-400 group-open:rotate-180 transition-transform shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

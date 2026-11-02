@@ -23,7 +23,7 @@ export function CheckoutEmailField({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 min-h-[76px]">
       <label
         htmlFor="checkout-email"
         className="block text-[10px] font-bold uppercase tracking-wider text-slate-400"
@@ -45,7 +45,7 @@ export function CheckoutEmailField({
                     window.location.reload();
                   } catch {}
                 }}
-                className="font-bold text-brand-600 hover:text-brand-800 underline cursor-pointer"
+                className="font-bold text-brand-600 hover:text-brand-800 underline cursor-pointer inline-flex items-center min-h-[44px] py-1 px-1 -my-1"
               >
                 {t('checkout_sign_out')}
               </button>

@@ -2,14 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { OrderView } from '@/components/OrderView';
 import { getServerT, getServerLocale } from '@/lib/i18n/server';
-import { isUuid } from '@/lib/utils';
+import { lookupOrderData } from '@/lib/order-lookup';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const t = getServerT(locale);
-  const title = t('op_ready_one') || (locale === 'de' ? 'Deine eSIM' : 'Your eSIM');
+  const title = t('op_ready_one');
   return {
     title: {
       absolute: `${title} | PureSim`,
@@ -33,8 +33,10 @@ export default async function OrderPage({
   const t = getServerT(locale);
   const prefix = locale === 'de' ? '' : `/${locale}`;
 
-  // Reject missing or non-UUID refs
-  if (!trimmedRef || !isUuid(trimmedRef)) {
+  // Server-side lookup of order by ref (checkout_ref, order.id, or crypto_sessions.id)
+  const orderData = trimmedRef ? await lookupOrderData(trimmedRef) : null;
+
+  if (!orderData) {
     return (
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-sm border border-slate-200">
@@ -51,5 +53,5 @@ export default async function OrderPage({
     );
   }
 
-  return <OrderView orderRef={trimmedRef} />;
+  return <OrderView orderRef={trimmedRef!} initialData={orderData} />;
 }

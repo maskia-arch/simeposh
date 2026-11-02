@@ -385,7 +385,7 @@ const de = {
   "meta_blog_title": "Blog",
   "meta_country_desc": "Günstige Prepaid eSIM für {country}. Highspeed-Daten ab {price}, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!",
   "meta_country_title": "eSIM {country} ab {price} – Highspeed Daten ohne Roaming",
-      "meta_home_desc": "Kaufe in der Regel sofort einsatzbereite eSIMs für über 200 Reiseziele weltweit. Günstige Tarife, einfache Aktivierung per QR-Code.",
+      "meta_home_desc": "Kaufe einsatzbereite eSIMs für über 200 Reiseziele weltweit. Günstige Tarife, einfache Aktivierung per QR-Code.",
   "meta_home_title": "PureSim – Günstige eSIMs weltweit",
   "meta_tariffs_desc": "Finde günstige eSIM-Tarife für über 150 Länder weltweit.",
   "meta_tariffs_title": "Tarife & eSIM Pakete",

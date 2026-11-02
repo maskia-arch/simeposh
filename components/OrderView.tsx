@@ -26,9 +26,15 @@ interface StatusResp {
   orders:         OrderItem[];
 }
 
-export function OrderView({ orderRef }: { orderRef: string }) {
+export function OrderView({
+  orderRef,
+  initialData,
+}: {
+  orderRef: string;
+  initialData?: StatusResp | null;
+}) {
   const { t, locale } = useTranslation();
-  const [data, setData]   = useState<StatusResp | null>(null);
+  const [data, setData]   = useState<StatusResp | null>(initialData ?? null);
   const [tries, setTries] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | 'all'>('all');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,10 +53,11 @@ export function OrderView({ orderRef }: { orderRef: string }) {
   }, [orderRef]);
 
   useEffect(() => {
+    if (initialData?.allDone) return;
     fetchStatus();
     pollRef.current = setInterval(fetchStatus, 4000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [fetchStatus]);
+  }, [fetchStatus, initialData?.allDone]);
 
   const orders       = data?.orders ?? [];
   const completed    = orders.filter((o) => o.status === 'completed');
@@ -254,8 +261,11 @@ export function OrderView({ orderRef }: { orderRef: string }) {
             {newEsims.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <svg className="w-5 h-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
                   <span className="text-sm font-extrabold text-slate-800">
-                    {t('op_section_new_esims') || '📱 Neue eSIMs'} ({newEsims.length})
+                    {(t('op_section_new_esims') || 'Neue eSIMs').replace(/^[^a-zA-Z0-9\säöüÄÖÜßáéíóúÁÉÍÓÚ]+/, '').trim()} ({newEsims.length})
                   </span>
                 </div>
                 <div className="space-y-6">
@@ -270,8 +280,11 @@ export function OrderView({ orderRef }: { orderRef: string }) {
             {topUps.length > 0 && (
               <div className="space-y-4 pt-2">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <svg className="w-5 h-5 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
                   <span className="text-sm font-extrabold text-slate-800">
-                    {t('op_section_topups') || '🔄 Aufgeladene eSIMs'} ({topUps.length})
+                    {(t('op_section_topups') || 'Aufgeladene eSIMs').replace(/^[^a-zA-Z0-9\säöüÄÖÜßáéíóúÁÉÍÓÚ]+/, '').trim()} ({topUps.length})
                   </span>
                 </div>
                 <div className="space-y-6">

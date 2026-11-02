@@ -28,7 +28,9 @@ function pruneStale(now: number) {
 export function checkOrderRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
   pruneStale(now);
-  const cleanIp = ip.split(',')[0].trim() || 'unknown';
+  const raw = (ip || '').split(',')[0].trim();
+  // Do not bucket missing/empty IPs into a shared 127.0.0.1 bucket
+  const cleanIp = raw && raw !== '127.0.0.1' && raw !== 'localhost' ? raw : `isolated_${Math.random().toString(36).substring(2, 9)}`;
   let record = ipMap.get(cleanIp);
 
   if (!record) {

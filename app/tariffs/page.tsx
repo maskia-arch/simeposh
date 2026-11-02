@@ -15,8 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t('meta_tariffs_title' as any) || (locale === 'de' ? 'Tarife & eSIM Pakete' : 'Plans & eSIM Packages'),
     description: t('meta_tariffs_desc' as any) || (locale === 'de'
-      ? 'Finde günstige eSIM-Tarife für über 150 Länder weltweit.'
-      : 'Find affordable eSIM plans for over 150 countries worldwide.'),
+      ? 'Finde günstige eSIM-Tarife für über 200 Reiseziele weltweit.'
+      : 'Find affordable eSIM plans for over 200 destinations worldwide.'),
     alternates: buildAlternates(locale, { dePath: 'tariffs', enPath: 'tariffs' }),
     openGraph: {
       locale: getOgLocale(locale),

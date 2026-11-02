@@ -49,7 +49,8 @@ export function BrowserLanguageBanner() {
       const browserLang = (navigator.language || '').toLowerCase().split('-')[0] as LocaleCode;
       const isSupported = SUPPORTED_LOCALES.some((l) => l.code === browserLang);
 
-      if (isSupported && browserLang !== currentLocale) {
+      // Only show banner if language is supported, different from current, and valid name exists
+      if (isSupported && browserLang !== currentLocale && LANG_NAMES[browserLang]) {
         setTargetLang(browserLang);
         setDismissed(false);
       }
@@ -58,11 +59,11 @@ export function BrowserLanguageBanner() {
     }
   }, [currentLocale, pathname]);
 
-  if (dismissed || !targetLang) {
+  if (dismissed || !targetLang || !LANG_NAMES[targetLang]) {
     return null;
   }
 
-  const targetName = LANG_NAMES[targetLang] || targetLang;
+  const targetName = LANG_NAMES[targetLang];
 
   const handleDismiss = () => {
     try {
@@ -102,9 +103,11 @@ export function BrowserLanguageBanner() {
     >
       <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">🌐</span>
+          <svg className="h-4 w-4 shrink-0 text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
           <p className="font-medium text-slate-100">
-            {t('lang_banner_text', { targetLang: targetName }) || `PureSim ist auf ${targetName} verfügbar.`}
+            {t('lang_banner_text', { lang: targetName, targetLang: targetName }) || `PureSim ist auf ${targetName} verfügbar.`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,7 +116,7 @@ export function BrowserLanguageBanner() {
             onClick={handleSwitch}
             className="rounded-lg bg-white text-brand-900 hover:bg-brand-50 active:bg-brand-100 px-3 py-1 font-bold text-xs shadow-xs transition-colors cursor-pointer"
           >
-            {t('lang_banner_switch', { targetLang: targetName }) || `Zu ${targetName} wechseln`}
+            {t('lang_banner_switch', { lang: targetName, targetLang: targetName }) || `Zu ${targetName} wechseln`}
           </button>
           <button
             type="button"
