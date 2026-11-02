@@ -20,60 +20,36 @@ export async function GET(request: NextRequest) {
              data_gb,
              validity_days,
              is_premium,
+             premium_diff_chip,
              COALESCE(raw_data->'operatorList', '[]'::jsonb) AS operator_list,
              COALESCE(raw_data->>'ipType', '') AS ip_type,
              needs_difference_review
       FROM public.tariffs
-      WHERE is_active = true AND hidden_reason IS NULL AND tariff_type NOT LIKE 'unlimited%' AND data_gb > 0
-      ORDER BY true_region, data_gb, validity_days, sale_price_eur;
+      WHERE is_active = true AND hidden_reason IS NULL AND needs_difference_review = true
+      ORDER BY true_region, data_gb, validity_days, package_code;
     `;
 
     const res = await runRawQuery(sql);
-    const groups: Record<string, any[]> = {};
-
-    for (const row of res.rows) {
-      const key = `${row.true_region}__${row.data_gb}__${row.validity_days}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(row);
-    }
-
     const reviewItems: any[] = [];
 
-    for (const items of Object.values(groups)) {
-      const standards = items.filter((x) => !x.is_premium);
-      const premiums = items.filter((x) => x.is_premium);
-      const baseStd = standards[0] || null;
-
-      const stdOps = baseStd?.operator_list
-        ? (Array.isArray(baseStd.operator_list) ? baseStd.operator_list : JSON.parse(baseStd.operator_list))
+    for (const p of res.rows) {
+      const premOps = p.operator_list
+        ? (Array.isArray(p.operator_list) ? p.operator_list : JSON.parse(p.operator_list))
             .map((o: any) => o.operatorName)
             .filter(Boolean)
         : [];
 
-      for (const p of premiums) {
-        if (p.needs_difference_review || (!p.premium_diff_chip && p.is_premium)) {
-          const premOps = p.operator_list
-            ? (Array.isArray(p.operator_list) ? p.operator_list : JSON.parse(p.operator_list))
-                .map((o: any) => o.operatorName)
-                .filter(Boolean)
-            : [];
-
-          reviewItems.push({
-            code: p.package_code,
-            name: p.name,
-            country_code: p.country_code,
-            region: p.true_region,
-            data_gb: p.data_gb,
-            validity_days: p.validity_days,
-            prem_operators: premOps,
-            std_operators: stdOps,
-            prem_ip_type: p.ip_type || 'Standard',
-            std_ip_type: baseStd?.ip_type || 'Standard',
-            standard_code: baseStd?.package_code || 'N/A',
-            note: 'Kein belegbarer Unterschied zu Standard gefunden (gleiche Netze, keine abweichende IP)',
-          });
-        }
-      }
+      reviewItems.push({
+        code: p.package_code,
+        name: p.name,
+        country_code: p.country_code,
+        region: p.true_region,
+        data_gb: p.data_gb,
+        validity_days: p.validity_days,
+        prem_operators: premOps,
+        prem_ip_type: p.ip_type || 'Standard',
+        note: 'Kein belegbarer Unterschied zu Standard gefunden (gleiche Netze, keine abweichende IP)',
+      });
     }
 
     const accept = request.headers.get('accept') || '';
@@ -87,8 +63,6 @@ export async function GET(request: NextRequest) {
           <td style="padding: 10px;">${item.region} (${item.country_code})</td>
           <td style="padding: 10px;">${item.data_gb} GB / ${item.validity_days} Tage</td>
           <td style="padding: 10px;">${item.prem_operators.join(', ') || 'Keine'}</td>
-          <td style="padding: 10px;">${item.std_operators.join(', ') || 'Keine'}</td>
-          <td style="padding: 10px;">${item.standard_code}</td>
           <td style="padding: 10px; color: #b45309; font-weight: 500;">${item.note}</td>
         </tr>
       `,
@@ -120,8 +94,6 @@ export async function GET(request: NextRequest) {
                 <th>Region / Land</th>
                 <th>Volumen / Laufzeit</th>
                 <th>Netze (Premium)</th>
-                <th>Netze (Standard)</th>
-                <th>Vergleichs-Standard</th>
                 <th>Status</th>
               </tr>
             </thead>
