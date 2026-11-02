@@ -43,39 +43,34 @@ export async function GET(request: Request) {
     }
     // Fallback 2: match by crypto session id (exact UUID or prefix like 18a963b3)
     if (!data || data.length === 0) {
-      if (isUuid(ref)) {
-        const { data: sessionData } = await service
-          .from('crypto_sessions')
-          .select('order_ids')
-          .eq('id', ref)
-          .maybeSingle();
-        if (sessionData?.order_ids && sessionData.order_ids.length > 0) {
-          const { data: bySession } = await service
-            .from('orders')
-            .select(selectFields)
-            .in('id', sessionData.order_ids)
-            .order('created_at', { ascending: true });
-          if (bySession && bySession.length > 0) data = bySession;
+      try {
+        const { query } = await import('@/lib/db');
+        const sessionRes = await query(
+          'SELECT order_ids FROM crypto_sessions WHERE id::text LIKE $1 LIMIT 1',
+          [`${ref}%`]
+        );
+        if (sessionRes.rows && sessionRes.rows.length > 0) {
+          const orderIds = sessionRes.rows[0].order_ids;
+          if (Array.isArray(orderIds) && orderIds.length > 0) {
+            const { data: bySession } = await service
+              .from('orders')
+              .select(selectFields)
+              .in('id', orderIds)
+              .order('created_at', { ascending: true });
+            if (bySession && bySession.length > 0) data = bySession;
+          }
         }
-      } else if (/^[0-9a-fA-F-]{6,36}$/.test(ref)) {
-        const { data: sessions } = await (service.from('crypto_sessions') as any)
-          .select('id, order_ids')
-          .limit(100);
-        const matching = (sessions as any[])?.find((s) => s.id?.toLowerCase().startsWith(ref.toLowerCase()));
-        if (matching?.order_ids && matching.order_ids.length > 0) {
-          const { data: bySession } = await service
-            .from('orders')
-            .select(selectFields)
-            .in('id', matching.order_ids)
-            .order('created_at', { ascending: true });
-          if (bySession && bySession.length > 0) data = bySession;
-        }
+      } catch (sessErr) {
+        console.warn('[order/status] crypto session prefix lookup failed:', sessErr);
       }
     }
   }
 
   if (!data || data.length === 0) {
-    return NextResponse.json({ ref, found: false, orders: [] }, { status: 200 });
+    const notFoundRes = NextResponse.json({ ref, found: false, orders: [] }, { status: 200 });
+    notFoundRes.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    notFoundRes.headers.set('Vary', 'Cookie');
+    return notFoundRes;
   }
 
   // Find corresponding crypto session to check payment status and secure token
