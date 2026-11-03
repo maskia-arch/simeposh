@@ -293,9 +293,9 @@ export function Footer() {
   const labels = FOOTER_STRINGS[locale as LocaleCode] || FOOTER_STRINGS.de;
 
   return (
-    <footer className="border-t border-slate-200 bg-slate-50 text-slate-600 pb-16 md:pb-6">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-6 md:gap-x-12">
+    <footer className="border-t border-slate-200/80 bg-white pt-5 pb-16 md:pb-5 text-slate-600">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-5 md:gap-x-12">
           {/* 1. Markenspalte */}
           <div>
             <Link
@@ -317,113 +317,116 @@ export function Footer() {
             </p>
           </div>
 
-          {/* 2. Gruppe „Entdecken“ (5 Links) */}
-          <nav aria-label={labels.discoverTitle} className="min-w-0">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-              {labels.discoverTitle}
-            </h3>
-            <ul className="space-y-0.5 text-xs text-slate-600">
-              <li>
-                <Link
-                  href={`${prefix}/tariffs`}
-                  prefetch={false}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.tariffs}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`${prefix}/unlimited`}
-                  prefetch={false}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.unlimited}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`${prefix}/topup`}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.topup}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`${prefix}/blog`}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.blog}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`${prefix}/ai`}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.ai}
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          {/* 2. & 3. Spalten: Entdecken und Hilfe auf Mobil nebeneinander (grid-cols-2), auf Desktop normal md:contents */}
+          <div className="grid grid-cols-2 gap-4 md:contents">
+            {/* 2. Gruppe „Entdecken“ (5 Links) */}
+            <nav aria-label={labels.discoverTitle} className="min-w-0">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                {labels.discoverTitle}
+              </h3>
+              <ul className="space-y-0.5 text-xs text-slate-600">
+                <li>
+                  <Link
+                    href={`${prefix}/tariffs`}
+                    prefetch={false}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.tariffs}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/unlimited`}
+                    prefetch={false}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.unlimited}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/topup`}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.topup}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/blog`}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.blog}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`${prefix}/ai`}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.ai}
+                  </Link>
+                </li>
+              </ul>
+            </nav>
 
-          {/* 3. Gruppe „Hilfe“ (3 Einträge) */}
-          <nav aria-label={labels.helpTitle} className="min-w-0">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-              {labels.helpTitle}
-            </h3>
-            <ul className="space-y-0.5 text-xs text-slate-600">
-              <li>
-                <Link
-                  href={`${prefix}/faq`}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.faq}
-                </Link>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => openTicketModal()}
-                  className="flex items-center text-left min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.ticket}
-                </button>
-              </li>
-              <li>
-                <Link
-                  href={telegramHref}
-                  className="flex items-center min-h-[44px] md:min-h-[24px] md:py-0.5 hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {labels.telegram}
-                </Link>
-              </li>
-            </ul>
-          </nav>
+            {/* 3. Gruppe „Hilfe“ (3 Einträge) */}
+            <nav aria-label={labels.helpTitle} className="min-w-0">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                {labels.helpTitle}
+              </h3>
+              <ul className="space-y-0.5 text-xs text-slate-600">
+                <li>
+                  <Link
+                    href={`${prefix}/faq`}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.faq}
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => openTicketModal()}
+                    className="inline-flex items-center text-left min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.ticket}
+                  </button>
+                </li>
+                <li>
+                  <Link
+                    href={telegramHref}
+                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                  >
+                    {labels.telegram}
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
 
         {/* 4. Untere Leiste: © links, AGB / Datenschutz / Erstattungsrichtlinie rechts mit pr-20 */}
-        <div className="mt-6 pt-4 border-t border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500 md:pr-20">
+        <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-slate-500 md:pr-20">
           <p className="shrink-0">© {year} PureSim.net</p>
-          <nav aria-label={labels.legalTitle} className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <nav aria-label={labels.legalTitle} className="flex flex-wrap items-center justify-center gap-x-4">
             <Link
               href={`${prefix}/agb`}
-              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="min-h-[44px] md:min-h-[22px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.terms}
             </Link>
             <span aria-hidden="true" className="text-slate-300 select-none hidden sm:inline">·</span>
             <Link
               href={`${prefix}/datenschutz`}
-              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="min-h-[44px] md:min-h-[22px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.privacy}
             </Link>
             <span aria-hidden="true" className="text-slate-300 select-none hidden sm:inline">·</span>
             <Link
               href={`${prefix}/refund-policy`}
-              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="min-h-[44px] md:min-h-[22px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.refund}
             </Link>
