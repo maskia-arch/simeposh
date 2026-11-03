@@ -225,7 +225,31 @@ export async function GET(
     });
   }
 
-  // Rewrite to the React client page /setup-view/[token]
-  const targetUrl = new URL(`/setup-view/${encodeURIComponent(token)}`, request.url);
-  return NextResponse.rewrite(targetUrl);
+  // Forward directly to local Next.js server instance on port 4444
+  const port = process.env.PORT || '4444';
+  const targetUrl = `http://127.0.0.1:${port}/setup-view/${encodeURIComponent(token)}`;
+  
+  const forwardHeaders = new Headers(request.headers);
+  forwardHeaders.set('host', 'esim.puresim.net');
+
+  try {
+    const res = await fetch(targetUrl, {
+      headers: forwardHeaders,
+      cache: 'no-store',
+    });
+    return new Response(res.body, {
+      status: res.status,
+      headers: res.headers,
+    });
+  } catch (err) {
+    console.error('[Setup Token Proxy Error]', err);
+    return new Response(renderExpiredHtml(locale), {
+      status: 404,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+        'X-Robots-Tag': 'noindex, nofollow',
+      },
+    });
+  }
 }
