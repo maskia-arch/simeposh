@@ -160,7 +160,8 @@ export async function getCountryTariffs(countryCode: string): Promise<PublicTari
       const { rows } = await query(
         `SELECT id, package_code, slug, name, description, country_code, country_name, region,
                 flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
-                speed_kbps, label, is_top_up_eligible, is_premium, breakout_ip, active_type, support_top_up_type, discount_rule_code, raw_data
+                speed_kbps, label, is_top_up_eligible, is_premium, breakout_ip, active_type,
+                support_top_up_type, discount_rule_code, premium_diff_chip, needs_difference_review, raw_data
          FROM tariffs
          WHERE is_active = true AND country_code = $1 AND hidden_reason IS NULL
          ORDER BY sale_price_eur ASC`,

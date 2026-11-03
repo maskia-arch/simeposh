@@ -716,33 +716,6 @@ export function getTariffSpecialFeatures(
           vars: { country: countryName },
         });
       }
-    } else if (diffChip === undefined) {
-      // Fallback for runtime objects before DB column hydration
-      const ops = getTariffOperators(tariff, 10);
-      const isLocal = isLocalIpTariff(tariff as any);
-      const isNonHk = isNonHkIpTariff(tariff as any);
-
-      if (isNonHk) {
-        features.push({
-          id: 'travel_premium',
-          badgeKey: 'feat_prem_adv_non_hk',
-          titleKey: 'feat_prem_adv_non_hk',
-          descKey: 'feat_prem_adv_non_hk_desc',
-          icon: '🛡️',
-          cls: 'bg-indigo-50 text-indigo-950 border-indigo-200 hover:bg-indigo-100 font-bold',
-        });
-      } else if (isLocal) {
-        features.push({
-          id: 'travel_premium',
-          badgeKey: 'feat_prem_adv_local_ip',
-          titleKey: 'feat_prem_adv_local_ip',
-          descKey: 'feat_prem_adv_local_ip_desc',
-          icon: '📍',
-          cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
-          vars: { country: countryName },
-        });
-      }
-      // NO generic multi-net or multi-IP fallback without proven difference!
     }
   }
 

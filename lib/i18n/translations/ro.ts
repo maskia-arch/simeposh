@@ -432,7 +432,7 @@ const ro = {
   "order_show_all": "Arată tot",
   "order_smdp": "Adresă SM-DP+",
   "order_status": "Status",
-  "order_support_btn": "Asistență clienți 24/7",
+  "order_support_btn": "Tichet pentru această comandă",
   "order_support_q": "Aveți nevoie de ajutor pentru activare?",
   "order_title": "Detalii comandă",
   "order_topup_btn": "Reîncarcă eSIM",

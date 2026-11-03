@@ -432,7 +432,7 @@ const it = {
   "order_show_all": "Mostra tutto",
   "order_smdp": "Indirizzo SM-DP+",
   "order_status": "Stato",
-  "order_support_btn": "Assistenza clienti 24/7",
+  "order_support_btn": "Ticket per questo ordine",
   "order_support_q": "Hai bisogno di aiuto con l’attivazione?",
   "order_title": "Dettagli ordine",
   "order_topup_btn": "Ricarica eSIM",

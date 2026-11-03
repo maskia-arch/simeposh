@@ -13,7 +13,7 @@ import { formatGb } from '@/lib/utils';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { formatCurrencyEuro } from '@/lib/currency';
 
-const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, is_premium, is_premium_override, breakout_ip, raw_data';
+const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, discount_rule_code, is_premium, is_premium_override, breakout_ip, premium_diff_chip, needs_difference_review, raw_data';
 
 const tariffDetailCache = new Map<string, { data: PublicTariff | null; timestamp: number }>();
 const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();

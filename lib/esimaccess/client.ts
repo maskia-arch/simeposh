@@ -155,18 +155,18 @@ export const REGIONS: RegionInfo[] = [
     minMatch: 5,
   },
   {
-    code: 'AS', name: 'Asia',
+    code: 'ASIA', name: 'Asia',
     members: ['CN','JP','KR','TH','VN','SG','MY','ID','PH','IN','BD','LK','MM','KH',
                'LA','MN','KZ','UZ','TJ','KG','TM','NP','BT','MV','PK','AF'],
     minMatch: 4,
   },
   {
-    code: 'ME', name: 'Middle East',
+    code: 'MIDDLE_EAST', name: 'Middle East',
     members: ['AE','SA','QA','KW','BH','OM','JO','LB','IL','IQ','IR','YE','SY'],
     minMatch: 3,
   },
   {
-    code: 'NA', name: 'North America',
+    code: 'NORTH_AMERICA', name: 'North America',
     members: ['US','CA','MX'],
     minMatch: 2,
   },
@@ -182,7 +182,7 @@ export const REGIONS: RegionInfo[] = [
     minMatch: 2,
   },
   {
-    code: 'AF', name: 'Africa',
+    code: 'AFRICA', name: 'Africa',
     members: ['ZA','NG','KE','GH','TZ','ET','EG','MA','TN','DZ','SN','CI','CM',
                'UG','ZW','MZ','ZM','BW','RW','MG','AO','SD','LY'],
     minMatch: 4,

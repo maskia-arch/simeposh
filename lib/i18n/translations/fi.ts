@@ -432,7 +432,7 @@ const fi = {
   "order_show_all": "Näytä kaikki",
   "order_smdp": "SM-DP+-osoite",
   "order_status": "Tila",
-  "order_support_btn": "24/7 Asiakastuki",
+  "order_support_btn": "Tukipyyntö tälle tilaukselle",
   "order_support_q": "Tarvitsetko apua aktivoinnissa?",
   "order_title": "Tilauksen tiedot",
   "order_topup_btn": "Lisää dataa",

@@ -81,6 +81,30 @@ export async function middleware(request: NextRequest) {
     /^\/[a-zA-Z0-9_-]+\/[0-9]+$/.test(normalizedPath) ||
     pathname.startsWith('/api/');
 
+  // ── Admin Route Protection ──
+  if (pathname.startsWith('/api/admin') || pathname.startsWith('/admin') || normalizedPath.startsWith('/admin')) {
+    const token = request.cookies.get('session_token')?.value;
+    const user = token ? await verifyJwt(token) : null;
+    if (!user) {
+      return new NextResponse(null, {
+        status: 401,
+        headers: {
+          'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+    if (user.role !== 'admin') {
+      return new NextResponse(null, {
+        status: 403,
+        headers: {
+          'Cache-Control': 'private, no-cache, no-store, max-age=0, must-revalidate',
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+  }
+
   // Rate limiting for order status access via query param
   if (normalizedPath === '/order' && request.nextUrl.searchParams.has('ref')) {
     const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
@@ -143,8 +167,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
   }
 
-  // ── 301 Redirect canonical country aliases for /esim/{alias} -> /esim/{slug} ──
+  // ── American Samoa 404 & /esim/as 301 Redirect to Asia ──
   const cleanNorm = normalizedPath.length > 1 ? normalizedPath.replace(/\/+$/, '') : normalizedPath;
+  if (cleanNorm === '/esim/american-samoa' || cleanNorm.startsWith('/esim/american-samoa/')) {
+    const res = new NextResponse(null, { status: 404 });
+    res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return res;
+  }
+  if (cleanNorm === '/esim/as' || cleanNorm.startsWith('/esim/as/')) {
+    const target = langPrefix ? `${langPrefix}/esim/asia` : '/esim/asia';
+    const res = NextResponse.redirect(new URL(target + request.nextUrl.search, request.url), 301);
+    res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
+    return res;
+  }
+
+  // ── 301 Redirect canonical country aliases for /esim/{alias} -> /esim/{slug} ──
   if (cleanNorm.startsWith('/esim/')) {
     const slug = cleanNorm.replace(/^\/esim\//, '').split('/')[0].trim();
     if (slug) {
@@ -223,8 +261,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Rewrite bare /unlimited or /configurator without country -> /unlimited/germany (200 OK) ──
-  if (normalizedPath === '/unlimited' || normalizedPath === '/configurator') {
-    return NextResponse.rewrite(new URL(`${langPrefix}/unlimited/germany`, request.url));
+  if (normalizedPath === '/configurator') {
+    return NextResponse.redirect(new URL(`${langPrefix}/unlimited`, request.url), 301);
   }
 
   // ── 301 Redirect /tgcontact, /contact, /kontakt, /support -> /telegram ──
@@ -585,7 +623,7 @@ export async function middleware(request: NextRequest) {
   const isSetupRoute = normalizedPath === '/s' || normalizedPath.startsWith('/s/');
 
   // ── Security Headers & Response Hygiene ──
-  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
 
@@ -621,36 +659,29 @@ export async function middleware(request: NextRequest) {
   const isNoStoreRoute = isCartOrCheckout || isOrderRoute || isSetupRoute || is404Route;
 
   if (isRscRequest) {
+    // RSC responses must NEVER be cached by edge CDN or proxies
     response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
     response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
     response.headers.set('CDN-Cache-Control', 'no-store');
-    response.headers.set('Vary', 'RSC, Next-Router-Prefetch, Next-Router-State-Tree, Accept-Encoding');
-  } else if (isNoStoreRoute) {
+    response.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding');
+  } else if (isNoStoreRoute || isHomepage || normalizedPath === '' || isProtected) {
+    // HTML with Session/Build-Bezug: /, /{lang}, /cart, /order, /dashboard
     response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
-    response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
-    response.headers.set('CDN-Cache-Control', 'no-store');
-  } else if (isHomepage && !user && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
-    // Homepage: Never cache HTML document at Cloudflare Edge to prevent RSC header collisions across deployments
-    response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
     response.headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
     response.headers.set('CDN-Cache-Control', 'no-store');
     response.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding');
   } else if (!user && isPriceBearingRoute && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
-    // 5 minutes in CDN, browser always validates with server (0 stale-while-revalidate)
-    response.headers.set(
-      'Cache-Control',
-      'public, max-age=0, s-maxage=300'
-    );
+    // Cacheable storefront pages: /tariffs, /esim/*, /unlimited/*
+    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300');
     response.headers.set('Cloudflare-CDN-Cache-Control', 'max-age=300');
+    response.headers.set('CDN-Cache-Control', 'max-age=300');
     response.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding');
-  } else if (!user && (normalizedPath === '/ai' || normalizedPath === '/telegram') && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
-    response.headers.set(
-      'Cache-Control',
-      'public, max-age=600, s-maxage=3600'
-    );
+  } else if (!user && (normalizedPath.startsWith('/blog') || normalizedPath === '/reviews' || normalizedPath === '/agb' || normalizedPath === '/datenschutz' || normalizedPath === '/refund-policy' || normalizedPath === '/telegram' || normalizedPath === '/faq') && !refCode && request.method === 'GET' && !isApiRequest && !pathname.includes('.')) {
+    // Static informational / legal pages: 1 hour edge cache
+    response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600');
     response.headers.set('Cloudflare-CDN-Cache-Control', 'max-age=3600');
     response.headers.set('CDN-Cache-Control', 'max-age=3600');
-    response.headers.set('Vary', 'Accept-Encoding');
+    response.headers.set('Vary', 'RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding');
   }
 
   // Strip internal next.js middleware cookie header from public responses

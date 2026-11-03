@@ -177,7 +177,7 @@ export function HomePageClient({
         </div>
 
         <div className="w-full max-w-full overflow-hidden">
-          <div className="grid grid-flow-col grid-rows-2 gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-none snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-4">
           {popularDestinations.map((dest) => {
             const countryLabel = displayCountryName(dest, locale);
             const slug = countryCodeToSlug(dest.country_code, dest.country_name);
@@ -186,7 +186,7 @@ export function HomePageClient({
                 key={dest.country_code}
                 href={`${prefix}/esim/${slug}`}
                 prefetch={false}
-                className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-1 shrink-0 w-[280px] snap-start sm:w-auto sm:shrink"
+                className="group relative flex items-center gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white p-2.5 sm:p-4 shadow-xs transition-all duration-300 hover:border-brand-500 hover:shadow-md hover:-translate-y-0.5"
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-brand-50 transition-colors duration-300 overflow-hidden border border-slate-100">
                   <CountryFlag
@@ -197,10 +197,10 @@ export function HomePageClient({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-800 group-hover:text-brand-700 transition-colors truncate text-sm sm:text-base">
+                  <h3 className="font-bold text-slate-800 group-hover:text-brand-700 transition-colors truncate text-xs sm:text-base">
                     {countryLabel}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
+                  <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 whitespace-nowrap">
                     {t('dest_from_price_prefix')}{' '}
                     <Price
                       eur={dest.min_price_eur}
@@ -208,7 +208,7 @@ export function HomePageClient({
                     />
                   </p>
                 </div>
-                <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 group-hover:bg-brand-600 text-slate-400 group-hover:text-white transition-all duration-300">
+                <div className="hidden sm:flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 group-hover:bg-brand-600 text-slate-400 group-hover:text-white transition-all duration-300">
                   <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>

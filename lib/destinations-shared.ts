@@ -62,7 +62,7 @@ export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
   NORTH_AMERICA: 'north-america',
   AF:            'afghanistan',
   ME:            'montenegro',
-  AS:            'american-samoa',
+  AS:            'asia',
   ASIA:          'asia',
 };
 
@@ -146,8 +146,7 @@ export const CUSTOM_ALIASES: Record<string, string> = {
   eu: 'EU',
   asien: 'ASIA',
   asia: 'ASIA',
-  'american-samoa': 'AS',
-  'amerikanisch-samoa': 'AS',
+  as: 'ASIA',
   ozeanien: 'OC',
   oceania: 'OC',
   weltweit: 'GLOB',
@@ -170,10 +169,7 @@ export function countryCodeToSlug(code: string, fallbackName?: string): string {
     return 'africa';
   }
   if (upper === 'AS') {
-    if (lowerName.includes('asia') || lowerName.includes('asien')) {
-      return 'asia';
-    }
-    return 'american-samoa';
+    return 'asia';
   }
   if (REGION_SLUGS[upper]) {
     return REGION_SLUGS[upper];

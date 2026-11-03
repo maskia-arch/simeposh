@@ -76,7 +76,7 @@ export function CountryFlag({ countryCode, countryName, size = 36, className = '
       return (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          src={`https://flagcdn.com/w${cdnWidth}/${meta.cdnCode}.webp`}
+          src={`/flags/${meta.cdnCode}.svg`}
           alt={countryName ?? up}
           width={size}
           height={Math.round(size * 0.75)}
@@ -96,12 +96,12 @@ export function CountryFlag({ countryCode, countryName, size = 36, className = '
     );
   }
 
-  // Standard country flag via CDN code (parsed from ISO or emoji)
+  // Standard country flag via local SVG (parsed from ISO or emoji)
   if (cdnCode) {
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
       <img
-        src={`https://flagcdn.com/w${cdnWidth}/${cdnCode}.webp`}
+        src={`/flags/${cdnCode}.svg`}
         alt={countryName ?? up}
         width={size}
         height={Math.round(size * 0.75)}

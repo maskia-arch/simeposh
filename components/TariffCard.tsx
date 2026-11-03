@@ -22,9 +22,10 @@ const NET_COLOR: Record<string, string> = {
 };
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; labelKey: 'badge_travel'|'badge_eco'|'badge_pro'; cls: string; descKey: 'type_travel_desc'|'type_eco_desc'|'type_pro_desc' }> = {
-  travel:        { icon: <TravelGlobeIcon size={13} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  unlimited_eco: { icon: <EcoIcon size={12} />, labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  unlimited_pro: { icon: <BoltIcon size={12} className="currentColor" />, labelKey: 'badge_pro',    descKey: 'type_pro_desc',    cls: 'bg-violet-50 text-violet-700 border-violet-200' },
+  travel:          { icon: <TravelGlobeIcon size={13} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  travel_standard: { icon: <TravelGlobeIcon size={13} className="currentColor" />, labelKey: 'badge_travel', descKey: 'type_travel_desc', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  unlimited_eco:   { icon: <EcoIcon size={12} />, labelKey: 'badge_eco',    descKey: 'type_eco_desc',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  unlimited_pro:   { icon: <BoltIcon size={12} className="currentColor" />, labelKey: 'badge_pro',    descKey: 'type_pro_desc',    cls: 'bg-violet-50 text-violet-700 border-violet-200' },
 };
 
 interface TariffCardProps {
@@ -45,11 +46,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
 
   const isPremium   = isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
-  const isTravel    = (tariff.tariff_type ?? 'travel') === 'travel';
+  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  const isTravel    = !isUnlimited;
   const badge       = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
   const ops         = getTariffOperators(tariff, 4);
   const network     = bestNetworkType(ops);
-  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
   const features     = getTariffSpecialFeatures(tariff, locale);
@@ -67,8 +68,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
   const isDualNet = ops.length > 1;
   const isHk = !isNonHk && !isPremium && (!breakoutIp || breakoutIp === 'HK');
 
-  // Limit badges shown directly on card face to at most 2
-  const visibleFeatures = features.slice(0, 2);
+  // Limit badges shown directly on card face: exactly 1 for Travel Premium, at most 2 for others
+  const visibleFeatures = isPremium && isTravel ? features.slice(0, 1) : features.slice(0, 2);
   const hiddenCount = features.length - visibleFeatures.length;
 
   return (
@@ -79,7 +80,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         isRecommended
           ? 'border-2 border-brand-500 shadow-md ring-2 ring-brand-100/80 hover:border-brand-600'
           : isPremium && isTravel
-            ? 'border border-amber-300/80 hover:border-amber-400'
+            ? 'border-2 border-orange-400 hover:border-orange-500 shadow-sm'
             : 'border border-slate-200 hover:border-brand-300'
       }`}
     >

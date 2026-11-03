@@ -45,7 +45,7 @@ export function CheckoutEmailField({
                     window.location.reload();
                   } catch {}
                 }}
-                className="font-bold text-brand-600 hover:text-brand-800 underline cursor-pointer inline-flex items-center min-h-[44px] py-1 px-1 -my-1"
+                className="font-bold text-brand-600 hover:text-brand-800 underline cursor-pointer inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-2 py-1"
               >
                 {t('checkout_sign_out')}
               </button>

@@ -432,7 +432,7 @@ const cs = {
   "order_show_all": "Zobrazit vše",
   "order_smdp": "Adresa SM-DP+",
   "order_status": "Stav",
-  "order_support_btn": "Zákaznická podpora 24/7",
+  "order_support_btn": "Požadavek k této objednávce",
   "order_support_q": "Potřebujete pomoci s aktivací?",
   "order_title": "Podrobnosti objednávky",
   "order_topup_btn": "Dobít eSIM",

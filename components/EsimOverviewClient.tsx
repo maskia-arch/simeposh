@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
@@ -216,7 +218,7 @@ export function ClientPage({
       <div className="max-w-xl mx-auto flex items-center justify-between mb-10 pb-4 border-b border-slate-800/80 relative z-50">
         <Link href="https://puresim.net" className="flex items-center gap-2.5 font-bold text-lg shrink-0 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="PureSim Logo" className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
+          <Image src="/logo.webp" alt="PureSim Logo" width={40} height={40} className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
           <span className="text-2xl font-bold tracking-tight text-[#1d4ed8]">
             PureSim
           </span>
@@ -570,7 +572,7 @@ export function ClientPage({
       <div className="max-w-xl mx-auto text-center mt-12 pt-6 border-t border-slate-900 text-xs text-slate-500">
         <Link href="https://puresim.net" className="inline-flex items-center gap-2 font-bold justify-center mb-2 group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="PureSim Logo" className="h-6 w-6 object-contain" />
+          <Image src="/logo.webp" alt="PureSim Logo" width={24} height={24} className="h-6 w-6 object-contain" />
           <span className="text-lg font-bold tracking-tight text-[#1d4ed8]">
             PureSim
           </span>

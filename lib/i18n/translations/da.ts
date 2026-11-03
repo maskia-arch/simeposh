@@ -432,7 +432,7 @@ const da = {
   "order_show_all": "Vis alle",
   "order_smdp": "SM-DP+ adresse",
   "order_status": "Status",
-  "order_support_btn": "24/7 Kundesupport",
+  "order_support_btn": "Billet til denne ordre",
   "order_support_q": "Brug for hjælp til aktivering?",
   "order_title": "Ordredetaljer",
   "order_topup_btn": "Optank eSIM",

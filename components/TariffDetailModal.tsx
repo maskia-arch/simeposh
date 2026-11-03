@@ -26,6 +26,7 @@ const NETWORK_COLORS: Record<string, string> = {
 
 const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey: TranslationKeys; descKey: TranslationKeys }> = {
   travel:        { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200',            labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
+  travel_standard: { icon: <TravelGlobeIcon size={14} className="currentColor" />, color: 'bg-sky-50 text-sky-700 border-sky-200', labelKey: 'badge_travel', descKey: 'tp_travel_desc' },
   unlimited_eco: { icon: <EcoIcon size={14} />, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', labelKey: 'cfg_eco',      descKey: 'tp_eco_desc' },
   unlimited_pro: { icon: <BoltIcon size={14} className="currentColor" />, color: 'bg-violet-50 text-violet-700 border-violet-200',    labelKey: 'cfg_pro',      descKey: 'tp_pro_desc' },
 };
@@ -95,8 +96,8 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const isTR         = isTurkeyTariff(tariff);
   const ops          = getTariffOperators(tariff, 8);
   const typeInfo     = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
-  const isTravel     = (tariff.tariff_type ?? 'travel') === 'travel';
   const isUnlimited  = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  const isTravel     = !isUnlimited;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
   const features     = getTariffSpecialFeatures(tariff, locale);

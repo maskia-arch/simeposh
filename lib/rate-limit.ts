@@ -29,8 +29,8 @@ export function checkOrderRateLimit(ip: string): { allowed: boolean; retryAfter?
   const now = Date.now();
   pruneStale(now);
   const raw = (ip || '').split(',')[0].trim();
-  // Do not bucket missing/empty IPs into a shared 127.0.0.1 bucket
-  const cleanIp = raw && raw !== '127.0.0.1' && raw !== 'localhost' ? raw : `isolated_${Math.random().toString(36).substring(2, 9)}`;
+  // Missing or localhost IP falls into a shared bucket to prevent bypass
+  const cleanIp = raw && raw !== '127.0.0.1' && raw !== 'localhost' ? raw : '__missing_ip_shared_bucket__';
   let record = ipMap.get(cleanIp);
 
   if (!record) {

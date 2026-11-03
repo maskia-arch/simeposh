@@ -184,15 +184,14 @@ export function CartPageClient({
     return (
       <div className="mx-auto max-w-4xl px-4 py-12">
         {renderCancelledBanner()}
-        <div className="space-y-4 animate-pulse">
-          <div className="h-9 w-48 rounded-xl bg-slate-100" />
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="space-y-3 lg:col-span-2">
-              <div className="h-28 rounded-2xl bg-slate-100" />
-              <div className="h-28 rounded-2xl bg-slate-100" />
-            </div>
-            <div className="h-64 rounded-2xl bg-slate-100 lg:col-span-1" />
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <div className="flex justify-center mb-4">
+            <CartIcon size={64} className="text-slate-200 animate-pulse" />
           </div>
+          <h1 className="mb-2 text-2xl font-bold text-slate-900">
+            {t('cart_title')}
+          </h1>
+          <div className="h-4 w-40 mx-auto rounded-md bg-slate-100 animate-pulse mt-3" />
         </div>
       </div>
     );
@@ -228,7 +227,7 @@ export function CartPageClient({
         {/* Items */}
         <div className="space-y-3 lg:col-span-2">
           {items.map((i) => {
-            const isPremium = isPremiumTariff({ name: i.name, package_code: i.packageCode });
+            const isPremium = Boolean(i.isPremium || i.tariffType === 'travel_premium');
             const badge = isPremium && (!i.tariffType || i.tariffType === 'travel')
               ? { icon: <TravelPremiumGlobeIcon size={14} className="text-amber-800" />, label: 'Travel Premium' }
               : i.tariffType ? TYPE_BADGE[i.tariffType] : null;
@@ -250,10 +249,15 @@ export function CartPageClient({
                       <p className="font-bold text-slate-800 flex items-center gap-2">
                         <span>{label}</span>
                         {isPremium && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900">
-                            <TravelPremiumGlobeIcon size={12} className="text-amber-800" /> Travel Premium
-                          </span>
-                        )}
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+      <TravelPremiumGlobeIcon size={12} className="text-amber-800" /> Travel Premium
+    </span>
+  )}
+  {isPremium && i.premiumDiffChip && (
+    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-950">
+      {i.premiumDiffChip}
+    </span>
+  )}
                       </p>
                       <p className="text-xs text-slate-500">
                         {badge && <span className="inline-flex items-center gap-1">{badge.icon} {badge.label} · </span>}

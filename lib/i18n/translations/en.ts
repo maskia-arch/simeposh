@@ -432,7 +432,7 @@ const en = {
   "order_show_all": "Show all ({count})",
   "order_smdp": "SM-DP+ Address",
   "order_status": "Status",
-  "order_support_btn": "🎫 Open Support Ticket for this order",
+  "order_support_btn": "Ticket for this order",
   "order_support_q": "Questions or issues with this order?",
   "order_title": "Order Details",
   "order_topup_btn": "Top-Up eSIM",

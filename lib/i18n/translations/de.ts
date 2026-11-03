@@ -454,7 +454,7 @@ const de = {
   "order_show_all": "Alle anzeigen ({count})",
   "order_smdp": "SM-DP+ Adresse",
   "order_status": "Status",
-  "order_support_btn": "🎫 Support-Ticket zu dieser Bestellung öffnen",
+  "order_support_btn": "Ticket zu dieser Bestellung",
   "order_support_q": "Fragen oder Probleme zu dieser Bestellung?",
   "order_title": "Bestelldetails",
   "order_topup_btn": "eSIM aufladen",

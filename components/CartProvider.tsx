@@ -32,6 +32,8 @@ export interface CartItem {
   /** top-up ICCID if this is a refill item */
   topUpIccid?:  string | null;
   quantity:     number;
+  isPremium?:    boolean;
+  premiumDiffChip?: string | null;
 }
 
 interface CartContextValue {
@@ -161,6 +163,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         periodDays,
         topUpIccid,
         quantity:      Math.min(99, Math.max(1, quantity)),
+        isPremium:     Boolean((tariff as any).is_premium),
+        premiumDiffChip: (tariff as any).premium_diff_chip ? String((tariff as any).premium_diff_chip) : null,
       };
       return [...prev, item];
     });

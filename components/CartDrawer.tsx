@@ -254,7 +254,7 @@ export function CartDrawer() {
 
               <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
                 {items.map((i) => {
-                  const isPremium = isPremiumTariff({ name: i.name, package_code: i.packageCode });
+                  const isPremium = Boolean(i.isPremium || i.tariffType === 'travel_premium');
                   const badge = isPremium && (!i.tariffType || i.tariffType === 'travel')
                     ? { icon: <TravelPremiumGlobeIcon size={12} className="inline-block align-middle text-amber-700" />, label: 'Travel Premium' }
                     : i.tariffType ? TYPE_BADGE[i.tariffType] : null;
@@ -277,11 +277,11 @@ export function CartDrawer() {
                                 <TravelPremiumGlobeIcon size={10} className="text-amber-800" /> Premium
                               </span>
                             )}
-                            {isNonHk && (
-                              <span className="shrink-0 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full">
-                                🛡️ {t('feat_prem_adv_non_hk')}
-                              </span>
-                            )}
+                            {isPremium && i.premiumDiffChip && (
+    <span className="shrink-0 text-[10px] font-bold text-emerald-950 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded-full">
+      {i.premiumDiffChip}
+    </span>
+  )}
                           </p>
                           <button
                             onClick={() => removeItem(i.key)}

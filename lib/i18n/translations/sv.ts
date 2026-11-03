@@ -432,7 +432,7 @@ const sv = {
   "order_show_all": "Visa alla",
   "order_smdp": "SM-DP+-adress",
   "order_status": "Status",
-  "order_support_btn": "Kundsupport 24/7",
+  "order_support_btn": "Ärende för denna beställning",
   "order_support_q": "Behöver du hjälp med aktiveringen?",
   "order_title": "Beställningsinformation",
   "order_topup_btn": "Fyll på eSIM",

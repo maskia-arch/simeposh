@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
@@ -678,7 +680,7 @@ export function CryptoCheckout({
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 animate-pulse">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="PureSim Logo" className="h-7 w-7 object-contain" />
+              <Image src="/logo.webp" alt="PureSim Logo" width={28} height={28} className="h-7 w-7 object-contain" />
               <span className="text-xl font-bold tracking-tight text-[#1d4ed8]">
                 PureSim
               </span>

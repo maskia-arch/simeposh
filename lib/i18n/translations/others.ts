@@ -1542,7 +1542,7 @@ export const nl = {
   "cfg_disc_label": "−{pct}% korting",
   "op_processing_title": "Bestelling wordt verwerkt...",
   "op_processing_sub": "Je betaling wordt geverifieerd. Deze pagina wordt automatisch bijgewerkt.",
-  "op_ready_one": "Je eSIM is gereed !",
+  "op_ready_one": "Je eSIM is gereed!",
   "op_ready_many": "{count} eSIMs gereed !",
   "op_provisioning_title": "eSIMs worden voorbereid...",
   "op_ready_sub": "Scan de QR-code of open de installatielink. De details zijn ook per e-mail verzonden.",

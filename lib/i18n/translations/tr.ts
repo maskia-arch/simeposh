@@ -432,7 +432,7 @@ const tr = {
   "order_show_all": "Hepsini Göster",
   "order_smdp": "SM-DP+ Adresi",
   "order_status": "Durum",
-  "order_support_btn": "7/24 Müşteri Desteği",
+  "order_support_btn": "Bu sipariş için bilet",
   "order_support_q": "Etkinleştirme konusunda yardıma mı ihtiyacınız var?",
   "order_title": "Sipariş Detayları",
   "order_topup_btn": "eSIM Yükle",

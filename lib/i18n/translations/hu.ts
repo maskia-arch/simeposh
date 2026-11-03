@@ -432,7 +432,7 @@ const hu = {
   "order_show_all": "Összes mutatása",
   "order_smdp": "SM-DP+ cím",
   "order_status": "Állapot",
-  "order_support_btn": "0-24 Ügyfélszolgálat",
+  "order_support_btn": "Hibajegy ehhez a rendeléshez",
   "order_support_q": "Segítségre van szüksége az aktiváláshoz?",
   "order_title": "Rendelés részletei",
   "order_topup_btn": "eSIM feltöltése",

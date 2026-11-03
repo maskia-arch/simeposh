@@ -41,6 +41,7 @@ export default async function sitemap({
   const routes = [
     '',
     '/esim',
+    '/unlimited',
     '/tariffs',
     '/faq',
     '/topup',

@@ -71,7 +71,7 @@ export function ChatWidgetLoader() {
       id="vs25-bbl"
       aria-label={t('chat_open_ai_assistant') || 'KI-Assistent öffnen'}
       onClick={handleClickFakeBubble}
-      className="fixed bottom-[calc(84px+env(safe-area-inset-bottom,0px))] md:bottom-5 right-5 z-40 flex h-14 w-14 sm:h-16 sm:w-16 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white shadow-xl hover:bg-brand-700 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-brand-400/40"
+      className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] left-4 md:left-auto md:right-5 md:bottom-5 z-40 flex h-12 w-12 sm:h-14 sm:w-14 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white shadow-xl hover:bg-brand-700 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-brand-400/40"
     >
       <span className="sr-only">{t('chat_open_ai_assistant') || 'KI-Assistent öffnen'}</span>
       <svg
