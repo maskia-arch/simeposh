@@ -16,7 +16,7 @@ interface PageProps {
   params: Promise<{ token: string }> | { token: string };
 }
 
-export default async function SetupTokenPage({ params }: PageProps) {
+export default async function SetupViewPage({ params }: PageProps) {
   const resolvedParams = await Promise.resolve(params);
   const token = resolvedParams?.token?.trim();
   if (!token) {
@@ -60,26 +60,28 @@ export default async function SetupTokenPage({ params }: PageProps) {
           .filter((s: any) => s.setup_token)
           .map((s: any) => ({
             setupToken: s.setup_token,
-            countryName: s.tariffs?.country_name ?? 'eSIM',
-            flag: s.tariffs?.flag_emoji ?? '🌐',
+            countryName: s.tariffs?.country_name || 'eSIM',
+            flag: s.tariffs?.flag_emoji || null,
           }));
       }
-    } catch (err) {
-      console.error('[SetupTokenPage] Sibling fetch error:', err);
+    } catch {
+      // Non-critical: sibling lookup failed
     }
   }
 
-  // Generate QR Code as base64 data URL
-  const activationString = `LPA:1$${order.smdp_address || ''}$${order.activation_code || ''}`;
+  // Generate QR code server-side
   let qrCodeDataUrl = '';
-  try {
-    qrCodeDataUrl = await QRCode.toDataURL(activationString, {
-      width: 512,
-      margin: 2,
-      errorCorrectionLevel: 'M',
-    });
-  } catch (err) {
-    console.error('[SetupTokenPage] QR Code generation failed:', err);
+  if (order.activation_code) {
+    try {
+      qrCodeDataUrl = await QRCode.toDataURL(order.activation_code, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 320,
+        color: { dark: '#000000', light: '#ffffff' },
+      });
+    } catch {
+      // Non-critical: QR generation failed
+    }
   }
 
   return (
@@ -87,15 +89,16 @@ export default async function SetupTokenPage({ params }: PageProps) {
       orderId={order.id}
       maskedIccid={maskedIccid}
       hasIccid={Boolean(order.iccid)}
-      setupToken={token}
-      smdpAddress={order.smdp_address ?? ''}
-      activationCode={order.activation_code ?? ''}
-      apn={order.apn ?? 'internet'}
+      setupToken={(order as any).setup_token}
+      smdpAddress={order.smdp_address || 'rsp.truphone.com'}
+      activationCode={order.activation_code || ''}
+      apn={order.apn || 'globaldata'}
       qrCodeDataUrl={qrCodeDataUrl}
       countryName={countryName}
       flag={flag}
       dataGb={dataGb}
       validityDays={validityDays}
+      token={token}
       siblingEsims={siblingEsims}
     />
   );

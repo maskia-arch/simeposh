@@ -414,8 +414,8 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/_next');
 
     if (!isStaticOrApi) {
-      // 1. If path is already /esim-overview/..., allow pass-through
-      if (pathname.startsWith('/esim-overview')) {
+      // 1. If path is already /esim-overview/... or /setup-view/..., allow pass-through
+      if (pathname.startsWith('/esim-overview') || pathname.startsWith('/setup-view')) {
         // Proceed normally
       }
       // 2. If path is /s/... (the opaque setup token route), allow pass-through
@@ -620,7 +620,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const isOrderRoute = normalizedPath === '/order' || normalizedPath.startsWith('/order') || normalizedPath.startsWith('/api/order/status');
-  const isSetupRoute = normalizedPath === '/s' || normalizedPath.startsWith('/s/');
+  const isSetupRoute = normalizedPath === '/s' || normalizedPath.startsWith('/s/') || normalizedPath.startsWith('/setup-view');
 
   // ── Security Headers & Response Hygiene ──
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
