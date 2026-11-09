@@ -1,6 +1,8 @@
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { NOT_FOUND_TEXTS } from '@/lib/not-found-html';
 import type { LocaleCode } from '@/lib/i18n/config';
+import { isValidLocale } from '@/lib/i18n/config';
 
 const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; flag: string }>> = {
   de: [
@@ -26,7 +28,9 @@ const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; flag
 };
 
 export default function NotFound() {
-  const locale: LocaleCode = 'de';
+  const headerList = headers();
+  const headerLocale = headerList.get('x-locale')?.toLowerCase().trim();
+  const locale: LocaleCode = (headerLocale && isValidLocale(headerLocale)) ? (headerLocale as LocaleCode) : 'de';
   const t = NOT_FOUND_TEXTS[locale] || NOT_FOUND_TEXTS.de;
   const prefix = locale === 'de' ? '' : `/${locale}`;
   const homeUrl = prefix || '/';
