@@ -140,7 +140,7 @@ const de = {
   "cat_travel": "Travel Standard",
   "cat_travel_desc": "Festes Datenvolumen mit weltweiter Zuverlässigkeit",
   "cat_travel_premium": "Travel Premium",
-  "cat_travel_premium_desc": "Technisch besser als der Standard: lokale IP, mehrere IP-Standorte oder ohne Hongkong-Umweg (in ausgewählten Ländern)",
+  "cat_travel_premium_desc": "Technisch überlegen: mehr Netze, lokale IP oder mehrere IP-Standorte",
   "cat_unlimited_eco": "Unlimited Eco",
   "cat_unlimited_eco_desc": "Unbegrenztes Surfen mit 512 kbps Basisgeschwindigkeit",
   "cat_unlimited_pro": "Unlimited Pro",
@@ -310,10 +310,10 @@ const de = {
   "feat_hk_ip_desc": "Internet läuft über Hongkong",
   "feat_instant": "Sofortlieferung",
   "feat_instant_d": "QR-Code direkt nach Kauf",
-  "feat_non_hk_ip_badge": "Ohne Hongkong-Umweg",
+  "feat_non_hk_ip_badge": "Optimiertes Routing",
   "feat_non_hk_ip_desc": "Ohne Umweg über Hongkong",
   "feat_non_hk_ip_price_note": "Der Preisunterschied entsteht durch das direkte Premium-Routing ohne Hongkong-IP-Einschränkungen.",
-  "feat_non_hk_ip_title": "Routing ohne Hongkong-Umweg",
+  "feat_non_hk_ip_title": "Optimiertes Routing",
   "feat_price": "Faire Preise",
   "feat_price_d": "Keine versteckten Kosten",
   "feat_secure": "Sicher",
@@ -656,7 +656,7 @@ const de = {
   "type_eco_desc": "Unbegrenzt • FUP 512 kbps",
   "type_pro_desc": "Unbegrenzt • FUP 1 Mbps",
   "type_travel_desc": "Festes Datenvolumen",
-  "type_travel_premium_desc": "Technisch besser als der Standard: lokale IP, mehrere IP-Standorte oder ohne Hongkong-Umweg",
+  "type_travel_premium_desc": "Technisch überlegen: mehr Netze, lokale IP oder mehrere IP-Standorte",
   "unit_day": "Tag",
   "unit_per_day": "/ Tag",
 
@@ -939,7 +939,7 @@ const de = {
   "copy": "Kopieren",
   "feat_prem_adv_local_ip": "Lokale IP ({country})",
   "feat_prem_adv_local_ip_desc": "Direktes lokales Routing im Zielland für minimale Latenzzeiten und beste Geschwindigkeit.",
-  "feat_prem_adv_non_hk": "Ohne Hongkong-Umweg",
+  "feat_prem_adv_non_hk": "Optimiertes Routing",
   "feat_prem_adv_non_hk_desc": "Europäisches oder globales Routing ohne Hongkong-Restriktionen für uneingeschränkten Zugriff auf ChatGPT, TikTok & Online-Banking.",
   "feat_prem_adv_multi_ip": "Mehrere IP-Standorte",
   "feat_prem_adv_multi_ip_desc": "Intelligentes regionales Routing über mehrere Knotenpunkte für maximale Netzstabilität.",
@@ -1026,6 +1026,7 @@ const de = {
   "lang_banner_text": "Diese Seite gibt es auch auf {lang}",
   "lang_banner_switch": "Wechseln",
   "lang_banner_close": "Schließen",
+  "ip_origin": "IP-Herkunft",
 } as const;
 export default de;
 export type TranslationKeys = keyof typeof de;

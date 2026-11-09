@@ -119,6 +119,7 @@ export interface PublicTariff {
   // Serverseitig sauber aufbereitete Felder (ersetzen raw_data vollständig, einheitlich snake_case):
   operators:            TariffOperator[];
   breakout_ip?: string | null;
+  ip_countries?: string[] | null;
   best_network_type:    string | null;
   is_premium:           boolean;
   is_non_hk_ip:         boolean;
@@ -207,15 +208,30 @@ export function extractRawOperators(row: any, max = 8): TariffOperator[] {
  * Server-side helper: Extract breakout IP from database row or supplier raw_data.
  * Strictly normalizes to 2 uppercase letters (ISO alpha-2), or null.
  */
-export function extractServerBreakoutIp(row: any): string | null {
-  const val = (row.breakout_ip !== undefined && row.breakout_ip !== null)
-    ? String(row.breakout_ip).trim().toUpperCase()
-    : ((row.raw_data ?? {}) as Record<string, unknown>).ipExport;
-  if (typeof val === 'string') {
-    const trimmed = val.trim().toUpperCase();
-    if (/^[A-Z]{2}$/.test(trimmed)) {
-      return trimmed;
+export function extractServerIpCountries(row: any): string[] {
+  if (Array.isArray(row.ip_countries) && row.ip_countries.length > 0) {
+    return row.ip_countries.map((c: any) => String(c).trim().toUpperCase()).filter((c: string) => /^[A-Z]{2}$/.test(c));
+  }
+  const rawExport = ((row.raw_data ?? {}) as Record<string, unknown>).ipExport ?? row.breakout_ip;
+  if (typeof rawExport === 'string') {
+    const parts = rawExport.split(/[\/,]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+    const result: string[] = [];
+    for (const p of parts) {
+      if (p === 'EUROPE') result.push('EU');
+      else if (/^[A-Z]{2}$/.test(p)) result.push(p);
     }
+    return result;
+  }
+  return [];
+}
+
+export function extractServerBreakoutIp(row: any): string | null {
+  const countries = extractServerIpCountries(row);
+  if (countries.length > 0) {
+    return countries.join(' / ');
+  }
+  if (row.breakout_ip && typeof row.breakout_ip === 'string') {
+    return row.breakout_ip.trim();
   }
   return null;
 }
@@ -264,6 +280,7 @@ export function toPublicTariff(row: any): PublicTariff {
   // Pre-calculate safe derived values from server-side raw_data
   const ops = extractRawOperators(row, 8);
   const bestNet = bestNetworkType(ops);
+  const ipCountries = extractServerIpCountries(row);
   const breakout = extractServerBreakoutIp(row);
   const isPrem = typeof row.is_premium === 'boolean' ? row.is_premium : isPremiumTariff(row);
   const isNonHk = isNonHkIpTariff(row);
@@ -298,7 +315,7 @@ export function toPublicTariff(row: any): PublicTariff {
     validity_days:        Math.max(1, Number(row.validity_days ?? row.duration ?? 1)),
     sale_price_eur:       Number(row.sale_price_eur ?? 0),
     customer_price_eur:   typeof row.customer_price_eur === 'number' ? row.customer_price_eur : undefined,
-    tariff_type:          row.tariff_type ? String(row.tariff_type) : 'travel',
+    tariff_type:          row.tariff_type ? String(row.tariff_type) : 'travel_standard',
     speed_kbps:           row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
     label:                row.label ? String(row.label) : null,
     is_top_up_eligible:   reload.isReloadable,
@@ -307,6 +324,7 @@ export function toPublicTariff(row: any): PublicTariff {
     // Derived whitelisted fields (strictly snake_case)
     operators:            ops,
     breakout_ip:          breakout,
+    ip_countries:         ipCountries.length > 0 ? ipCountries : null,
     best_network_type:    bestNet,
     is_premium:           isPrem,
     is_non_hk_ip:         isNonHk,

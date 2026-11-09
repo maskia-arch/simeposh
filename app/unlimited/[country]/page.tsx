@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
   if (!destination) {
     return {
       title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
+      robots: { index: false, follow: false },
     };
   }
 
@@ -68,7 +69,7 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
 
   const description = t('meta_unlimited_desc' as any, { country: countryLabel, price: minPriceFormatted })
     || (locale === 'de'
-      ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted}. Sofortige Aktivierung per QR-Code ohne Roaming.`
+      ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted}. Einfache Aktivierung per QR-Code ohne Roaming.`
       : `Customizable unlimited eSIM for ${countryLabel} with flexible validity (1–365 days) and high-speed data from ${minPriceFormatted}. Instant QR code activation.`);
 
   const baseUrl = BASE_URL;
@@ -113,7 +114,7 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
   const destination = await getDestinationBySlug(country);
 
   if (!destination) {
-    return <NotFound localeOverride={locale} />;
+    notFound();
   }
 
   const t = getServerT(locale);

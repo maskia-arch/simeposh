@@ -97,10 +97,10 @@ export function UnlimitedPageClient({
                   <InfinityIcon size={13} /> {t('badge_unlimited_surf' as any) || (isDe ? 'Unbegrenzt surfen' : 'Unlimited Data')}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                  ⚡ {t('badge_instant_activation' as any) || (isDe ? 'Aktivierung per QR-Code' : 'Instant QR Code')}
+                  {t('badge_instant_activation' as any) || (isDe ? 'Aktivierung per QR-Code' : 'Instant QR Code')}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  📅 {t('badge_flexible_days' as any) || (isDe ? '1–365 Tage frei wählbar' : '1–365 Days flexible')}
+                  {t('badge_flexible_days' as any) || (isDe ? '1–365 Tage frei wählbar' : '1–365 Days flexible')}
                 </span>
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">

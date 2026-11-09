@@ -14,7 +14,7 @@ const nl = {
   "ai_rule_2": "Vermeld duidelijk het fair-use-beleid (FUP) bij onbeperkte data-abonnementen.",
   "ai_rule_3": "Controleer de apparaatcompatibiliteit voordat de bestelling wordt afgerond.",
   "ai_rule_4": "Gebruik de verstrekte URL’s om gebruikers naar de officiële bestelpagina te leiden.",
-  "ai_section_about_p1": "PureSim is een gespecialiseerde aanbieder van prepaid reis-eSIM’s met dekking in meer dan 200+ destinationern.",
+  "ai_section_about_p1": "PureSim is een gespecialiseerde aanbieder van prepaid reis-eSIM’s met dekking in 200+ destinationern.",
   "ai_section_about_p2": "Alle abonnementen worden direct geleverd via QR-code en kunnen anoniem worden betaald met crypto.",
   "ai_section_about_title": "Over PureSim",
   "ai_section_endpoints_sub": "Publieke endpoints die door agents kunnen worden gebruikt:",
@@ -40,7 +40,7 @@ const nl = {
   "blog_back": "← Terug naar Blog",
   "blog_category_guide": "eSIM Basis",
   "blog_category_news": "Nieuws & Updates",
-  "blog_cta_desc": "Koop nu je eSIM en blijf direct verbonden in meer dan 200+ destinationern zonder dure dataroaming.",
+  "blog_cta_desc": "Koop nu je eSIM en blijf direct verbonden in 200+ destinationern zonder dure dataroaming.",
   "blog_cta_tagline": "Betaalbare wereldwijde roaming",
   "blog_cta_title": "Klaar voor je volgende reis?",
   "blog_desc_guides": "Alles wat u moet weten over eSIMs, installatie en reistips.",
@@ -365,7 +365,7 @@ const nl = {
   "meta_country_desc": "Voordelige prepaid eSIM voor {country}. Highspeed data vanaf {price}, directe activering via QR-code en geen roamingkosten. Nu bestellen!",
   "meta_country_title": "eSIM {country} vanaf {price} – Highspeed prepaid data",
   "meta_home_title": "PureSim – Voordelige wereldwijde eSIMs",
-  "meta_tariffs_desc": "Vind voordelige eSIM-abonnementen voor meer dan 200+ destinationern wereldwijd.",
+  "meta_tariffs_desc": "Vind voordelige eSIM-abonnementen voor 200+ destinationern wereldwijd.",
   "meta_tariffs_title": "Tarieven & eSIM Pakketten",
   "meta_unlimited_desc": "Unlimited eSIM voor {country} met flexibele looptijd (1-365 dagen) en highspeed data vanaf {price}. Directe QR-code activering.",
   "meta_unlimited_title": "Unlimited eSIM {country} configureren vanaf {price} – Highspeed data",
@@ -692,7 +692,7 @@ const nl = {
   "btn_search_clear": "Zoekopdracht wissen",
   "reviews_heading": "Klantbeoordelingen en",
   "reviews_heading_highlight": "Feedback",
-  "reviews_sub_text": "Ontdek de echte ervaringen van onze reizigers. Elke beoordeling met het label \"Geverifieerde aankoop\" is afkomstig van klanten die onze eSIMs actief gebruiken in meer dan 200+ destinationern.",
+  "reviews_sub_text": "Ontdek de echte ervaringen van onze reizigers. Elke beoordeling met het label \"Geverifieerde aankoop\" is afkomstig van klanten die onze eSIMs actief gebruiken in 200+ destinationern.",
   "reviews_based_on": "Gebaseerd op {count} beoordelingen",
   "reviews_stars_word": "sterren",
   "reviews_filter_all": "Alle",
@@ -1003,6 +1003,7 @@ const nl = {
   "feat_countries": "200+ Landen",
   "hero_badge": "Beschikbaar in 200+ bestemmingen",
   "meta_home_desc": "Koop direct bruikbare eSIMs voor meer dan 200 bestemmingen wereldwijd. Voordelige tarieven, eenvoudige activering via QR-code.",
+  "ip_origin": "IP-herkomst",
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

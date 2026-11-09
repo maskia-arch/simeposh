@@ -432,7 +432,7 @@ const tr = {
   "order_show_all": "Hepsini Göster",
   "order_smdp": "SM-DP+ Adresi",
   "order_status": "Durum",
-  "order_support_btn": "Bu sipariş için bilet",
+  "order_support_btn": "Bu sipariş için destek talebi",
   "order_support_q": "Etkinleştirme konusunda yardıma mı ihtiyacınız var?",
   "order_title": "Sipariş Detayları",
   "order_topup_btn": "eSIM Yükle",
@@ -732,9 +732,9 @@ const tr = {
   "pay_underpayment_title": "Kısmi ödeme / Eksik ödeme tespit edildi",
   "pay_received_amount_label": "Alınan tutar:",
   "pay_remaining_amount_label": "Kalan tutar:",
-  "pay_underpayment_action": "Lütfen kalan tutarı ({remaining} {coin}) yukarıdaki adrese gönderin veya aşağıdan bir destek bileti açın.",
+  "pay_underpayment_action": "Lütfen kalan tutarı ({remaining} {coin}) yukarıdaki adrese gönderin veya aşağıdan bir destek talebi oluşturun.",
   "pay_tap_to_select": "Seçmek için dokunun",
-  "pay_payment_issue_ticket": "Ödeme sorunu mu? Destek bileti açın",
+  "pay_payment_issue_ticket": "Ödeme sorunu mu? Destek talebi oluşturun",
   "pay_coverage_label": "Ödeme karşılama oranı",
   "pay_support_ticket_subject": "Kripto ödemeyle ilgili soru / sorun ({id})",
   "pay_plan_label": "Tarife",
@@ -1003,6 +1003,7 @@ const tr = {
   "feat_countries": "200+ Ülke",
   "hero_badge": "200'den fazla destinasyonda mevcut",
   "meta_home_desc": "Dünya çapında 200'den fazla destinasyon için kullanıma hazır eSIM satın alın. Uygun fiyatlar, kolay QR kod aktivasyonu.",
+  "ip_origin": "IP Çıkışı",
 } as const;
 export default tr;
 export type TranslationKeys = keyof typeof tr;

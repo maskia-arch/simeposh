@@ -1,8 +1,17 @@
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { NOT_FOUND_TEXTS } from '@/lib/not-found-html';
 import type { LocaleCode } from '@/lib/i18n/config';
 import { isValidLocale } from '@/lib/i18n/config';
+
+export const metadata: Metadata = {
+  title: 'Seite nicht gefunden · PureSim',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; flag: string }>> = {
   de: [

@@ -788,6 +788,7 @@ export const CLIENT_TRANSLATION_KEYS = [
   "faq_teaser_desc",
   "faq_teaser_unlimited_desc",
   "faq_teaser_btn",
+  "ip_origin",
 ] as const;
 
 export type ClientTranslationKey = typeof CLIENT_TRANSLATION_KEYS[number];

@@ -11,7 +11,7 @@ function isLocalIp(cc: string, name: string, code: string): boolean {
 }
 
 /**
- * Classifies all active tariffs according to the Fix 4 Rules:
+ * Classifies all active tariffs according to Fix 5 Rules:
  * 1. Unlimited tariffs are ALWAYS unlimited_eco or unlimited_pro and NEVER premium (is_premium = false).
  * 2. Travel tariffs (data_gb > 0, tariff_type NOT LIKE 'unlimited%'):
  *    Grouped by true region AND location coverage count:
@@ -22,13 +22,13 @@ function isLocalIp(cc: string, name: string, code: string): boolean {
  *    - Equal price in group -> travel_standard (is_premium = false)
  *    - is_premium_override takes absolute precedence
  * 3. Difference Chip:
- *    Calculated as genuine demonstrable difference compared to the standard tariff of the same group.
- *    - Multi-network: only if premium has strictly MORE deduplicated networks than standard and > 1
+ *    Strict supplier field evidence:
+ *    - Multi-network: only if premium has strictly MORE unique networks than ALL standard twins in group AND > 1
  *    - Local IP: if premium has local IP and standard does not
- *    - Breakout IP difference: if both packages have breakout_ip and standard is HK while premium is local/regional
- *    - If NO demonstrable difference: tariff becomes travel_standard (is_premium = false, chip = null)
- *      and is placed on needs_difference_review = TRUE, unless an explicit admin override exists.
- *      NO premium is shown without a demonstrable, visible chip!
+ *    - Breakout IP difference: if standard is HK and premium routes via local/regional IP
+ *    - If NO demonstrable difference: tariff becomes travel_standard (is_premium = false, chip = null),
+ *      placed on needs_difference_review = TRUE, and hidden_reason = 'duplicate_higher_price' to prevent
+ *      duplicate cards at different prices on the storefront.
  */
 export async function classifyAllTariffs(): Promise<{
   updated: number;
@@ -44,7 +44,9 @@ export async function classifyAllTariffs(): Promise<{
     UPDATE public.tariffs
     SET is_premium = FALSE,
         premium_diff_chip = NULL,
-        needs_difference_review = FALSE
+        needs_difference_review = FALSE,
+        hidden_reason = NULL,
+        duplicate_of = NULL
     WHERE tariff_type LIKE 'unlimited%' OR data_gb = 0;
   `);
 
@@ -67,7 +69,7 @@ export async function classifyAllTariffs(): Promise<{
                             validity_days
              ) AS group_count
       FROM public.tariffs
-      WHERE is_active = true AND hidden_reason IS NULL AND tariff_type NOT LIKE 'unlimited%' AND data_gb > 0
+      WHERE is_active = true AND tariff_type NOT LIKE 'unlimited%' AND data_gb > 0
     )
     UPDATE public.tariffs t
     SET is_premium = CASE
@@ -107,7 +109,7 @@ export async function classifyAllTariffs(): Promise<{
            COALESCE(raw_data->'operatorList', '[]'::jsonb) AS operator_list,
            COALESCE(raw_data->>'ipType', '') AS ip_type
     FROM public.tariffs
-    WHERE is_active = true AND hidden_reason IS NULL AND tariff_type NOT LIKE 'unlimited%' AND data_gb > 0
+    WHERE is_active = true AND tariff_type NOT LIKE 'unlimited%' AND data_gb > 0
     ORDER BY true_region, COALESCE(array_length(location_codes, 1), 1), data_gb, validity_days, sale_price_eur;
   `);
 
@@ -126,37 +128,61 @@ export async function classifyAllTariffs(): Promise<{
   let chipsLocalIp = 0;
   let needsReviewCount = 0;
 
-  const updates: { id: string; chip: string | null; needsReview: boolean; isPremium: boolean; tariffType: string }[] = [];
+  const updates: {
+    id: string;
+    chip: string | null;
+    needsReview: boolean;
+    isPremium: boolean;
+    tariffType: string;
+    hiddenReason: string | null;
+    duplicateOf: string | null;
+  }[] = [];
 
   for (const items of Object.values(groups)) {
     const standards = items.filter((x) => !x.is_premium);
     const premiums = items.filter((x) => x.is_premium);
 
     const baseStd = standards[0] || null;
-    const rawStdOps = baseStd?.operator_list
-      ? (Array.isArray(baseStd.operator_list) ? baseStd.operator_list : JSON.parse(baseStd.operator_list))
-          .map((o: any) => o.operatorName)
-          .filter(Boolean)
-      : [];
-    const stdOps: string[] = Array.from(new Set(rawStdOps));
-    const stdIsLocal = baseStd
-      ? isLocalIp(baseStd.country_code, baseStd.name, baseStd.package_code) || (baseStd.breakout_ip === baseStd.country_code)
-      : false;
-    const stdIp = (baseStd?.breakout_ip || '').toUpperCase().trim();
 
-    // Reset standard tariffs
+    // Calculate maximum operator count and collected IP routings among all standard twins
+    let maxStdOpsCount = 0;
+    const allStdOps = new Set<string>();
+    for (const s of standards) {
+      const rawOps = s.operator_list
+        ? (Array.isArray(s.operator_list) ? s.operator_list : JSON.parse(s.operator_list))
+            .map((o: any) => o.operatorName)
+            .filter(Boolean)
+        : [];
+      const uniqOps = new Set<string>(rawOps);
+      if (uniqOps.size > maxStdOpsCount) maxStdOpsCount = uniqOps.size;
+      uniqOps.forEach((op) => allStdOps.add(op));
+    }
+
+    const stdHasLocalIp = standards.some(
+      (s) => isLocalIp(s.country_code, s.name, s.package_code) || s.breakout_ip === s.country_code
+    );
+    const stdIps = standards.map((s) => (s.breakout_ip || '').toUpperCase().trim()).filter(Boolean);
+    const stdIsExclusivelyHk = stdIps.length > 0 && stdIps.every((ip) => ip === 'HK');
+
+    // Reset standard tariffs: if multiple standards have same volume and validity at different prices,
+    // keep the lowest-priced visible and mark redundant higher-priced ones as hidden duplicates
+    const minStdPrice = standards.length > 0 ? Math.min(...standards.map((s) => Number(s.sale_price_eur))) : 0;
+
     for (const s of standards) {
       totalStandard++;
+      const isRedundantStd = Number(s.sale_price_eur) > minStdPrice && s.is_premium_override !== true;
       updates.push({
         id: s.id,
         chip: null,
         needsReview: false,
         isPremium: false,
         tariffType: 'travel_standard',
+        hiddenReason: isRedundantStd ? 'duplicate_higher_price' : null,
+        duplicateOf: isRedundantStd ? (baseStd?.package_code || null) : null,
       });
     }
 
-    // Evaluate each candidate premium tariff against base standard
+    // Evaluate each candidate premium tariff against standard twins
     for (const p of premiums) {
       const rawPremOps = p.operator_list
         ? (Array.isArray(p.operator_list) ? p.operator_list : JSON.parse(p.operator_list))
@@ -171,15 +197,17 @@ export async function classifyAllTariffs(): Promise<{
       let needsReview = false;
       let finalIsPremium = true;
       let finalTariffType = 'travel_premium';
+      let hiddenReason: string | null = null;
+      let duplicateOf: string | null = null;
 
-      // 1. Multi-network redundancy (only if strictly more unique networks than standard and > 1)
-      if (premOps.length > stdOps.length && premOps.length > 1) {
+      // 1. Multi-network redundancy (only if strictly MORE unique networks than ALL standards in group AND > 1)
+      if (premOps.length > maxStdOpsCount && premOps.length > 1) {
         chipsMultiNet++;
         chip = `${premOps.length} Netze: ${premOps.join(' + ')}`;
-      } else if (premIsLocal && !stdIsLocal) {
+      } else if (premIsLocal && !stdHasLocalIp) {
         chipsLocalIp++;
         chip = 'Lokale IP';
-      } else if (premIp && stdIp && premIp !== stdIp && stdIp === 'HK') {
+      } else if (premIp && premIp !== 'HK' && stdIsExclusivelyHk) {
         chipsNonHk++;
         chip = `${premIp} IP`;
       } else {
@@ -189,9 +217,12 @@ export async function classifyAllTariffs(): Promise<{
         chip = null;
 
         // If not explicitly forced by admin override, degrade to travel_standard
+        // and hide as duplicate higher price so customer doesn't see identical duplicate cards
         if (p.is_premium_override !== true) {
           finalIsPremium = false;
           finalTariffType = 'travel_standard';
+          hiddenReason = 'duplicate_higher_price';
+          duplicateOf = baseStd?.package_code || null;
         }
       }
 
@@ -207,13 +238,15 @@ export async function classifyAllTariffs(): Promise<{
         needsReview,
         isPremium: finalIsPremium,
         tariffType: finalTariffType,
+        hiddenReason,
+        duplicateOf,
       });
     }
   }
 
   // Batch update difference chips, review flags, and normalized premium types
   if (updates.length > 0) {
-    const BATCH_SIZE = 400;
+    const BATCH_SIZE = 300;
     for (let i = 0; i < updates.length; i += BATCH_SIZE) {
       const chunk = updates.slice(i, i + BATCH_SIZE);
       const chunkClauses: string[] = [];
@@ -221,9 +254,11 @@ export async function classifyAllTariffs(): Promise<{
       let cIdx = 1;
 
       for (const u of chunk) {
-        chunkClauses.push(`($${cIdx}::uuid, $${cIdx + 1}::text, $${cIdx + 2}::boolean, $${cIdx + 3}::boolean, $${cIdx + 4}::text)`);
-        chunkParams.push(u.id, u.chip, u.needsReview, u.isPremium, u.tariffType);
-        cIdx += 5;
+        chunkClauses.push(
+          `($${cIdx}::uuid, $${cIdx + 1}::text, $${cIdx + 2}::boolean, $${cIdx + 3}::boolean, $${cIdx + 4}::text, $${cIdx + 5}::text, $${cIdx + 6}::text)`
+        );
+        chunkParams.push(u.id, u.chip, u.needsReview, u.isPremium, u.tariffType, u.hiddenReason, u.duplicateOf);
+        cIdx += 7;
       }
 
       const sql = `
@@ -231,8 +266,10 @@ export async function classifyAllTariffs(): Promise<{
         SET premium_diff_chip = v.chip,
             needs_difference_review = v.needs_review,
             is_premium = v.is_premium,
-            tariff_type = v.tariff_type
-        FROM (VALUES ${chunkClauses.join(', ')}) AS v(id, chip, needs_review, is_premium, tariff_type)
+            tariff_type = v.tariff_type,
+            hidden_reason = v.hidden_reason,
+            duplicate_of = v.duplicate_of
+        FROM (VALUES ${chunkClauses.join(', ')}) AS v(id, chip, needs_review, is_premium, tariff_type, hidden_reason, duplicate_of)
         WHERE t.id = v.id;
       `;
       await runRawQuery(sql, chunkParams);

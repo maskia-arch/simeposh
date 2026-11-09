@@ -180,11 +180,10 @@ export function AiPageClient({ locale }: { locale: LocaleCode }) {
 
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-xs text-indigo-800">
-                  <span>🛡️</span>
-                  <span>{t('feat_prem_adv_non_hk')}</span>
+                  <span>{t('badge_travel_premium') || 'Travel Premium'}</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {t('ai_section_offerings_non_hk')}
+                  {t('type_travel_premium_desc')}
                 </p>
               </div>
             </div>

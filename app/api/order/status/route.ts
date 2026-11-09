@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const ref = searchParams.get('ref')?.trim();
 
   // Rate Limiting (30 requests/min per IP)
-  const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+  const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || '';
   const { allowed, retryAfter } = checkOrderRateLimit(clientIp);
   if (!allowed) {
     const rateRes = NextResponse.json({ error: 'Too many requests' }, { status: 429 });

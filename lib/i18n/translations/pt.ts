@@ -1003,6 +1003,7 @@ const pt = {
   "feat_countries": "200+ Países",
   "hero_badge": "Disponível em mais de 200 destinos",
   "meta_home_desc": "Compre eSIMs prontas para usar em mais de 200 destinos em todo o mundo. Planos acessíveis, ativação simples por código QR.",
+  "ip_origin": "Origem do IP",
 } as const;
 export default pt;
 export type TranslationKeys = keyof typeof pt;

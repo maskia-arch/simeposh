@@ -1003,6 +1003,7 @@ const fi = {
   "feat_countries": "200+ Maata",
   "hero_badge": "Saatavilla yli 200 kohteessa",
   "meta_home_desc": "Osta heti käyttövalmiit eSIMit yli 200 kohteeseen maailmanlaajuisesti. Edulliset paketit, helppo aktivointi QR-koodilla.",
+  "ip_origin": "IP-alkuperä",
 } as const;
 export default fi;
 export type TranslationKeys = keyof typeof fi;

@@ -128,41 +128,7 @@ export async function POST(request: Request) {
 
     // 3. Strict authentication via server-side session
     const supabase = await createClient();
-    let { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      const cookieHeader = request.headers.get('cookie');
-      if (cookieHeader) {
-        const match = cookieHeader.match(/(^|;)\s*session_token\s*=\s*([^;]+)/);
-        if (match) {
-          const { verifyJwt } = await import('@/lib/auth/jwt');
-          const decoded = await verifyJwt(match[2]);
-          if (decoded && decoded.id && decoded.email) {
-            // Strict database validation: ensure user exists, not deleted, and session not revoked
-            const { query: runAuthQuery } = await import('@/lib/db');
-            const authRes = await runAuthQuery(
-              `SELECT u.id, u.email, u.full_name, u.is_verified, s.revoked_at
-               FROM public.users u
-               LEFT JOIN public.user_sessions s ON s.user_id = u.id AND s.id = $2
-               WHERE u.id = $1 AND u.deleted_at IS NULL AND u.is_verified = true`,
-              [decoded.id, decoded.sessionId || null]
-            );
-            const authRow = authRes.rows[0];
-            if (authRow && (!decoded.sessionId || authRow.revoked_at === null)) {
-              user = {
-                id: authRow.id,
-                email: authRow.email,
-                user_metadata: { full_name: authRow.full_name },
-                app_metadata: {},
-                aud: 'authenticated',
-                created_at: new Date().toISOString(),
-                role: 'authenticated',
-              };
-            }
-          }
-        }
-      }
-    }
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || !user.id || !user.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -206,7 +172,11 @@ export async function POST(request: Request) {
           .select('balance_eur, total_spend_eur, extra_cashback_queue, affiliate_code')
           .eq('email', sessionUserEmail)
           .maybeSingle();
-        resData = await builder;
+        const queryRes = await builder;
+        if (queryRes.error) {
+          return NextResponse.json({ error: 'Database query execution error' }, { status: 500 });
+        }
+        resData = queryRes.data;
         break;
       }
 
@@ -219,7 +189,11 @@ export async function POST(request: Request) {
           .eq('customer_email', sessionUserEmail)
           .order('updated_at', { ascending: false })
           .limit(50);
-        resData = await builder;
+        const queryRes = await builder;
+        if (queryRes.error) {
+          return NextResponse.json({ error: 'Database query execution error' }, { status: 500 });
+        }
+        resData = queryRes.data;
         break;
       }
 
@@ -231,7 +205,11 @@ export async function POST(request: Request) {
           .select('full_name, phone, billing_address, two_factor_enabled, is_verified')
           .eq('id', sessionUserId)
           .maybeSingle();
-        resData = await builder;
+        const queryRes = await builder;
+        if (queryRes.error) {
+          return NextResponse.json({ error: 'Database query execution error' }, { status: 500 });
+        }
+        resData = queryRes.data;
         break;
       }
 
@@ -244,7 +222,11 @@ export async function POST(request: Request) {
           .eq('user_id', sessionUserId)
           .is('revoked_at', null)
           .order('last_active_at', { ascending: false });
-        resData = await builder;
+        const queryRes = await builder;
+        if (queryRes.error) {
+          return NextResponse.json({ error: 'Database query execution error' }, { status: 500 });
+        }
+        resData = queryRes.data;
         break;
       }
 

@@ -148,7 +148,8 @@ export async function GET(request: Request) {
       const detectedType = detectTariffType(pkg as any);
       
       let isUnlimited =
-        detectedType !== 'travel' ||
+        detectedType === 'unlimited_eco' ||
+        detectedType === 'unlimited_pro' ||
         pkg.dataType === 2 ||
         (existingTariff?.tariff_type && existingTariff.tariff_type.startsWith('unlimited')) ||
         (pkg.name ?? '').toLowerCase().includes('unlimited') ||
@@ -249,7 +250,7 @@ export async function GET(request: Request) {
                 usd_eur_rate: usdEurRate,
                 is_active: false, // Internal reference for top-up orders only; do NOT show as standalone shop tariff
                 is_top_up_eligible: true,
-                tariff_type: pkg.tariff_type || 'travel',
+                tariff_type: pkg.tariff_type || 'travel_standard',
                 speed_kbps: pkg.speed_kbps ?? null,
                 raw_data: pkg.raw_data ?? {},
               } as any, { onConflict: 'package_code' })

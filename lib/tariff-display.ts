@@ -496,12 +496,59 @@ export function isPremiumTariff(tariff: {
 }
 
 /**
- * Extract Breakout IP export country/location code (e.g. "UK", "NL", "SG").
+ * Extract Breakout IP export country/location code (e.g. "UK", "NL", "SG", "FR / NL / UK").
  */
 export function getTariffBreakoutIp(tariff: {
   breakout_ip?: string | null;
+  ip_countries?: string[] | null;
 }): string | null {
-  return tariff.breakout_ip ?? null;
+  if (tariff.breakout_ip) return tariff.breakout_ip;
+  if (tariff.ip_countries && tariff.ip_countries.length > 0) return tariff.ip_countries.join(' / ');
+  return null;
+}
+
+export function getTariffIpCountries(tariff: {
+  ip_countries?: string[] | null;
+  breakout_ip?: string | null;
+}): string[] {
+  if (Array.isArray(tariff.ip_countries) && tariff.ip_countries.length > 0) {
+    return tariff.ip_countries;
+  }
+  if (tariff.breakout_ip) {
+    return tariff.breakout_ip.split(/[\/,]/).map((s) => s.trim().toUpperCase()).filter((s) => /^[A-Z]{2}$/.test(s));
+  }
+  return [];
+}
+
+/**
+ * Standardized IP chip for card face:
+ * - <= 3 countries: "IP: FR / NL / UK" (or "IP: SG", "IP: HK")
+ * - > 3 countries: "IP: FR +N"
+ * 0 flags, 0 emojis, 0 "Europa IP".
+ */
+export function formatIpChipLabel(countries: string[] | null | undefined, fallbackBreakoutIp?: string | null): string | null {
+  let list = countries && countries.length > 0 ? countries : null;
+  if (!list && fallbackBreakoutIp) {
+    list = fallbackBreakoutIp.split(/[\/,]/).map((s) => s.trim().toUpperCase()).filter((s) => /^[A-Z]{2}$/.test(s));
+  }
+  if (!list || list.length === 0) return null;
+  if (list.length > 3) {
+    return `IP: ${list[0]} +${list.length - 1}`;
+  }
+  return `IP: ${list.join(' / ')}`;
+}
+
+/**
+ * Standardized full IP origin list for modal and detail page (e.g. "FR / NL / UK").
+ */
+export function formatIpFullList(countries: string[] | null | undefined, fallbackBreakoutIp?: string | null): string | null {
+  if (countries && countries.length > 0) {
+    return countries.join(' / ');
+  }
+  if (fallbackBreakoutIp && fallbackBreakoutIp.trim()) {
+    return fallbackBreakoutIp.trim();
+  }
+  return null;
 }
 
 /**
@@ -560,7 +607,7 @@ export function getReloadabilityInfo(tariff: {
       badgeKey: 'feat_topup_days_badge',
       titleKey: 'feat_topup_days_title',
       descKey: 'feat_topup_days_desc',
-      icon: '🔄',
+      icon: '',
       isReloadable: true,
     };
   }
@@ -571,7 +618,7 @@ export function getReloadabilityInfo(tariff: {
       badgeKey: 'feat_topup_data_badge',
       titleKey: 'feat_topup_data_title',
       descKey: 'feat_topup_data_desc',
-      icon: '🔄',
+      icon: '',
       isReloadable: true,
     };
   }
@@ -598,7 +645,7 @@ export function getReloadabilityInfo(tariff: {
         badgeKey: 'feat_topup_days_badge',
         titleKey: 'feat_topup_days_title',
         descKey: 'feat_topup_days_desc',
-        icon: '🔄',
+        icon: '',
         isReloadable: true,
       };
     }
@@ -608,7 +655,7 @@ export function getReloadabilityInfo(tariff: {
       badgeKey: 'feat_topup_data_badge',
       titleKey: 'feat_topup_data_title',
       descKey: 'feat_topup_data_desc',
-      icon: '🔄',
+      icon: '',
       isReloadable: true,
     };
   }
@@ -704,18 +751,9 @@ export function getTariffSpecialFeatures(
           badgeKey: 'feat_prem_adv_multi_net',
           titleKey: 'feat_prem_adv_multi_net',
           descKey: 'feat_prem_adv_multi_net_desc',
-          icon: '📶',
+          icon: '',
           cls: 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 font-bold',
           vars: { count, operators },
-        });
-      } else if (diffChip === 'Ohne Hongkong-Umweg') {
-        features.push({
-          id: 'travel_premium',
-          badgeKey: 'feat_prem_adv_non_hk',
-          titleKey: 'feat_prem_adv_non_hk',
-          descKey: 'feat_prem_adv_non_hk_desc',
-          icon: '🛡️',
-          cls: 'bg-indigo-50 text-indigo-950 border-indigo-200 hover:bg-indigo-100 font-bold',
         });
       } else if (diffChip === 'Lokale IP') {
         features.push({
@@ -723,7 +761,7 @@ export function getTariffSpecialFeatures(
           badgeKey: 'feat_prem_adv_local_ip',
           titleKey: 'feat_prem_adv_local_ip',
           descKey: 'feat_prem_adv_local_ip_desc',
-          icon: '📍',
+          icon: '',
           cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
           vars: { country: countryName },
         });
@@ -731,33 +769,19 @@ export function getTariffSpecialFeatures(
     }
   }
 
-  // 1. Non-HK IP (for Unlimited tariffs that route outside HK, NOT for Travel Standard cards)
-  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
-  if (isUnlimited && isNonHkIpTariff(tariff)) {
-    features.push({
-      id: 'non_hk_ip',
-      badgeKey: 'feat_prem_adv_non_hk',
-      titleKey: 'feat_prem_adv_non_hk',
-      descKey: 'feat_prem_adv_non_hk_desc',
-      priceNoteKey: 'feat_non_hk_ip_price_note',
-      icon: '🛡️',
-      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
-    });
-  }
-
-  // 2. Activation on Arrival (controlled strictly by activates_on_arrival === true)
+  // 1. Activation on Arrival (controlled strictly by activates_on_arrival === true)
   if (tariff.activates_on_arrival === true) {
     features.push({
       id: 'activation_on_arrival',
       badgeKey: 'feat_activation_arrival_badge',
       titleKey: 'feat_activation_arrival_title',
       descKey: 'feat_activation_arrival_desc',
-      icon: '📶',
+      icon: '',
       cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
     });
   }
 
-  // 3. 5G Network Ready
+  // 2. 5G Network Ready
   const ops = getTariffOperators(tariff, 10);
   if (bestNetworkType(ops) === '5G') {
     features.push({
@@ -765,7 +789,7 @@ export function getTariffSpecialFeatures(
       badgeKey: 'feat_5g_badge',
       titleKey: 'feat_5g_title',
       descKey: 'feat_5g_desc',
-      icon: '⚡',
+      icon: '',
       cls: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100',
     });
   }

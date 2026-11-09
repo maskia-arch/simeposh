@@ -57,9 +57,9 @@ export function checkRateLimit(
  * Extracts client IP from headers
  */
 export function getClientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) {
+    return cfConnectingIp.trim();
   }
   return request.headers.get('x-real-ip') || 'unknown-ip';
 }

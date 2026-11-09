@@ -23,6 +23,27 @@ export function slugify(text: string): string {
 }
 
 /**
+ * Whitelist of 211 active destination codes with available tariffs.
+ * Zero-tariff codes (such as NA namibia, KP north-korea, ER eritrea, AS american-samoa) are excluded
+ * to enforce immediate 404 response on /esim/* and /unlimited/*.
+ */
+export const ACTIVE_DESTINATION_CODES = new Set<string>([
+  'AD', 'AE', 'AF', 'AFRICA', 'AG', 'AI', 'AL', 'AM', 'AO', 'AR', 'ASIA', 'AT', 'AU', 'AW', 'AX', 'AZ',
+  'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BW',
+  'BY', 'BZ', 'CA', 'CD', 'CF', 'CG', 'CH', 'CI', 'CL', 'CM', 'CN', 'CO', 'CR', 'CV', 'CW', 'CY', 'CZ',
+  'DE', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'ES', 'ET', 'EUROPE', 'FI', 'FJ', 'FO', 'FR', 'GA',
+  'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GLOB', 'GM', 'GN', 'GP', 'GR', 'GT', 'GU', 'GW', 'GY',
+  'HK', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IQ', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP',
+  'KE', 'KG', 'KH', 'KN', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LATAM', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU',
+  'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MIDDLE_EAST', 'MK', 'ML', 'MN', 'MO', 'MQ', 'MR', 'MS',
+  'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NC', 'NE', 'NG', 'NI', 'NL', 'NO', 'NORTH_AMERICA', 'NP', 'NR',
+  'NZ', 'OCEANIA', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PR', 'PT', 'PY', 'QA', 'RE', 'RO',
+  'RS', 'RU', 'RW', 'SA', 'SC', 'SD', 'SE', 'SEA', 'SG', 'SI', 'SK', 'SL', 'SM', 'SN', 'SR', 'SS', 'SV',
+  'SZ', 'TC', 'TD', 'TG', 'TH', 'TJ', 'TN', 'TO', 'TR', 'TT', 'TZ', 'UA', 'UG', 'US', 'UY', 'UZ', 'VA',
+  'VC', 'VE', 'VG', 'VN', 'VU', 'WS', 'XK', 'YE', 'YT', 'ZA', 'ZM', 'ZW'
+]);
+
+/**
  * Mapping of virtual regions to canonical SEO slugs.
  */
 export const REGION_SLUGS: Record<string, string> = {
@@ -67,7 +88,7 @@ export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
   NORTH_AMERICA: 'north-america',
   AF:            'afghanistan',
   ME:            'montenegro',
-  AS:            'asia',
+  AS:            'american-samoa',
   ASIA:          'asia',
 };
 

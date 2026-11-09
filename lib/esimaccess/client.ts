@@ -98,7 +98,7 @@ export function detectTariffType(pkg: EsimAccessPackage): TariffType {
     (pkg.name ?? '').toLowerCase().includes('daily') ||
     (pkg.name ?? '').toLowerCase().includes('day pass');
 
-  if (!isUnlimited) return 'travel';
+  if (!isUnlimited) return 'travel_standard';
 
   // Parse throttle speed (may come as number kbps or string "512kbps" / "1Mbps")
   let speedKbps = 0;

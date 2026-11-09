@@ -9,7 +9,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, formatLocalizedTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTariffName, formatLocalizedTariffName, getTariffSpecialFeatures, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, formatIpFullList, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
@@ -93,6 +93,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
 
   const isPremium    = isPremiumTariff(tariff);
   const breakoutIp   = getTariffBreakoutIp(tariff);
+  const ipFullList   = formatIpFullList(tariff.ip_countries, breakoutIp);
   const isTR         = isTurkeyTariff(tariff);
   const ops          = getTariffOperators(tariff, 8);
   const typeInfo     = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
@@ -333,7 +334,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
           )}
 
           {/* ── Unlimited Speed Info Note ── */}
-          {typeInfo && tariff.tariff_type !== 'travel' && (
+          {typeInfo && (tariff.tariff_type === 'unlimited_eco' || tariff.tariff_type === 'unlimited_pro') && (
             <div className={`rounded-2xl border px-4 py-3 text-xs ${typeInfo.color}`}>
               <p className="font-bold flex items-center gap-1.5">{typeInfo.icon} {getTariffSpeedDesc(tariff, t)}</p>
               <p className="mt-1 text-[11px] opacity-85 leading-relaxed">{t('det_renew_note')}</p>
@@ -345,24 +346,33 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
             <PriceChart tariffId={tariff.id} currentPrice={Number(tariff.sale_price_eur)} />
           </div>
 
-          {/* ── Covered Network Operators ── */}
-          {ops.length > 0 && (
+          {/* ── Covered Network Operators & IP Routing ── */}
+          {(ops.length > 0 || ipFullList) && (
             <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('det_operators')}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {ops.map((op, i) => (
-                  <div key={i} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5">
-                    <span className="text-xs font-semibold text-slate-700">{op.name}</span>
-                    {op.networkType && (
-                      <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-extrabold ${
-                        NETWORK_COLORS[op.networkType.toUpperCase()] ?? NETWORK_COLORS['3G']
-                      }`}>
-                        {op.networkType}
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('det_operators')}</p>
+                {ipFullList && (
+                  <span className="rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 font-mono">
+                    {t('ip_origin') || 'IP-Herkunft'}: {ipFullList}
+                  </span>
+                )}
               </div>
+              {ops.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {ops.map((op, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+                      <span className="text-xs font-semibold text-slate-700">{op.name}</span>
+                      {op.networkType && (
+                        <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-extrabold ${
+                          NETWORK_COLORS[op.networkType.toUpperCase()] ?? NETWORK_COLORS['3G']
+                        }`}>
+                          {op.networkType}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

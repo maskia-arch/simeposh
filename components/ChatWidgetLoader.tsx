@@ -51,11 +51,12 @@ export function ChatWidgetLoader() {
   }, [pathname, mounted]);
 
   const isCheckoutCrypto = pathname?.startsWith('/checkout/crypto/');
+  const isCart = pathname?.includes('/cart');
   const isUnlimited = pathname?.includes('/unlimited');
 
-  // Do not render bubble on /checkout/crypto/* before click,
+  // Do not render bubble on /checkout/crypto/* or /cart before click,
   // or once the real widget.js has loaded and injected its own UI
-  if (!mounted || isCheckoutCrypto || scriptLoaded) {
+  if (!mounted || isCheckoutCrypto || isCart || scriptLoaded) {
     return null;
   }
 
@@ -67,7 +68,7 @@ export function ChatWidgetLoader() {
   };
 
   const bottomPosition = isUnlimited
-    ? 'bottom-[calc(90px+env(safe-area-inset-bottom,0px))]'
+    ? 'bottom-[calc(118px+env(safe-area-inset-bottom,0px))]'
     : 'bottom-[calc(20px+env(safe-area-inset-bottom,0px))]';
 
   return (

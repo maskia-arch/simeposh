@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
-import { resolveCountryOrRegionCode, countryCodeToSlug } from '@/lib/destinations-shared';
+import { resolveCountryOrRegionCode, countryCodeToSlug, ACTIVE_DESTINATION_CODES } from '@/lib/destinations-shared';
 import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
 import { GUIDE_SLUGS } from '@/lib/guide-links';
 import { checkOrderRateLimit } from '@/lib/rate-limit';
@@ -107,7 +107,7 @@ export async function middleware(request: NextRequest) {
 
   // Rate limiting for order status access via query param
   if (normalizedPath === '/order' && request.nextUrl.searchParams.has('ref')) {
-    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+    const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || '';
     const rl = checkOrderRateLimit(clientIp);
     if (!rl.allowed) {
       return new NextResponse('Too Many Requests', {
@@ -454,14 +454,24 @@ export async function middleware(request: NextRequest) {
   let isKnownCountryOrRegion = true;
   if (normalizedPath.startsWith('/esim/')) {
     const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim().toLowerCase();
-    if (!slug || !resolveCountryOrRegionCode(slug) || slug === 'american-samoa') {
+    const code = slug ? resolveCountryOrRegionCode(slug) : null;
+    if (!slug || !code || !ACTIVE_DESTINATION_CODES.has(code)) {
       isKnownCountryOrRegion = false;
     }
   } else if (normalizedPath.startsWith('/unlimited/')) {
     const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim().toLowerCase();
     const code = slug ? resolveCountryOrRegionCode(slug) : null;
-    if (!code || slug === 'american-samoa') {
+    if (!code || !ACTIVE_DESTINATION_CODES.has(code)) {
       isKnownCountryOrRegion = false;
+    }
+  } else if (normalizedPath.startsWith('/tariffs/')) {
+    const tariffSlug = normalizedPath.replace(/^\/tariffs\//, '').split('/')[0].trim().toLowerCase();
+    const legacyMatch = tariffSlug.match(/^([a-z0-9_-]+)_(\d+(?:\.\d+)?|\d+)_(\d+)$/i);
+    if (legacyMatch) {
+      const code = resolveCountryOrRegionCode(legacyMatch[1]);
+      if (!code || !ACTIVE_DESTINATION_CODES.has(code)) {
+        isKnownCountryOrRegion = false;
+      }
     }
   }
 

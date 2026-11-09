@@ -10,8 +10,8 @@ import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
-import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, isNonHkIpTariff, getTariffBreakoutIp, isTurkeyTariff, getReloadabilityInfo, type TariffSpecialFeature } from '@/lib/tariff-display';
-import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon, ShieldIcon } from '@/components/Icons';
+import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, isNonHkIpTariff, getTariffBreakoutIp, formatIpChipLabel, formatIpFullList, isTurkeyTariff, getReloadabilityInfo, type TariffSpecialFeature } from '@/lib/tariff-display';
+import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon, ShieldIcon, GlobeIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
 
@@ -46,14 +46,18 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
 
   const isPremium   = isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
+  const ipChipLabel = formatIpChipLabel(tariff.ip_countries, breakoutIp);
+  const ipFullList  = formatIpFullList(tariff.ip_countries, breakoutIp);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const isTravel    = !isUnlimited;
   const badge       = tariff.tariff_type ? TYPE_BADGE[tariff.tariff_type] : null;
   const ops         = getTariffOperators(tariff, 4);
+  const totalOpsCount = (tariff.operators && tariff.operators.length > 0) ? tariff.operators.length : ops.length;
   const network     = bestNetworkType(ops);
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
   const features     = getTariffSpecialFeatures(tariff, locale);
+  const hasNetworkChip = Boolean(isPremium && isTravel && ((tariff as any).premium_diff_chip?.includes('Netze') || features.some((f) => f.vars?.operators)));
   const cleanedTitle = cleanTariffName(tariff.name);
   const reloadInfo   = getReloadabilityInfo(tariff);
 
@@ -121,7 +125,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               )}
               {coverage && (
                 <div className="relative inline-flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                  <span>🌍 {coverage}</span>
+                  <span className="inline-flex items-center"><GlobeIcon size={13} className="text-slate-400 shrink-0 mr-1" />{coverage}</span>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -230,7 +234,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <p className="leading-relaxed text-xs font-medium">{t(activeFeature.descKey as any, activeFeature.vars)}</p>
             {activeFeature.priceNoteKey && (
               <p className="mt-1 text-xs text-indigo-800 bg-indigo-100/70 rounded-md p-1.5 font-semibold leading-tight">
-                💡 {t(activeFeature.priceNoteKey as any)}
+                {t(activeFeature.priceNoteKey as any)}
               </p>
             )}
             {activeFeature.extra && (
@@ -247,7 +251,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
               <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                <span>ℹ️</span> {activeAbbr.label}
+                <InfoIcon size={14} className="text-slate-600" /> {activeAbbr.label}
               </span>
               <button
                 type="button"
@@ -321,8 +325,8 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             >
               <NetworkIcon size={13} className="text-slate-500 shrink-0" />
               <span className="truncate">{ops.map((o) => o.name).join(' · ')}</span>
-              {ops.length > 1 && (
-                <span className="text-slate-600 font-normal">{t('card_network_count' as any, { count: ops.length }) || `(${ops.length})`}</span>
+              {!hasNetworkChip && totalOpsCount > 1 && (
+                <span className="text-slate-600 font-normal">{t('card_network_count' as any, { count: totalOpsCount }) || `(${totalOpsCount})`}</span>
               )}
             </span>
           ) : (
@@ -332,23 +336,22 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             </span>
           )}
 
-          {/* Interactive Routing Pill (Only when breakout_ip is present in supplier data) */}
-          {breakoutIp ? (
+          {/* Interactive Routing Pill (Only when IP is present in supplier data) */}
+          {ipChipLabel ? (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveFeature(null);
-                const label = breakoutIp === 'HK' ? 'HK IP' : `${breakoutIp} IP`;
-                setActiveAbbr(activeAbbr?.label === label ? null : {
-                  label,
-                  text: breakoutIp === 'HK' ? t('feat_hk_ip_desc') : `${breakoutIp} IP Routing`,
+                setActiveAbbr(activeAbbr?.label === ipChipLabel ? null : {
+                  label: ipChipLabel,
+                  text: ipFullList ? `${t('ip_origin') || 'IP-Herkunft'}: ${ipFullList}` : ipChipLabel,
                 });
               }}
-              className="min-h-[44px] inline-flex items-center rounded-md bg-slate-100 border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
-              title={breakoutIp === 'HK' ? t('feat_hk_ip_desc') : `${breakoutIp} IP Routing`}
+              className="min-h-[44px] inline-flex items-center rounded-md bg-slate-100 border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
+              title={ipFullList ? `${t('ip_origin') || 'IP-Herkunft'}: ${ipFullList}` : ipChipLabel}
             >
-              {breakoutIp === 'HK' ? 'HK IP ⓘ' : `${breakoutIp} IP`}
+              {ipChipLabel}
             </button>
           ) : null}
 

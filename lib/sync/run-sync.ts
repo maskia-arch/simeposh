@@ -290,18 +290,75 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       let countryCode = isMulti ? getRegionCode(locationCodes, pkg) : (locationCodes[0] ?? 'XX');
       let countryName   = getCountryName(pkg);
 
-      const rawPkgName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
-      if ((countryCode === 'LA' || countryCode === 'LATAM') && (rawPkgName.includes('latin') || rawPkgName.includes('south america') || countryName.toLowerCase().includes('latin'))) {
+      // ── Central Region Guards in Sync Code ──
+      const rawPkgText = `${pkg.name || ''} ${pkg.locationName || ''} ${pkg.description || ''} ${countryName}`.toLowerCase();
+
+      // North America vs Namibia guard
+      if (
+        (countryCode === 'NA' || countryCode === 'NORTH_AMERICA') &&
+        (rawPkgText.includes('north america') || rawPkgText.includes('usa & canada') || rawPkgText.includes('us & canada') || (locationCodes.includes('US') && locationCodes.includes('CA')))
+      ) {
+        countryCode = 'NORTH_AMERICA';
+        countryName = 'North America';
+      }
+
+      // Latin America vs Laos guard
+      if (
+        (countryCode === 'LA' || countryCode === 'LAOS' || countryCode === 'LATAM') &&
+        (rawPkgText.includes('latin') || rawPkgText.includes('south america'))
+      ) {
         countryCode = 'LATAM';
         countryName = 'Latin America';
-      } else if (isMulti) {
+      }
+
+      // Europe vs EU guard
+      if (countryCode === 'EU' || (countryCode !== 'EUROPE' && (rawPkgText.includes('europe (3') || rawPkgText.includes('europe(3') || rawPkgText.includes('europe (4') || rawPkgText.includes('europe-')))) {
+        countryCode = 'EUROPE';
+        countryName = 'Europe';
+      }
+
+      // Oceania vs OC guard
+      if (countryCode === 'OC' || (countryCode !== 'OCEANIA' && rawPkgText.includes('oceania'))) {
+        countryCode = 'OCEANIA';
+        countryName = 'Oceania';
+      }
+
+      // Asia vs AS (American Samoa) guard
+      if ((countryCode === 'AS' || countryCode === 'ASIA') && (rawPkgText.includes('asia-') || rawPkgText.includes('asia (') || rawPkgText.includes('central asia') || rawPkgText.includes('south asia') || rawPkgText.includes('southeast asia'))) {
+        countryCode = 'ASIA';
+        countryName = 'Asia';
+      }
+
+      // Africa vs AF (Afghanistan) guard
+      if ((countryCode === 'AF' || countryCode === 'AFRICA' || countryCode === 'GLOB') && (rawPkgText.includes('africa (') || rawPkgText.includes('africa-') || rawPkgText.includes('africa 1gb') || rawPkgText.includes('africa 3gb') || rawPkgText.includes('africa 5gb'))) {
+        countryCode = 'AFRICA';
+        countryName = 'Africa';
+      }
+
+      // Middle East vs ME (Montenegro) guard
+      if ((countryCode === 'ME' || countryCode === 'MIDDLE_EAST') && (rawPkgText.includes('middle east') || rawPkgText.includes('gulf') || rawPkgText.includes('gcc'))) {
+        countryCode = 'MIDDLE_EAST';
+        countryName = 'Middle East';
+      }
+
+      if (isMulti) {
         const sortedKey = [...locationCodes].sort().join(',');
         const aiName = aiDisplayNames.get(sortedKey);
-        if (aiName) {
+        if (aiName && !['NORTH_AMERICA', 'LATAM', 'EUROPE', 'OCEANIA', 'ASIA', 'AFRICA', 'MIDDLE_EAST'].includes(countryCode)) {
           countryName = aiName;
         }
       }
-      const region      = isMulti ? countryName : (countryCode === 'LATAM' ? 'Latin America' : null);
+
+      const region = ['NORTH_AMERICA', 'LATAM', 'EUROPE', 'OCEANIA', 'ASIA', 'AFRICA', 'MIDDLE_EAST', 'SEA', 'GLOB'].includes(countryCode)
+        ? (countryCode === 'NORTH_AMERICA' ? 'North America' :
+           countryCode === 'LATAM' ? 'Latin America' :
+           countryCode === 'EUROPE' ? 'Europe' :
+           countryCode === 'OCEANIA' ? 'Oceania' :
+           countryCode === 'ASIA' ? 'Asia' :
+           countryCode === 'AFRICA' ? 'Africa' :
+           countryCode === 'MIDDLE_EAST' ? 'Middle East' :
+           countryCode === 'SEA' ? 'Southeast Asia' : 'Global')
+        : (isMulti ? countryName : null);
 
       const flagEmoji = !isMulti && locationCodes.length === 1
         ? getFlagEmoji(locationCodes[0])
@@ -324,9 +381,17 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
       const activeType = Number(pkg.activeType ?? 2);
       const topUpType = Number(pkg.supportTopUpType ?? 1);
-      const breakoutIp = typeof pkg.ipExport === 'string' && /^[A-Za-z]{2}$/.test(pkg.ipExport.trim())
-        ? pkg.ipExport.trim().toUpperCase()
-        : null;
+      // Extract IP routing countries from supplier ipExport field
+      const parsedIpCountries: string[] = [];
+      if (typeof pkg.ipExport === 'string') {
+        const parts = pkg.ipExport.split(/[\/,]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+        for (const p of parts) {
+          if (p === 'EUROPE') parsedIpCountries.push('EU');
+          else if (/^[A-Z]{2}$/.test(p)) parsedIpCountries.push(p);
+        }
+      }
+      const ipCountries = parsedIpCountries.length > 0 ? parsedIpCountries : null;
+      const breakoutIp = parsedIpCountries.length > 0 ? parsedIpCountries.join(' / ') : null;
       const isDayPass = tariffType.startsWith('unlimited') || pkg.dataType === 2;
       let discountRuleCode = (pkg as any).discountRuleCode ? String((pkg as any).discountRuleCode).trim() : null;
       if (isDayPass) {
@@ -366,6 +431,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         tariff_type:        tariffType,
         speed_kbps:         speedKbps,
         breakout_ip:        breakoutIp,
+        ip_countries:       ipCountries,
         location_codes:     locationCodes.length > 0 ? locationCodes : null as string[] | null,
         raw_data:           {
           ...(pkg as unknown as Record<string, unknown>),

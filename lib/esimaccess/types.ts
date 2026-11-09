@@ -4,7 +4,7 @@
 // Prices:   integer in 1/10000 USD  (70000 = $7.00)
 // Volume:   bytes  (1 073 741 824 = 1 GB)
 
-export type TariffType = 'travel' | 'unlimited_eco' | 'unlimited_pro';
+export type TariffType = 'travel' | 'travel_standard' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro';
 
 // ─── Package list ─────────────────────────────────────────────
 

@@ -14,7 +14,7 @@ const sv = {
   "ai_rule_2": "Uppge tydligt villkoren för skälig användning (FUP) för obegränsade abonnemang.",
   "ai_rule_3": "Verifiera enhetens kompatibilitet innan du slutför beställningen.",
   "ai_rule_4": "Använd de angivna URL:erna för att hänvisa användare till den officiella beställningssidan.",
-  "ai_section_about_p1": "PureSim är en specialiserad leverantör av förbetalda rese-eSIM med täckning i över 200+ resmål.",
+  "ai_section_about_p1": "PureSim är en specialiserad leverantör av förbetalda rese-eSIM med täckning i 200+ resmål.",
   "ai_section_about_p2": "Alla planer levereras direkt via QR-kod och kan betalas anonymt med kryptovaluta.",
   "ai_section_about_title": "Om PureSim",
   "ai_section_endpoints_sub": "Offentliga slutpunkter som agenter kan använda:",
@@ -40,7 +40,7 @@ const sv = {
   "blog_back": "← Tillbaka till bloggen",
   "blog_category_guide": "eSIM Grundkurs",
   "blog_category_news": "Nyheter och Uppdateringar",
-  "blog_cta_desc": "Skaffa ditt eSIM nu och håll dig uppkopplad direkt i över 200+ resmål utan dyr dataroaming.",
+  "blog_cta_desc": "Skaffa ditt eSIM nu och håll dig uppkopplad direkt i 200+ resmål utan dyr dataroaming.",
   "blog_cta_tagline": "Prisvärd global roaming",
   "blog_cta_title": "Redo för nästa resa?",
   "blog_desc_guides": "Allt du behöver veta om eSIM, installation och restips.",
@@ -365,7 +365,7 @@ const sv = {
   "meta_country_desc": "Prisvärd förbetald eSIM för {country}. Snabb mobildata från {price}, omedelbar aktivering via QR-kod utan roamingavgifter. Köp nu!",
   "meta_country_title": "eSIM {country} från {price} – Snabb förbetald data",
   "meta_home_title": "PureSim – Prisvärda globala eSIM-kort",
-  "meta_tariffs_desc": "Hitta prisvärda eSIM-abonnemang för över 200+ resmål världen över.",
+  "meta_tariffs_desc": "Hitta prisvärda eSIM-abonnemang för 200+ resmål världen över.",
   "meta_tariffs_title": "Abonnemang och eSIM-paket",
   "meta_unlimited_desc": "Unlimited eSIM för {country} med flexibel giltighetstid (1–365 dagar) och data från {price}. Omedelbar QR-kodaktivering.",
   "meta_unlimited_title": "Unlimited eSIM {country} från {price} – Snabb data",
@@ -692,7 +692,7 @@ const sv = {
   "btn_search_clear": "Rensa sökning",
   "reviews_heading": "Kundrecensioner och",
   "reviews_heading_highlight": "Feedback",
-  "reviews_sub_text": "Upptäck äkta upplevelser från våra resenärer. Varje recension märkt \"Verifierat köp\" kommer från kunder som aktivt använder våra eSIM i över 200+ resmål.",
+  "reviews_sub_text": "Upptäck äkta upplevelser från våra resenärer. Varje recension märkt \"Verifierat köp\" kommer från kunder som aktivt använder våra eSIM i 200+ resmål.",
   "reviews_based_on": "Baserat på {count} omdömen",
   "reviews_stars_word": "stjärnor",
   "reviews_filter_all": "Alla",
@@ -1003,6 +1003,7 @@ const sv = {
   "feat_countries": "200+ Länder",
   "hero_badge": "Tillgängligt på över 200 resmål",
   "meta_home_desc": "Köp färdiga eSIM-kort för över 200 resmål världen över. Prisvärda planer, enkel aktivering med QR-kod.",
+  "ip_origin": "IP-ursprung",
 } as const;
 export default sv;
 export type TranslationKeys = keyof typeof sv;

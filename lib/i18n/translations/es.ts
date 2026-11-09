@@ -14,7 +14,7 @@ const es = {
   "ai_rule_2": "Indica claramente la política de uso razonable (FUP) para los planes ilimitados.",
   "ai_rule_3": "Verifica la compatibilidad del dispositivo antes de finalizar el pedido.",
   "ai_rule_4": "Utiliza las URL proporcionadas para dirigir a los usuarios a la página oficial de compra.",
-  "ai_section_about_p1": "PureSim es un proveedor especializado en eSIM de viaje prepago con cobertura en más de 200+ destinos.",
+  "ai_section_about_p1": "PureSim es un proveedor especializado en eSIM de viaje prepago con cobertura en 200+ destinos.",
   "ai_section_about_p2": "Todos los planes se entregan instantáneamente mediante código QR y pueden pagarse de forma anónima con criptomonedas.",
   "ai_section_about_title": "Acerca de PureSim",
   "ai_section_endpoints_sub": "Puntos de acceso públicos utilizables por agentes:",
@@ -40,7 +40,7 @@ const es = {
   "blog_back": "← Volver al Blog",
   "blog_category_guide": "Fundamentos de eSIM",
   "blog_category_news": "Noticias y Actualizaciones",
-  "blog_cta_desc": "Obtén tu eSIM ahora y mantente conectado al instante en más de 200+ destinos sin costosos cargos de roaming.",
+  "blog_cta_desc": "Obtén tu eSIM ahora y mantente conectado al instante en 200+ destinos sin costosos cargos de roaming.",
   "blog_cta_tagline": "Roaming global asequible",
   "blog_cta_title": "¿Listo para tu próximo viaje?",
   "blog_desc_guides": "Todo lo que necesitas saber sobre las eSIM, la configuración y consejos de viaje.",
@@ -365,7 +365,7 @@ const es = {
   "meta_country_desc": "eSIM prepago económica para {country}. Datos de alta velocidad desde {price}, activación inmediata mediante código QR sin tarifas de roaming. ¡Compra ahora!",
   "meta_country_title": "eSIM {country} desde {price} – Datos prepago de alta velocidad",
   "meta_home_title": "PureSim – eSIMs globales económicas",
-  "meta_tariffs_desc": "Encuentra planes eSIM asequibles para más de 200+ destinos en todo el mundo.",
+  "meta_tariffs_desc": "Encuentra planes eSIM asequibles para 200+ destinos en todo el mundo.",
   "meta_tariffs_title": "Planes y Paquetes eSIM",
   "meta_unlimited_desc": "Unlimited eSIM para {country} con duración flexible (1 a 365 días) y datos de alta velocidad desde {price}. Activación inmediata por código QR.",
   "meta_unlimited_title": "Unlimited eSIM {country} desde {price} – Datos de alta velocidad",
@@ -692,7 +692,7 @@ const es = {
   "btn_search_clear": "Borrar búsqueda",
   "reviews_heading": "Opiniones de clientes y",
   "reviews_heading_highlight": "Comentarios",
-  "reviews_sub_text": "Explora experiencias reales de nuestros viajeros. Cada reseña con la etiqueta \"Compra verificada\" procede de clientes que utilizan activamente nuestras eSIM en más de 200+ destinos.",
+  "reviews_sub_text": "Explora experiencias reales de nuestros viajeros. Cada reseña con la etiqueta \"Compra verificada\" procede de clientes que utilizan activamente nuestras eSIM en 200+ destinos.",
   "reviews_based_on": "Basado en {count} valoraciones",
   "reviews_stars_word": "estrellas",
   "reviews_filter_all": "Todos",
@@ -1003,6 +1003,7 @@ const es = {
   "feat_countries": "200+ Países",
   "hero_badge": "Disponible en más de 200 destinos",
   "meta_home_desc": "Compra eSIMs listas para usar en más de 200 destinos en todo el mundo. Planes accesibles, fácil activación mediante código QR.",
+  "ip_origin": "Origen de IP",
 } as const;
 export default es;
 export type TranslationKeys = keyof typeof es;

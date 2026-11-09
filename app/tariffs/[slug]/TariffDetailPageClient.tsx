@@ -11,7 +11,7 @@ import { CheckoutModal } from '@/components/CheckoutModal';
 import { useCart } from '@/components/CartProvider';
 import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
-import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
+import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, formatIpFullList, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 type Tariff = PublicTariff;
@@ -43,6 +43,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
   const isPremium   = tariff.is_premium || tariff.tariff_type === 'travel_premium' || isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
+  const ipFullList  = formatIpFullList(tariff.ip_countries, breakoutIp);
   const isTR        = isTurkeyTariff(tariff);
   const ops         = getTariffOperators(tariff, 8);
   const typeInfo    = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
@@ -258,9 +259,9 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                         {`${ops.length} ${ops.length === 1 ? t('network_singular') : t('networks_plural')}`}
                       </span>
                     )}
-                    {breakoutIp && (
+                    {ipFullList && (
                       <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700 font-mono">
-                        {breakoutIp === 'UK' ? '🇬🇧 Europa IP' : breakoutIp === 'NL' ? '🇳🇱 Breakout IP: NL' : `Breakout IP: ${breakoutIp}`}
+                        {`${t('ip_origin') || 'IP-Herkunft'}: ${ipFullList}`}
                       </span>
                     )}
                   </div>
@@ -336,7 +337,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             </div>
 
             {/* Unlimited notes */}
-            {typeInfo && tariff.tariff_type !== 'travel' && (
+            {typeInfo && (tariff.tariff_type === 'unlimited_eco' || tariff.tariff_type === 'unlimited_pro') && (
               <div className={`rounded-2xl border px-4 py-3 text-xs ${typeInfo.color} space-y-1 shadow-sm`}>
                 <p className="font-bold flex items-center gap-1">
                   {typeInfo.icon} {getTariffSpeedDesc(tariff, t)}
