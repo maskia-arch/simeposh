@@ -173,17 +173,17 @@ export const COUNTRY_ALIASES: Record<string, string> = {
  * Covers all shop languages.
  */
 export const REGION_ALIASES: Record<string, string> = {
-  // ── Europe / EU ────────────────────────────────────────────────
-  'europa':              'EU', 'europe':               'EU', 'europe travel':   'EU',
-  'eu':                  'EU', 'european':             'EU', 'europäisch':      'EU',
-  'europe esim':         'EU', 'europa esim':          'EU',
-  'europe (30+)':        'EU', 'europa (30+)':         'EU',
-  'avrupa':              'EU', 'europe multi':         'EU',
+  // ── Europe / EUROPE ────────────────────────────────────────────
+  'europa':              'EUROPE', 'europe':               'EUROPE', 'europe travel':   'EUROPE',
+  'eu':                  'EUROPE', 'european':             'EUROPE', 'europäisch':      'EUROPE',
+  'europe esim':         'EUROPE', 'europa esim':          'EUROPE',
+  'europe (30+)':        'EUROPE', 'europa (30+)':         'EUROPE',
+  'avrupa':              'EUROPE', 'europe multi':         'EUROPE',
 
-  // ── Asia / AS ──────────────────────────────────────────────────
-  'asien':               'AS', 'asia':                 'AS', 'asie':            'AS',
-  'asya':                'AS', 'ásia':                 'AS', 'azja':            'AS',
-  'ázsia':               'AS', 'asien esim':           'AS', 'asia esim':       'AS',
+  // ── Asia / ASIA ──────────────────────────────────────────────────
+  'asien':               'ASIA', 'asia':                 'ASIA', 'asie':            'ASIA',
+  'asya':                'ASIA', 'ásia':                 'ASIA', 'azja':            'ASIA',
+  'ázsia':               'ASIA', 'asien esim':           'ASIA', 'asia esim':       'ASIA',
 
   // ── Southeast Asia / SEA ───────────────────────────────────────
   'südostasien':         'SEA', 'southeast asia':      'SEA', 'asie du sud-est': 'SEA',

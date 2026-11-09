@@ -138,9 +138,9 @@ function renderExpiredHtml(locale: LocaleCode): string {
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
     header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.5rem; }
     .header-inner { max-width: 64rem; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-    .logo { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 800; font-size: 1.25rem; color: #1d4ed8; }
-    .logo img { width: 28px; height: 28px; object-fit: contain; }
-    .support-link { font-size: 0.8125rem; font-weight: 600; color: #475569; text-decoration: none; transition: color 0.15s; }
+    .logo { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 800; font-size: 1.25rem; color: #1d4ed8; min-height: 44px; }
+    .logo img { width: 32px; height: 32px; object-fit: contain; }
+    .support-link { font-size: 0.8125rem; font-weight: 600; color: #475569; text-decoration: none; transition: color 0.15s; min-height: 44px; display: inline-flex; align-items: center; }
     .support-link:hover { color: #2563eb; }
     main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4rem 1rem; text-align: center; }
     .card { width: 100%; max-width: 28rem; background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 1.5rem; padding: 2rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); }

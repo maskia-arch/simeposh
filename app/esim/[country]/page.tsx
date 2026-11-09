@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
 
   const description = t('meta_country_desc' as any, { country: countryLabel, price: minPriceFormatted })
     || (locale === 'de'
-      ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted}, sofortige Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`
+      ? `Günstige Prepaid eSIM für ${countryLabel}. Highspeed-Daten ab ${minPriceFormatted}, einfache Aktivierung per QR-Code und keine Roaming-Gebühren. Jetzt Tarif buchen!`
       : `Affordable prepaid eSIM for ${countryLabel}. High-speed data from ${minPriceFormatted}, instant QR code activation, and no roaming fees. Buy now!`);
 
   const prefix = locale === 'de' ? '' : `/${locale}`;

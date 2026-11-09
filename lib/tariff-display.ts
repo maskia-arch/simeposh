@@ -68,10 +68,20 @@ export function isoName(code: string, locale = 'en'): string {
 
 /** Localised label for our virtual region codes across all 15 supported languages. */
 const REGION_LABELS: Record<string, Record<string, string>> = {
+  EUROPE: {
+    en: 'Europe', de: 'Europa', fr: 'Europe', es: 'Europa', it: 'Europa',
+    nl: 'Europa', pl: 'Europa', pt: 'Europa', tr: 'Avrupa', sv: 'Europa',
+    da: 'Europa', fi: 'Eurooppa', cs: 'Evropa', ro: 'Europa', hu: 'Európa'
+  },
   EU: {
     en: 'Europe', de: 'Europa', fr: 'Europe', es: 'Europa', it: 'Europa',
     nl: 'Europa', pl: 'Europa', pt: 'Europa', tr: 'Avrupa', sv: 'Europa',
     da: 'Europa', fi: 'Eurooppa', cs: 'Evropa', ro: 'Europa', hu: 'Európa'
+  },
+  ASIA: {
+    en: 'Asia', de: 'Asien', fr: 'Asie', es: 'Asia', it: 'Asia',
+    nl: 'Azië', pl: 'Azja', pt: 'Ásia', tr: 'Asya', sv: 'Asien',
+    da: 'Asien', fi: 'Aasia', cs: 'Asie', ro: 'Asia', hu: 'Ázsia'
   },
   AS: {
     en: 'Asia', de: 'Asien', fr: 'Asie', es: 'Asia', it: 'Asia',
@@ -92,6 +102,11 @@ const REGION_LABELS: Record<string, Record<string, string>> = {
     en: 'Latin America', de: 'Lateinamerika', fr: 'Amérique latine', es: 'Latinoamérica', it: 'America Latina',
     nl: 'Latijns-Amerika', pl: 'Ameryka Łacińska', pt: 'América Latina', tr: 'Latin Amerika', sv: 'Latinamerika',
     da: 'Latinamerika', fi: 'Latinalainen Amerikka', cs: 'Latinská Amerika', ro: 'America Latină', hu: 'Latin-Amerika'
+  },
+  OCEANIA: {
+    en: 'Oceania', de: 'Ozeanien', fr: 'Océanie', es: 'Oceanía', it: 'Oceania',
+    nl: 'Oceanië', pl: 'Oceania', pt: 'Oceania', tr: 'Okyanusya', sv: 'Oceanien',
+    da: 'Oceanien', fi: 'Oseania', cs: 'Oceánie', ro: 'Oceania', hu: 'Óceánia'
   },
   OC: {
     en: 'Oceania', de: 'Ozeanien', fr: 'Océanie', es: 'Oceanía', it: 'Oceania',
@@ -459,11 +474,8 @@ export function isHkIpTariff(tariff: {
   is_non_hk_ip?: boolean | null;
   is_premium?: boolean | null;
 }): boolean {
-  if (isNonHkIpTariff(tariff) || isPremiumTariff(tariff)) return false;
   const ip = (tariff.breakout_ip ?? '').toUpperCase().trim();
-  if (ip === 'HK') return true;
-  // If no other breakout_ip is specified and it's not non-hk/premium, it routes via HK
-  return !ip || ip === 'HK';
+  return ip === 'HK';
 }
 
 

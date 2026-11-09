@@ -170,7 +170,7 @@ export function HomePageClient({
           <Link
             href={`${prefix}/tariffs`}
             prefetch={false}
-            className="text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
+            className="text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors whitespace-nowrap shrink-0 min-h-[44px] inline-flex items-center ml-2"
           >
             {t('section_view_all')}
           </Link>
@@ -197,7 +197,7 @@ export function HomePageClient({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-800 group-hover:text-brand-700 transition-colors truncate text-xs sm:text-base">
+                  <h3 className="font-bold text-slate-800 group-hover:text-brand-700 transition-colors line-clamp-2 leading-tight break-words text-xs sm:text-base">
                     {countryLabel}
                   </h3>
                   <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 whitespace-nowrap">

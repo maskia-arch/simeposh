@@ -66,7 +66,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
   // Determine abbreviations
   const isNonHk = isNonHkIpTariff(tariff);
   const isDualNet = ops.length > 1;
-  const isHk = !isNonHk && !isPremium && (!breakoutIp || breakoutIp === 'HK');
+  const isHk = breakoutIp === 'HK';
 
   // Limit badges shown directly on card face: exactly 1 for Travel Premium, at most 2 for others
   const visibleFeatures = isPremium && isTravel ? features.slice(0, 1) : features.slice(0, 2);
@@ -332,51 +332,24 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             </span>
           )}
 
-          {/* Neutral Multi-Network Pill with exact network count (slate styling) */}
-          {ops.length >= 2 && (
-            <button
-              type="button"
-              data-testid="dual-net-pill"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveFeature(null);
-                const netLabel = `${ops.length} ${ops.length === 1 ? (t('network_singular' as any) || (isDe ? 'Netz' : 'Network')) : (t('networks_plural' as any) || (isDe ? 'Netze' : 'Networks'))}`;
-                setActiveAbbr(activeAbbr?.label === netLabel ? null : {
-                  label: netLabel,
-                  text: ops.map((o) => o.name).join(' · '),
-                });
-              }}
-              aria-label={`${ops.length} ${ops.length === 1 ? 'Netz' : 'Netze'}`}
-              className="dual-net-pill relative min-h-[44px] inline-flex items-center justify-center rounded-md bg-slate-100 border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors shadow-2xs after:absolute after:-inset-y-[12px] after:-inset-x-1.5 after:content-[''] after:z-10"
-              title={ops.map((o) => o.name).join(' · ')}
-            >
-              <span>{`${ops.length} ${t('networks_plural' as any) || (isDe ? 'Netze' : 'Networks')} ⓘ`}</span>
-            </button>
-          )}
-
-          {/* Interactive Routing Pill (HK IP / Specific Breakout IP) */}
-          {isHk ? (
+          {/* Interactive Routing Pill (Only when breakout_ip is present in supplier data) */}
+          {breakoutIp ? (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveFeature(null);
-                setActiveAbbr(activeAbbr?.label === 'HK IP' ? null : {
-                  label: 'HK IP',
-                  text: t('feat_hk_ip_desc'),
+                const label = breakoutIp === 'HK' ? 'HK IP' : `${breakoutIp} IP`;
+                setActiveAbbr(activeAbbr?.label === label ? null : {
+                  label,
+                  text: breakoutIp === 'HK' ? t('feat_hk_ip_desc') : `${breakoutIp} IP Routing`,
                 });
               }}
-              className="min-h-[44px] inline-flex items-center rounded-md bg-slate-100 border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
-              title={t('feat_hk_ip_desc')}
+              className="min-h-[44px] inline-flex items-center rounded-md bg-slate-100 border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"
+              title={breakoutIp === 'HK' ? t('feat_hk_ip_desc') : `${breakoutIp} IP Routing`}
             >
-              HK IP ⓘ
+              {breakoutIp === 'HK' ? 'HK IP ⓘ' : `${breakoutIp} IP`}
             </button>
-          ) : breakoutIp ? (
-            <span
-              className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-xs font-mono font-medium text-slate-700"
-            >
-              {breakoutIp === 'UK' ? '🇬🇧 Europa IP' : breakoutIp === 'NL' ? '🇳🇱 NL IP' : `${breakoutIp} IP`}
-            </span>
           ) : null}
 
           {/* Neutral reloadability badge */}

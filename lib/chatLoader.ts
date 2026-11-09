@@ -293,7 +293,9 @@ function getChatLocale(): string {
         style.textContent = `
           @media (max-width: 768px) {
             #vs25-bbl, #vs25 .vs25-bbl {
-              bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+              right: 16px !important;
+              left: auto !important;
+              bottom: calc(${window.location.pathname.includes('/unlimited') ? '90px' : '20px'} + env(safe-area-inset-bottom, 0px)) !important;
             }
           }
           .vs25-tg-banner {

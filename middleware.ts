@@ -167,14 +167,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
   }
 
-  // ── American Samoa 404 & /esim/as 301 Redirect to Asia ──
+  // ── /esim/as 301 Redirect to Asia ──
   const cleanNorm = normalizedPath.length > 1 ? normalizedPath.replace(/\/+$/, '') : normalizedPath;
-  if (cleanNorm === '/esim/american-samoa' || cleanNorm.startsWith('/esim/american-samoa/')) {
-    const res = new NextResponse(null, { status: 404 });
-    res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
-    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return res;
-  }
   if (cleanNorm === '/esim/as' || cleanNorm.startsWith('/esim/as/')) {
     const target = langPrefix ? `${langPrefix}/esim/asia` : '/esim/asia';
     const res = NextResponse.redirect(new URL(target + request.nextUrl.search, request.url), 301);

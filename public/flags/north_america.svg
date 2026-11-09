@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480">
+  <defs>
+    <linearGradient id="naBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="50%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="naLandGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <filter id="naShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="640" height="480" rx="24" fill="url(#naBgGrad)"/>
+  <!-- Decorative Longitude / Latitude subtle grid -->
+  <circle cx="320" cy="240" r="180" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+  <ellipse cx="320" cy="240" rx="90" ry="180" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="2"/>
+  <line x1="140" y1="240" x2="500" y2="240" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+  <!-- Stylized silhouette of North America continent -->
+  <g filter="url(#naShadow)" fill="url(#naLandGrad)" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round">
+    <!-- Alaska / North West -->
+    <path d="M190 140 c15 -20 40 -25 65 -15 c20 8 45 10 70 -5 c25 -15 50 -10 75 5 c20 12 35 30 30 55 c-5 25 -15 45 -10 70 c5 20 -5 45 -15 65 c-10 20 -25 40 -35 60 c-10 20 -15 45 -25 65 c-5 10 -15 20 -25 25 c-5 -5 -10 -20 -15 -30 c-15 -30 -25 -65 -35 -100 c-10 -35 -25 -70 -45 -100 c-10 -15 -15 -35 -15 -55 c0 -20 10 -35 25 -40 z"/>
+    <!-- Greenland accent -->
+    <path d="M410 110 c15 -10 35 -10 50 0 c15 10 20 25 15 40 c-5 15 -20 25 -35 25 c-15 0 -25 -10 -30 -25 c-5 -15 -5 -30 0 -40 z"/>
+  </g>
+</svg>

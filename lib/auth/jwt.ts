@@ -54,7 +54,10 @@ async function getCryptoKey(secret: string): Promise<CryptoKey> {
 }
 
 export async function signJwt(payload: object, expiresInSeconds = 7 * 24 * 3600): Promise<string> {
-  const secret = process.env.JWT_SECRET || 'fallback-secure-secret-please-set-in-env-min-32-chars';
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim().length < 32) {
+    throw new Error('JWT_SECRET environment variable is missing or shorter than 32 characters');
+  }
   const header = { alg: 'HS256', typ: 'JWT' };
   const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const fullPayload = { ...payload, exp };
@@ -86,7 +89,8 @@ export async function signJwt(payload: object, expiresInSeconds = 7 * 24 * 3600)
 
 export async function verifyJwt(token: string): Promise<any | null> {
   try {
-    const secret = process.env.JWT_SECRET || 'fallback-secure-secret-please-set-in-env-min-32-chars';
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.trim().length < 32) return null;
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     

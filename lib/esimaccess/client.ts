@@ -135,6 +135,8 @@ export function parseLocationCodes(pkg: EsimAccessPackage): string[] {
 
 // ── Region definitions ────────────────────────────────────────
 
+import { detectRegionFromText, normalizeRegionCode } from '@/lib/regions';
+
 export interface RegionInfo {
   /** Virtual country code stored in DB (always 2 uppercase letters for flags, or GLOB/MULTI) */
   code: string;
@@ -148,7 +150,7 @@ export interface RegionInfo {
 
 export const REGIONS: RegionInfo[] = [
   {
-    code: 'EU', name: 'Europe',
+    code: 'EUROPE', name: 'Europe',
     members: ['AT','BE','BG','CH','CY','CZ','DE','DK','EE','ES','FI','FR','GB','GR',
                'HR','HU','IE','IS','IT','LI','LT','LU','LV','MT','NL','NO','PL','PT',
                'RO','SE','SI','SK','AL','BA','ME','MK','RS','TR','UA','MD','GE','AM','AZ'],
@@ -177,7 +179,7 @@ export const REGIONS: RegionInfo[] = [
     minMatch: 4,
   },
   {
-    code: 'OC', name: 'Oceania',
+    code: 'OCEANIA', name: 'Oceania',
     members: ['AU','NZ','FJ','PG','SB','VU','WS','TO','KI','FM','PW','MH','NR','TV'],
     minMatch: 2,
   },
@@ -240,9 +242,10 @@ export function isoCountryName(code: string): string {
  * Never returns ugly placeholders like "2 Countries" / "30 Länder".
  */
 export function getCountryName(pkg: EsimAccessPackage): string {
-  const rawName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
-  if (rawName.includes('latin america') || rawName.includes('south america')) {
-    return 'Latin America';
+  const rawText = `${pkg.name || ''} ${pkg.locationName || ''}`.trim();
+  const detectedReg = detectRegionFromText(rawText);
+  if (detectedReg) {
+    return detectedReg.name;
   }
 
   const codes = parseLocationCodes(pkg);
@@ -276,26 +279,32 @@ export function getCountryName(pkg: EsimAccessPackage): string {
   return pkg.name ?? 'Unknown';
 }
 
-/** Virtual region code for multi-country packages */
+/** Virtual region code for multi-country packages or regional plans */
 export function getRegionCode(codes: string[], pkg?: EsimAccessPackage): string {
-  if (pkg) {
-    const rawName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
-    if (rawName.includes('latin america') || rawName.includes('south america')) {
-      return 'LATAM';
+  const rawText = pkg ? `${pkg.name || ''} ${pkg.locationName || ''}`.trim() : '';
+
+  // 1. Text-based detection from central keywords has highest priority
+  if (rawText) {
+    const textRegion = detectRegionFromText(rawText);
+    if (textRegion) {
+      return textRegion.code;
     }
   }
+
   if (codes.length === 0) return 'XX';
+
   if (codes.length === 1) {
-    if (codes[0] === 'LA' && pkg) {
-      const rawName = `${pkg.name || ''} ${pkg.locationName || ''}`.toLowerCase();
-      if (rawName.includes('latin') || rawName.includes('south america')) {
-        return 'LATAM';
-      }
-    }
+    // Only accept single location code if no region name is detected
     return codes[0];
   }
+
   const region = detectRegion(codes);
-  return region?.code ?? 'GLOB';
+  if (region) {
+    return normalizeRegionCode(region.code) || region.code;
+  }
+
+  if (codes.length >= 40) return 'GLOB';
+  return 'GLOB';
 }
 
 /** Country flag emoji from ISO code */

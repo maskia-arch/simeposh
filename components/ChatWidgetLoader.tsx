@@ -51,6 +51,7 @@ export function ChatWidgetLoader() {
   }, [pathname, mounted]);
 
   const isCheckoutCrypto = pathname?.startsWith('/checkout/crypto/');
+  const isUnlimited = pathname?.includes('/unlimited');
 
   // Do not render bubble on /checkout/crypto/* before click,
   // or once the real widget.js has loaded and injected its own UI
@@ -65,13 +66,17 @@ export function ChatWidgetLoader() {
     });
   };
 
+  const bottomPosition = isUnlimited
+    ? 'bottom-[calc(90px+env(safe-area-inset-bottom,0px))]'
+    : 'bottom-[calc(20px+env(safe-area-inset-bottom,0px))]';
+
   return (
     <button
       type="button"
       id="vs25-bbl"
       aria-label={t('chat_open_ai_assistant') || 'KI-Assistent öffnen'}
       onClick={handleClickFakeBubble}
-      className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] left-4 md:left-auto md:right-5 md:bottom-5 z-40 flex h-12 w-12 sm:h-14 sm:w-14 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white shadow-xl hover:bg-brand-700 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-brand-400/40"
+      className={`fixed ${bottomPosition} right-4 md:right-5 md:bottom-5 z-40 flex h-12 w-12 sm:h-14 sm:w-14 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white shadow-xl hover:bg-brand-700 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-brand-400/40`}
     >
       <span className="sr-only">{t('chat_open_ai_assistant') || 'KI-Assistent öffnen'}</span>
       <svg

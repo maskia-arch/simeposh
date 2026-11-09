@@ -95,6 +95,7 @@ function isTariffChanged(existing: any, generated: any): boolean {
   if (existing.slug !== generated.slug) return true;
   if (existing.tariff_type !== generated.tariff_type) return true;
   if (existing.speed_kbps !== generated.speed_kbps) return true;
+  if ((existing.breakout_ip || null) !== (generated.breakout_ip || null)) return true;
 
   // location_codes
   const a = existing.location_codes || [];
@@ -323,6 +324,9 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
       const activeType = Number(pkg.activeType ?? 2);
       const topUpType = Number(pkg.supportTopUpType ?? 1);
+      const breakoutIp = typeof pkg.ipExport === 'string' && /^[A-Za-z]{2}$/.test(pkg.ipExport.trim())
+        ? pkg.ipExport.trim().toUpperCase()
+        : null;
       const isDayPass = tariffType.startsWith('unlimited') || pkg.dataType === 2;
       let discountRuleCode = (pkg as any).discountRuleCode ? String((pkg as any).discountRuleCode).trim() : null;
       if (isDayPass) {
@@ -361,6 +365,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
         discount_rule_code: discountRuleCode,
         tariff_type:        tariffType,
         speed_kbps:         speedKbps,
+        breakout_ip:        breakoutIp,
         location_codes:     locationCodes.length > 0 ? locationCodes : null as string[] | null,
         raw_data:           {
           ...(pkg as unknown as Record<string, unknown>),
@@ -525,12 +530,49 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       console.log('[sync] Deactivated stale packages (last_synced_at < syncStart)');
     }
 
-    // ── 8.5. Reclassify tariffs (Fix 1 Rule: lowest price in group = standard, higher = premium) ──
+    // ── 8.5. Reclassify tariffs (Fix 4 Rules: separate regions by location count, demonstrable chips only) ──
     try {
-      const { updated } = await classifyAllTariffs();
-      console.log(`[sync] Reclassified tariffs according to Fix 1 Rule (${updated} travel tariffs ranked).`);
+      const { updated, totalStandard, totalPremium, needsReviewCount } = await classifyAllTariffs();
+      console.log(`[sync] Reclassified tariffs: ${updated} travel tariffs (Standard: ${totalStandard}, Premium: ${totalPremium}, Review Needed: ${needsReviewCount}).`);
     } catch (classifyErr: any) {
       console.error('[sync] Tariff reclassification error (non-fatal):', classifyErr.message);
+    }
+
+    // ── 8.8. Post-Sync Validation & Region Guard Verification ──
+    try {
+      const { query: runCheckQuery } = await import('@/lib/db');
+      // 1. Verify regional pages have >= 1 active tariff
+      const regionCounts = await runCheckQuery(`
+        SELECT country_code, count(*) as count
+        FROM public.tariffs
+        WHERE is_active = true AND hidden_reason IS NULL
+          AND country_code IN ('ASIA', 'EUROPE', 'GLOB', 'AFRICA', 'MIDDLE_EAST', 'LATAM', 'OCEANIA', 'SEA', 'NORTH_AMERICA')
+        GROUP BY country_code
+      `);
+      console.log('[sync post-check] Active regional tariffs:', regionCounts.rows);
+
+      // 2. Guard: 0 regional/multi-country tariffs assigned to 2-letter ISO country code
+      const invalidAssignments = await runCheckQuery(`
+        SELECT id, package_code, country_code, name
+        FROM public.tariffs
+        WHERE is_active = true AND hidden_reason IS NULL
+          AND country_code ~ '^[A-Z]{2}$'
+          AND (
+            array_length(location_codes, 1) > 1
+            OR name ILIKE '%Europe%'
+            OR name ILIKE '%Asia%'
+            OR name ILIKE '%North America%'
+            OR name ILIKE '%Global%'
+            OR name ILIKE '%Latin America%'
+            OR name ILIKE '%Middle East%'
+            OR name ILIKE '%Oceania%'
+          )
+      `);
+      if (invalidAssignments.rows.length > 0) {
+        console.error(`[sync post-check ALERT] Found ${invalidAssignments.rows.length} multi-country/regional tariffs assigned to 2-letter ISO:`, invalidAssignments.rows);
+      }
+    } catch (checkErr: any) {
+      console.warn('[sync post-check] Warning:', checkErr.message);
     }
 
     // ── 9. Finalize ─────────────────────────────────────────────

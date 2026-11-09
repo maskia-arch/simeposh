@@ -49,7 +49,10 @@ if ($m) {
 '
     COOLIFY_VARS=$(docker exec coolify php -r "$FETCH_PHP" 2>/dev/null || true)
     if [ -n "$COOLIFY_VARS" ]; then
-      eval "$COOLIFY_VARS"
+      while IFS='=' read -r key val; do
+        if [ "$key" = "CF_TOKEN" ] && [ -n "$val" ]; then CF_TOKEN="$val"; fi
+        if [ "$key" = "CF_ZONE" ] && [ -n "$val" ]; then CF_ZONE="$val"; fi
+      done <<< "$COOLIFY_VARS"
     fi
   fi
 fi

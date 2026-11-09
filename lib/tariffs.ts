@@ -168,38 +168,36 @@ function sanitizeNetworkSpeed(rawSpeed: unknown): string | null {
  * Server-side helper: Extract operators from database row or supplier raw_data.
  */
 export function extractRawOperators(row: any, max = 8): TariffOperator[] {
-  if (Array.isArray(row.operators) && row.operators.length > 0) {
-    return row.operators.slice(0, max);
-  }
-  const rawData = (row.raw_data ?? row) as Record<string, unknown> | null | undefined;
-  if (!rawData) return [];
-
-  const norm = (arr: any[]): TariffOperator[] =>
-    arr
-      .map((o: any) => ({
-        name: String(o?.operatorName ?? o?.name ?? '').trim(),
-        networkType: o?.networkType ? String(o.networkType) : undefined,
-      }))
-      .filter((o) => o.name);
-
   let ops: any[] = [];
-  if (Array.isArray(rawData.operatorList) && rawData.operatorList.length) {
-    ops = rawData.operatorList;
-  } else if (Array.isArray(rawData.networkList) && rawData.networkList.length) {
-    ops = rawData.networkList;
-  } else if (Array.isArray(rawData.locationNetworkList)) {
-    ops = (rawData.locationNetworkList as any[]).flatMap((l) =>
-      Array.isArray(l?.operatorList) ? l.operatorList : [],
-    );
+  if (Array.isArray(row.operators) && row.operators.length > 0) {
+    ops = row.operators;
+  } else {
+    const rawData = (row.raw_data ?? row) as Record<string, unknown> | null | undefined;
+    if (rawData) {
+      if (Array.isArray(rawData.operatorList) && rawData.operatorList.length) {
+        ops = rawData.operatorList;
+      } else if (Array.isArray(rawData.networkList) && rawData.networkList.length) {
+        ops = rawData.networkList;
+      } else if (Array.isArray(rawData.locationNetworkList)) {
+        ops = (rawData.locationNetworkList as any[]).flatMap((l) =>
+          Array.isArray(l?.operatorList) ? l.operatorList : [],
+        );
+      }
+    }
   }
 
   const seen = new Set<string>();
   const out: TariffOperator[] = [];
-  for (const o of norm(ops)) {
-    const key = o.name.toLowerCase();
+  for (const item of ops) {
+    const name = String(item?.operatorName ?? item?.name ?? '').trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(o);
+    out.push({
+      name,
+      networkType: item?.networkType ? String(item.networkType) : undefined,
+    });
     if (out.length >= max) break;
   }
   return out;
@@ -207,14 +205,17 @@ export function extractRawOperators(row: any, max = 8): TariffOperator[] {
 
 /**
  * Server-side helper: Extract breakout IP from database row or supplier raw_data.
+ * Strictly normalizes to 2 uppercase letters (ISO alpha-2), or null.
  */
 export function extractServerBreakoutIp(row: any): string | null {
-  if (row.breakout_ip !== undefined && row.breakout_ip !== null) {
-    return String(row.breakout_ip).trim().toUpperCase() || null;
-  }
-  const raw = (row.raw_data ?? {}) as Record<string, unknown>;
-  if (typeof raw.ipExport === 'string' && raw.ipExport.trim()) {
-    return raw.ipExport.trim().toUpperCase();
+  const val = (row.breakout_ip !== undefined && row.breakout_ip !== null)
+    ? String(row.breakout_ip).trim().toUpperCase()
+    : ((row.raw_data ?? {}) as Record<string, unknown>).ipExport;
+  if (typeof val === 'string') {
+    const trimmed = val.trim().toUpperCase();
+    if (/^[A-Z]{2}$/.test(trimmed)) {
+      return trimmed;
+    }
   }
   return null;
 }
@@ -305,7 +306,8 @@ export function toPublicTariff(row: any): PublicTariff {
 
     // Derived whitelisted fields (strictly snake_case)
     operators:            ops,
-        best_network_type:    bestNet,
+    breakout_ip:          breakout,
+    best_network_type:    bestNet,
     is_premium:           isPrem,
     is_non_hk_ip:         isNonHk,
     is_reloadable:        reload.isReloadable,

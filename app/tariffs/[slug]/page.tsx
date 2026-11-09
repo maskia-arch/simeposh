@@ -2,7 +2,7 @@ import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, redirect, permanentRedirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import TariffDetailPageClient from './TariffDetailPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
@@ -66,6 +66,44 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
   return promise;
 }
 
+async function resolveLegacyTariffRedirect(slug: string, prefix: string): Promise<string | null> {
+  const match = slug.match(/^([a-zA-Z0-9_-]+)_(\d+(?:\.\d+)?)_(\d+)$/);
+  if (!match) return null;
+
+  const rawCountry = match[1];
+  const dataGb = parseFloat(match[2]);
+  const validityDays = parseInt(match[3], 10);
+
+  const dest = await getDestinationBySlug(rawCountry);
+  if (!dest) {
+    return null; // Unknown country -> 404
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: matchedTariff } = await supabase
+      .from('tariffs')
+      .select('slug')
+      .or(`country_code.eq.${dest.code},country_code.eq.${dest.code.toUpperCase()}`)
+      .eq('data_gb', dataGb)
+      .eq('validity_days', validityDays)
+      .eq('is_active', true)
+      .is('hidden_reason', null)
+      .eq('tariff_type', 'travel_standard')
+      .order('sale_price_eur', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (matchedTariff && matchedTariff.slug) {
+      return `${prefix}/tariffs/${matchedTariff.slug}`;
+    }
+  } catch (err) {
+    console.error('[resolveLegacyTariffRedirect] DB error:', err);
+  }
+
+  return `${prefix}/esim/${dest.slug}`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -74,11 +112,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const tariff = await getTariff(slug);
   if (!tariff) {
+    const locale = await getServerLocale();
+    const prefix = locale === 'de' ? '' : `/${locale}`;
+    const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix);
+    if (legacyRedirect) {
+      permanentRedirect(legacyRedirect);
+    }
     const dest = await getDestinationBySlug(slug);
     if (dest) {
-      return {
-        title: { absolute: `eSIM ${dest.name} | PureSim` },
-      };
+      permanentRedirect(`${prefix}/esim/${dest.slug}`);
     }
     notFound();
   }
@@ -182,9 +224,13 @@ export default async function TariffDetailPage({
   const tariff = await getTariff(slug);
 
   if (!tariff) {
+    const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix);
+    if (legacyRedirect) {
+      permanentRedirect(legacyRedirect);
+    }
     const dest = await getDestinationBySlug(slug);
     if (dest) {
-      redirect(`${prefix}/esim/${dest.slug}`);
+      permanentRedirect(`${prefix}/esim/${dest.slug}`);
     }
     notFound();
   }

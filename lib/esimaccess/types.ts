@@ -46,7 +46,7 @@ export interface EsimAccessPackage {
   activeType?:    number;
   supportTopUpType?: number;
   discountRuleCode?: string;
-  ipExport?:      boolean;
+  ipExport?:      string;
   /** List of mobile network operators providing coverage */
   operatorList?:  OperatorInfo[];
   /** Alternative field name used by some API versions */

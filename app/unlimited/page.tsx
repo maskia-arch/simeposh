@@ -12,53 +12,14 @@ export const revalidate = 600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
-  const t = getServerT(locale);
-  const destination = await getDestinationBySlug('germany');
 
-  if (!destination) {
-    return {
-      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
-    };
-  }
+  const title = locale === 'de'
+    ? 'Unlimited eSIM konfigurieren – Highspeed Daten weltweit | PureSim'
+    : 'Configure Unlimited eSIM – Worldwide High-Speed Data | PureSim';
 
-  const countryLabel = displayCountryName(
-    { country_code: destination.code, country_name: destination.name, location_codes: null, region: null },
-    locale
-  );
-
-  let minPrice = 0.59;
-  try {
-    const tariffs = await getCountryTariffs(destination.code);
-    const unlimited = tariffs.filter((t) => t.tariff_type?.startsWith('unlimited') || t.data_gb === 0);
-    if (unlimited.length > 0) {
-      const oneDayPrices = await Promise.all(
-        unlimited.map((t) =>
-          getDayPassPrice(
-            {
-              sale_price_eur: t.sale_price_eur,
-              validity_days: t.validity_days || 1,
-              discount_rule_code: t.discount_rule_code,
-            },
-            1
-          )
-        )
-      );
-      minPrice = Math.min(...oneDayPrices);
-    }
-  } catch {
-    // Fallback on transient DB error
-  }
-  const minPriceFormatted = formatCurrencyEuro(minPrice, locale);
-
-  const title = t('meta_unlimited_title' as any, { country: countryLabel, price: minPriceFormatted })
-    || (locale === 'de'
-      ? `Unlimited eSIM ${countryLabel} ab ${minPriceFormatted} konfigurieren – Highspeed Daten`
-      : `Custom Unlimited eSIM ${countryLabel} from ${minPriceFormatted} – High-Speed Data`);
-
-  const description = t('meta_unlimited_desc' as any, { country: countryLabel, price: minPriceFormatted })
-    || (locale === 'de'
-      ? `Unlimited eSIM für ${countryLabel} mit flexibler Laufzeit (1–365 Tage) & Highspeed-Volumen nach Wahl ab ${minPriceFormatted}. Sofortige Aktivierung per QR-Code ohne Roaming.`
-      : `Customizable unlimited eSIM for ${countryLabel} with flexible validity (1–365 days) and high-speed data from ${minPriceFormatted}. Instant QR code activation.`);
+  const description = locale === 'de'
+    ? 'Flexible Unlimited eSIM für über 200 Länder mit 1–365 Tagen Laufzeit. Highspeed-Volumen nach Wahl, einfache Aktivierung per QR-Code und keine Roaming-Gebühren.'
+    : 'Flexible Unlimited eSIM for 200+ countries with 1–365 days validity. High-speed data allowance of your choice, easy QR-code activation and no roaming fees.';
 
   const baseUrl = BASE_URL;
   const prefix = locale === 'de' ? '' : `/${locale}`;
@@ -68,8 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     keywords: [
       'Unlimited eSIM',
-      `Unlimited eSIM ${countryLabel}`,
-      countryLabel,
+      'Unlimited Data eSIM',
       'eSIM Konfigurator',
       'PureSim',
     ],
@@ -85,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: `${baseUrl}/logo.png`,
           width: 512,
           height: 512,
-          alt: `PureSim Unlimited eSIM ${countryLabel}`,
+          alt: 'PureSim Unlimited eSIM',
         },
       ],
     },
@@ -159,6 +119,8 @@ export default async function UnlimitedDefaultPage() {
       minPrice={minPrice}
       minPerDay={minPerDay}
       priceTables={priceTables}
+      isOverview={true}
+      customH1={locale === 'de' ? 'Unlimited eSIM – Land wählen und konfigurieren' : 'Unlimited eSIM – Choose Country and Configure'}
     />
   );
 }

@@ -1,7 +1,8 @@
 import { SUPPORTED_LOCALES } from '@/lib/i18n/config';
 import { BASE_URL } from '@/lib/seo';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export async function GET() {
   const sitemaps = SUPPORTED_LOCALES.map(
@@ -16,7 +17,7 @@ ${sitemaps}
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
     },
   });
 }

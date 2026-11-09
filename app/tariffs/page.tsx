@@ -129,6 +129,9 @@ export default async function TariffsPage({
       throttle_speed: t.throttle_speed,
       network_speed: t.network_speed,
       activates_on_arrival: t.activates_on_arrival,
+      breakout_ip: t.breakout_ip ?? null,
+      premium_diff_chip: t.premium_diff_chip ?? null,
+      needs_difference_review: Boolean(t.needs_difference_review),
     };
   });
   const initialCategory = params.category ?? (params.tab === 'unlimited' ? 'unlimited_eco' : params.tab);

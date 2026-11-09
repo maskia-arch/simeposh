@@ -1,4 +1,7 @@
 import { MetadataRoute } from 'next';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAllDestinations } from '@/lib/destinations';
 import { BASE_URL } from '@/lib/seo';

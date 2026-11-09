@@ -328,7 +328,7 @@ const da = {
   "footer_imprint": "Impressum",
   "footer_legal_title": "Juridisk",
   "footer_nav_title": "Navigation",
-  "footer_open_ticket": "Åbn en supportbillet",
+  "footer_open_ticket": "Åbn en supportanmodning",
   "footer_privacy": "Privatlivspolitik",
   "footer_refund": "Refusionspolitik",
   "footer_terms": "Betingelser",

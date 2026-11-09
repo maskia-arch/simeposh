@@ -26,12 +26,14 @@ export function slugify(text: string): string {
  * Mapping of virtual regions to canonical SEO slugs.
  */
 export const REGION_SLUGS: Record<string, string> = {
+  EUROPE:        'europe',
   EU:            'europe',
   ASIA:          'asia',
   SEA:           'southeast-asia',
   MIDDLE_EAST:   'middle-east',
   NORTH_AMERICA: 'north-america',
   LATAM:         'latin-america',
+  OCEANIA:       'oceania',
   OC:            'oceania',
   AFRICA:        'africa',
   GLOB:          'global',
@@ -56,7 +58,10 @@ export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
   XK:            'kosovo',
   LA:            'laos',
   NA:            'namibia',
-  LATAM:         'latin-america',
+  EUROPE:        'europe',
+  OCEANIA:       'oceania',
+  EU:            'europe',
+  OC:            'oceania',
   AFRICA:        'africa',
   MIDDLE_EAST:   'middle-east',
   NORTH_AMERICA: 'north-america',
@@ -161,6 +166,9 @@ export function countryCodeToSlug(code: string, fallbackName?: string): string {
   const lowerName = (fallbackName || '').toLowerCase().trim();
   if (lowerName.includes('latin america') || lowerName.includes('lateinamerika')) {
     return 'latin-america';
+  }
+  if (lowerName.includes('north america') || lowerName.includes('nordamerika') || lowerName.includes('usa & canada') || lowerName.includes('us & canada')) {
+    return 'north-america';
   }
   if (lowerName === 'middle east') {
     return 'middle-east';

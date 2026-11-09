@@ -20,6 +20,8 @@ interface UnlimitedPageClientProps {
   minPrice: number;
   minPerDay: number;
   priceTables?: Record<string, UnlimitedPriceTable>;
+  isOverview?: boolean;
+  customH1?: string;
 }
 
 export function UnlimitedPageClient({
@@ -30,6 +32,8 @@ export function UnlimitedPageClient({
   minPrice,
   minPerDay,
   priceTables,
+  isOverview = false,
+  customH1,
 }: UnlimitedPageClientProps) {
   const { t, locale } = useTranslation();
   const isDe = locale === 'de';
@@ -62,11 +66,17 @@ export function UnlimitedPageClient({
           {t('nav_tariffs') || 'eSIM'}
         </Link>
         <span>/</span>
-        <Link href={`${prefix}/esim/${destination.slug}`} className="min-h-[44px] inline-flex items-center py-2 px-1 hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">
-          {countryLabel}
-        </Link>
-        <span>/</span>
-        <span aria-current="page" className="font-semibold text-slate-800">Unlimited Builder</span>
+        {isOverview ? (
+          <span aria-current="page" className="font-semibold text-slate-800">Unlimited</span>
+        ) : (
+          <>
+            <Link href={`${prefix}/esim/${destination.slug}`} className="min-h-[44px] inline-flex items-center py-2 px-1 hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">
+              {countryLabel}
+            </Link>
+            <span>/</span>
+            <span aria-current="page" className="font-semibold text-slate-800">Unlimited Builder</span>
+          </>
+        )}
       </nav>
 
       {/* ── Hero Header ── */}
@@ -87,14 +97,16 @@ export function UnlimitedPageClient({
                   <InfinityIcon size={13} /> {t('badge_unlimited_surf' as any) || (isDe ? 'Unbegrenzt surfen' : 'Unlimited Data')}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                  ⚡ {t('badge_instant_activation' as any) || (isDe ? 'Sofort-Aktivierung' : 'Instant QR Code')}
+                  ⚡ {t('badge_instant_activation' as any) || (isDe ? 'Aktivierung per QR-Code' : 'Instant QR Code')}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                   📅 {t('badge_flexible_days' as any) || (isDe ? '1–365 Tage frei wählbar' : '1–365 Days flexible')}
                 </span>
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {`Unlimited eSIM ${countryLabel}`}
+                {isOverview
+                  ? (customH1 || (isDe ? 'Unlimited eSIM – Land wählen und konfigurieren' : 'Unlimited eSIM – Choose Country and Configure'))
+                  : `Unlimited eSIM ${countryLabel}`}
               </h1>
               <p className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl leading-relaxed">
                 {t('unlimited_hero_desc' as any, { country: countryLabel }) || (isDe

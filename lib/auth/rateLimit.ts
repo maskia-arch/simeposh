@@ -5,12 +5,6 @@ export function getClientIp(req: Request): string {
   const cfConnectingIp = req.headers.get('cf-connecting-ip');
   if (cfConnectingIp) return cfConnectingIp.trim();
 
-  const xForwardedFor = req.headers.get('x-forwarded-for');
-  if (xForwardedFor) {
-    const first = xForwardedFor.split(',')[0].trim();
-    if (first) return first;
-  }
-
   const xRealIp = req.headers.get('x-real-ip');
   if (xRealIp) return xRealIp.trim();
 

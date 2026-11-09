@@ -172,7 +172,7 @@ const FOOTER_STRINGS: Record<LocaleCode, FooterTexts> = {
     blog: 'Blog',
     ai: 'Yapay Zeka & API',
     faq: 'SSS',
-    ticket: 'Destek Bileti',
+    ticket: 'Destek Talebi',
     telegram: "Telegram'dan İletişim",
     terms: 'Şartlar',
     privacy: 'Gizlilik',
@@ -206,7 +206,7 @@ const FOOTER_STRINGS: Record<LocaleCode, FooterTexts> = {
     blog: 'Blog',
     ai: 'AI-agenter & API',
     faq: 'FAQ',
-    ticket: 'Supportbillet',
+    ticket: 'Supportanmodning',
     telegram: 'Kontakt via Telegram',
     terms: 'Vilkår',
     privacy: 'Privatliv',
@@ -250,7 +250,7 @@ const FOOTER_STRINGS: Record<LocaleCode, FooterTexts> = {
     availableIn: 'Disponibil în 200+ destinații',
     discoverTitle: 'Descoperă',
     helpTitle: 'Ajutor',
-    legalTitle: 'Legal',
+    legalTitle: 'Informații legale',
     tariffs: 'Tarife',
     unlimited: 'Unlimited',
     topup: 'Reîncarcă eSIM',
@@ -324,12 +324,12 @@ export function Footer() {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
                 {labels.discoverTitle}
               </h3>
-              <ul className="space-y-0.5 text-xs text-slate-600">
+              <ul className="space-y-0 text-xs text-slate-600">
                 <li>
                   <Link
                     href={`${prefix}/tariffs`}
                     prefetch={false}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.tariffs}
                   </Link>
@@ -338,7 +338,7 @@ export function Footer() {
                   <Link
                     href={`${prefix}/unlimited`}
                     prefetch={false}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.unlimited}
                   </Link>
@@ -346,7 +346,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`${prefix}/topup`}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.topup}
                   </Link>
@@ -354,7 +354,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`${prefix}/blog`}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.blog}
                   </Link>
@@ -362,7 +362,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={`${prefix}/ai`}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.ai}
                   </Link>
@@ -375,11 +375,11 @@ export function Footer() {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
                 {labels.helpTitle}
               </h3>
-              <ul className="space-y-0.5 text-xs text-slate-600">
+              <ul className="space-y-0 text-xs text-slate-600">
                 <li>
                   <Link
                     href={`${prefix}/faq`}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.faq}
                   </Link>
@@ -388,7 +388,7 @@ export function Footer() {
                   <button
                     type="button"
                     onClick={() => openTicketModal()}
-                    className="inline-flex items-center text-left min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center text-left min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.ticket}
                   </button>
@@ -396,7 +396,7 @@ export function Footer() {
                 <li>
                   <Link
                     href={telegramHref}
-                    className="inline-flex items-center min-h-[36px] md:min-h-[22px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.telegram}
                   </Link>
@@ -412,21 +412,21 @@ export function Footer() {
           <nav aria-label={labels.legalTitle} className="flex flex-wrap items-center justify-center gap-x-4">
             <Link
               href={`${prefix}/agb`}
-              className="min-h-[44px] md:min-h-[22px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.terms}
             </Link>
-            <span aria-hidden="true" className="text-slate-300 select-none hidden sm:inline">·</span>
+            <span aria-hidden="true" className="text-slate-400 select-none hidden sm:inline">·</span>
             <Link
               href={`${prefix}/datenschutz`}
-              className="min-h-[44px] md:min-h-[22px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.privacy}
             </Link>
-            <span aria-hidden="true" className="text-slate-300 select-none hidden sm:inline">·</span>
+            <span aria-hidden="true" className="text-slate-400 select-none hidden sm:inline">·</span>
             <Link
               href={`${prefix}/refund-policy`}
-              className="min-h-[44px] md:min-h-[22px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.refund}
             </Link>
