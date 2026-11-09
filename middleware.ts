@@ -167,16 +167,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(deTarget + request.nextUrl.search, request.url), 301);
   }
 
-  // ── /esim/as 301 Redirect to Asia ──
-  const cleanNorm = normalizedPath.length > 1 ? normalizedPath.replace(/\/+$/, '') : normalizedPath;
-  if (cleanNorm === '/esim/as' || cleanNorm.startsWith('/esim/as/')) {
-    const target = langPrefix ? `${langPrefix}/esim/asia` : '/esim/asia';
-    const res = NextResponse.redirect(new URL(target + request.nextUrl.search, request.url), 301);
-    res.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate');
-    return res;
-  }
-
   // ── 301 Redirect canonical country aliases for /esim/{alias} -> /esim/{slug} ──
+  const cleanNorm = normalizedPath.length > 1 ? normalizedPath.replace(/\/+$/, '') : normalizedPath;
   if (cleanNorm.startsWith('/esim/')) {
     const slug = cleanNorm.replace(/^\/esim\//, '').split('/')[0].trim();
     if (slug) {
