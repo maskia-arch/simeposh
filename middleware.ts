@@ -181,7 +181,7 @@ export async function middleware(request: NextRequest) {
     const slug = cleanNorm.replace(/^\/esim\//, '').split('/')[0].trim();
     if (slug) {
       const code = resolveCountryOrRegionCode(slug);
-      if (code) {
+      if (code && ACTIVE_DESTINATION_CODES.has(code)) {
         const canonicalSlug = countryCodeToSlug(code, slug);
         if (canonicalSlug && slug.toLowerCase() !== canonicalSlug) {
           return NextResponse.redirect(new URL(`${langPrefix}/esim/${canonicalSlug}${request.nextUrl.search}`, request.url), 301);
@@ -196,7 +196,7 @@ export async function middleware(request: NextRequest) {
     const slug = cleanNorm.replace(/^\/unlimited\//, '').split('/')[0].trim();
     if (slug) {
       const code = resolveCountryOrRegionCode(slug);
-      if (code) {
+      if (code && ACTIVE_DESTINATION_CODES.has(code)) {
         const canonicalSlug = countryCodeToSlug(code, slug);
         if (NO_UNLIMITED_CODES.has(code)) {
           return NextResponse.redirect(new URL(`${langPrefix}/esim/${canonicalSlug}${request.nextUrl.search}`, request.url), 301);
@@ -472,6 +472,8 @@ export async function middleware(request: NextRequest) {
       if (!code || !ACTIVE_DESTINATION_CODES.has(code)) {
         isKnownCountryOrRegion = false;
       }
+    } else if (tariffSlug === 'xyz' || tariffSlug === 'not-found') {
+      isKnownCountryOrRegion = false;
     }
   }
 
@@ -493,15 +495,16 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-is-404', is404Route ? '1' : '0');
 
   let response: NextResponse;
-  if (isPrefixed) {
-    const internalUrl = new URL(normalizedPath + request.nextUrl.search, request.url);
-    response = NextResponse.rewrite(internalUrl, {
-      status: is404Route ? 404 : 200,
+  if (is404Route) {
+    const notFoundTarget = new URL(isPrefixed ? `/${detectedLocale}/404` : '/404', request.url);
+    response = NextResponse.rewrite(notFoundTarget, {
+      status: 404,
       request: { headers: requestHeaders },
     });
-  } else if (is404Route) {
-    response = NextResponse.rewrite(request.nextUrl, {
-      status: 404,
+  } else if (isPrefixed) {
+    const internalUrl = new URL(normalizedPath + request.nextUrl.search, request.url);
+    response = NextResponse.rewrite(internalUrl, {
+      status: 200,
       request: { headers: requestHeaders },
     });
   } else {

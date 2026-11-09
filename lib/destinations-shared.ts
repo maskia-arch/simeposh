@@ -198,7 +198,7 @@ export function countryCodeToSlug(code: string, fallbackName?: string): string {
     return 'africa';
   }
   if (upper === 'AS') {
-    return 'asia';
+    return 'american-samoa';
   }
   if (REGION_SLUGS[upper]) {
     return REGION_SLUGS[upper];
