@@ -453,14 +453,14 @@ export async function middleware(request: NextRequest) {
 
   let isKnownCountryOrRegion = true;
   if (normalizedPath.startsWith('/esim/')) {
-    const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim();
-    if (!slug || !resolveCountryOrRegionCode(slug)) {
+    const slug = normalizedPath.replace(/^\/esim\//, '').split('/')[0].trim().toLowerCase();
+    if (!slug || !resolveCountryOrRegionCode(slug) || slug === 'american-samoa') {
       isKnownCountryOrRegion = false;
     }
   } else if (normalizedPath.startsWith('/unlimited/')) {
-    const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim();
+    const slug = normalizedPath.replace(/^\/unlimited\//, '').split('/')[0].trim().toLowerCase();
     const code = slug ? resolveCountryOrRegionCode(slug) : null;
-    if (!code) {
+    if (!code || slug === 'american-samoa') {
       isKnownCountryOrRegion = false;
     }
   }
@@ -486,6 +486,12 @@ export async function middleware(request: NextRequest) {
   if (isPrefixed) {
     const internalUrl = new URL(normalizedPath + request.nextUrl.search, request.url);
     response = NextResponse.rewrite(internalUrl, {
+      status: is404Route ? 404 : 200,
+      request: { headers: requestHeaders },
+    });
+  } else if (is404Route) {
+    response = NextResponse.rewrite(request.nextUrl, {
+      status: 404,
       request: { headers: requestHeaders },
     });
   } else {

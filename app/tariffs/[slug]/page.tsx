@@ -3,6 +3,7 @@ import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { notFound, redirect, permanentRedirect } from 'next/navigation';
+import NotFound from '@/app/not-found';
 import { createClient } from '@/lib/supabase/server';
 import TariffDetailPageClient from './TariffDetailPageClient';
 import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
@@ -110,9 +111,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getServerLocale();
+  const t = getServerT(locale);
   const tariff = await getTariff(slug);
   if (!tariff) {
-    const locale = await getServerLocale();
     const prefix = locale === 'de' ? '' : `/${locale}`;
     const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix);
     if (legacyRedirect) {
@@ -122,11 +124,12 @@ export async function generateMetadata({
     if (dest) {
       permanentRedirect(`${prefix}/esim/${dest.slug}`);
     }
-    notFound();
+    return {
+      title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
+      robots: { index: false, follow: false },
+    };
   }
 
-  const locale = await getServerLocale();
-  const t = getServerT(locale);
   const isDe = locale === 'de';
 
   const country = displayCountryName(tariff, locale);
@@ -232,7 +235,7 @@ export default async function TariffDetailPage({
     if (dest) {
       permanentRedirect(`${prefix}/esim/${dest.slug}`);
     }
-    notFound();
+    return <NotFound localeOverride={locale} />;
   }
 
   const countryLabel = displayCountryName(tariff, locale);

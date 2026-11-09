@@ -1,6 +1,7 @@
 import { CountryPageClient } from './CountryPageClient';
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
+import NotFound from '@/app/not-found';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
@@ -90,13 +91,13 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
 
 export default async function CountryPage({ params }: CountryPageProps) {
   const { country } = await params;
+  const locale = await getServerLocale();
   const destination = await getDestinationBySlug(country);
 
   if (!destination) {
-    notFound();
+    return <NotFound localeOverride={locale} />;
   }
 
-  const locale = await getServerLocale();
   const t = getServerT(locale);
   const prefix = locale === 'de' ? '' : `/${locale}`;
 
@@ -107,7 +108,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
   const tariffs = await getCountryTariffs(destination.code);
   if (!tariffs || tariffs.length === 0) {
-    throw new Error(`[CountryPage] Tariffs temporarily unavailable for ${destination.slug} (${destination.code})`);
+    return <NotFound localeOverride={locale} />;
   }
 
   const countryLabel = displayCountryName(

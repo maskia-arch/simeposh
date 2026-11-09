@@ -27,10 +27,21 @@ const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; flag
   ],
 };
 
-export default function NotFound() {
-  const headerList = headers();
-  const headerLocale = headerList.get('x-locale')?.toLowerCase().trim();
-  const locale: LocaleCode = (headerLocale && isValidLocale(headerLocale)) ? (headerLocale as LocaleCode) : 'de';
+export default function NotFound({ localeOverride }: { localeOverride?: string }) {
+  let locale: LocaleCode = 'de';
+  if (localeOverride && isValidLocale(localeOverride)) {
+    locale = localeOverride as LocaleCode;
+  } else {
+    try {
+      const headerList = headers();
+      const headerLocale = headerList?.get('x-locale')?.toLowerCase().trim();
+      if (headerLocale && isValidLocale(headerLocale)) {
+        locale = headerLocale as LocaleCode;
+      }
+    } catch {
+      locale = 'de';
+    }
+  }
   const t = NOT_FOUND_TEXTS[locale] || NOT_FOUND_TEXTS.de;
   const prefix = locale === 'de' ? '' : `/${locale}`;
   const homeUrl = prefix || '/';

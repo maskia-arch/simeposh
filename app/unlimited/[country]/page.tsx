@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
+import NotFound from '@/app/not-found';
 import { getDestinationBySlug, getCountryTariffs } from '@/lib/destinations';
 import { displayCountryName } from '@/lib/tariff-display';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
@@ -108,13 +109,13 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
 
 export default async function UnlimitedCountryPage({ params }: UnlimitedPageProps) {
   const { country } = await params;
+  const locale = await getServerLocale();
   const destination = await getDestinationBySlug(country);
 
   if (!destination) {
-    notFound();
+    return <NotFound localeOverride={locale} />;
   }
 
-  const locale = await getServerLocale();
   const t = getServerT(locale);
   const prefix = locale === 'de' ? '' : `/${locale}`;
 
