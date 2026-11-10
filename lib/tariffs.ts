@@ -353,3 +353,5 @@ export function setCachedTariffsPage(tariffs: PublicTariff[]): void {
 export function clearTariffsPageCache(): void {
   tariffsPageCache = null;
 }
+
+export { getTariffCanonicalPath } from '@/lib/url';

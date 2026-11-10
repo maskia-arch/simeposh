@@ -453,13 +453,7 @@ export async function middleware(request: NextRequest) {
     }
   } else if (normalizedPath.startsWith('/tariffs/')) {
     const tariffSlug = normalizedPath.replace(/^\/tariffs\//, '').split('/')[0].trim().toLowerCase();
-    const legacyMatch = tariffSlug.match(/^([a-z0-9_-]+)_(\d+(?:\.\d+)?|\d+)_(\d+)$/i);
-    if (legacyMatch) {
-      const code = resolveCountryOrRegionCode(legacyMatch[1]);
-      if (!code || !ACTIVE_DESTINATION_CODES.has(code)) {
-        isKnownCountryOrRegion = false;
-      }
-    } else if (tariffSlug === 'xyz' || tariffSlug === 'not-found') {
+    if (tariffSlug === 'xyz' || tariffSlug === 'not-found') {
       isKnownCountryOrRegion = false;
     }
   }

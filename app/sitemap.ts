@@ -143,21 +143,22 @@ export default async function sitemap({
     console.error('[Sitemap] Unexpected error fetching destinations:', err);
   }
 
-  // 3. Query active eSIM tariffs
+  // 3. Query active eSIM tariffs (canonical package_code URLs)
   try {
-    const supabase = createServiceClient();
-    const { data: tariffs, error } = await supabase
-      .from('tariffs')
-      .select('slug, updated_at')
-      .eq('is_active', true)
-      .is('hidden_reason', null);
+    const pool = getPool();
+    const { rows: tariffs } = await pool.query(`
+      SELECT package_code, updated_at
+      FROM tariffs
+      WHERE is_active = true
+        AND hidden_reason IS NULL
+      ORDER BY package_code ASC
+    `);
 
-    if (error) {
-      console.error('[Sitemap] Tariffs fetch error:', error.message);
-    } else if (tariffs) {
-      tariffs.forEach((t) => {
-        if (t.slug) {
-          const tariffLangs = buildLanguages(`/tariffs/${t.slug}`);
+    if (tariffs && tariffs.length > 0) {
+      tariffs.forEach((t: { package_code: string; updated_at: string | Date | null }) => {
+        if (t.package_code) {
+          const encodedCode = encodeURIComponent(t.package_code.trim());
+          const tariffLangs = buildLanguages(`/tariffs/${encodedCode}`);
           const modTime = t.updated_at ? new Date(t.updated_at) : globalLatestMod;
 
           sitemapEntries.push({

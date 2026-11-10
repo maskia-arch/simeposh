@@ -32,6 +32,21 @@ export function getPublicBaseUrl(req?: Request): string {
 }
 
 /**
+ * Returns the canonical URL path for a tariff detail page.
+ * Strictly uses the exact active package_code, safely encoded as a URL path segment.
+ * Includes localized language prefix for non-de locales (de has no prefix).
+ */
+export function getTariffCanonicalPath(packageCode: string, locale: string = 'de'): string {
+  const cleanCode = (packageCode || '').trim();
+  const isDe = !locale || locale === 'de';
+  const prefix = isDe ? '' : `/${locale.toLowerCase()}`;
+  if (!cleanCode) {
+    return `${prefix}/tariffs`;
+  }
+  return `${prefix}/tariffs/${encodeURIComponent(cleanCode)}`;
+}
+
+/**
  * Helper to construct the secure, standalone eSIM overview & installation URL.
  *
  * In production: https://esim.puresim.net/s/{token}

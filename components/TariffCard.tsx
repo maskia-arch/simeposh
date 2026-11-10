@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { formatGb } from '@/lib/utils';
 import { formatDaysWithUnit, formatCountriesWithUnit, getPerDayAriaUnit } from '@/lib/i18n/plural';
 import { formatCurrencyEuro } from '@/lib/currency';
+import { getTariffCanonicalPath } from '@/lib/url';
 import type { PublicTariff } from '@/lib/tariffs';
 import { useTranslation } from '@/lib/i18n';
 import { CountryFlag } from '@/components/CountryFlag';
@@ -391,7 +392,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           </div>
           {onDetail && (
             <Link
-              href={tariff.slug ? `${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}` : `${isDe ? '' : `/${locale}`}/tariffs`}
+              href={getTariffCanonicalPath(tariff.package_code, locale)}
               prefetch={false}
               onClick={(e) => {
                 // If it's a standard left click without modifier keys, trigger modal for smooth UX

@@ -5,8 +5,9 @@ import { cookies } from 'next/headers';
 import { notFound, redirect, permanentRedirect } from 'next/navigation';
 import NotFound from '@/app/not-found';
 import { createClient } from '@/lib/supabase/server';
+import { getPool } from '@/lib/db';
 import TariffDetailPageClient from './TariffDetailPageClient';
-import { toPublicTariff, type PublicTariff } from '@/lib/tariffs';
+import { toPublicTariff, getTariffCanonicalPath, type PublicTariff } from '@/lib/tariffs';
 import { getTariffMinCustomerPrice } from '@/lib/pricing';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
@@ -23,7 +24,7 @@ const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();
 const TARIFF_DETAIL_TTL = 10 * 60 * 1000; // 10 minutes
 
 async function getTariff(slug: string): Promise<PublicTariff | null> {
-  const normalizedSlug = slug.toLowerCase();
+  const normalizedSlug = slug.toLowerCase().trim();
   const cached = tariffDetailCache.get(normalizedSlug);
   if (cached && Date.now() - cached.timestamp < TARIFF_DETAIL_TTL) {
     return cached.data;
@@ -35,15 +36,38 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
 
   const promise = (async () => {
     try {
-      const supabase = await createClient();
-      const codeUpper = slug.toUpperCase();
-      const codeUnderscore = slug.replace(/-/g, '_').toUpperCase();
+      const decoded = decodeURIComponent(slug).trim();
 
-      // Combined single query matching slug or package_code via indexes
+      // Prioritize package_code (case-insensitive) then slug (case-insensitive)
+      try {
+        const pool = getPool();
+        const { rows } = await pool.query(
+          `SELECT ${PUBLIC_SELECT_FIELDS}
+           FROM tariffs
+           WHERE (LOWER(package_code) = LOWER($1) OR LOWER(slug) = LOWER($1))
+             AND is_active = true
+           ORDER BY CASE WHEN LOWER(package_code) = LOWER($1) THEN 0 ELSE 1 END
+           LIMIT 1`,
+          [decoded]
+        );
+        if (rows && rows.length > 0) {
+          const res = toPublicTariff(rows[0]);
+          res.customer_price_eur = await getTariffMinCustomerPrice(rows[0]);
+          tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
+          return res;
+        }
+      } catch (poolErr) {
+        console.warn('[getTariff] pool query fallback:', poolErr);
+      }
+
+      // Supabase fallback if pool fails
+      const supabase = await createClient();
+      const codeUpper = decoded.toUpperCase();
+
       const { data } = await supabase
         .from('tariffs')
         .select(PUBLIC_SELECT_FIELDS)
-        .or(`slug.eq.${slug},package_code.eq.${codeUpper},package_code.eq.${codeUnderscore}`)
+        .or(`package_code.eq.${codeUpper},slug.eq.${decoded}`)
         .eq('is_active', true)
         .limit(1)
         .maybeSingle();
@@ -86,7 +110,7 @@ async function resolveLegacyTariffRedirect(slug: string, prefix: string): Promis
     const supabase = await createClient();
     const { data: matchedTariff } = await supabase
       .from('tariffs')
-      .select('slug')
+      .select('package_code, slug')
       .or(`country_code.eq.${dest.code},country_code.eq.${dest.code.toUpperCase()}`)
       .eq('data_gb', dataGb)
       .eq('validity_days', validityDays)
@@ -96,8 +120,8 @@ async function resolveLegacyTariffRedirect(slug: string, prefix: string): Promis
       .limit(1)
       .maybeSingle();
 
-    if (matchedTariff && matchedTariff.slug) {
-      return `${prefix}/tariffs/${matchedTariff.slug}`;
+    if (matchedTariff && matchedTariff.package_code) {
+      return `${prefix}/tariffs/${encodeURIComponent(matchedTariff.package_code)}`;
     }
   } catch (err) {
     console.error('[resolveLegacyTariffRedirect] DB error:', err);
@@ -129,6 +153,11 @@ export async function generateMetadata({
       title: { absolute: `${t('page_not_found_title' as any) || (locale === 'de' ? 'Seite nicht gefunden' : 'Page Not Found')} · PureSim` },
       robots: { index: false, follow: false },
     };
+  }
+
+  // Canonical redirect if accessed via old slug, non-canonical casing or unencoded segment
+  if (decodeURIComponent(slug).trim() !== tariff.package_code) {
+    permanentRedirect(getTariffCanonicalPath(tariff.package_code, locale));
   }
 
   const isDe = locale === 'de';
@@ -191,7 +220,7 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      url: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}`,
+      url: `${baseUrl}${getTariffCanonicalPath(tariff.package_code, locale)}`,
       images: [
         {
           url: `${baseUrl}/logo.png`,
@@ -208,8 +237,8 @@ export async function generateMetadata({
       images: [`${baseUrl}/logo.png`],
     },
     alternates: buildAlternates(locale, {
-      dePath: `tariffs/${tariff.slug}`,
-      enPath: `tariffs/${tariff.slug}`,
+      dePath: `tariffs/${encodeURIComponent(tariff.package_code)}`,
+      enPath: `tariffs/${encodeURIComponent(tariff.package_code)}`,
     }),
   };
 }
@@ -239,6 +268,11 @@ export default async function TariffDetailPage({
     notFound();
   }
 
+  // Canonical redirect if accessed via old slug, non-canonical casing or unencoded segment
+  if (decodeURIComponent(slug).trim() !== tariff.package_code) {
+    permanentRedirect(getTariffCanonicalPath(tariff.package_code, locale));
+  }
+
   const countryLabel = displayCountryName(tariff, locale);
   let dataLabel = formatGb(tariff.data_gb);
   if (tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0) {
@@ -260,6 +294,8 @@ export default async function TariffDetailPage({
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://puresim.net';
+  const canonicalPath = getTariffCanonicalPath(tariff.package_code, locale);
+  const canonicalUrl = `${baseUrl}${canonicalPath}`;
 
   // Inject Structured Data for Google Rich Snippets
   const jsonLd = {
@@ -277,7 +313,7 @@ export default async function TariffDetailPage({
       price: Number(tariff.customer_price_eur ?? tariff.sale_price_eur).toFixed(2),
       priceCurrency: 'EUR',
       availability: 'https://schema.org/InStock',
-      url: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}`,
+      url: canonicalUrl,
       priceValidUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90)
         .toISOString()
         .split('T')[0], // 90 days from now
@@ -304,7 +340,7 @@ export default async function TariffDetailPage({
         '@type': 'ListItem',
         position: 3,
         name: countryLabel,
-        item: `${baseUrl}${isDe ? '' : `/${locale}`}/tariffs/${tariff.slug}`,
+        item: canonicalUrl,
       },
     ],
   };
