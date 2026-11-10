@@ -3,7 +3,6 @@ import { detectLocale, countryFromHeaders } from '@/lib/i18n/detect';
 import { isValidLocale } from '@/lib/i18n/config';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { resolveCountryOrRegionCode, countryCodeToSlug, ACTIVE_DESTINATION_CODES } from '@/lib/destinations-shared';
-import { TARIFF_DUPLICATE_REDIRECTS } from '@/lib/duplicate-tariffs';
 import { GUIDE_SLUGS } from '@/lib/guide-links';
 import { checkOrderRateLimit } from '@/lib/rate-limit';
 
@@ -225,13 +224,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── 301 Redirect 14 hidden USA duplicate tariffs: /tariffs/{duplicateSlug} -> /tariffs/{winnerSlug} ──
+  // ── 301 Redirect country slug erroneously called as tariff: /tariffs/{countrySlug} -> /esim/{countrySlug} ──
   if (normalizedPath.startsWith('/tariffs/')) {
     const slug = normalizedPath.replace(/^\/tariffs\//, '').trim();
-    if (slug && TARIFF_DUPLICATE_REDIRECTS[slug]) {
-      const winnerSlug = TARIFF_DUPLICATE_REDIRECTS[slug];
-      return NextResponse.redirect(new URL(`${langPrefix}/tariffs/${winnerSlug}`, request.url), 301);
-    }
     if (slug) {
       const code = resolveCountryOrRegionCode(slug);
       if (code) {
@@ -488,7 +483,7 @@ export async function middleware(request: NextRequest) {
 
   let response: NextResponse;
   if (is404Route) {
-    const notFoundTarget = new URL(isPrefixed ? `/${detectedLocale}/404` : '/404', request.url);
+    const notFoundTarget = new URL('/404', request.url);
     response = NextResponse.rewrite(notFoundTarget, {
       status: 404,
       request: { headers: requestHeaders },

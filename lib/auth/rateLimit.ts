@@ -2,9 +2,6 @@ import { query } from '@/lib/db';
 import { sendTicketAdminAlertEmail } from '@/lib/email/mailer';
 
 export function getClientIp(req: Request): string {
-  const cfConnectingIp = req.headers.get('cf-connecting-ip');
-  if (cfConnectingIp) return cfConnectingIp.trim();
-
   const xRealIp = req.headers.get('x-real-ip');
   if (xRealIp) return xRealIp.trim();
 

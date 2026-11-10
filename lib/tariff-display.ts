@@ -538,17 +538,52 @@ export function formatIpChipLabel(countries: string[] | null | undefined, fallba
   return `IP: ${list.join(' / ')}`;
 }
 
+const EU_IP_EXPLANATIONS: Record<string, string> = {
+  de: 'Europa, laut Lieferant kein einzelnes Land',
+  en: 'Europe, according to supplier no single country',
+  fr: 'Europe, selon le fournisseur aucun pays individuel',
+  es: 'Europa, según el proveedor ningún país individual',
+  it: 'Europa, secondo il fornitore nessun singolo paese',
+  nl: 'Europa, volgens leverancier geen afzonderlijk land',
+  pl: 'Europa, według dostawcy brak pojedynczego kraju',
+  pt: 'Europa, segundo o fornecedor nenhum país individual',
+  tr: 'Avrupa, tedarikçiye göre tek bir ülke değil',
+  sv: 'Europa, enligt leverantören inget enskilt land',
+  da: 'Europa, ifølge leverandøren intet enkelt land',
+  fi: 'Eurooppa, toimittajan mukaan ei yksittäinen maa',
+  cs: 'Evropa, podle dodavatele žádná jednotlivá země',
+  ro: 'Europa, conform furnizorului nicio țară individuală',
+  hu: 'Európa, a szolgáltató szerint nem egyetlen ország',
+};
+
 /**
  * Standardized full IP origin list for modal and detail page (e.g. "FR / NL / UK").
  */
-export function formatIpFullList(countries: string[] | null | undefined, fallbackBreakoutIp?: string | null): string | null {
+export function formatIpFullList(
+  countries: string[] | null | undefined,
+  fallbackBreakoutIp?: string | null,
+  locale = 'de'
+): string | null {
+  let list: string[] = [];
   if (countries && countries.length > 0) {
-    return countries.join(' / ');
+    list = [...countries];
+  } else if (fallbackBreakoutIp && fallbackBreakoutIp.trim()) {
+    list = fallbackBreakoutIp.split(/[\/,]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
   }
-  if (fallbackBreakoutIp && fallbackBreakoutIp.trim()) {
-    return fallbackBreakoutIp.trim();
-  }
-  return null;
+
+  if (list.length === 0) return null;
+
+  const loc = locale in EU_IP_EXPLANATIONS ? locale : 'de';
+  const euExplanation = EU_IP_EXPLANATIONS[loc] || EU_IP_EXPLANATIONS.de;
+
+  const formatted = list.map((code) => {
+    if (code === 'EU') {
+      return `EU (${euExplanation})`;
+    }
+    return code;
+  });
+
+  return formatted.join(' / ');
 }
 
 /**
@@ -753,9 +788,9 @@ export function getTariffSpecialFeatures(
           descKey: 'feat_prem_adv_multi_net_desc',
           icon: '',
           cls: 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 font-bold',
-          vars: { count, operators },
+          vars: { count, operators, chipText: diffChip },
         });
-      } else if (diffChip === 'Lokale IP') {
+      } else if (diffChip === 'Lokale IP' || diffChip.startsWith('Lokale IP')) {
         features.push({
           id: 'travel_premium',
           badgeKey: 'feat_prem_adv_local_ip',
@@ -763,8 +798,24 @@ export function getTariffSpecialFeatures(
           descKey: 'feat_prem_adv_local_ip_desc',
           icon: '',
           cls: 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100 font-bold',
-          vars: { country: countryName },
+          vars: { country: countryName, chipText: `Lokale IP (${countryName})` },
         });
+      } else {
+        const ipDiffMatch = diffChip.match(/^(?:IP:\s*)?([A-Z]{2})(?:\s+statt\s+([A-Z]{2}))?$/i) || diffChip.match(/^([A-Z]{2})\s+IP$/i);
+        if (ipDiffMatch) {
+          const premIp = ipDiffMatch[1].toUpperCase();
+          const stdIp = (ipDiffMatch[2] || 'HK').toUpperCase();
+          const chipLabel = `IP: ${premIp} statt ${stdIp}`;
+          features.push({
+            id: 'travel_premium',
+            badgeKey: 'feat_prem_adv_multi_ip',
+            titleKey: 'feat_prem_adv_multi_ip',
+            descKey: 'feat_prem_adv_multi_ip_desc',
+            icon: '',
+            cls: 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 font-bold',
+            vars: { premIp, stdIp, chipText: chipLabel },
+          });
+        }
       }
     }
   }

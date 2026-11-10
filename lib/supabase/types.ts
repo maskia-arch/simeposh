@@ -7,7 +7,7 @@
 
 export type OrderStatus    = 'pending' | 'paid' | 'provisioning' | 'completed' | 'failed' | 'refunded' | 'expired' | 'cancelled' | 'review';
 export type OrderType      = 'new_esim' | 'top_up';
-export type TariffType     = 'travel' | 'unlimited_eco' | 'unlimited_pro';
+export type TariffType     = 'travel_standard' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro';
 export type ProposalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Database {

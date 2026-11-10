@@ -164,21 +164,25 @@ export async function classifyAllTariffs(): Promise<{
     const stdIps = standards.map((s) => (s.breakout_ip || '').toUpperCase().trim()).filter(Boolean);
     const stdIsExclusivelyHk = stdIps.length > 0 && stdIps.every((ip) => ip === 'HK');
 
-    // Reset standard tariffs: if multiple standards have same volume and validity at different prices,
-    // keep the lowest-priced visible and mark redundant higher-priced ones as hidden duplicates
+    // Standard tariffs: Lowest price is travel_standard.
+    // Higher-priced twin standards remain travel_standard, stay VISIBLE (hidden_reason = null),
+    // and are flagged with needs_difference_review = true ("Unterschied prüfen").
     const minStdPrice = standards.length > 0 ? Math.min(...standards.map((s) => Number(s.sale_price_eur))) : 0;
 
     for (const s of standards) {
       totalStandard++;
-      const isRedundantStd = Number(s.sale_price_eur) > minStdPrice && s.is_premium_override !== true;
+      const isHigherPriceTwin = Number(s.sale_price_eur) > minStdPrice && s.is_premium_override !== true;
+      if (isHigherPriceTwin) {
+        needsReviewCount++;
+      }
       updates.push({
         id: s.id,
         chip: null,
-        needsReview: false,
+        needsReview: isHigherPriceTwin,
         isPremium: false,
         tariffType: 'travel_standard',
-        hiddenReason: isRedundantStd ? 'duplicate_higher_price' : null,
-        duplicateOf: isRedundantStd ? (baseStd?.package_code || null) : null,
+        hiddenReason: null,
+        duplicateOf: null,
       });
     }
 
@@ -197,8 +201,6 @@ export async function classifyAllTariffs(): Promise<{
       let needsReview = false;
       let finalIsPremium = true;
       let finalTariffType = 'travel_premium';
-      let hiddenReason: string | null = null;
-      let duplicateOf: string | null = null;
 
       // 1. Multi-network redundancy (only if strictly MORE unique networks than ALL standards in group AND > 1)
       if (premOps.length > maxStdOpsCount && premOps.length > 1) {
@@ -209,20 +211,18 @@ export async function classifyAllTariffs(): Promise<{
         chip = 'Lokale IP';
       } else if (premIp && premIp !== 'HK' && stdIsExclusivelyHk) {
         chipsNonHk++;
-        chip = `${premIp} IP`;
+        chip = `IP: ${premIp} statt HK`;
       } else {
-        // No demonstrable technical difference between packages
+        // No demonstrable technical difference between packages:
+        // Degrade to travel_standard and place on review list ("Unterschied prüfen").
+        // Tariff stays VISIBLE (hidden_reason = null) per Rule (e).
         needsReviewCount++;
         needsReview = true;
         chip = null;
 
-        // If not explicitly forced by admin override, degrade to travel_standard
-        // and hide as duplicate higher price so customer doesn't see identical duplicate cards
         if (p.is_premium_override !== true) {
           finalIsPremium = false;
           finalTariffType = 'travel_standard';
-          hiddenReason = 'duplicate_higher_price';
-          duplicateOf = baseStd?.package_code || null;
         }
       }
 
@@ -238,8 +238,8 @@ export async function classifyAllTariffs(): Promise<{
         needsReview,
         isPremium: finalIsPremium,
         tariffType: finalTariffType,
-        hiddenReason,
-        duplicateOf,
+        hiddenReason: null,
+        duplicateOf: null,
       });
     }
   }

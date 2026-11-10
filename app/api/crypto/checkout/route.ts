@@ -165,7 +165,7 @@ export async function POST(request: Request) {
                 usd_eur_rate: 0.92,
                 is_active: false, // Internal reference for top-up orders only; do NOT show as standalone shop tariff
                 is_top_up_eligible: true,
-                tariff_type: 'travel',
+                tariff_type: 'travel_standard',
                 raw_data: found as any,
               } as any, { onConflict: 'package_code' })
               .select('id, name, package_code, sale_price_eur, usd_eur_rate, validity_days, tariff_type, is_active, data_gb')

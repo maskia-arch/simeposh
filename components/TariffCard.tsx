@@ -195,7 +195,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                   ) : (
                     <span>{feat.icon}</span>
                   )}
-                  <span>{t(feat.badgeKey as any, feat.vars)}</span>
+                  <span>{feat.vars?.chipText || t(feat.badgeKey as any, feat.vars)}</span>
                   <span className="opacity-60 text-xs">ⓘ</span>
                 </button>
               );
@@ -217,7 +217,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
                 ) : (
                   <span>{activeFeature.icon}</span>
                 )}
-                <span>{t(activeFeature.titleKey as any, activeFeature.vars)}</span>
+                <span>{activeFeature.vars?.chipText || t(activeFeature.titleKey as any, activeFeature.vars)}</span>
               </span>
               <button
                 type="button"

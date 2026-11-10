@@ -156,7 +156,18 @@ export async function getDiscountRuleByCode(
   code?: string | null,
   now: Date = new Date()
 ): Promise<NormalizedPeriodRule[] | null> {
-  const cleanCode = (code || '').trim();
+  let cleanCode = (code || '').trim();
+  if (!cleanCode) {
+    try {
+      const sRes = await runRawQuery(
+        `SELECT value FROM system_settings WHERE key = 'unlimited_default_discount_rule' LIMIT 1`,
+        []
+      );
+      if (sRes?.rows?.[0]?.value) {
+        cleanCode = String(sRes.rows[0].value).trim();
+      }
+    } catch {}
+  }
   if (!cleanCode) return null;
 
   const cached = rulesCache.get(cleanCode);

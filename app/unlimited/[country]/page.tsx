@@ -49,7 +49,6 @@ export async function generateMetadata({ params }: UnlimitedPageProps): Promise<
           {
             sale_price_eur: t.sale_price_eur,
             validity_days: t.validity_days || 1,
-            discount_rule_code: t.discount_rule_code,
           },
           1
         )
@@ -158,7 +157,6 @@ export default async function UnlimitedCountryPage({ params }: UnlimitedPageProp
       {
         sale_price_eur: t.sale_price_eur,
         validity_days: t.validity_days || 1,
-        discount_rule_code: t.discount_rule_code,
       },
       1,
       365

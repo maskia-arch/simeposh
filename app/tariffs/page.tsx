@@ -47,7 +47,8 @@ async function getTariffs(): Promise<PublicTariff[]> {
         SELECT id, package_code, slug, name, description, country_code, country_name, region,
                flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type,
                speed_kbps, label, is_top_up_eligible, is_premium, breakout_ip, ip_countries, active_type,
-               support_top_up_type, discount_rule_code, premium_diff_chip, needs_difference_review, raw_data
+               support_top_up_type, premium_diff_chip,
+               COALESCE(raw_data->'operatorList', '[]'::jsonb) AS operator_list
         FROM tariffs
         WHERE is_active = true AND hidden_reason IS NULL
         ORDER BY country_name ASC, sale_price_eur ASC, id ASC
@@ -119,7 +120,6 @@ export default async function TariffsPage({
       speed_kbps: null,
       label: t.label,
       is_top_up_eligible: t.is_top_up_eligible,
-      discount_rule_code: null,
       operators: (t.operators || []).slice(0, 4),
             best_network_type: t.best_network_type,
       is_premium: t.is_premium,
@@ -132,7 +132,6 @@ export default async function TariffsPage({
       breakout_ip: t.breakout_ip ?? null,
       ip_countries: t.ip_countries ?? null,
       premium_diff_chip: t.premium_diff_chip ?? null,
-      needs_difference_review: Boolean(t.needs_difference_review),
     };
   });
   const initialCategory = params.category ?? (params.tab === 'unlimited' ? 'unlimited_eco' : params.tab);

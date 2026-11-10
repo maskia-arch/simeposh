@@ -295,7 +295,7 @@ function getChatLocale(): string {
             #vs25-bbl, #vs25 .vs25-bbl {
               right: 16px !important;
               left: auto !important;
-              bottom: calc(${window.location.pathname.includes('/unlimited') ? '90px' : '20px'} + env(safe-area-inset-bottom, 0px)) !important;
+              bottom: calc(${window.location.pathname.includes('/unlimited') || window.location.pathname.includes('/tariffs') ? '118px' : '20px'} + env(safe-area-inset-bottom, 0px)) !important;
             }
           }
           .vs25-tg-banner {

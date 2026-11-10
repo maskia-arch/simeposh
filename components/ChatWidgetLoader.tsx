@@ -53,6 +53,7 @@ export function ChatWidgetLoader() {
   const isCheckoutCrypto = pathname?.startsWith('/checkout/crypto/');
   const isCart = pathname?.includes('/cart');
   const isUnlimited = pathname?.includes('/unlimited');
+  const isTariff = pathname?.includes('/tariffs');
 
   // Do not render bubble on /checkout/crypto/* or /cart before click,
   // or once the real widget.js has loaded and injected its own UI
@@ -67,7 +68,8 @@ export function ChatWidgetLoader() {
     });
   };
 
-  const bottomPosition = isUnlimited
+  const hasStickyBar = isUnlimited || isTariff;
+  const bottomPosition = hasStickyBar
     ? 'bottom-[calc(118px+env(safe-area-inset-bottom,0px))]'
     : 'bottom-[calc(20px+env(safe-area-inset-bottom,0px))]';
 

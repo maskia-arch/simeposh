@@ -365,7 +365,7 @@ const nl = {
   "meta_country_desc": "Voordelige prepaid eSIM voor {country}. Highspeed data vanaf {price}, directe activering via QR-code en geen roamingkosten. Nu bestellen!",
   "meta_country_title": "eSIM {country} vanaf {price} – Highspeed prepaid data",
   "meta_home_title": "PureSim – Voordelige wereldwijde eSIMs",
-  "meta_tariffs_desc": "Vind voordelige eSIM-abonnementen voor 200+ destinationern wereldwijd.",
+  "meta_tariffs_desc": "Vind voordelige eSIM-abonnementen voor 200+ bestemmingen wereldwijd.",
   "meta_tariffs_title": "Tarieven & eSIM Pakketten",
   "meta_unlimited_desc": "Unlimited eSIM voor {country} met flexibele looptijd (1-365 dagen) en highspeed data vanaf {price}. Directe QR-code activering.",
   "meta_unlimited_title": "Unlimited eSIM {country} configureren vanaf {price} – Highspeed data",

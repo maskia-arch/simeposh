@@ -57,11 +57,11 @@ export function checkRateLimit(
  * Extracts client IP from headers
  */
 export function getClientIp(request: Request): string {
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  if (cfConnectingIp) {
-    return cfConnectingIp.trim();
+  const xRealIp = request.headers.get('x-real-ip');
+  if (xRealIp) {
+    return xRealIp.trim();
   }
-  return request.headers.get('x-real-ip') || 'unknown-ip';
+  return 'unknown-ip';
 }
 
 /**

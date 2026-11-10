@@ -43,11 +43,10 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
 
   const isPremium   = tariff.is_premium || tariff.tariff_type === 'travel_premium' || isPremiumTariff(tariff);
   const breakoutIp  = getTariffBreakoutIp(tariff);
-  const ipFullList  = formatIpFullList(tariff.ip_countries, breakoutIp);
-  const isTR        = isTurkeyTariff(tariff);
+  const ipFullList  = formatIpFullList(tariff.ip_countries, breakoutIp, locale);
   const ops         = getTariffOperators(tariff, 8);
   const typeInfo    = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
-  const isTravel    = !tariff.tariff_type || tariff.tariff_type === 'travel' || tariff.tariff_type === 'travel_standard' || tariff.tariff_type === 'travel_premium';
+  const isTravel    = !tariff.tariff_type || tariff.tariff_type === 'travel_standard' || tariff.tariff_type === 'travel_premium';
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
   const countryLabel = displayCountryName(tariff, locale);
   const coverage     = coverageLabel(tariff, locale);
@@ -161,7 +160,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                     {diffFeature && (
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${diffFeature.cls}`}>
                         <TravelPremiumGlobeIcon size={13} className="text-amber-950" />
-                        <span>{t(diffFeature.badgeKey as any, diffFeature.vars)}</span>
+                        <span>{diffFeature.vars?.chipText || t(diffFeature.badgeKey as any, diffFeature.vars)}</span>
                       </span>
                     )}
                   </div>
@@ -186,67 +185,6 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
                 )}
               </div>
             </div>
-
-            {/* ── Turkey / Premium Comparison Box ── */}
-            {isTR && isPremium && (
-              <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 via-orange-50/60 to-amber-50/80 p-8 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-amber-200/80 pb-3">
-                  <span className="font-extrabold flex items-center gap-2 text-amber-900 text-lg">
-                    <TravelPremiumGlobeIcon size={20} className="text-amber-800" /> {t('turkey_premium_title' as any)}
-                  </span>
-                  <span className="rounded-full bg-amber-200/90 px-3 py-1 text-xs font-extrabold text-amber-950">
-                    {t('turkey_premium_badge' as any)}
-                  </span>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="bg-white/80 rounded-2xl p-4 border border-amber-200/60">
-                    <p className="font-extrabold text-amber-950 flex items-center gap-1.5 text-sm">
-                      <span>📶</span> {t('turkey_premium_coverage_label' as any)}
-                    </p>
-                    <p className="mt-1 leading-relaxed text-xs text-amber-900">
-                      {t('turkey_premium_coverage_text' as any)}
-                    </p>
-                  </div>
-                  <div className="bg-white/80 rounded-2xl p-4 border border-amber-200/60">
-                    <p className="font-extrabold text-amber-950 flex items-center gap-1.5 text-sm">
-                      <span>🌐</span> {t('turkey_premium_routing_label' as any)}
-                    </p>
-                    <p className="mt-1 leading-relaxed text-xs text-amber-900">
-                      {t('turkey_premium_routing_text' as any)}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs bg-amber-100/90 rounded-2xl p-3 font-medium text-amber-950 leading-relaxed">
-                  💡 {t('turkey_premium_recommendation' as any)}
-                </p>
-              </div>
-            )}
-
-            {isTR && !isPremium && (
-              <div className="rounded-3xl border border-sky-200 bg-sky-50/80 p-6 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-sky-200/70 pb-2">
-                  <span className="font-extrabold flex items-center gap-2 text-sky-900 text-base">
-                    <TravelGlobeIcon size={18} className="text-sky-700" /> {t('turkey_standard_title' as any)}
-                  </span>
-                  <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-800">
-                    {t('turkey_standard_badge' as any)}
-                  </span>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 text-xs text-sky-900/90">
-                  <div className="bg-white/80 rounded-xl p-3 border border-sky-200/60">
-                    <p className="font-bold text-sky-950">{t('turkey_standard_coverage_label' as any)}</p>
-                    <p className="mt-0.5">{t('turkey_standard_coverage_text' as any)}</p>
-                  </div>
-                  <div className="bg-white/80 rounded-xl p-3 border border-sky-200/60">
-                    <p className="font-bold text-sky-950">{t('turkey_standard_routing_label' as any)}</p>
-                    <p className="mt-0.5">{t('turkey_standard_routing_text' as any)}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-sky-800 pt-1">
-                  💡 {t('det_turkey_tip' as any)}
-                </p>
-              </div>
-            )}
 
             {/* Carrier specs / operators */}
             {ops.length > 0 && (

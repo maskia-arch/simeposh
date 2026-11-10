@@ -1,5 +1,7 @@
 'use client';
 
+import { GlobeIcon } from '@/components/Icons';
+
 interface CountryFlagProps {
   countryCode?: string | null;
   countryName?: string | null;
@@ -62,11 +64,10 @@ export function CountryFlag({ countryCode, countryName, size = 36, className = '
       return (
         <span
           className={`inline-flex shrink-0 items-center justify-center select-none ${className}`}
-          style={{ fontSize: Math.round(size * 0.75), lineHeight: 1 }}
-          role="img"
+          style={{ width: size, height: Math.round(size * 0.75) }}
           aria-label={countryName ?? 'Asia'}
         >
-          🌏
+          <GlobeIcon size={Math.round(size * 0.75)} className="text-brand-600" />
         </span>
       );
     }
@@ -89,11 +90,10 @@ export function CountryFlag({ countryCode, countryName, size = 36, className = '
     return (
       <span
         className={`inline-flex shrink-0 items-center justify-center select-none ${className}`}
-        style={{ fontSize: Math.round(size * 0.75), lineHeight: 1 }}
-        role="img"
+        style={{ width: size, height: Math.round(size * 0.75) }}
         aria-label={countryName ?? up}
       >
-        {meta.emoji}
+        <GlobeIcon size={Math.round(size * 0.75)} className="text-brand-600" />
       </span>
     );
   }

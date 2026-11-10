@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { NOT_FOUND_TEXTS } from '@/lib/not-found-html';
 import type { LocaleCode } from '@/lib/i18n/config';
 import { isValidLocale } from '@/lib/i18n/config';
+import { CountryFlag } from '@/components/CountryFlag';
 
 export const metadata: Metadata = {
   title: 'Seite nicht gefunden · PureSim',
@@ -13,26 +14,26 @@ export const metadata: Metadata = {
   },
 };
 
-const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; flag: string }>> = {
+const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; code: string }>> = {
   de: [
-    { name: 'Vereinigte Staaten', slug: 'united-states', flag: '🇺🇸' },
-    { name: 'Türkei', slug: 'turkey', flag: '🇹🇷' },
-    { name: 'Deutschland', slug: 'germany', flag: '🇩🇪' },
-    { name: 'Schweiz', slug: 'switzerland', flag: '🇨🇭' },
-    { name: 'Japan', slug: 'japan', flag: '🇯🇵' },
-    { name: 'Thailand', slug: 'thailand', flag: '🇹🇭' },
-    { name: 'Vereinigtes Königreich', slug: 'united-kingdom', flag: '🇬🇧' },
-    { name: 'Australien', slug: 'australia', flag: '🇦🇺' },
+    { name: 'Vereinigte Staaten', slug: 'united-states', code: 'US' },
+    { name: 'Türkei', slug: 'turkey', code: 'TR' },
+    { name: 'Deutschland', slug: 'germany', code: 'DE' },
+    { name: 'Schweiz', slug: 'switzerland', code: 'CH' },
+    { name: 'Japan', slug: 'japan', code: 'JP' },
+    { name: 'Thailand', slug: 'thailand', code: 'TH' },
+    { name: 'Vereinigtes Königreich', slug: 'united-kingdom', code: 'GB' },
+    { name: 'Australien', slug: 'australia', code: 'AU' },
   ],
   en: [
-    { name: 'United States', slug: 'united-states', flag: '🇺🇸' },
-    { name: 'Turkey', slug: 'turkey', flag: '🇹🇷' },
-    { name: 'Germany', slug: 'germany', flag: '🇩🇪' },
-    { name: 'Switzerland', slug: 'switzerland', flag: '🇨🇭' },
-    { name: 'Japan', slug: 'japan', flag: '🇯🇵' },
-    { name: 'Thailand', slug: 'thailand', flag: '🇹🇭' },
-    { name: 'United Kingdom', slug: 'united-kingdom', flag: '🇬🇧' },
-    { name: 'Australia', slug: 'australia', flag: '🇦🇺' },
+    { name: 'United States', slug: 'united-states', code: 'US' },
+    { name: 'Turkey', slug: 'turkey', code: 'TR' },
+    { name: 'Germany', slug: 'germany', code: 'DE' },
+    { name: 'Switzerland', slug: 'switzerland', code: 'CH' },
+    { name: 'Japan', slug: 'japan', code: 'JP' },
+    { name: 'Thailand', slug: 'thailand', code: 'TH' },
+    { name: 'United Kingdom', slug: 'united-kingdom', code: 'GB' },
+    { name: 'Australia', slug: 'australia', code: 'AU' },
   ],
 };
 
@@ -61,7 +62,7 @@ export default function NotFound({ localeOverride }: { localeOverride?: string }
   const popular = POPULAR_COUNTRIES[locale] || POPULAR_COUNTRIES.en;
 
   return (
-    <div className="flex flex-col items-center justify-center text-center px-4 py-16 font-sans text-slate-800 bg-slate-50/50 flex-1">
+    <div className="flex flex-col items-center justify-center text-center px-4 pt-16 pb-28 sm:pb-16 font-sans text-slate-800 bg-slate-50/50 flex-1">
       <div className="max-w-xl mx-auto space-y-6">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-brand-50 border border-brand-200 text-brand-600">
           <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -106,9 +107,9 @@ export default function NotFound({ localeOverride }: { localeOverride?: string }
               <Link
                 key={c.slug}
                 href={`${prefix}/esim/${c.slug}`}
-                className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:border-brand-500 hover:text-brand-600 shadow-2xs hover:shadow-xs transition-all"
+                className="min-h-[44px] inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:border-brand-500 hover:text-brand-600 shadow-2xs hover:shadow-xs transition-all"
               >
-                <span className="text-base">{c.flag}</span>
+                <CountryFlag countryCode={c.code} countryName={c.name} size={18} className="rounded-xs shrink-0" />
                 <span>{c.name}</span>
               </Link>
             ))}

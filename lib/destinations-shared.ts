@@ -48,16 +48,16 @@ export const ACTIVE_DESTINATION_CODES = new Set<string>([
  */
 export const REGION_SLUGS: Record<string, string> = {
   EUROPE:        'europe',
-  EU:            'europe',
   ASIA:          'asia',
   SEA:           'southeast-asia',
   MIDDLE_EAST:   'middle-east',
   NORTH_AMERICA: 'north-america',
   LATAM:         'latin-america',
   OCEANIA:       'oceania',
-  OC:            'oceania',
   AFRICA:        'africa',
   GLOB:          'global',
+  EU:            'europe',
+  OC:            'oceania',
   GLOBAL:        'global',
 };
 
@@ -81,11 +81,11 @@ export const CODE_TO_SLUG_OVERRIDES: Record<string, string> = {
   NA:            'namibia',
   EUROPE:        'europe',
   OCEANIA:       'oceania',
-  EU:            'europe',
-  OC:            'oceania',
   AFRICA:        'africa',
   MIDDLE_EAST:   'middle-east',
   NORTH_AMERICA: 'north-america',
+  LATAM:         'latin-america',
+  GLOB:          'global',
   AF:            'afghanistan',
   ME:            'montenegro',
   AS:            'american-samoa',
@@ -167,16 +167,17 @@ export const CUSTOM_ALIASES: Record<string, string> = {
   jp: 'JP',
   thailand: 'TH',
   th: 'TH',
-  europa: 'EU',
-  europe: 'EU',
-  eu: 'EU',
+  europa: 'EUROPE',
+  europe: 'EUROPE',
+  eu: 'EUROPE',
   asien: 'ASIA',
   asia: 'ASIA',
-  as: 'ASIA',
-  ozeanien: 'OC',
-  oceania: 'OC',
+  ozeanien: 'OCEANIA',
+  oceania: 'OCEANIA',
+  oc: 'OCEANIA',
   weltweit: 'GLOB',
   global: 'GLOB',
+  glob: 'GLOB',
 };
 
 /**
@@ -250,8 +251,21 @@ for (const [code, slug] of Object.entries(CODE_TO_SLUG_OVERRIDES)) {
   CANONICAL_SLUG_TO_CODE[slug] = code;
 }
 for (const [region, slug] of Object.entries(REGION_SLUGS)) {
-  CANONICAL_SLUG_TO_CODE[slug] = region;
+  if (!CANONICAL_SLUG_TO_CODE[slug] || region.length > 2 || region === 'GLOB') {
+    CANONICAL_SLUG_TO_CODE[slug] = region;
+  }
 }
+
+// Canonical long regional keys must strictly win and never be overridden by short keys
+CANONICAL_SLUG_TO_CODE['europe'] = 'EUROPE';
+CANONICAL_SLUG_TO_CODE['oceania'] = 'OCEANIA';
+CANONICAL_SLUG_TO_CODE['global'] = 'GLOB';
+CANONICAL_SLUG_TO_CODE['asia'] = 'ASIA';
+CANONICAL_SLUG_TO_CODE['north-america'] = 'NORTH_AMERICA';
+CANONICAL_SLUG_TO_CODE['latin-america'] = 'LATAM';
+CANONICAL_SLUG_TO_CODE['africa'] = 'AFRICA';
+CANONICAL_SLUG_TO_CODE['middle-east'] = 'MIDDLE_EAST';
+CANONICAL_SLUG_TO_CODE['southeast-asia'] = 'SEA';
 
 /**
  * Resolves any query, alias, or slug to an ISO or region code.
@@ -260,34 +274,35 @@ export function resolveCountryOrRegionCode(term: string): string | null {
   const q = slugify(term);
   if (!q) return null;
 
+  let code: string | null = null;
+
   // 1. Direct match in precomputed canonical slug dictionary (100% of ISO codes & regions)
   if (CANONICAL_SLUG_TO_CODE[q]) {
-    return CANONICAL_SLUG_TO_CODE[q];
+    code = CANONICAL_SLUG_TO_CODE[q];
+  } else {
+    // 2. Direct 2-letter ISO code match (e.g. "de", "fr", "us")
+    const directUpper = q.toUpperCase();
+    if (directUpper.length === 2 && ALL_ISO_CODES.includes(directUpper)) {
+      code = directUpper;
+    } else if (REGION_SLUGS[directUpper]) {
+      code = directUpper;
+    } else if (CUSTOM_ALIASES[q]) {
+      code = CUSTOM_ALIASES[q];
+    } else {
+      const withSpaces = q.replace(/-/g, ' ');
+      const exactCode = COUNTRY_ALIASES[q] || COUNTRY_ALIASES[withSpaces] || REGION_ALIASES[q] || REGION_ALIASES[withSpaces];
+      if (exactCode) {
+        code = exactCode.toUpperCase();
+      }
+    }
   }
 
-  // 2. Direct 2-letter ISO code match (e.g. "de", "fr", "us")
-  const directUpper = q.toUpperCase();
-  if (directUpper.length === 2 && ALL_ISO_CODES.includes(directUpper)) {
-    return directUpper;
-  }
-
-  // 3. Region code direct match
-  if (REGION_SLUGS[directUpper]) {
-    return directUpper;
-  }
-
-  // 4. Custom alias match
-  if (CUSTOM_ALIASES[q]) {
-    return CUSTOM_ALIASES[q];
-  }
-
-  // 5. Slug with spaces fallback for country aliases (e.g. "south africa", "saint lucia")
-  const withSpaces = q.replace(/-/g, ' ');
-
-  // 6. i18n aliases exact lookup ONLY (no prefix or substring matching)
-  const exactCode = COUNTRY_ALIASES[q] || COUNTRY_ALIASES[withSpaces] || REGION_ALIASES[q] || REGION_ALIASES[withSpaces];
-  if (exactCode) {
-    return exactCode.toUpperCase();
+  if (code) {
+    // Only normalize legacy EU, OC, GLOBAL to long canonical codes. NEVER normalize NA (Namibia) or other ISO codes!
+    if (code === 'EU') return 'EUROPE';
+    if (code === 'OC') return 'OCEANIA';
+    if (code === 'GLOBAL') return 'GLOB';
+    return code;
   }
 
   return null;

@@ -144,7 +144,8 @@ export function CountryPageClient({
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
-                  ⚡ {t('badge_instant_activation' as any) || (isDe ? 'Sofort-Aktivierung' : 'Instant QR Code')}
+                  <BoltIcon size={13} className="text-brand-600 shrink-0" />
+                  <span>{t('badge_instant_activation' as any) || (isDe ? 'Aktivierung per QR-Code' : 'Instant QR Code')}</span>
                 </span>
                 {has5G && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-700">

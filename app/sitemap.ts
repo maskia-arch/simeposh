@@ -67,6 +67,17 @@ export default async function sitemap({
   }
 
   // 1. Core static routes (checkout, cart, order are omitted)
+  const STATIC_ROUTE_DATES: Record<string, string> = {
+    '/agb': '2026-11-01T00:00:00Z',
+    '/datenschutz': '2026-11-01T00:00:00Z',
+    '/refund-policy': '2026-11-01T00:00:00Z',
+    '/faq': '2026-11-05T00:00:00Z',
+    '/telegram': '2026-11-01T00:00:00Z',
+    '/ai': '2026-11-05T00:00:00Z',
+    '/blog': '2026-11-05T00:00:00Z',
+    '/topup': '2026-11-05T00:00:00Z',
+  };
+
   const routes = [
     '',
     '/esim',
@@ -87,12 +98,13 @@ export default async function sitemap({
   for (const route of routes) {
     const alternatesLanguages = buildLanguages(route);
     const pageUrl = alternatesLanguages[targetLocale] || alternatesLanguages.de;
+    const staticDate = STATIC_ROUTE_DATES[route];
 
     sitemapEntries.push({
       url: pageUrl,
-      lastModified: globalLatestMod,
-      changeFrequency: 'daily',
-      priority: route === '' ? 1.0 : 0.8,
+      lastModified: staticDate ? new Date(staticDate) : globalLatestMod,
+      changeFrequency: staticDate ? 'monthly' : 'daily',
+      priority: route === '' ? 1.0 : (staticDate ? 0.5 : 0.8),
       alternates: { languages: alternatesLanguages },
     });
   }

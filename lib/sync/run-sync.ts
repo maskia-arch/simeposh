@@ -383,12 +383,21 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       const topUpType = Number(pkg.supportTopUpType ?? 1);
       // Extract IP routing countries from supplier ipExport field
       const parsedIpCountries: string[] = [];
+      const discardedIpParts: string[] = [];
       if (typeof pkg.ipExport === 'string') {
         const parts = pkg.ipExport.split(/[\/,]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
         for (const p of parts) {
-          if (p === 'EUROPE') parsedIpCountries.push('EU');
-          else if (/^[A-Z]{2}$/.test(p)) parsedIpCountries.push(p);
+          if (p === 'EUROPE') {
+            parsedIpCountries.push('EU');
+          } else if (/^[A-Z]{2}$/.test(p)) {
+            parsedIpCountries.push(p);
+          } else {
+            discardedIpParts.push(p);
+          }
         }
+      }
+      if (discardedIpParts.length > 0) {
+        console.warn(`[sync] Discarded non-standard ipExport part(s) for ${pkg.packageCode}:`, discardedIpParts);
       }
       const ipCountries = parsedIpCountries.length > 0 ? parsedIpCountries : null;
       const breakoutIp = parsedIpCountries.length > 0 ? parsedIpCountries.join(' / ') : null;
@@ -596,13 +605,9 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       console.log('[sync] Deactivated stale packages (last_synced_at < syncStart)');
     }
 
-    // ── 8.5. Reclassify tariffs (Fix 4 Rules: separate regions by location count, demonstrable chips only) ──
-    try {
-      const { updated, totalStandard, totalPremium, needsReviewCount } = await classifyAllTariffs();
-      console.log(`[sync] Reclassified tariffs: ${updated} travel tariffs (Standard: ${totalStandard}, Premium: ${totalPremium}, Review Needed: ${needsReviewCount}).`);
-    } catch (classifyErr: any) {
-      console.error('[sync] Tariff reclassification error (non-fatal):', classifyErr.message);
-    }
+    // ── 8.5. Reclassify tariffs (Fix 6 Rules: Demonstrable chips only, fatal errors) ──
+    const { updated, totalStandard, totalPremium, needsReviewCount } = await classifyAllTariffs();
+    console.log(`[sync] Reclassified tariffs: ${updated} travel tariffs (Standard: ${totalStandard}, Premium: ${totalPremium}, Review Needed: ${needsReviewCount}).`);
 
     // ── 8.8. Post-Sync Validation & Region Guard Verification ──
     try {

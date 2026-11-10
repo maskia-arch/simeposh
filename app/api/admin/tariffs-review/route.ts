@@ -34,9 +34,11 @@ export async function GET(request: NextRequest) {
                premium_diff_chip,
                COALESCE(raw_data->'operatorList', '[]'::jsonb) AS operator_list,
                COALESCE(raw_data->>'ipExport', '') AS ip_export,
-               needs_difference_review
+               needs_difference_review,
+               hidden_reason,
+               tariff_type
         FROM public.tariffs
-        WHERE is_active = true AND hidden_reason IS NULL AND needs_difference_review = true
+        WHERE is_active = true AND (needs_difference_review = true OR hidden_reason IS NOT NULL)
         ORDER BY true_region, data_gb, validity_days, package_code;
       `;
 
@@ -47,6 +49,14 @@ export async function GET(request: NextRequest) {
               .map((o: any) => o.operatorName)
               .filter(Boolean)
           : [];
+
+        let reason = 'Unterschied prüfen';
+        if (p.hidden_reason) {
+          reason = `Ausgeblendet: ${p.hidden_reason}`;
+        } else if (p.tariff_type?.startsWith('unlimited')) {
+          reason = 'Doppeltes Paket';
+        }
+
         return {
           code: p.package_code,
           name: p.name,
@@ -56,7 +66,7 @@ export async function GET(request: NextRequest) {
           validity_days: p.validity_days,
           operators: rawOps,
           ip_export: p.ip_export || null,
-          note: 'Kein belegbarer Unterschied zu Standard gefunden (gleiche Netze, keine abweichende IP)',
+          note: reason,
         };
       });
 

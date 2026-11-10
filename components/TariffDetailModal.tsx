@@ -93,8 +93,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
 
   const isPremium    = isPremiumTariff(tariff);
   const breakoutIp   = getTariffBreakoutIp(tariff);
-  const ipFullList   = formatIpFullList(tariff.ip_countries, breakoutIp);
-  const isTR         = isTurkeyTariff(tariff);
+  const ipFullList   = formatIpFullList(tariff.ip_countries, breakoutIp, locale);
   const ops          = getTariffOperators(tariff, 8);
   const typeInfo     = tariff.tariff_type ? TYPE_INFO[tariff.tariff_type] : null;
   const isUnlimited  = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
@@ -240,61 +239,6 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
             </div>
           </div>
 
-          {/* ── Turkey / Premium Comparison Box ── */}
-          {isTR && isPremium && (
-            <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/90 to-orange-50/70 p-4 text-xs text-amber-950 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
-                <span className="font-extrabold flex items-center gap-1.5 text-amber-900 text-sm">
-                  <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> {t('turkey_premium_title' as any)}
-                </span>
-                <span className="rounded-full bg-amber-200/90 px-2 py-0.5 text-[10px] font-bold text-amber-950">
-                  {t('turkey_premium_badge' as any)}
-                </span>
-              </div>
-              <div className="space-y-2.5">
-                <div>
-                  <p className="font-bold text-amber-950 flex items-center gap-1.5">
-                    <span>📶</span> {t('turkey_premium_coverage_label' as any)}
-                  </p>
-                  <p className="mt-0.5 leading-relaxed text-[11px] text-amber-900">
-                    {t('turkey_premium_coverage_text' as any)}
-                  </p>
-                </div>
-                <div className="pt-2 border-t border-amber-200/70">
-                  <p className="font-bold text-amber-950 flex items-center gap-1.5">
-                    <span>🌐</span> {t('turkey_premium_routing_label' as any)}
-                  </p>
-                  <p className="mt-0.5 leading-relaxed text-[11px] text-amber-900">
-                    {t('turkey_premium_routing_text' as any)}
-                  </p>
-                </div>
-              </div>
-              <p className="mt-1 text-[10px] bg-amber-100/90 rounded-xl p-2 font-medium text-amber-950 leading-tight">
-                💡 {t('turkey_premium_recommendation' as any)}
-              </p>
-            </div>
-          )}
-
-          {isTR && !isPremium && (
-            <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3.5 text-xs text-sky-950 shadow-2xs space-y-2">
-              <div className="flex items-center justify-between border-b border-sky-200/60 pb-1.5">
-                <span className="font-extrabold flex items-center gap-1.5 text-sky-900 text-xs">
-                  <TravelGlobeIcon size={14} className="text-sky-700" /> {t('turkey_standard_title' as any)}
-                </span>
-                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
-                  {t('turkey_standard_badge' as any)}
-                </span>
-              </div>
-              <div className="text-[11px] text-sky-900/90 space-y-1">
-                <p><strong>{t('turkey_standard_coverage_label' as any)}:</strong> {t('turkey_standard_coverage_text' as any)}</p>
-                <p><strong>{t('turkey_standard_routing_label' as any)}:</strong> {t('turkey_standard_routing_text' as any)}</p>
-              </div>
-              <div className="mt-1 pt-1.5 border-t border-sky-200/60 text-[10px] text-sky-800 leading-tight">
-                💡 {t('det_turkey_tip' as any)}
-              </div>
-            </div>
-          )}
-
           {/* ── Special Features Callout Section ── */}
           {features.length > 0 && (
             <div className="space-y-2">
@@ -306,7 +250,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
                       <span className="text-sm">
                         {feat.id === 'travel_premium' ? <TravelPremiumGlobeIcon size={16} className="text-amber-800" /> : feat.icon}
                       </span>
-                      <span>{t(feat.titleKey as any, feat.vars)}</span>
+                      <span>{feat.vars?.chipText || t(feat.titleKey as any, feat.vars)}</span>
                     </div>
                     <p className="leading-relaxed text-indigo-900/90 text-[11px]">{t(feat.descKey as any, feat.vars)}</p>
                     {feat.priceNoteKey && (

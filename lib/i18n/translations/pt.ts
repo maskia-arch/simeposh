@@ -365,7 +365,7 @@ const pt = {
   "meta_country_desc": "eSIM pré-pago acessível para {country}. Dados de alta velocidade a partir de {price}, ativação instantânea por código QR sem taxas de roaming. Compre agora!",
   "meta_country_title": "eSIM {country} a partir de {price} – Dados pré-pagos de alta velocidade",
   "meta_home_title": "PureSim – eSIMs globais acessíveis",
-  "meta_tariffs_desc": "Encontre planos eSIM acessíveis para mais de 200+ destinos em todo o mundo.",
+  "meta_tariffs_desc": "Encontre planos eSIM acessíveis para 200+ destinos em todo o mundo.",
   "meta_tariffs_title": "Planos e Pacotes eSIM",
   "meta_unlimited_desc": "Unlimited eSIM para {country} com duração flexível (1 a 365 dias) e dados de alta velocidade a partir de {price}. Ativação instantânea por código QR.",
   "meta_unlimited_title": "Unlimited eSIM {country} a partir de {price} – Dados de alta velocidade",

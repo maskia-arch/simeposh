@@ -110,11 +110,10 @@ export interface PublicTariff {
   validity_days:        number;
   sale_price_eur:       number;
   customer_price_eur?:  number;
-  tariff_type:          'travel' | 'unlimited_eco' | 'unlimited_pro' | string | null;
+  tariff_type:          'travel_standard' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro' | string | null;
   speed_kbps:           number | null;
   label:                string | null;
   is_top_up_eligible:   boolean | null;
-  discount_rule_code?:  string | null;
 
   // Serverseitig sauber aufbereitete Felder (ersetzen raw_data vollständig, einheitlich snake_case):
   operators:            TariffOperator[];
@@ -129,7 +128,6 @@ export interface PublicTariff {
   network_speed:        string | null;
   activates_on_arrival: boolean;       // steuert das Badge Activation on Arrival (activeType === 2)
   premium_diff_chip?:   string | null;
-  needs_difference_review?: boolean;
 }
 
 /**
@@ -172,6 +170,8 @@ export function extractRawOperators(row: any, max = 8): TariffOperator[] {
   let ops: any[] = [];
   if (Array.isArray(row.operators) && row.operators.length > 0) {
     ops = row.operators;
+  } else if (Array.isArray(row.operator_list) && row.operator_list.length > 0) {
+    ops = row.operator_list;
   } else {
     const rawData = (row.raw_data ?? row) as Record<string, unknown> | null | undefined;
     if (rawData) {
@@ -319,7 +319,6 @@ export function toPublicTariff(row: any): PublicTariff {
     speed_kbps:           row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
     label:                row.label ? String(row.label) : null,
     is_top_up_eligible:   reload.isReloadable,
-    discount_rule_code:   row.discount_rule_code ? String(row.discount_rule_code) : null,
 
     // Derived whitelisted fields (strictly snake_case)
     operators:            ops,
@@ -334,7 +333,6 @@ export function toPublicTariff(row: any): PublicTariff {
     network_speed:        safeSpeed,
     activates_on_arrival: activatesOnArrival,
     premium_diff_chip:    row.premium_diff_chip ? String(row.premium_diff_chip) : null,
-    needs_difference_review: Boolean(row.needs_difference_review),
   };
 }
 
