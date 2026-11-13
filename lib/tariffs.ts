@@ -315,7 +315,7 @@ export function toPublicTariff(row: any): PublicTariff {
     validity_days:        Math.max(1, Number(row.validity_days ?? row.duration ?? 1)),
     sale_price_eur:       Number(row.sale_price_eur ?? 0),
     customer_price_eur:   typeof row.customer_price_eur === 'number' ? row.customer_price_eur : undefined,
-    tariff_type:          row.tariff_type ? String(row.tariff_type) : 'travel_standard',
+    tariff_type:          row.tariff_type && row.tariff_type !== 'travel' ? String(row.tariff_type) : 'travel_standard',
     speed_kbps:           row.speed_kbps !== null && row.speed_kbps !== undefined ? Number(row.speed_kbps) : null,
     label:                row.label ? String(row.label) : null,
     is_top_up_eligible:   reload.isReloadable,

@@ -187,15 +187,32 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
     console.log(`[sync] Fetched ${packages.length} packages total`);
 
-    if (packages.length === 0) {
+    if (packages.length < 1000) {
       const duration = Date.now() - startedAt;
+      const abortMsg = `[sync ABORT] Fetched only ${packages.length} packages from supplier. Minimum expected is 1,000. Aborting sync without touching catalog.`;
+      console.error(abortMsg);
       await db.from('sync_logs').update({
-        status: 'completed', total_packages: 0, upserted: 0,
-        errors: 0, usd_eur_rate: usdEurRate, price_changes: 0,
-        duration_ms: duration, completed_at: new Date().toISOString(),
-        error_message: null,
+        status: 'failed',
+        total_packages: packages.length,
+        upserted: 0,
+        errors: 0,
+        usd_eur_rate: usdEurRate,
+        price_changes: 0,
+        duration_ms: duration,
+        completed_at: new Date().toISOString(),
+        error_message: abortMsg,
       }).eq('sync_id', syncId);
-      return { success: true, upserted: 0, errors: 0, total: 0, usdEurRate, priceChanges: 0, syncId, duration_ms: duration };
+      return {
+        success: false,
+        upserted: 0,
+        errors: 0,
+        total: packages.length,
+        usdEurRate,
+        priceChanges: 0,
+        syncId,
+        duration_ms: duration,
+        error: abortMsg,
+      };
     }
 
     await writeProgress(db, syncId, {
@@ -283,7 +300,11 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       const salePriceEur  = calculateSalePrice(ekUsd, usdEurRate);
       const volumeBytes   = getVolumeBytes(pkg);
       const dataGb        = volumeBytes > 0 ? bytesToGb(volumeBytes) : null;
-      const tariffType    = detectTariffType(pkg);
+      const rawTariffType = detectTariffType(pkg);
+      const tariffType: 'travel_standard' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro' =
+        rawTariffType === ('travel' as any) || !rawTariffType
+          ? 'travel_standard'
+          : rawTariffType;
       const locationCodes = parseLocationCodes(pkg);
       const isMulti       = locationCodes.length > 1;
 
@@ -589,20 +610,61 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
 
 
     // ── 8. Deactivate removed packages (timestamp-based) ────────
-    // Instead of a giant "NOT IN (140k items)" URL that exceeds PostgREST limits,
-    // we use the last_synced_at timestamp set during upsert.
-    // Any row with last_synced_at < syncStartIso was NOT touched by this sync
-    // → it was removed from the esimaccess catalogue → deactivate it.
-    const { error: deactivateError } = await db
+    // Circuit Breakers:
+    // 1. Zero-error requirement: Never deactivate if any upsert batch failed or zero were upserted/unchanged!
+    // 2. Minimum volume requirement: Never deactivate if total packages < 1000!
+    // 3. Blast radius check: Never deactivate more than 5% (max 150) of active catalog in a single run!
+    const { count: activeCountBefore } = await db
       .from('tariffs')
-      .update({ is_active: false })
-      .lt('last_synced_at', syncStartIso)
+      .select('id', { count: 'exact', head: true })
       .eq('is_active', true);
 
-    if (deactivateError) {
-      console.error('[sync] deactivation error (non-fatal):', deactivateError.message);
+    const safeActiveCount = activeCountBefore ?? 0;
+    const isUpsertClean = errors === 0 && (upserted > 0 || unchangedCodes.length > 0);
+    const hasSufficientVolume = packages.length >= 1000;
+
+    if (!isUpsertClean) {
+      const errAlert = `[sync CIRCUIT BREAKER] Skipping deactivation: upsert encountered ${errors} errors (upserted: ${upserted}, unchanged: ${unchangedCodes.length}). Active catalog preserved.`;
+      console.error(errAlert);
+      errorDetails.push(errAlert);
+    } else if (!hasSufficientVolume) {
+      const volAlert = `[sync CIRCUIT BREAKER] Skipping deactivation: package count (${packages.length}) < 1000 threshold. Active catalog preserved.`;
+      console.error(volAlert);
+      errorDetails.push(volAlert);
     } else {
-      console.log('[sync] Deactivated stale packages (last_synced_at < syncStart)');
+      const { data: staleCandidates, error: staleQueryErr } = await db
+        .from('tariffs')
+        .select('package_code')
+        .lt('last_synced_at', syncStartIso)
+        .eq('is_active', true);
+
+      if (staleQueryErr) {
+        console.error('[sync] Error querying stale packages:', staleQueryErr.message);
+      } else {
+        const staleCount = staleCandidates?.length ?? 0;
+        const maxAllowedDeactivations = Math.max(50, Math.min(150, Math.floor(safeActiveCount * 0.05)));
+
+        if (staleCount > maxAllowedDeactivations) {
+          const blastAlert = `[sync BLAST RADIUS ALERT] Aborting deactivation: ${staleCount} stale packages exceeds max threshold of ${maxAllowedDeactivations} (5% of ${safeActiveCount} active tariffs). Active catalog preserved.`;
+          console.error(blastAlert);
+          errorDetails.push(blastAlert);
+        } else if (staleCount > 0) {
+          console.log(`[sync] Deactivating ${staleCount} removed packages (within safe threshold of ${maxAllowedDeactivations})...`);
+          const { error: deactivateError } = await db
+            .from('tariffs')
+            .update({ is_active: false })
+            .lt('last_synced_at', syncStartIso)
+            .eq('is_active', true);
+
+          if (deactivateError) {
+            console.error('[sync] deactivation error (non-fatal):', deactivateError.message);
+          } else {
+            console.log(`[sync] Successfully deactivated ${staleCount} stale packages.`);
+          }
+        } else {
+          console.log('[sync] No stale packages to deactivate (all packages fresh).');
+        }
+      }
     }
 
     // ── 8.5. Reclassify tariffs (Fix 6 Rules: Demonstrable chips only, fatal errors) ──
@@ -646,6 +708,31 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       console.warn('[sync post-check] Warning:', checkErr.message);
     }
 
+    // ── 8.9. Post-Sync Catalog Health Assertion & Automatic Recovery ──
+    const { count: finalActiveCount } = await db
+      .from('tariffs')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    const safeFinalActive = finalActiveCount ?? 0;
+    if (safeFinalActive < 1000) {
+      const emergencyMsg = `[sync CRITICAL ALERT] Catalog health check failed! Only ${safeFinalActive} active tariffs remain. Initiating automatic emergency recovery!`;
+      console.error(emergencyMsg);
+
+      try {
+        await runRawQuery(
+          `UPDATE public.tariffs
+           SET is_active = true
+           WHERE last_synced_at >= (NOW() - INTERVAL '7 days')
+             AND is_active = false`
+        );
+        console.log('[sync] Emergency recovery completed: reactivated recently synced tariffs.');
+      } catch (rollbackErr: any) {
+        console.error('[sync] Emergency recovery query failed:', rollbackErr.message);
+      }
+      errorDetails.unshift(emergencyMsg);
+    }
+
     // ── 9. Finalize ─────────────────────────────────────────────
     const duration = Date.now() - startedAt;
 
@@ -654,13 +741,15 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       { onConflict: 'key' }
     );
 
-    // Build final error message: include first batch error if any
+    // Build final error message: include all batch errors & alerts if any
     const finalErrorMsg = errorDetails.length > 0
-      ? `${errors} rows failed. First error: ${errorDetails[0]}`
+      ? `${errors > 0 ? `${errors} rows failed. ` : ''}${errorDetails.join(' | ')}`
       : null;
 
+    const isSyncFailed = (errors > 0 && upserted === 0) || safeFinalActive < 1000;
+
     await db.from('sync_logs').update({
-      status:         errors > 0 && upserted === 0 ? 'failed' : 'completed',
+      status:         isSyncFailed ? 'failed' : 'completed',
       total_packages: packages.length,
       upserted,
       errors,
