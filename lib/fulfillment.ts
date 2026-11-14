@@ -177,10 +177,44 @@ export async function fulfillOrder(
     if (o.order_type === 'top_up') {
       if (!o.top_up_iccid) throw new Error('top_up_iccid missing');
 
+      let targetIccid = o.top_up_iccid.trim().replace(/\s+/g, '');
+      if (targetIccid.includes('•') || targetIccid.includes('*') || !/^89\d{16,20}$/.test(targetIccid)) {
+        // Auto-recover unmasked ICCID from user's completed orders
+        const last4 = targetIccid.replace(/\D/g, '').slice(-4);
+        if (last4.length === 4) {
+          let recQuery = supabase
+            .from('orders')
+            .select('iccid')
+            .eq('status', 'completed')
+            .ilike('iccid', `%${last4}`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (o.user_id) {
+            recQuery = recQuery.eq('user_id', o.user_id);
+          } else if (o.customer_email) {
+            recQuery = recQuery.eq('customer_email', o.customer_email);
+          }
+          const { data: rec } = await recQuery.maybeSingle();
+          if (rec?.iccid && /^89\d{16,20}$/.test(rec.iccid.trim())) {
+            targetIccid = rec.iccid.trim();
+            await supabase.from('orders').update({ top_up_iccid: targetIccid }).eq('id', orderId);
+          }
+        }
+      }
+
+      if (!/^89\d{16,20}$/.test(targetIccid)) {
+        console.error(`[FULFILLMENT CRITICAL] Order ${orderId}: Invalid top_up_iccid "${o.top_up_iccid}". Cannot call eSIM Access.`);
+        await supabase.from('orders').update({
+          status: 'review',
+          error_message: `Ungültige ICCID für Aufladung: "${o.top_up_iccid}". Automatische Prüfung erforderlich.`,
+        }).eq('id', orderId);
+        return { orderId, ok: false, error: 'Invalid top_up_iccid. Order moved to review.' };
+      }
+
       // Re-check top-up limit immediately before calling provider (edge-case guard)
-      const esim = await getEsimRecord(o.top_up_iccid);
+      const esim = await getEsimRecord(targetIccid);
       if (esim && esim.topup_count >= 9) {
-        console.error(`[FULFILLMENT CRITICAL] Order ${orderId}: Max top-up limit (9/9) reached for ICCID ${o.top_up_iccid}. Aborting provider call.`);
+        console.error(`[FULFILLMENT CRITICAL] Order ${orderId}: Max top-up limit (9/9) reached for ICCID ${targetIccid}. Aborting provider call.`);
         await supabase.from('orders').update({
           status: 'review',
           error_message: 'Maximales Auflade-Limit (9/9) vor Bereitstellung erreicht. Automatische Stornierung/Prüfung erforderlich.',
@@ -191,12 +225,12 @@ export async function fulfillOrder(
       const periodNum = o.period_num ? Number(o.period_num) : undefined;
       const supportTopUpType = o.tariffs?.support_top_up_type ?? o.tariffs?.raw_data?.supportTopUpType;
 
-      await applyTopUp(o.top_up_iccid, o.tariffs.package_code, orderId, { periodNum, supportTopUpType });
+      await applyTopUp(targetIccid, o.tariffs.package_code, orderId, { periodNum, supportTopUpType });
 
       // Atomic increment: UPDATE esims SET topup_count = topup_count + 1 WHERE iccid = $1 AND topup_count < 9 RETURNING topup_count;
-      await atomicIncrementTopUpCount(o.top_up_iccid, orderId);
+      await atomicIncrementTopUpCount(targetIccid, orderId);
 
-      await supabase.from('orders').update({ status: 'completed', iccid: o.top_up_iccid }).eq('id', orderId);
+      await supabase.from('orders').update({ status: 'completed', iccid: targetIccid, top_up_iccid: targetIccid }).eq('id', orderId);
       
       try {
         await applyOrderCompletionCashback(supabase, orderId);

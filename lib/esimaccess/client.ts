@@ -650,9 +650,14 @@ export async function applyTopUp(
     supportTopUpType?: number;
   }
 ): Promise<TopUpOrderResponse> {
+  const cleanIccid = (iccid || '').trim().replace(/\s+/g, '');
+  if (!/^89\d{16,20}$/.test(cleanIccid)) {
+    throw new Error(`Invalid ICCID "${iccid}" for top-up. Must be 18-22 digits starting with 89.`);
+  }
+
   // Enforce periodNum for validity-only plans (supportTopUpType = 3)
   if (opts?.supportTopUpType === 3 && (!opts?.periodNum || opts.periodNum <= 0)) {
-    throw new Error(`Missing required periodNum for validity-only topup (supportTopUpType = 3) on ICCID ${iccid}`);
+    throw new Error(`Missing required periodNum for validity-only topup (supportTopUpType = 3) on ICCID ${cleanIccid}`);
   }
 
   // Ensure the top-up package code format expected by eSIMAccess (e.g. TOPUP_CKH978)
@@ -662,7 +667,7 @@ export async function applyTopUp(
   }
 
   const payload: Record<string, unknown> = {
-    iccid,
+    iccid: cleanIccid,
     packageCode: codeToSend,
     transactionId: orderRef,
   };

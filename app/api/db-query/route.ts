@@ -247,7 +247,8 @@ export async function POST(request: Request) {
         const rawRows = Array.isArray(queryRes.data) ? queryRes.data : Array.isArray(queryRes) ? queryRes : [];
         resData = rawRows.map((o: any) => ({
           ...o,
-          iccid: o.iccid ? `•••• ${String(o.iccid).slice(-4)}` : null,
+          iccid: o.iccid,
+          masked_iccid: o.iccid ? `•••• ${String(o.iccid).slice(-4)}` : null,
           has_iccid: Boolean(o.iccid),
         }));
         break;

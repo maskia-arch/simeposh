@@ -24,9 +24,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const iccid = searchParams.get('iccid')?.trim();
   const orderId = searchParams.get('orderId')?.trim();
+  const setupToken = searchParams.get('setupToken')?.trim();
 
-  if (!iccid && !orderId) {
-    return NextResponse.json({ error: 'iccid or orderId parameter is required' }, { status: 400 });
+  if (!iccid && !orderId && !setupToken) {
+    return NextResponse.json({ error: 'iccid, orderId or setupToken parameter is required' }, { status: 400 });
   }
 
   try {
@@ -59,8 +60,20 @@ export async function GET(request: Request) {
 
     if (orderId) {
       orderQuery = orderQuery.eq('id', orderId);
+    } else if (setupToken) {
+      orderQuery = orderQuery.eq('setup_token', setupToken);
     } else if (iccid) {
-      orderQuery = orderQuery.eq('iccid', iccid);
+      if (iccid.includes('•') || iccid.includes('*')) {
+        const last4 = iccid.replace(/\D/g, '').slice(-4);
+        if (last4.length === 4) {
+          orderQuery = orderQuery.ilike('iccid', `%${last4}`);
+          if (currentUserId) orderQuery = orderQuery.eq('user_id', currentUserId);
+        } else {
+          orderQuery = orderQuery.eq('iccid', iccid);
+        }
+      } else {
+        orderQuery = orderQuery.eq('iccid', iccid);
+      }
     }
 
     const { data: existingOrder } = await orderQuery.maybeSingle() as any;
@@ -73,10 +86,16 @@ export async function GET(request: Request) {
       }
     }
 
-    const effectiveIccid = (iccid || existingOrder?.iccid || '').trim();
-    if (!effectiveIccid) {
-      return NextResponse.json({ error: 'No ICCID found for this order' }, { status: 400 });
+    let effectiveIccid = (existingOrder?.iccid || iccid || '').trim();
+    if (effectiveIccid.includes('•') || effectiveIccid.includes('*')) {
+      if (existingOrder?.iccid && !existingOrder.iccid.includes('•') && !existingOrder.iccid.includes('*')) {
+        effectiveIccid = existingOrder.iccid.trim();
+      }
     }
+    if (!effectiveIccid || !/^89\d{16,20}$/.test(effectiveIccid.replace(/\s+/g, ''))) {
+      return NextResponse.json({ error: 'No valid ICCID found for this order' }, { status: 400 });
+    }
+    effectiveIccid = effectiveIccid.replace(/\s+/g, '');
 
     const existingTariff = existingOrder?.tariffs ?? null;
 
@@ -93,7 +112,7 @@ export async function GET(request: Request) {
             remaining: 0,
             mode: 'none',
           },
-          orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, tariff: toPublicTariff(existingTariff) } : null,
+          orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, iccid: existingOrder.iccid, tariff: toPublicTariff(existingTariff) } : null,
         },
         { status: 400 }
       );
@@ -327,7 +346,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       packages: publicPackages,
       eligibility: finalEligibility,
-      orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, tariff: toPublicTariff(existingTariff) } : null
+      orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, iccid: existingOrder.iccid, tariff: toPublicTariff(existingTariff) } : null
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -80,9 +80,12 @@ export function getTopUpEligibility(
  * Fetch or initialize the topup_count for an ICCID from the esims table.
  */
 export async function getEsimRecord(iccid: string): Promise<{ iccid: string; topup_count: number } | null> {
-  if (!iccid) return null;
+  const cleanIccid = (iccid || '').trim().replace(/\s+/g, '');
+  if (!cleanIccid || cleanIccid.includes('•') || cleanIccid.includes('*') || !/^89\d{16,20}$/.test(cleanIccid)) {
+    return null;
+  }
   try {
-    const res = await runQuery('SELECT iccid, topup_count FROM public.esims WHERE iccid = $1', [iccid]);
+    const res = await runQuery('SELECT iccid, topup_count FROM public.esims WHERE iccid = $1', [cleanIccid]);
     if (res.rows && res.rows.length > 0) {
       return { iccid: res.rows[0].iccid, topup_count: Number(res.rows[0].topup_count) };
     }
@@ -92,7 +95,7 @@ export async function getEsimRecord(iccid: string): Promise<{ iccid: string; top
       SELECT COUNT(*)::int AS cnt
       FROM public.orders
       WHERE order_type = 'top_up' AND status = 'completed' AND COALESCE(top_up_iccid, iccid) = $1
-    `, [iccid]);
+    `, [cleanIccid]);
     const initialCount = Math.min(9, Number(countRes.rows?.[0]?.cnt ?? 0));
 
     // Insert into esims
@@ -101,12 +104,12 @@ export async function getEsimRecord(iccid: string): Promise<{ iccid: string; top
       VALUES ($1, $2)
       ON CONFLICT (iccid) DO UPDATE SET updated_at = NOW()
       RETURNING iccid, topup_count
-    `, [iccid, initialCount]);
+    `, [cleanIccid, initialCount]);
 
     return { iccid: insRes.rows[0].iccid, topup_count: Number(insRes.rows[0].topup_count) };
   } catch (err) {
-    console.error(`[lib/topup] Error fetching eSIM record for ${iccid}:`, err);
-    return { iccid, topup_count: 0 };
+    console.error(`[lib/topup] Error fetching eSIM record for ${cleanIccid}:`, err);
+    return { iccid: cleanIccid, topup_count: 0 };
   }
 }
 
@@ -116,7 +119,10 @@ export async function getEsimRecord(iccid: string): Promise<{ iccid: string; top
  * So können zwei parallele Zahlungen das Limit nicht überschreiten."
  */
 export async function hasPendingTopUpSession(iccid: string): Promise<boolean> {
-  if (!iccid) return false;
+  const cleanIccid = (iccid || '').trim().replace(/\s+/g, '');
+  if (!cleanIccid || cleanIccid.includes('•') || cleanIccid.includes('*') || !/^89\d{16,20}$/.test(cleanIccid)) {
+    return false;
+  }
   try {
     const nowIso = new Date().toISOString();
     // Check orders with order_type = 'top_up' and status IN ('pending', 'paid', 'provisioning')
@@ -130,11 +136,11 @@ export async function hasPendingTopUpSession(iccid: string): Promise<boolean> {
         AND o.order_type = 'top_up'
         AND COALESCE(o.top_up_iccid, o.iccid) = $2
       LIMIT 1
-    `, [nowIso, iccid]);
+    `, [nowIso, cleanIccid]);
 
     return (res.rows && res.rows.length > 0);
   } catch (err) {
-    console.error(`[lib/topup] Error checking pending session for ${iccid}:`, err);
+    console.error(`[lib/topup] Error checking pending session for ${cleanIccid}:`, err);
     return false;
   }
 }

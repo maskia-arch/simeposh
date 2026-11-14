@@ -132,6 +132,16 @@ export class PostgresQueryBuilder<T extends TableName = any, R = Row<T>, Single 
     return this;
   }
 
+  ilike(col: string, val: any): PostgresQueryBuilder<T, R, Single> {
+    this.whereFilters.push({ col, op: 'ilike', val });
+    return this;
+  }
+
+  like(col: string, val: any): PostgresQueryBuilder<T, R, Single> {
+    this.whereFilters.push({ col, op: 'like', val });
+    return this;
+  }
+
   not(col: string, op: string, val: any): PostgresQueryBuilder<T, R, Single> {
     if (op === 'is') {
       if (val === null) {

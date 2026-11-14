@@ -98,6 +98,49 @@ export async function POST(request: Request) {
     if (lines.length === 0) return NextResponse.json({ error: 'No valid items' }, { status: 400 });
 
     const service = createServiceClient();
+
+    // Early user & customer resolution for top-up ICCID validation and ownership checks
+    const userClient = await createClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    const userId = await resolveCustomer(service, user, normalizedEmail);
+
+    // Validate and auto-resolve any masked or formatted topUpIccid
+    for (const line of lines) {
+      if (line.topUpIccid) {
+        let cleanIccid = line.topUpIccid.replace(/\s+/g, '');
+        if (cleanIccid.includes('•') || cleanIccid.includes('*') || !/^89\d{16,20}$/.test(cleanIccid)) {
+          const last4 = cleanIccid.replace(/\D/g, '').slice(-4);
+          if (last4.length === 4) {
+            let oQuery = service
+              .from('orders')
+              .select('iccid')
+              .eq('status', 'completed')
+              .ilike('iccid', `%${last4}`)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            if (userId) {
+              oQuery = oQuery.eq('user_id', userId);
+            } else if (normalizedEmail) {
+              oQuery = oQuery.eq('customer_email', normalizedEmail);
+            }
+            const { data: matchedOrder } = await oQuery.maybeSingle();
+            if (matchedOrder?.iccid && /^89\d{16,20}$/.test(matchedOrder.iccid.trim())) {
+              cleanIccid = matchedOrder.iccid.trim();
+              line.topUpIccid = cleanIccid;
+            }
+          }
+        }
+
+        if (!/^89\d{16,20}$/.test(cleanIccid)) {
+          return NextResponse.json({
+            error: 'Ungültige ICCID für die Aufladung. Bitte eine gültige eSIM-Nummer angeben.',
+            code: 'topup_error_invalid_iccid',
+          }, { status: 400 });
+        }
+        line.topUpIccid = cleanIccid;
+      }
+    }
+
     const ids = Array.from(new Set(lines.map((l) => l.tariffId)));
     const uuidIds = ids.filter(isUuid);
     const codeIds = ids.filter((id) => !isUuid(id));
@@ -285,9 +328,6 @@ export async function POST(request: Request) {
       }
     }
 
-    const userClient = await createClient();
-    const { data: { user } } = await userClient.auth.getUser();
-    const userId = await resolveCustomer(service, user, normalizedEmail);
     const ref = crypto.randomUUID();
 
     if (coin === 'ESIM_CASH') {

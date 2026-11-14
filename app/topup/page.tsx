@@ -42,12 +42,14 @@ interface TopUpEligibility {
 
 interface OrderInfo {
   id: string;
+  iccid?: string;
   tariff: PublicTariff;
 }
 
 interface UserEsim {
   id: string;
   iccid: string;
+  masked_iccid?: string;
   status: string;
   period_num?: number | null;
   tariffs?: {
@@ -106,6 +108,9 @@ export default function TopUpPage() {
       }
       if (data.orderInfo) {
         setOrderInfo(data.orderInfo);
+        if (data.orderInfo.iccid && (!value || value.includes('•') || value.includes('*') || value !== data.orderInfo.iccid)) {
+          setIccid(data.orderInfo.iccid);
+        }
       }
 
       if (!res.ok) {
@@ -170,8 +175,10 @@ export default function TopUpPage() {
 
             if (matched) {
               setSelectedEsimId(matched.id);
-              setIccid(matched.iccid);
-              doSearch({ orderId: matched.id });
+              if (matched.iccid) {
+                setIccid(matched.iccid);
+              }
+              doSearch({ orderId: matched.id, iccid: matched.iccid });
               return;
             }
           }
@@ -252,8 +259,20 @@ export default function TopUpPage() {
   const isNotSupported = Boolean(eligibility?.reason === 'not_supported');
   const isValidityOnly = Boolean(eligibility?.mode === 'validity_only');
 
+  const resolveTargetIccid = (rawIccid: string) => {
+    let target = (orderInfo?.iccid || rawIccid || '').trim();
+    if (target.includes('•') || target.includes('*')) {
+      const match = userEsims.find(e => e.id === selectedEsimId || (e.iccid && !e.iccid.includes('•') && e.iccid.slice(-4) === target.slice(-4)));
+      if (match?.iccid && !match.iccid.includes('•')) {
+        target = match.iccid;
+      }
+    }
+    return target;
+  };
+
   const handleOpenUnlimitedCheckout = () => {
     if (!activeUnlimitedPkg || isLimitReached || isNotSupported) return;
+    const finalIccid = resolveTargetIccid(iccid);
     const synthetic: Partial<Tariff> = {
       ...activeUnlimitedPkg,
       id:             activeUnlimitedPkg.id,
@@ -268,13 +287,14 @@ export default function TopUpPage() {
       tariff_type:    activeUnlimitedPkg.tariff_type || 'unlimited_eco',
       speed_kbps:     activeUnlimitedPkg.speed_kbps,
     };
-    addItem(synthetic as Tariff, 1, { periodDays: unlimitedDays, topUpIccid: iccid });
+    addItem(synthetic as Tariff, 1, { periodDays: unlimitedDays, topUpIccid: finalIccid });
     open();
   };
 
   const handleOpenTravelCheckout = (pkg: TopUpPackage) => {
     if (isLimitReached || isNotSupported) return;
-    addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
+    const finalIccid = resolveTargetIccid(iccid);
+    addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: finalIccid });
     open();
   };
 
@@ -301,7 +321,7 @@ export default function TopUpPage() {
           <div className="grid gap-2.5 sm:grid-cols-2">
             {userEsims.map((e) => {
               const isSelected = selectedEsimId === e.id;
-              const last4 = e.iccid ? e.iccid.slice(-4) : '••••';
+              const last4 = e.masked_iccid ? e.masked_iccid.slice(-4) : (e.iccid ? e.iccid.slice(-4) : '••••');
               const tariffName = e.tariffs?.name ?? 'eSIM';
               const countryName = e.tariffs?.country_name ?? '';
               const flag = e.tariffs?.flag_emoji ?? '🌐';
@@ -312,8 +332,8 @@ export default function TopUpPage() {
                   type="button"
                   onClick={() => {
                     setSelectedEsimId(e.id);
-                    setIccid(e.iccid);
-                    doSearch({ orderId: e.id });
+                    if (e.iccid) setIccid(e.iccid);
+                    doSearch({ orderId: e.id, iccid: e.iccid });
                   }}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all min-h-[44px] cursor-pointer ${
                     isSelected
