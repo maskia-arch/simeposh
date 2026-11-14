@@ -180,6 +180,9 @@ export function isBotOrCrawler(): boolean {
   const ua = (navigator.userAgent || '').toLowerCase();
   if (!ua || ua.length < 10) return true;
 
+  // Gefälschte zukünftige Chrome-Versionen (Scraper-Netzwerke rotieren Chrome/148, Chrome/149, Chrome/150)
+  if (/chrome\/(1[3-9]\d|[2-9]\d\d)\./i.test(ua)) return true;
+
   const BOT_PATTERNS = [
     'bot',
     'crawler',
@@ -240,18 +243,16 @@ export function isBotOrCrawler(): boolean {
 
 let lastBeaconUrl: string | null = null;
 
-/**
- * Sends a single lightweight visitor tracking beacon on page load.
- * Does NOT load widget.js or initiate any chat requests.
- * Strikter Bot/Crawler-Filter verhindert unnötige Beacons und Push-Spam.
- */
-export function sendVisitorBeacon() {
-  if (typeof window === 'undefined') return;
-  if (isBotOrCrawler()) return; // Crawler und Bots sofort verwerfen
-  const currentUrl = window.location.href;
-  if (lastBeaconUrl === currentUrl) return;
-  lastBeaconUrl = currentUrl;
+function _isTariffDetailPage(url: string): boolean {
+  try {
+    const p = new URL(url).pathname;
+    return /^\/([a-z]{2}\/)?tariffs\/[^/?#]+$/i.test(p);
+  } catch {
+    return false;
+  }
+}
 
+function _dispatchBeacon(currentUrl: string) {
   try {
     const vid = _getOrCreateVid();
     const savedCid = _ssGet();
@@ -287,6 +288,52 @@ export function sendVisitorBeacon() {
       })
       .catch(() => {});
   } catch {}
+}
+
+/**
+ * Sends a single lightweight visitor tracking beacon on page load.
+ * Does NOT load widget.js or initiate any chat requests.
+ * Strikter Bot/Crawler-Filter verhindert unnötige Beacons und Push-Spam.
+ */
+export function sendVisitorBeacon() {
+  if (typeof window === 'undefined') return;
+  if (isBotOrCrawler()) return; // Crawler und Bots sofort verwerfen
+  const currentUrl = window.location.href;
+  if (lastBeaconUrl === currentUrl) return;
+  lastBeaconUrl = currentUrl;
+
+  const isDirectTariff = _isTariffDetailPage(currentUrl);
+  let hasNavigated = false;
+  try {
+    hasNavigated = Boolean(sessionStorage.getItem('ps_has_nav'));
+  } catch {}
+
+  // Bei Kalt-Aufruf einer einzelnen Tarifseite (z. B. Crawler aus der Sitemap)
+  // warten wir auf die erste echte Nutzer-Interaktion (Scroll, Klick, Touch, Taste)
+  if (isDirectTariff && !hasNavigated) {
+    const onUserActive = () => {
+      window.removeEventListener('scroll', onUserActive);
+      window.removeEventListener('pointerdown', onUserActive);
+      window.removeEventListener('touchstart', onUserActive);
+      window.removeEventListener('keydown', onUserActive);
+      try {
+        sessionStorage.setItem('ps_has_nav', '1');
+      } catch {}
+      _dispatchBeacon(currentUrl);
+    };
+
+    window.addEventListener('scroll', onUserActive, { once: true, passive: true });
+    window.addEventListener('pointerdown', onUserActive, { once: true, passive: true });
+    window.addEventListener('touchstart', onUserActive, { once: true, passive: true });
+    window.addEventListener('keydown', onUserActive, { once: true, passive: true });
+    return;
+  }
+
+  try {
+    sessionStorage.setItem('ps_has_nav', '1');
+  } catch {}
+
+  _dispatchBeacon(currentUrl);
 }
 
 export function isChatScriptLoaded(): boolean {
