@@ -181,7 +181,7 @@ export function isBotOrCrawler(): boolean {
   if (!ua || ua.length < 10) return true;
 
   // Gefälschte zukünftige Chrome-Versionen (Scraper-Netzwerke rotieren Chrome/148, Chrome/149, Chrome/150)
-  if (/chrome\/(1[3-9]\d|[2-9]\d\d)\./i.test(ua)) return true;
+  if (/chrome\/(1[4-9]\d|[2-9]\d\d)\./i.test(ua)) return true;
 
   const BOT_PATTERNS = [
     'bot',
