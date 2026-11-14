@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { loadChatScript, openChatWidget, sendVisitorBeacon, isChatScriptLoaded } from '@/lib/chatLoader';
+import { loadChatScript, openChatWidget, sendVisitorBeacon, isChatScriptLoaded, isBotOrCrawler } from '@/lib/chatLoader';
 import { useTranslation } from '@/lib/i18n';
 
 /**
@@ -56,8 +56,8 @@ export function ChatWidgetLoader() {
   const isTariff = pathname?.includes('/tariffs');
 
   // Do not render bubble on /checkout/crypto/* or /cart before click,
-  // or once the real widget.js has loaded and injected its own UI
-  if (!mounted || isCheckoutCrypto || isCart || scriptLoaded) {
+  // or once the real widget.js has loaded and injected its own UI, or for bots/crawlers
+  if (!mounted || isCheckoutCrypto || isCart || scriptLoaded || isBotOrCrawler()) {
     return null;
   }
 

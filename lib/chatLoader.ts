@@ -153,14 +153,101 @@ function _autoDetectIdentity(): Record<string, string> {
   return data;
 }
 
+// Automation & Bot Detection (verhindert dass Crawler/Bots Tracking Beacons & Push-Meldungen auslösen)
+export function isBotOrCrawler(): boolean {
+  if (typeof window === 'undefined') return true;
+
+  // 1. W3C WebDriver / Automation Flags (Puppeteer, Playwright, Selenium, Headless Chrome)
+  if (navigator.webdriver) return true;
+  if (
+    (window as any).__nightmare ||
+    (window as any)._phantom ||
+    (window as any).callPhantom ||
+    (window as any).__selenium_evaluate ||
+    (window as any).__webdriver_evaluate ||
+    (window as any).domAutomation ||
+    (window as any).domAutomationController
+  ) {
+    return true;
+  }
+
+  // 2. Ungültige oder leere Screen-Dimensionen
+  if (window.screen && (window.screen.width <= 0 || window.screen.height <= 0)) {
+    return true;
+  }
+
+  // 3. User-Agent Pattern Matching (Search Engines, SEO Crawler, Scraper, Headless)
+  const ua = (navigator.userAgent || '').toLowerCase();
+  if (!ua || ua.length < 10) return true;
+
+  const BOT_PATTERNS = [
+    'bot',
+    'crawler',
+    'spider',
+    'scraper',
+    'crawling',
+    'archiver',
+    'headless',
+    'googlebot',
+    'bingbot',
+    'bingpreview',
+    'msnbot',
+    'baiduspider',
+    'yandexbot',
+    'yandeximages',
+    'duckduckbot',
+    'slurp',
+    'applebot',
+    'sogou',
+    'ahrefsbot',
+    'semrushbot',
+    'dotbot',
+    'mj12bot',
+    'petalbot',
+    'bytespider',
+    'screaming frog',
+    'siteaudit',
+    'zoominfobot',
+    'dataforseobot',
+    'blexbot',
+    'criteobot',
+    'seznam',
+    'phantomjs',
+    'selenium',
+    'webdriver',
+    'puppeteer',
+    'playwright',
+    'electron',
+    'lighthouse',
+    'pagespeed',
+    'gtmetrix',
+    'pingdom',
+    'uptimerobot',
+    'site24x7',
+    'facebookexternalhit',
+    'facebot',
+    'twitterbot',
+    'linkedinbot',
+    'slackbot',
+    'telegrambot',
+    'whatsapp',
+    'discordbot',
+    '+http',
+  ];
+
+  return BOT_PATTERNS.some((p) => ua.includes(p));
+}
+
 let lastBeaconUrl: string | null = null;
 
 /**
  * Sends a single lightweight visitor tracking beacon on page load.
  * Does NOT load widget.js or initiate any chat requests.
+ * Strikter Bot/Crawler-Filter verhindert unnötige Beacons und Push-Spam.
  */
 export function sendVisitorBeacon() {
   if (typeof window === 'undefined') return;
+  if (isBotOrCrawler()) return; // Crawler und Bots sofort verwerfen
   const currentUrl = window.location.href;
   if (lastBeaconUrl === currentUrl) return;
   lastBeaconUrl = currentUrl;
@@ -176,6 +263,7 @@ export function sendVisitorBeacon() {
       pageUrl: currentUrl,
       pageTitle: smartTitle(),
       chatId: savedCid || null,
+      isBot: false,
       ...identity,
     };
 
