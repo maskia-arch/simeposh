@@ -261,8 +261,8 @@ export function PriceChart({ tariffId, currentPrice }: Props) {
           fetched = [{ price_eur: currentPrice, recorded_at: new Date().toISOString() }];
         }
         
-        // If demo mode is active with a promo discount, dynamically add the simulated promo point
-        if (demo.isDemoActive && demo.activePromo && demo.activePromo.discount_basis_points > 0) {
+        // If a promotion is active with a discount, dynamically add the promotional point
+        if (demo.activePromo && demo.activePromo.discount_basis_points > 0) {
           const promoCalc = calculatePromoPriceCents(
             Math.round(currentPrice * 100),
             demo.activePromo.discount_basis_points,
@@ -296,7 +296,7 @@ export function PriceChart({ tariffId, currentPrice }: Props) {
     }
 
     fetchHistory();
-  }, [tariffId, currentPrice, demo.isDemoActive, demo.activePresetId]);
+  }, [tariffId, currentPrice, demo.isDemoActive, demo.activePresetId, demo.activePromo]);
 
   if (loading) {
     return (

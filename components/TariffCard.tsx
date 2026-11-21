@@ -401,11 +401,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           let promoBadge = tariff.promo_badge;
           let refPriceEur = tariff.reference_price_eur;
 
-          if (demo.isDemoActive && demo.activePromo && isTravel) {
+          if (demo.activePromo && isTravel) {
             const regCents = Math.round(tariff.sale_price_eur * 100);
-            const demoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
-            if (demoCalc.applied) {
-              displayPriceEur = demoCalc.promoCents / 100;
+            const promoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
+            if (promoCalc.applied) {
+              displayPriceEur = promoCalc.promoCents / 100;
               promoBadge = demo.activePromo.badge_texts?.[locale] || demo.activePromo.badge_texts?.['de'] || `−${Math.round(demo.activePromo.discount_basis_points / 100)} %`;
               refPriceEur = demo.activePromo.show_reference_price ? tariff.sale_price_eur : null;
             }
