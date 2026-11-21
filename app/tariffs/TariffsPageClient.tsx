@@ -9,6 +9,7 @@ import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_A
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, SearchIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { isPremiumTariff, isoName, regionLabel, isRegionCode } from '@/lib/tariff-display';
 import { resolveCountryOrRegionCode } from '@/lib/destinations-shared';
+import { useThemeDemo } from '@/lib/theme-demo-context';
 
 type Tariff = PublicTariff;
 export type ActiveCategory = 'travel' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro';
@@ -107,6 +108,7 @@ export function TariffsPageClient({
   initialCategory?: string;
 }) {
   const { t, locale } = useTranslation();
+  const { activeTheme } = useThemeDemo();
   
   const validCategories: ActiveCategory[] = ['travel', 'travel_premium', 'unlimited_eco', 'unlimited_pro'];
   const startCat: ActiveCategory = validCategories.includes(initialCategory as ActiveCategory)
@@ -210,8 +212,8 @@ export function TariffsPageClient({
 
       {/* ── Header ── */}
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{pageHeading}</h1>
-        <p className="mt-2 text-slate-500">{pageSub}</p>
+        <h1 style={{ color: activeTheme?.isDark ? (activeTheme.pageTextColor || '#f4f4f5') : undefined }} className="text-3xl font-extrabold text-slate-900 tracking-tight">{pageHeading}</h1>
+        <p style={{ color: activeTheme?.isDark ? '#a1a1aa' : undefined }} className="mt-2 text-slate-500">{pageSub}</p>
       </div>
 
       {/* ── Main Category Switcher (Fully readable on 390px, no truncated titles, no disabled 1/4 tile when 0 plans) ── */}

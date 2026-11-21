@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { displayCountryName, isRegionCode } from '@/lib/tariff-display';
 import { aliasToCode, aliasToRegion, aliasesToCodes, aliasesToRegions, COUNTRY_ALIASES, REGION_ALIASES } from '@/lib/i18n/countryAliases';
 import { countryCodeToSlug } from '@/lib/destinations-shared';
+import { useThemeDemo } from '@/lib/theme-demo-context';
 
 export interface Destination {
   code:     string;
@@ -56,6 +57,7 @@ const STR: Record<string, Record<string, string>> = {
 };
 
 export function HeroSearch({ destinations: initialDestinations }: { destinations?: Destination[] }) {
+  const { activeTheme } = useThemeDemo();
   const router = useRouter();
   const { locale } = useTranslation();
   const s = (k: keyof typeof STR) => STR[k][locale] ?? STR[k].en;
@@ -214,6 +216,10 @@ export function HeroSearch({ destinations: initialDestinations }: { destinations
         )}
         <button
           onClick={() => go(q)}
+          style={{
+            background: activeTheme.btnPrimaryBg || undefined,
+            color: activeTheme.btnPrimaryText || undefined,
+          }}
           className="btn-primary shrink-0 shadow-sm"
         >
           {s('btn')}

@@ -1009,6 +1009,7 @@ const cs = {
   "hero_badge": "Dostupné ve více než 200 destinacích",
   "meta_home_desc": "Kupte si eSIM připravené k okamžitému použití pro více než 200 destinací světa. Výhodné tarify, snadná aktivace QR kódem.",
   "ip_origin": "Původ IP",
+  "meta_faq_subtitle": "Rychlé odpovědi na naše eSIM tarify, instalaci, datové balíčky a platby.",
 } as const;
 export default cs;
 export type TranslationKeys = keyof typeof cs;

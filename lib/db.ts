@@ -2,6 +2,8 @@ import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 
+import { standaloneStore } from './test-store';
+
 let pool: Pool | null = null;
 let migrationsRun: Promise<void> | null = null;
 
@@ -9,6 +11,16 @@ export function getPool(): Pool {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
+      if (process.env.NEXT_PUBLIC_IS_TESTENV === 'true') {
+        // Return dummy pool for testenv native mode
+        return {
+          query: async (text: string, params?: any[]) => standaloneStore.query(text, params),
+          connect: async () => ({
+            query: async (text: string, params?: any[]) => standaloneStore.query(text, params),
+            release: () => {},
+          }),
+        } as any;
+      }
       throw new Error('DATABASE_URL environment variable is not set');
     }
     pool = new Pool({
@@ -109,7 +121,11 @@ export async function query(text: string, params?: any[]): Promise<any> {
       console.log(`[SQL Query] Executed in ${duration}ms`);
     }
     return res;
-  } catch (err) {
+  } catch (err: any) {
+    if (process.env.NEXT_PUBLIC_IS_TESTENV === 'true') {
+      // In standalone testenv without Docker Postgres, use in-memory test store
+      return standaloneStore.query(text, params);
+    }
     console.error(`[SQL Error] Failed to execute query`, err);
     throw err;
   }

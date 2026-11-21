@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { useTicket } from '@/components/TicketContext';
+import { useThemeDemo } from '@/lib/theme-demo-context';
 import type { LocaleCode } from '@/lib/i18n/config';
 
 interface FooterTexts {
@@ -289,18 +290,36 @@ export function Footer() {
   const telegramHref = isDe ? '/telegram' : `/${locale}/telegram`;
   const { openTicketModal } = useTicket();
   const year = new Date().getFullYear();
+  const { activeTheme } = useThemeDemo();
 
   const labels = FOOTER_STRINGS[locale as LocaleCode] || FOOTER_STRINGS.de;
 
+  const isDark = Boolean(activeTheme?.isDark);
+  const footerBg = isDark ? (activeTheme.cardBgColor || '#111113') : (activeTheme?.pageBgColor || undefined);
+  const footerBorder = isDark ? (activeTheme.cardBorderColor || '#27272a') : undefined;
+  const footerTextColor = isDark ? '#a1a1aa' : undefined;
+  const headingColor = isDark ? (activeTheme.cardTextColor || '#f4f4f5') : undefined;
+  const brandTextColor = isDark ? '#f4f4f5' : '#1d4ed8';
+  const subtextColor = isDark ? '#71717a' : undefined;
+
   return (
-    <footer className="border-t border-slate-200/80 bg-white pt-5 pb-16 md:pb-5 text-slate-600">
+    <footer
+      style={{
+        backgroundColor: footerBg,
+        borderColor: footerBorder,
+        color: footerTextColor,
+      }}
+      className={`border-t pt-8 pb-16 md:pb-8 transition-colors ${
+        isDark ? 'border-zinc-800' : 'border-slate-200/80 bg-white text-slate-600'
+      }`}
+    >
       <div className="mx-auto max-w-6xl px-4">
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-5 md:gap-x-12">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-6 md:gap-x-12">
           {/* 1. Markenspalte */}
           <div>
             <Link
               href={prefix || '/'}
-              className="inline-flex items-center gap-2 font-extrabold text-xl text-[#1d4ed8] min-h-[44px] md:min-h-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              className="inline-flex items-center gap-2 font-extrabold text-xl min-h-[44px] md:min-h-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded transition-opacity hover:opacity-90"
             >
               <Image
                 src="/logo.webp"
@@ -310,9 +329,9 @@ export function Footer() {
                 loading="lazy"
                 className="h-7 w-7 object-contain"
               />
-              <span>PureSim</span>
+              <span style={{ color: brandTextColor }}>PureSim</span>
             </Link>
-            <p className="mt-1 text-xs text-slate-500">
+            <p style={{ color: subtextColor }} className="mt-1 text-xs text-slate-500">
               {labels.availableIn}
             </p>
           </div>
@@ -321,15 +340,16 @@ export function Footer() {
           <div className="grid grid-cols-2 gap-4 md:contents">
             {/* 2. Gruppe „Entdecken“ (5 Links) */}
             <nav aria-label={labels.discoverTitle} className="min-w-0">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              <h3 style={{ color: headingColor }} className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 {labels.discoverTitle}
               </h3>
-              <ul className="space-y-0 text-xs text-slate-600">
+              <ul className="space-y-1 text-xs">
                 <li>
                   <Link
                     href={`${prefix}/tariffs`}
                     prefetch={false}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.tariffs}
                   </Link>
@@ -338,7 +358,8 @@ export function Footer() {
                   <Link
                     href={`${prefix}/unlimited`}
                     prefetch={false}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.unlimited}
                   </Link>
@@ -346,7 +367,8 @@ export function Footer() {
                 <li>
                   <Link
                     href={`${prefix}/topup`}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.topup}
                   </Link>
@@ -354,7 +376,8 @@ export function Footer() {
                 <li>
                   <Link
                     href={`${prefix}/blog`}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.blog}
                   </Link>
@@ -362,7 +385,8 @@ export function Footer() {
                 <li>
                   <Link
                     href={`${prefix}/ai`}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.ai}
                   </Link>
@@ -372,14 +396,15 @@ export function Footer() {
 
             {/* 3. Gruppe „Hilfe“ (3 Einträge) */}
             <nav aria-label={labels.helpTitle} className="min-w-0">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              <h3 style={{ color: headingColor }} className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 {labels.helpTitle}
               </h3>
-              <ul className="space-y-0 text-xs text-slate-600">
+              <ul className="space-y-1 text-xs">
                 <li>
                   <Link
                     href={`${prefix}/faq`}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.faq}
                   </Link>
@@ -388,7 +413,8 @@ export function Footer() {
                   <button
                     type="button"
                     onClick={() => openTicketModal()}
-                    className="inline-flex items-center text-left min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center text-left min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.ticket}
                   </button>
@@ -396,7 +422,8 @@ export function Footer() {
                 <li>
                   <Link
                     href={telegramHref}
-                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+                    style={{ color: footerTextColor }}
+                    className="inline-flex items-center min-h-[44px] md:min-h-[24px] hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
                   >
                     {labels.telegram}
                   </Link>
@@ -407,26 +434,32 @@ export function Footer() {
         </div>
 
         {/* 4. Untere Leiste: © links, AGB / Datenschutz / Erstattungsrichtlinie rechts mit pr-20 */}
-        <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-slate-500 md:pr-20">
-          <p className="shrink-0">© {year} PureSim.net</p>
+        <div
+          style={{ borderColor: footerBorder }}
+          className="mt-6 pt-4 border-t border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-slate-500 md:pr-20"
+        >
+          <p style={{ color: subtextColor }} className="shrink-0">© {year} PureSim.net</p>
           <nav aria-label={labels.legalTitle} className="flex flex-wrap items-center justify-center gap-x-4">
             <Link
               href={`${prefix}/agb`}
-              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              style={{ color: subtextColor }}
+              className="min-h-[44px] md:min-h-[24px] flex items-center hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.terms}
             </Link>
-            <span aria-hidden="true" className="text-slate-400 select-none hidden sm:inline">·</span>
+            <span aria-hidden="true" style={{ color: subtextColor }} className="select-none hidden sm:inline">·</span>
             <Link
               href={`${prefix}/datenschutz`}
-              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              style={{ color: subtextColor }}
+              className="min-h-[44px] md:min-h-[24px] flex items-center hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.privacy}
             </Link>
-            <span aria-hidden="true" className="text-slate-400 select-none hidden sm:inline">·</span>
+            <span aria-hidden="true" style={{ color: subtextColor }} className="select-none hidden sm:inline">·</span>
             <Link
               href={`${prefix}/refund-policy`}
-              className="min-h-[44px] md:min-h-[24px] flex items-center hover:text-[#2563eb] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              style={{ color: subtextColor }}
+              className="min-h-[44px] md:min-h-[24px] flex items-center hover:opacity-80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
               {labels.refund}
             </Link>

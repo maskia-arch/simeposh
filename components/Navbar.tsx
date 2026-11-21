@@ -14,6 +14,10 @@ import { HeaderSearch } from '@/components/HeaderSearch';
 import type { Destination } from '@/components/HeroSearch';
 import { WrenchIcon, CoinsIcon } from '@/components/Icons';
 import { formatPercent } from '@/lib/i18n/plural';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { getTheme } from '@/lib/themes';
+import { ThemeDecorations } from './ThemeDecorations';
+import type { Promotion } from '@/lib/pricing-service';
 
 /** Globe (language) | divider | banknote (currency) – Airalo-style controls. */
 function LocaleCurrencyControls() {
@@ -140,6 +144,8 @@ function DashboardDropdown({ t, prefix }: { t: any; prefix: string }) {
 }
 
 export function Navbar() {
+  const demo                          = useThemeDemo();
+  const [serverPromo, setServerPromo] = useState<Promotion | null>(null);
   const [user, setUser]               = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [menuOpen, setMenu]           = useState(false);
@@ -150,6 +156,20 @@ export function Navbar() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  useEffect(() => {
+    if (!demo.isDemoActive) {
+      fetch('/api/promotions/active')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.promotion) setServerPromo(data.promotion);
+        })
+        .catch(() => {});
+    }
+  }, [demo.isDemoActive]);
+
+  const activePromo = demo.isDemoActive ? demo.activePromo : serverPromo;
+  const theme = demo.isDemoActive ? demo.activeTheme : getTheme(activePromo?.theme_id);
 
   // Observer to hide header search when hero search is visible on homepages
   const isHomepage = pathname === '/' || /^\/(en|fr|es|it|nl|pl|pt|tr|sv|da|fi|cs|ro|hu)\/?$/.test(pathname);
@@ -260,12 +280,23 @@ export function Navbar() {
 
   return (
     <div className="sticky top-0 z-50 w-full shadow-sm">
-      <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm supports-[not(backdrop-filter:blur(1px))]:bg-white">
+      <ThemeDecorations type={theme.animationType || (theme.hasSnow ? 'snow' : theme.hasFireworks ? 'fireworks' : null)} />
+      <nav
+        style={{
+          backgroundColor: theme.navBgColor || undefined,
+          color: theme.navTextColor || undefined,
+          borderColor: theme.navBorderColor || undefined,
+        }}
+        className={`${theme.navBg || 'bg-white/80 backdrop-blur-sm'} ${theme.navBorder ? `border-b ${theme.navBorder}` : 'border-b border-slate-200'} shadow-sm transition-colors duration-200`}
+      >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
         {/* Logo */}
         <Link href={prefix || '/'} prefetch={false} className="flex items-center gap-2 font-bold text-lg shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[44px]">
           <Image src="/logo.webp" alt="PureSim Logo" width={28} height={28} priority className="h-7 w-7 object-contain" />
-          <span className="text-2xl tracking-tight font-extrabold text-[#1d4ed8]">
+          <span
+            style={{ color: theme.logoColor || undefined }}
+            className={`text-2xl tracking-tight font-extrabold ${theme.logoColor ? '' : 'text-[#1d4ed8]'} transition-colors duration-200`}
+          >
             PureSim
           </span>
         </Link>
@@ -295,21 +326,37 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-4 text-sm font-medium lg:flex">
-          <Link href={`${prefix}/blog`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          <Link
+            href={`${prefix}/blog`}
+            prefetch={false}
+            style={{ color: theme.navTextColor || undefined }}
+            className={`${theme.navText || 'text-slate-600'} hover:opacity-80 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500`}
+          >
             {t('nav_blog' as any) || 'Blog'}
           </Link>
           <Link
             href={`${prefix}/tariffs`}
             prefetch={false}
             data-testid="nav-tariffs-link"
-            className="relative inline-flex items-center min-h-[44px] py-2 px-1 text-slate-600 hover:text-brand-700 transition-colors rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:-inset-y-1 after:-inset-x-2 after:content-['']"
+            style={{ color: theme.navTextColor || undefined }}
+            className={`relative inline-flex items-center min-h-[44px] py-2 px-1 ${theme.navText || 'text-slate-600'} hover:opacity-80 transition-colors rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:-inset-y-1 after:-inset-x-2 after:content-['']`}
           >
             {t('nav_tariffs')}
           </Link>
-          <Link href={`${prefix}/topup`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          <Link
+            href={`${prefix}/topup`}
+            prefetch={false}
+            style={{ color: theme.navTextColor || undefined }}
+            className={`${theme.navText || 'text-slate-600'} hover:opacity-80 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500`}
+          >
             {t('nav_topup')}
           </Link>
-          <Link href={`${prefix}/faq`} prefetch={false} className="text-slate-600 hover:text-brand-700 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          <Link
+            href={`${prefix}/faq`}
+            prefetch={false}
+            style={{ color: theme.navTextColor || undefined }}
+            className={`${theme.navText || 'text-slate-600'} hover:opacity-80 transition-colors rounded-lg px-1.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500`}
+          >
             FAQ
           </Link>
           {authLoading ? (
@@ -319,6 +366,10 @@ export function Navbar() {
               <Link
                 href={`${prefix}/dashboard`}
                 prefetch={false}
+                style={{
+                  background: theme.btnPrimaryBg || undefined,
+                  color: theme.btnPrimaryText || undefined,
+                }}
                 className="btn-primary !h-12 !px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {t('nav_dashboard')}
@@ -334,6 +385,10 @@ export function Navbar() {
             <Link
               href={`${prefix}/login`}
               prefetch={false}
+              style={{
+                background: theme.btnPrimaryBg || undefined,
+                color: theme.btnPrimaryText || undefined,
+              }}
               className="btn-primary !h-12 !px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               {t('nav_login')}
@@ -436,22 +491,57 @@ export function Navbar() {
       )}
     </nav>
 
-      {/* Announcement Bar under the Header */}
-      <Link
-        href={user ? `${prefix}/dashboard?tab=cash` : `${prefix}/blog/${locale === 'en' ? 'puresim-esim-cash-cashback-program-save-on-every-plan-purchase' : 'puresim-esim-cash-cashback-programm'}`}
-        className="w-full bg-gradient-to-r from-brand-600 via-brand-700 to-brand-800 text-white text-center py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer min-h-[44px]"
-      >
-        <CoinsIcon size={16} />
-        {user ? (
-          <span>
-            {t('announcement_user' as any, { rate: formatPercent(cashbackRate ?? 5, locale) })}
+      {/* Announcement Bar under the Header: Replaced by Active Promotion when active */}
+      {activePromo ? (
+        <Link
+          href={`${prefix}/tariffs`}
+          style={{
+            background: theme.bannerBgColor || undefined,
+            color: theme.bannerTextColor || undefined,
+            borderColor: theme.bannerBorderColor || undefined,
+          }}
+          className={`w-full ${theme.bannerBg} ${theme.bannerText} border-b ${theme.bannerBorder} text-center py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer min-h-[44px] shadow-xs relative overflow-hidden`}
+        >
+          {theme.badgeBg && (
+            <span
+              style={{
+                backgroundColor: theme.badgeBgColor || undefined,
+                color: theme.badgeTextColor || undefined,
+              }}
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${theme.badgeBg}`}
+            >
+              {activePromo.badge_texts?.[locale] || activePromo.badge_texts?.de || `-${Math.round(activePromo.discount_basis_points / 100)}%`}
+            </span>
+          )}
+          <span className="font-bold">
+            {activePromo.titles?.[locale] || activePromo.titles?.de || activePromo.titles?.en || 'Aktion'}
           </span>
-        ) : (
-          <span>
-            {t('announcement_guest' as any)}
+          {activePromo.texts?.[locale] || activePromo.texts?.de ? (
+            <span className="hidden sm:inline opacity-90 font-normal">
+              – {activePromo.texts[locale] || activePromo.texts.de}
+            </span>
+          ) : null}
+          <span className="inline-block text-[11px] underline opacity-90 ml-1">
+            {locale === 'de' ? 'Jetzt sichern →' : 'Get it now →'}
           </span>
-        )}
-      </Link>
+        </Link>
+      ) : (
+        <Link
+          href={user ? `${prefix}/dashboard?tab=cash` : `${prefix}/blog/${locale === 'en' ? 'puresim-esim-cash-cashback-program-save-on-every-plan-purchase' : 'puresim-esim-cash-cashback-programm'}`}
+          className="w-full bg-gradient-to-r from-brand-600 via-brand-700 to-brand-800 text-white text-center py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer min-h-[44px]"
+        >
+          <CoinsIcon size={16} />
+          {user ? (
+            <span>
+              {t('announcement_user' as any, { rate: formatPercent(cashbackRate ?? 5, locale) })}
+            </span>
+          ) : (
+            <span>
+              {t('announcement_guest' as any)}
+            </span>
+          )}
+        </Link>
+      )}
     </div>
   );
 }

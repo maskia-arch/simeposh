@@ -66,6 +66,7 @@ export async function createCryptoSession(opts: {
   coinCode: string;
   locale?:   string;
   orderRef?: string;
+  expiresAtLimit?: string;
 }): Promise<CryptoSession> {
   const coin = await getCoin(opts.coinCode);
   if (!coin) throw new Error(`Coin ${opts.coinCode} is not available`);
@@ -127,7 +128,13 @@ export async function createCryptoSession(opts: {
   // 1. Calculate final EUR price (including surcharge)
   const amountEur = applySurcharge(opts.baseEur, coin);
   const checkoutDurationMins = coin.checkout_duration_mins || 30;
-  const expiresAtTemp = new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString();
+  let expiresAtTemp = new Date(Date.now() + checkoutDurationMins * 60 * 1000).toISOString();
+  if (opts.expiresAtLimit) {
+    const limitMs = new Date(opts.expiresAtLimit).getTime();
+    if (limitMs < new Date(expiresAtTemp).getTime()) {
+      expiresAtTemp = new Date(limitMs).toISOString();
+    }
+  }
 
   // 2. Insert pending session in database to acquire session UUID
   const { data: sData, error: insertErr } = await db
@@ -323,13 +330,21 @@ export async function createCryptoSession(opts: {
     } catch {}
   }
 
+  let sessionExpiresAt = walletRes.expires_at;
+  if (opts.expiresAtLimit) {
+    const limitMs = new Date(opts.expiresAtLimit).getTime();
+    if (limitMs < new Date(sessionExpiresAt).getTime()) {
+      sessionExpiresAt = new Date(limitMs).toISOString();
+    }
+  }
+
   const { error: updateErr } = await db
     .from('crypto_sessions')
     .update({
       wallet_address: walletRes.address,
       crypto_amount:  walletRes.amount_ltc,
       rate_eur:       rateEur,
-      expires_at:     walletRes.expires_at,
+      expires_at:     sessionExpiresAt,
       payment_memo:   walletRes.payment_memo || null,
       initial_balance: initialBalance,
     } as any)
@@ -391,7 +406,7 @@ export async function createCryptoSession(opts: {
     rateEur,
     confirmationsRequired: coin.confirmations,
     paymentUri,
-    expiresAt: walletRes.expires_at,
+    expiresAt: sessionExpiresAt,
     checkoutDurationMins,
     locale: opts.locale || 'de',
   };

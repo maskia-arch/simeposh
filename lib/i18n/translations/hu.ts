@@ -1004,6 +1004,7 @@ const hu = {
   "hero_badge": "Több mint 200 úti célban elérhető",
   "meta_home_desc": "Vásárolj azonnal használható eSIM-eket több mint 200 úti célra világszerte. Kedvező csomagok, egyszerű aktiválás QR-kóddal.",
   "ip_origin": "IP származási helye",
+  "meta_faq_subtitle": "Gyors válaszok eSIM-csomagjainkról, beállításról, adatcsomagokról és fizetésről.",
 } as const;
 export default hu;
 export type TranslationKeys = keyof typeof hu;

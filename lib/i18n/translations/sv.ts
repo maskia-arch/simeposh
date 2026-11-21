@@ -1004,6 +1004,7 @@ const sv = {
   "hero_badge": "Tillgängligt på över 200 resmål",
   "meta_home_desc": "Köp färdiga eSIM-kort för över 200 resmål världen över. Prisvärda planer, enkel aktivering med QR-kod.",
   "ip_origin": "IP-ursprung",
+  "meta_faq_subtitle": "Snabba svar om våra eSIM-planer, installation, datapaket och betalning.",
 } as const;
 export default sv;
 export type TranslationKeys = keyof typeof sv;

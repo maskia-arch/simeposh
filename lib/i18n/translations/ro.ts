@@ -1004,6 +1004,7 @@ const ro = {
   "hero_badge": "Disponibil în peste 200 de destinații",
   "meta_home_desc": "Cumpără eSIM-uri gata de utilizare pentru peste 200 de destinații din lume. Planuri accesibile, activare ușoară prin cod QR.",
   "ip_origin": "Origine IP",
+  "meta_faq_subtitle": "Răspunsuri rapide despre planurile noastre eSIM, instalare, pachete de date și plăți.",
 } as const;
 export default ro;
 export type TranslationKeys = keyof typeof ro;

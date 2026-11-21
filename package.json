@@ -8,7 +8,12 @@
     "postbuild": "node scripts/check-public-payload.mjs",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "demo": "powershell -ExecutionPolicy Bypass -File scripts/start-demo.ps1",
+    "testshop": "powershell -ExecutionPolicy Bypass -File testenv/start.ps1",
+    "testshop:stop": "powershell -ExecutionPolicy Bypass -File testenv/stop.ps1",
+    "testshop:reset": "powershell -ExecutionPolicy Bypass -File testenv/reset.ps1",
+    "testshop:test": "powershell -ExecutionPolicy Bypass -File testenv/test.ps1"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

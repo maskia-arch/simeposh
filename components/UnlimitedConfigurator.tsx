@@ -791,6 +791,19 @@ export function UnlimitedConfigurator({
               />
             </div>
 
+            {/* Turkey Regulatory Notice in Main Content */}
+            {selectedCountryData.code === 'TR' && (
+              <div className="rounded-2xl border border-amber-200/90 bg-amber-50/80 p-4 text-xs text-amber-950 flex items-start gap-2.5 shadow-2xs">
+                <span className="text-base shrink-0 mt-0.5" aria-hidden="true">ℹ️</span>
+                <div className="leading-relaxed">
+                  <span className="font-bold block mb-0.5">{isDe ? 'Rechtlicher Hinweis für die Türkei:' : 'Notice for Turkey:'}</span>
+                  <span>{isDe
+                    ? 'Ausländische Geräte können in der Türkei bis zu 120 Tage ohne behördliche IMEI-Registrierung genutzt werden. Unsere Prepaid-eSIMs sind reine Datentarife und erfordern keine Registrierung.'
+                    : 'Foreign devices can be used in Turkey for up to 120 days without IMEI registration. Our prepaid eSIMs are data-only and require no local registration.'}</span>
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* ── RIGHT COLUMN: High-Converting Crisp Live Price Card (5 Cols) ── */}

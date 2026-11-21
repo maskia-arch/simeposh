@@ -1009,6 +1009,7 @@ const pl = {
   "hero_badge": "Dostępne w ponad 200 kierunkach",
   "meta_home_desc": "Kup gotowe do użycia karty eSIM do ponad 200 kierunków na całym świecie. Tanie pakiety, łatwa aktywacja kodem QR.",
   "ip_origin": "Pochodzenie IP",
+  "meta_faq_subtitle": "Szybkie odpowiedzi na temat naszych planów eSIM, instalacji, pakietów danych i płatności.",
 } as const;
 export default pl;
 export type TranslationKeys = keyof typeof pl;

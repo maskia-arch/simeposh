@@ -4,6 +4,7 @@ import { getPool } from '@/lib/db';
 import { TariffsPageClient } from './TariffsPageClient';
 import { toPublicTariff, getCachedTariffsPage, setCachedTariffsPage, type PublicTariff } from '@/lib/tariffs';
 import { getTariffMinCustomerPrice } from '@/lib/pricing';
+import { getActivePromotion, calculatePromoPriceCents } from '@/lib/pricing-service';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { buildAlternates, getOgLocale, getOgLocaleAlternates } from '@/lib/seo';
@@ -54,13 +55,27 @@ async function getTariffs(): Promise<PublicTariff[]> {
         ORDER BY country_name ASC, sale_price_eur ASC, id ASC
       `);
 
+      const activePromo = await getActivePromotion();
       const all: PublicTariff[] = [];
       for (const row of rows) {
         const t = toPublicTariff(row);
-        if (t.tariff_type?.startsWith('unlimited') || t.data_gb === 0) {
-          t.customer_price_eur = await getTariffMinCustomerPrice(row);
-        } else {
-          t.customer_price_eur = t.sale_price_eur;
+        const regularPriceEur = (t.tariff_type?.startsWith('unlimited') || t.data_gb === 0)
+          ? await getTariffMinCustomerPrice(row)
+          : t.sale_price_eur;
+
+        t.customer_price_eur = regularPriceEur;
+
+        if (activePromo && activePromo.discount_basis_points > 0 && !(t.tariff_type?.startsWith('unlimited') || t.data_gb === 0)) {
+          const regCents = Math.round(regularPriceEur * 100);
+          const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
+          if (promoCalc.applied) {
+            t.customer_price_eur = promoCalc.promoCents / 100;
+            t.promo_discount_percent = Math.round(activePromo.discount_basis_points / 100);
+            t.promo_badge = activePromo.badge_texts?.['de'] || `−${Math.round(activePromo.discount_basis_points / 100)} %`;
+            if (activePromo.show_reference_price) {
+              t.reference_price_eur = regularPriceEur;
+            }
+          }
         }
         all.push(t);
       }

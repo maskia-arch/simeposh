@@ -31,7 +31,7 @@ import { calculateSalePrice, fetchUsdEurRate } from '@/lib/pricing';
 import { createServiceClient }                 from '@/lib/supabase/server';
 import type { EsimAccessPackage }              from '@/lib/esimaccess/types';
 import { revalidatePath }                      from 'next/cache';
-import { query as runRawQuery }                from '@/lib/db';
+import { query as runRawQuery, getPool } from '@/lib/db';
 import { syncDiscountRules }                   from '@/lib/sync/discount-rules';
 import { classifyAllTariffs }                  from '@/lib/sync/classify-tariffs';
 import { clearCountryTariffsCache }             from '@/lib/destinations';
@@ -609,7 +609,7 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     }
 
 
-    // ── 8. Deactivate removed packages (timestamp-based) ────────
+    // ── 8. Deactivate removed packages & Reclassify tariffs (Atomic Transaction) ──
     // Circuit Breakers:
     // 1. Zero-error requirement: Never deactivate if any upsert batch failed or zero were upserted/unchanged!
     // 2. Minimum volume requirement: Never deactivate if total packages < 1000!
@@ -622,6 +622,10 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
     const safeActiveCount = activeCountBefore ?? 0;
     const isUpsertClean = errors === 0 && (upserted > 0 || unchangedCodes.length > 0);
     const hasSufficientVolume = packages.length >= 1000;
+
+    let shouldDeactivate = false;
+    let staleCount = 0;
+    let maxAllowedDeactivations = 0;
 
     if (!isUpsertClean) {
       const errAlert = `[sync CIRCUIT BREAKER] Skipping deactivation: upsert encountered ${errors} errors (upserted: ${upserted}, unchanged: ${unchangedCodes.length}). Active catalog preserved.`;
@@ -641,35 +645,55 @@ export async function runSync(syncId = new Date().toISOString()): Promise<SyncRe
       if (staleQueryErr) {
         console.error('[sync] Error querying stale packages:', staleQueryErr.message);
       } else {
-        const staleCount = staleCandidates?.length ?? 0;
-        const maxAllowedDeactivations = Math.max(50, Math.min(150, Math.floor(safeActiveCount * 0.05)));
+        staleCount = staleCandidates?.length ?? 0;
+        maxAllowedDeactivations = Math.max(50, Math.min(150, Math.floor(safeActiveCount * 0.05)));
 
         if (staleCount > maxAllowedDeactivations) {
           const blastAlert = `[sync BLAST RADIUS ALERT] Aborting deactivation: ${staleCount} stale packages exceeds max threshold of ${maxAllowedDeactivations} (5% of ${safeActiveCount} active tariffs). Active catalog preserved.`;
           console.error(blastAlert);
           errorDetails.push(blastAlert);
-        } else if (staleCount > 0) {
-          console.log(`[sync] Deactivating ${staleCount} removed packages (within safe threshold of ${maxAllowedDeactivations})...`);
-          const { error: deactivateError } = await db
-            .from('tariffs')
-            .update({ is_active: false })
-            .lt('last_synced_at', syncStartIso)
-            .eq('is_active', true);
-
-          if (deactivateError) {
-            console.error('[sync] deactivation error (non-fatal):', deactivateError.message);
-          } else {
-            console.log(`[sync] Successfully deactivated ${staleCount} stale packages.`);
-          }
         } else {
-          console.log('[sync] No stale packages to deactivate (all packages fresh).');
+          shouldDeactivate = true;
         }
       }
     }
 
-    // ── 8.5. Reclassify tariffs (Fix 6 Rules: Demonstrable chips only, fatal errors) ──
-    const { updated, totalStandard, totalPremium, needsReviewCount } = await classifyAllTariffs();
-    console.log(`[sync] Reclassified tariffs: ${updated} travel tariffs (Standard: ${totalStandard}, Premium: ${totalPremium}, Review Needed: ${needsReviewCount}).`);
+    // ── 8.5. Atomic Reclassification & Deactivation in PostgreSQL Transaction ──
+    const pool = getPool();
+    const txClient = await pool.connect();
+    let updated = 0, totalStandard = 0, totalPremium = 0, needsReviewCount = 0;
+
+    try {
+      await txClient.query('BEGIN');
+
+      // Reclassify tariffs first within transaction
+      const classResult = await classifyAllTariffs(txClient);
+      updated = classResult.updated;
+      totalStandard = classResult.totalStandard;
+      totalPremium = classResult.totalPremium;
+      needsReviewCount = classResult.needsReviewCount;
+
+      // Deactivate stale packages inside the same transaction
+      if (shouldDeactivate && staleCount > 0) {
+        console.log(`[sync] Deactivating ${staleCount} removed packages in transaction (within safe threshold of ${maxAllowedDeactivations})...`);
+        await txClient.query(
+          'UPDATE public.tariffs SET is_active = false WHERE last_synced_at < $1 AND is_active = true',
+          [syncStartIso]
+        );
+        console.log(`[sync] Successfully deactivated ${staleCount} stale packages.`);
+      } else if (shouldDeactivate) {
+        console.log('[sync] No stale packages to deactivate (all packages fresh).');
+      }
+
+      await txClient.query('COMMIT');
+      console.log(`[sync] Reclassified tariffs (atomic): ${updated} travel tariffs (Standard: ${totalStandard}, Premium: ${totalPremium}, Review Needed: ${needsReviewCount}).`);
+    } catch (txErr: any) {
+      await txClient.query('ROLLBACK');
+      console.error('[sync CRITICAL] Transaction failed during classification/deactivation; rolled back:', txErr.message);
+      throw txErr;
+    } finally {
+      txClient.release();
+    }
 
     // ── 8.8. Post-Sync Validation & Region Guard Verification ──
     try {

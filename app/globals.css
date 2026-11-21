@@ -19,13 +19,25 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex h-12 items-center justify-center rounded-xl bg-brand-600 px-6 text-base font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    @apply inline-flex h-12 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    background: var(--theme-btn-primary-bg, #2563eb);
+    color: var(--theme-btn-primary-text, #ffffff);
+  }
+  .btn-primary:hover {
+    filter: brightness(0.93);
   }
   .btn-secondary {
-    @apply inline-flex h-12 items-center justify-center rounded-xl border-[1.5px] border-brand-600 bg-transparent px-6 text-base font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    @apply inline-flex h-12 items-center justify-center rounded-xl border-[1.5px] px-6 text-base font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    border-color: var(--theme-btn-secondary-border, rgba(37, 99, 235, 0.4));
+    background: var(--theme-btn-secondary-bg, transparent);
+    color: var(--theme-btn-secondary-text, #2563eb);
+  }
+  .btn-secondary:hover {
+    filter: brightness(1.08);
   }
   .btn-tertiary {
-    @apply inline-flex items-center text-brand-600 font-medium hover:text-brand-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    @apply inline-flex items-center font-medium underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    color: var(--theme-accent, #2563eb);
   }
 }
 
@@ -90,6 +102,95 @@ body.hide-chat-bubble #vs25-inv,
 html[data-checkout-open="true"] #vs25-bbl,
 html[data-checkout-open="true"] #vs25-inv {
   display: none !important;
+}
+
+/* ── Seasonal Dark Theme Full-Site Overrides ────────────────── */
+html[data-theme-dark="true"] {
+  color-scheme: dark;
+}
+
+html[data-theme-dark="true"] body {
+  background-color: var(--theme-page-bg, #0a0a0a) !important;
+  color: var(--theme-page-text, #f4f4f5) !important;
+}
+
+html[data-theme-dark="true"] main {
+  background-color: var(--theme-page-bg, #0a0a0a);
+  color: var(--theme-page-text, #f4f4f5);
+}
+
+html[data-theme-dark="true"] .bg-white {
+  background-color: var(--theme-card-bg, #18181b) !important;
+}
+
+html[data-theme-dark="true"] .bg-white\/70,
+html[data-theme-dark="true"] .bg-white\/80,
+html[data-theme-dark="true"] .bg-white\/90 {
+  background-color: var(--theme-card-bg, #18181b) !important;
+}
+
+html[data-theme-dark="true"] .bg-slate-50,
+html[data-theme-dark="true"] .bg-slate-50\/50,
+html[data-theme-dark="true"] .bg-slate-50\/70,
+html[data-theme-dark="true"] .bg-slate-50\/80,
+html[data-theme-dark="true"] .bg-slate-100,
+html[data-theme-dark="true"] .bg-slate-100\/80 {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme-dark="true"] .border-slate-100,
+html[data-theme-dark="true"] .border-slate-200,
+html[data-theme-dark="true"] .border-slate-200\/60,
+html[data-theme-dark="true"] .border-slate-200\/80,
+html[data-theme-dark="true"] .border-slate-200\/90,
+html[data-theme-dark="true"] .border-slate-300 {
+  border-color: var(--theme-card-border, #27272a) !important;
+}
+
+html[data-theme-dark="true"] .text-slate-900,
+html[data-theme-dark="true"] .text-slate-800 {
+  color: var(--theme-card-text, #f4f4f5) !important;
+}
+
+html[data-theme-dark="true"] .text-slate-700,
+html[data-theme-dark="true"] .text-slate-600 {
+  color: #d4d4d8 !important;
+}
+
+html[data-theme-dark="true"] .text-slate-500 {
+  color: #a1a1aa !important;
+}
+
+html[data-theme-dark="true"] .text-slate-400 {
+  color: #71717a !important;
+}
+
+html[data-theme-dark="true"] .bg-brand-50,
+html[data-theme-dark="true"] .bg-brand-50\/30 {
+  background-color: var(--theme-accent-bg, rgba(37, 99, 235, 0.12)) !important;
+}
+
+html[data-theme-dark="true"] .border-brand-100,
+html[data-theme-dark="true"] .border-brand-200 {
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+html[data-theme-dark="true"] .text-brand-600,
+html[data-theme-dark="true"] .text-brand-700 {
+  color: var(--theme-accent, #60a5fa) !important;
+}
+
+html[data-theme-dark="true"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme-dark="true"] select,
+html[data-theme-dark="true"] textarea {
+  background-color: var(--theme-card-bg, #18181b) !important;
+  border-color: var(--theme-card-border, #27272a) !important;
+  color: var(--theme-card-text, #f4f4f5) !important;
+}
+
+html[data-theme-dark="true"] input::placeholder,
+html[data-theme-dark="true"] textarea::placeholder {
+  color: #71717a !important;
 }
 
 

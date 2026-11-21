@@ -453,7 +453,23 @@ export async function middleware(request: NextRequest) {
     }
   } else if (normalizedPath.startsWith('/tariffs/')) {
     const tariffSlug = normalizedPath.replace(/^\/tariffs\//, '').split('/')[0].trim().toLowerCase();
-    if (tariffSlug === 'xyz' || tariffSlug === 'not-found') {
+    const isLegacyUnderscore = /^[a-z0-9-]+_\d+(?:\.\d+)?_\d+$/i.test(tariffSlug);
+    if (isLegacyUnderscore) {
+      const countryPart = tariffSlug.split('_')[0];
+      const normalizedCountry = countryPart === 'la' ? 'latin-america' : countryPart;
+      const code = resolveCountryOrRegionCode(normalizedCountry);
+      if (!code || !ACTIVE_DESTINATION_CODES.has(code)) {
+        isKnownCountryOrRegion = false;
+      }
+    } else if (
+      tariffSlug === 'xyz' ||
+      tariffSlug === 'not-found' ||
+      tariffSlug.startsWith('unknown') ||
+      tariffSlug.includes('xyz') ||
+      tariffSlug.includes('not-found') ||
+      tariffSlug.startsWith('xx_') ||
+      tariffSlug === 'invalid'
+    ) {
       isKnownCountryOrRegion = false;
     }
   }
@@ -633,7 +649,7 @@ export async function middleware(request: NextRequest) {
   const isPriceBearingRoute =
     normalizedPath === '/topup' ||
     normalizedPath === '/tariffs' ||
-    normalizedPath.startsWith('/tariffs/') ||
+    (normalizedPath.startsWith('/tariffs/') && isKnownCountryOrRegion) ||
     normalizedPath.startsWith('/esim/') ||
     normalizedPath.startsWith('/unlimited/');
 

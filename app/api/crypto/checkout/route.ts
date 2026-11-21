@@ -19,6 +19,8 @@ import { fulfillOrders }       from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
 import { calculateSalePrice, getDayPassPrice }  from '@/lib/pricing';
+import { calculateOrderPricing, getActivePromotion } from '@/lib/pricing-service';
+import { getNow } from '@/lib/time';
 import { validateEmail }        from '@/lib/validation/email';
 import { isValidLocale }        from '@/lib/i18n/config';
 import { getServerDict }        from '@/lib/i18n/server';
@@ -241,25 +243,45 @@ export async function POST(request: Request) {
       }
     }
 
-    // 1. Calculate total base amount
-    let totalBaseEur = 0;
+    // 1. Calculate total base amount and promotional discounts via Central Pricing Service
+    const activePromo = await getActivePromotion();
+    const pricingItems = [];
+    const validLines: typeof lines = [];
+
     for (const line of lines) {
       const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
       if (!t) continue;
       const isTopUp = !!line.topUpIccid;
       if (!isTopUp && !t.is_active) continue;
       const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
-      let unit = t.sale_price_eur;
-      if (isUnlimited && line.days) {
-        unit = await getDayPassPrice(t, line.days);
+
+      pricingItems.push({
+        packageCode: t.package_code,
+        salePriceEur: t.sale_price_eur,
+        quantity: line.quantity,
+        validityDays: line.days ?? undefined,
+        isUnlimited,
+        discountRuleCode: t.discount_rule_code,
+        isTopUp,
+        isCash: coin === 'ESIM_CASH',
+      });
+      validLines.push(line);
+    }
+
+    const calculatedOrder = await calculateOrderPricing(pricingItems, activePromo);
+    const totalBaseEur = calculatedOrder.totalCents / 100;
+
+    // Rule B4(a): Check promotion cutoff (< 30 minutes)
+    if (calculatedOrder.promotion && calculatedOrder.promotion.discount_basis_points > 0 && calculatedOrder.discountCents > 0) {
+      const now = getNow();
+      const promoEndMs = new Date(calculatedOrder.promotion.ends_at).getTime();
+      const msRemaining = promoEndMs - now.getTime();
+      if (msRemaining < 30 * 60 * 1000) {
+        return NextResponse.json({
+          error: 'Die Aktion endet in Kürze (< 30 Minuten). Bitte warten Sie auf die Normalpreise oder aktualisieren Sie Ihren Warenkorb.',
+          code: 'PROMO_ENDING_SOON'
+        }, { status: 400 });
       }
-      if (line.clientPrice !== undefined && typeof line.clientPrice === 'number') {
-        const clientDiff = Math.abs(line.clientPrice - unit);
-        if (clientDiff > 0.001) {
-          console.warn(`[checkout] Client price deviation: client claimed ${line.clientPrice} €, server strictly calculated ${unit} €.`);
-        }
-      }
-      totalBaseEur += unit * line.quantity;
     }
 
     let cookieLocale: string | undefined;
@@ -370,18 +392,16 @@ export async function POST(request: Request) {
 
       // Build order rows
       const orderRows: Array<Record<string, unknown>> = [];
-      for (const line of lines) {
+      for (let i = 0; i < validLines.length; i++) {
+        const line = validLines[i];
+        const calcItem = calculatedOrder.items[i];
         const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
-        if (!isTopUp && !t.is_active) continue;
         const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
-        let unit = t.sale_price_eur;
-        let periodNum: number | null = null;
-        if (isUnlimited && line.days) {
-          periodNum = line.days;
-          unit = await getDayPassPrice(t, line.days);
-        }
+        const unit = calcItem.unitPromoCents / 100;
+        const periodNum = (isUnlimited && line.days) ? line.days : null;
+
         for (let n = 0; n < line.quantity; n++) {
           orderRows.push({
             user_id: userId, tariff_id: t.id,
@@ -429,18 +449,16 @@ export async function POST(request: Request) {
     } else {
       // Standard Crypto Checkout
       const orderRows: Array<Record<string, unknown>> = [];
-      for (const line of lines) {
+      for (let i = 0; i < validLines.length; i++) {
+        const line = validLines[i];
+        const calcItem = calculatedOrder.items[i];
         const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
-        if (!isTopUp && !t.is_active) continue;
         const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
-        let unit = t.sale_price_eur;
-        let periodNum: number | null = null;
-        if (isUnlimited && line.days) {
-          periodNum = line.days;
-          unit = await getDayPassPrice(t, line.days);
-        }
+        const unit = calcItem.unitPromoCents / 100;
+        const periodNum = (isUnlimited && line.days) ? line.days : null;
+
         for (let n = 0; n < line.quantity; n++) {
           orderRows.push({
             user_id: userId, tariff_id: t.id,
@@ -470,7 +488,15 @@ export async function POST(request: Request) {
       const orderIds = inserted.map((o) => o.id);
 
       const session = await createCryptoSession({
-        orderIds, email: normalizedEmail, baseEur: Math.round(totalBaseEur * 100) / 100, coinCode: coin, locale: customerLocale, orderRef: ref,
+        orderIds,
+        email: normalizedEmail,
+        baseEur: totalBaseEur,
+        coinCode: coin,
+        locale: customerLocale,
+        orderRef: ref,
+        expiresAtLimit: calculatedOrder.promotion && calculatedOrder.discountCents > 0
+          ? calculatedOrder.promotion.ends_at
+          : undefined,
       });
 
       // Save newsletter consent & locale asynchronously (non-blocking)

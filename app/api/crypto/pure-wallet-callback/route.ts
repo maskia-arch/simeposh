@@ -123,6 +123,13 @@ export async function POST(request: Request) {
       }
     }
 
+    // Late payment check against session.expires_at
+    const isLate = session.expires_at && new Date() > new Date(session.expires_at);
+    if (isLate && (effectiveStatus === 'paid' || status === 'paid')) {
+      effectiveStatus = 'review';
+      console.log(`[pure-wallet Webhook] Payment arrived after session.expires_at (${session.expires_at}). Marked as review for manual handling.`);
+    }
+
     // 2. Update session status
     const updatePayload: Record<string, unknown> = {
       status: effectiveStatus,
@@ -186,6 +193,17 @@ export async function POST(request: Request) {
             });
           }
         }
+      }
+    } else if (effectiveStatus === 'review') {
+      if (validOrderIds.length > 0) {
+        await db
+          .from('orders')
+          .update({
+            status: 'review',
+            payment_confirmed_at: paid_at || new Date().toISOString(),
+          })
+          .in('id', validOrderIds)
+          .in('status', ['pending']);
       }
     } else if (status === 'expired' || status === 'cancelled') {
       if (validOrderIds.length > 0) {

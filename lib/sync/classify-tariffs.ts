@@ -30,7 +30,7 @@ function isLocalIp(cc: string, name: string, code: string): boolean {
  *      placed on needs_difference_review = TRUE, and hidden_reason = 'duplicate_higher_price' to prevent
  *      duplicate cards at different prices on the storefront.
  */
-export async function classifyAllTariffs(): Promise<{
+export async function classifyAllTariffs(client?: any): Promise<{
   updated: number;
   totalStandard: number;
   totalPremium: number;
@@ -39,8 +39,10 @@ export async function classifyAllTariffs(): Promise<{
   chipsLocalIp: number;
   needsReviewCount: number;
 }> {
+  const exec = (sql: string, params?: any[]) => (client ? client.query(sql, params) : runRawQuery(sql, params));
+
   // Step 1: Ensure unlimited tariffs are never premium and have no diff chips
-  await runRawQuery(`
+  await exec(`
     UPDATE public.tariffs
     SET is_premium = FALSE,
         premium_diff_chip = NULL,
@@ -52,7 +54,7 @@ export async function classifyAllTariffs(): Promise<{
 
   // Step 2: Classify travel tariffs based on front price rank within group
   // Partition includes location count (so LATAM 6 and LATAM 20 are independent groups)
-  const result = await runRawQuery(`
+  const result = await exec(`
     WITH ranked_travel AS (
       SELECT id,
              sale_price_eur,
@@ -86,14 +88,14 @@ export async function classifyAllTariffs(): Promise<{
   `);
 
   // Step 3: Ensure any legacy 'travel' type defaults to travel_standard/travel_premium
-  await runRawQuery(`
+  await exec(`
     UPDATE public.tariffs
     SET tariff_type = CASE WHEN is_premium IS TRUE THEN 'travel_premium' ELSE 'travel_standard' END
     WHERE tariff_type = 'travel';
   `);
 
   // Step 4: Calculate difference chips and review list with strict supplier field evidence
-  const tariffsRes = await runRawQuery(`
+  const tariffsRes = await exec(`
     SELECT id,
            package_code,
            name,
@@ -272,7 +274,7 @@ export async function classifyAllTariffs(): Promise<{
         FROM (VALUES ${chunkClauses.join(', ')}) AS v(id, chip, needs_review, is_premium, tariff_type, hidden_reason, duplicate_of)
         WHERE t.id = v.id;
       `;
-      await runRawQuery(sql, chunkParams);
+      await exec(sql, chunkParams);
     }
   }
 

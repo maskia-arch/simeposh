@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { formatGb } from '@/lib/utils';
+import { formatCurrencyEuro } from '@/lib/currency';
 import type { PublicTariff } from '@/lib/tariffs';
 import { CountryFlag } from '@/components/CountryFlag';
 import { Price } from '@/components/Price';
@@ -234,7 +235,19 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <p className="text-[11px] font-bold text-slate-500 mt-0.5">{t('card_validity')}</p>
             </div>
             <div className="rounded-2xl bg-emerald-50/80 p-3 text-center border border-emerald-100 shadow-2xs">
-              <Price eur={tariff.sale_price_eur} className="text-lg sm:text-xl font-extrabold text-emerald-700 leading-tight" />
+              {tariff.reference_price_eur && tariff.reference_price_eur > (tariff.customer_price_eur ?? tariff.sale_price_eur) && (
+                <p className="text-[10px] text-slate-400 line-through font-medium leading-none mb-0.5">
+                  statt {formatCurrencyEuro(tariff.reference_price_eur, locale)}
+                </p>
+              )}
+              <div className="flex items-center justify-center gap-1">
+                <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-lg sm:text-xl font-extrabold text-emerald-700 leading-tight" />
+                {tariff.promo_badge && (
+                  <span className="rounded-md bg-rose-600 px-1 py-0.2 text-[10px] font-black text-white shadow-2xs">
+                    {tariff.promo_badge}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] font-bold text-slate-500 mt-0.5">{t('det_price')}</p>
             </div>
           </div>

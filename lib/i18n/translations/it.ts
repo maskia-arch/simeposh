@@ -1004,6 +1004,7 @@ const it = {
   "hero_badge": "Disponibile in oltre 200 destinazioni",
   "meta_home_desc": "Acquista eSIM pronte all'uso per oltre 200 destinazioni nel mondo. Piani convenienti, facile attivazione tramite codice QR.",
   "ip_origin": "Origine IP",
+  "meta_faq_subtitle": "Risposte rapide sui nostri piani eSIM, installazione, pacchetti dati e pagamenti.",
 } as const;
 export default it;
 export type TranslationKeys = keyof typeof it;

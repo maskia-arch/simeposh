@@ -1004,6 +1004,7 @@ const nl = {
   "hero_badge": "Beschikbaar in 200+ bestemmingen",
   "meta_home_desc": "Koop direct bruikbare eSIMs voor meer dan 200 bestemmingen wereldwijd. Voordelige tarieven, eenvoudige activering via QR-code.",
   "ip_origin": "IP-herkomst",
+  "meta_faq_subtitle": "Snelle antwoorden over onze eSIM-plannen, installatie, datapakketten en betalingen.",
 } as const;
 export default nl;
 export type TranslationKeys = keyof typeof nl;

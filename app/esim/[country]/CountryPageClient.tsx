@@ -12,6 +12,7 @@ import { formatGb } from '@/lib/utils';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { displayCountryName, getTariffOperators, bestNetworkType, isPremiumTariff } from '@/lib/tariff-display';
 import { TravelGlobeIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
+import { useThemeDemo } from '@/lib/theme-demo-context';
 
 interface CountryPageClientProps {
   destination: Destination;
@@ -25,6 +26,7 @@ export function CountryPageClient({
   countryLabel,
 }: CountryPageClientProps) {
   const { t, locale } = useTranslation();
+  const { activeTheme } = useThemeDemo();
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
 
@@ -130,10 +132,23 @@ export function CountryPageClient({
       </nav>
 
       {/* ── Hero Header ── */}
-      <section className="mb-10 rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/50 to-brand-50/30 p-6 md:p-10 shadow-sm">
+      <section
+        style={{
+          backgroundColor: activeTheme?.isDark ? (activeTheme.cardBgColor || '#18181b') : undefined,
+          borderColor: activeTheme?.isDark ? (activeTheme.cardBorderColor || '#27272a') : undefined,
+          color: activeTheme?.isDark ? (activeTheme.cardTextColor || '#f4f4f5') : undefined,
+        }}
+        className="mb-10 rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/50 to-brand-50/30 p-6 md:p-10 shadow-sm"
+      >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start gap-5">
-            <div className="flex h-16 w-16 md:h-20 md:w-20 shrink-0 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100 overflow-hidden">
+            <div
+              style={{
+                backgroundColor: activeTheme?.isDark ? 'rgba(255,255,255,0.08)' : undefined,
+                borderColor: activeTheme?.isDark ? (activeTheme.cardBorderColor || '#27272a') : undefined,
+              }}
+              className="flex h-16 w-16 md:h-20 md:w-20 shrink-0 items-center justify-center rounded-2xl bg-white shadow-md border border-slate-100 overflow-hidden"
+            >
               <CountryFlag
                 countryCode={destination.code}
                 countryName={countryLabel}
@@ -152,14 +167,26 @@ export function CountryPageClient({
                     {t('feat_5g_badge' as any) || '5G Highspeed'}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                <span
+                  style={{
+                    backgroundColor: activeTheme?.isDark ? 'rgba(255,255,255,0.06)' : undefined,
+                    color: activeTheme?.isDark ? '#a1a1aa' : undefined,
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
+                >
                   {t('available_plans' as any, { count: tariffs.length }) || (isDe ? `${tariffs.length} verfügbare Tarife` : `${tariffs.length} available plans`)}
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+              <h1
+                style={{ color: activeTheme?.isDark ? (activeTheme.pageTextColor || '#f4f4f5') : undefined }}
+                className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight"
+              >
                 {t('esim_for_country' as any, { country: countryLabel }) || `eSIM for ${countryLabel}`}
               </h1>
-              <p className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl leading-relaxed">
+              <p
+                style={{ color: activeTheme?.isDark ? '#a1a1aa' : undefined }}
+                className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl leading-relaxed"
+              >
                 {t('country_hero_desc' as any, { country: countryLabel }) || (isDe
                   ? `Prepaid Highspeed-Datenvolumen für deine Reise nach ${countryLabel}. Keine Roaming-Gebühren, kein SIM-Kartenwechsel und transparente Festpreise.`
                   : `Prepaid high-speed data for your travel to ${countryLabel}. Zero roaming fees, no physical SIM swap, and fair fixed rates.`)}
@@ -168,7 +195,14 @@ export function CountryPageClient({
           </div>
 
           {/* Quick Price Highlights Card */}
-          <div className="flex flex-col sm:flex-row md:flex-col gap-3 rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs shrink-0 min-w-[220px]">
+          <div
+            style={{
+              backgroundColor: activeTheme?.isDark ? (activeTheme.cardBgColor || '#18181b') : undefined,
+              borderColor: activeTheme?.isDark ? (activeTheme.cardBorderColor || '#27272a') : undefined,
+              color: activeTheme?.isDark ? (activeTheme.cardTextColor || '#f4f4f5') : undefined,
+            }}
+            className="flex flex-col sm:flex-row md:flex-col gap-3 rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs shrink-0 min-w-[220px]"
+          >
             <div className="flex items-baseline justify-between md:justify-start md:gap-3">
               <span className="text-xs text-slate-500 font-medium">
                 {t('starting_from' as any) || (isDe ? 'Tarife ab' : 'Starting from')}

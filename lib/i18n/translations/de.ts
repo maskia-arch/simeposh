@@ -1027,6 +1027,7 @@ const de = {
   "lang_banner_switch": "Wechseln",
   "lang_banner_close": "Schließen",
   "ip_origin": "IP-Herkunft",
+  "meta_faq_subtitle": "Finde schnell Antworten zu unseren eSIM-Tarifen, Installation, Datenpaketen und Bezahlung.",
 } as const;
 export default de;
 export type TranslationKeys = keyof typeof de;

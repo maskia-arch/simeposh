@@ -70,8 +70,8 @@ export function ChatWidgetLoader() {
 
   const hasStickyBar = isUnlimited || isTariff;
   const bottomPosition = hasStickyBar
-    ? 'bottom-[calc(118px+env(safe-area-inset-bottom,0px))]'
-    : 'bottom-[calc(20px+env(safe-area-inset-bottom,0px))]';
+    ? 'bottom-[calc(140px+env(safe-area-inset-bottom,0px))]'
+    : 'bottom-[calc(24px+env(safe-area-inset-bottom,0px))]';
 
   return (
     <button

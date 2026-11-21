@@ -4,7 +4,6 @@ import path from 'path';
 // Valid non-page routes that MUST exist and return 200 (not HTML error/404)
 const NON_PAGE_ROUTES = [
   'app/sitemap.ts',
-  'app/sitemap.xml/route.ts',
   'app/robots.ts',
   'public/llms.txt',
   'app/api/destinations/route.ts',

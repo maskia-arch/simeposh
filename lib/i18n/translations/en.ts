@@ -1004,6 +1004,7 @@ const en = {
   "hero_badge": "Available in 200+ destinations",
   "meta_home_desc": "Buy ready-to-use eSIMs for 200+ destinations worldwide. Affordable plans, easy QR code setup, no roaming fees.",
   "ip_origin": "IP Origin",
+  "meta_faq_subtitle": "Quick answers about our eSIM plans, setup, data packages, and payments.",
 } as const;
 export default en;
 export type TranslationKeys = keyof typeof en;

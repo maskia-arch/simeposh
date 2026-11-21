@@ -13,6 +13,7 @@ import { useTranslation } from '@/lib/i18n';
 import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, formatIpFullList, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
+import { useThemeDemo } from '@/lib/theme-demo-context';
 
 type Tariff = PublicTariff;
 
@@ -33,6 +34,7 @@ const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey
 };
 
 export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
+  const { activeTheme } = useThemeDemo();
   const [showCheckout, setShowCheckout] = useState(false);
   const [added, setAdded] = useState(false);
   const [showCountryList, setShowCountryList] = useState(false);
@@ -69,7 +71,14 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   }
 
   return (
-    <div lang={locale} className="relative min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8">
+    <div
+      lang={locale}
+      style={{
+        backgroundColor: activeTheme?.isDark ? (activeTheme.pageBgColor || '#0a0a0a') : undefined,
+        color: activeTheme?.isDark ? (activeTheme.pageTextColor || '#f4f4f5') : undefined,
+      }}
+      className="relative min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8 transition-colors"
+    >
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-3xl" />
@@ -226,6 +235,19 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
               </div>
             )}
 
+            {/* Turkey Legal Notice in Main Content */}
+            {isTurkeyTariff(tariff) && (
+              <div className="rounded-3xl border border-amber-200/90 bg-amber-50/80 p-6 text-xs text-amber-950 shadow-sm flex items-start gap-3">
+                <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">ℹ️</span>
+                <div className="leading-relaxed">
+                  <h3 className="font-bold text-sm text-amber-950 mb-1">{locale === 'de' ? 'Rechtlicher Hinweis für die Türkei' : 'Legal Notice for Turkey'}</h3>
+                  <p>{locale === 'de'
+                    ? 'Gemäß den Bestimmungen der türkischen Regulierungsbehörde (BTK) können ausländische Mobilfunkgeräte bis zu 120 Tage ohne IMEI-Registrierung genutzt werden. Unsere eSIM-Tarife sind reine Datentarife und erfordern keine persönliche IMEI-Registrierung für Urlaubs- und Geschäftsreisen.'
+                    : 'In accordance with Turkish regulatory authority (BTK) guidelines, foreign devices can be used for up to 120 days without IMEI registration. PureSim eSIMs are data-only and require no registration for holiday and business travel.'}</p>
+                </div>
+              </div>
+            )}
+
             {/* Activation Guide */}
             <div className="rounded-3xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-8 shadow-sm">
               <h2 className={`text-sm font-bold tracking-wider text-slate-400 mb-4 ${locale === 'tr' ? '' : 'uppercase'}`}>{t('det_activation')}</h2>
@@ -269,9 +291,21 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/60 flex items-center justify-between">
               <div>
                 <p className={`text-xs text-slate-500 font-semibold ${locale === 'tr' ? '' : 'uppercase'}`}>{t('det_price')}</p>
+                {tariff.reference_price_eur && tariff.reference_price_eur > (tariff.customer_price_eur ?? tariff.sale_price_eur) && (
+                  <p className="text-xs text-slate-400 line-through font-medium">
+                    statt {formatCurrencyEuro(tariff.reference_price_eur, locale)}
+                  </p>
+                )}
                 <p className="text-xs text-slate-400 mt-0.5">~ {formatCurrencyEuro(perDayEur(tariff), locale)} {t('unit_per_day')}</p>
               </div>
-              <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />
+              <div className="flex items-center gap-2">
+                <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />
+                {tariff.promo_badge && (
+                  <span className="rounded-md bg-rose-600 px-2 py-1 text-xs font-black text-white shadow-sm">
+                    {tariff.promo_badge}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Unlimited notes */}

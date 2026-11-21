@@ -9,6 +9,7 @@ import { getPool } from '@/lib/db';
 import TariffDetailPageClient from './TariffDetailPageClient';
 import { toPublicTariff, getTariffCanonicalPath, type PublicTariff } from '@/lib/tariffs';
 import { getTariffMinCustomerPrice } from '@/lib/pricing';
+import { getActivePromotion, calculatePromoPriceCents } from '@/lib/pricing-service';
 import { getDestinationBySlug } from '@/lib/destinations';
 import { displayCountryName, formatLocalizedTariffName } from '@/lib/tariff-display';
 import { formatGb } from '@/lib/utils';
@@ -16,12 +17,32 @@ import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { formatCurrencyEuro } from '@/lib/currency';
 
 const PUBLIC_SELECT_FIELDS = 'id, package_code, slug, name, description, country_code, country_name, region, flag_emoji, location_codes, data_gb, validity_days, sale_price_eur, tariff_type, speed_kbps, label, is_top_up_eligible, active_type, support_top_up_type, is_premium, breakout_ip, ip_countries, premium_diff_chip';
+const SERVER_SELECT_FIELDS = `${PUBLIC_SELECT_FIELDS}, raw_data`;
 
 export const dynamic = 'force-dynamic';
 
 const tariffDetailCache = new Map<string, { data: PublicTariff | null; timestamp: number }>();
 const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();
 const TARIFF_DETAIL_TTL = 10 * 60 * 1000; // 10 minutes
+
+async function applyPromoToTariff(tariff: PublicTariff): Promise<void> {
+  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  if (isUnlimited) return;
+
+  const promo = await getActivePromotion();
+  if (promo && promo.discount_basis_points > 0) {
+    const regCents = Math.round((tariff.customer_price_eur ?? tariff.sale_price_eur) * 100);
+    const calc = calculatePromoPriceCents(regCents, promo.discount_basis_points, promo.rounding_strategy);
+    if (calc.applied) {
+      if (promo.show_reference_price) {
+        tariff.reference_price_eur = tariff.customer_price_eur ?? tariff.sale_price_eur;
+      }
+      tariff.customer_price_eur = calc.promoCents / 100;
+      tariff.promo_discount_percent = Math.round(promo.discount_basis_points / 100);
+      tariff.promo_badge = promo.badge_texts?.['de'] || `−${Math.round(promo.discount_basis_points / 100)} %`;
+    }
+  }
+}
 
 async function getTariff(slug: string): Promise<PublicTariff | null> {
   const normalizedSlug = slug.toLowerCase().trim();
@@ -42,7 +63,7 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
       try {
         const pool = getPool();
         const { rows } = await pool.query(
-          `SELECT ${PUBLIC_SELECT_FIELDS}
+          `SELECT ${SERVER_SELECT_FIELDS}
            FROM tariffs
            WHERE (LOWER(package_code) = LOWER($1) OR LOWER(slug) = LOWER($1))
              AND is_active = true
@@ -53,6 +74,7 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
         if (rows && rows.length > 0) {
           const res = toPublicTariff(rows[0]);
           res.customer_price_eur = await getTariffMinCustomerPrice(rows[0]);
+          await applyPromoToTariff(res);
           tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
           return res;
         }
@@ -66,7 +88,7 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
 
       const { data } = await supabase
         .from('tariffs')
-        .select(PUBLIC_SELECT_FIELDS)
+        .select(SERVER_SELECT_FIELDS)
         .or(`package_code.eq.${codeUpper},slug.eq.${decoded}`)
         .eq('is_active', true)
         .limit(1)
@@ -75,6 +97,7 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
       if (data) {
         const res = toPublicTariff(data);
         res.customer_price_eur = await getTariffMinCustomerPrice(data);
+        await applyPromoToTariff(res);
         tariffDetailCache.set(normalizedSlug, { data: res, timestamp: Date.now() });
         return res;
       }
@@ -93,41 +116,87 @@ async function getTariff(slug: string): Promise<PublicTariff | null> {
   return promise;
 }
 
-async function resolveLegacyTariffRedirect(slug: string, prefix: string): Promise<string | null> {
-  const match = slug.match(/^([a-zA-Z0-9_-]+)_(\d+(?:\.\d+)?)_(\d+)$/);
-  if (!match) return null;
+async function resolveLegacyTariffRedirect(slug: string, prefix: string, locale: string = 'de'): Promise<string | null> {
+  const clean = slug.trim().toLowerCase();
 
-  const rawCountry = match[1];
-  const dataGb = parseFloat(match[2]);
-  const validityDays = parseInt(match[3], 10);
-
-  const dest = await getDestinationBySlug(rawCountry);
-  if (!dest) {
-    return null; // Unknown country -> 404
+  // Direct country code/slug under /tariffs/ (e.g. /tariffs/la, /tariffs/in, /tariffs/jp, etc.)
+  if (clean === 'la') {
+    return `${prefix}/esim/latin-america`;
+  }
+  if (['in', 'jp', 'tr', 'de', 'us'].includes(clean)) {
+    const dest = await getDestinationBySlug(clean);
+    if (dest) return `${prefix}/esim/${dest.slug}`;
   }
 
-  try {
-    const supabase = await createClient();
-    const { data: matchedTariff } = await supabase
-      .from('tariffs')
-      .select('package_code, slug')
-      .or(`country_code.eq.${dest.code},country_code.eq.${dest.code.toUpperCase()}`)
-      .eq('data_gb', dataGb)
-      .eq('validity_days', validityDays)
-      .eq('is_active', true)
-      .in('tariff_type', ['travel_standard', 'travel_premium', 'travel'])
-      .order('sale_price_eur', { ascending: true })
-      .limit(1)
-      .maybeSingle();
+  // Legacy pattern 1: {country}_{gb}_{days}
+  const matchUnderscore = clean.match(/^([a-z0-9-]+)_(\d+(?:\.\d+)?)_(\d+)$/i);
+  if (matchUnderscore) {
+    let rawCountry = matchUnderscore[1].toLowerCase();
+    const dataGb = parseFloat(matchUnderscore[2]);
+    const validityDays = parseInt(matchUnderscore[3], 10);
 
-    if (matchedTariff && matchedTariff.package_code) {
-      return `${prefix}/tariffs/${encodeURIComponent(matchedTariff.package_code)}`;
+    if (rawCountry === 'la') rawCountry = 'latin-america';
+    else if (rawCountry === 'in') rawCountry = 'india';
+    else if (rawCountry === 'jp') rawCountry = 'japan';
+    else if (rawCountry === 'tr') rawCountry = 'turkey';
+    else if (rawCountry === 'de') rawCountry = 'germany';
+    else if (rawCountry === 'us') rawCountry = 'united-states';
+
+    const dest = await getDestinationBySlug(rawCountry);
+    if (dest) {
+      try {
+        const pool = getPool();
+        const { rows } = await pool.query(
+          `SELECT package_code, slug FROM tariffs
+           WHERE (country_code = $1 OR country_code = $2)
+             AND data_gb = $3 AND validity_days = $4
+             AND is_active = true
+           ORDER BY sale_price_eur ASC LIMIT 1`,
+          [dest.code, dest.code.toUpperCase(), dataGb, validityDays]
+        );
+        if (rows && rows.length > 0 && rows[0].package_code) {
+          return getTariffCanonicalPath(rows[0].package_code, locale as any);
+        }
+      } catch (_) {}
+      return `${prefix}/esim/${dest.slug}`;
     }
-  } catch (err) {
-    console.error('[resolveLegacyTariffRedirect] DB error:', err);
   }
 
-  return `${prefix}/esim/${dest.slug}`;
+  // Legacy pattern 2: {country}-{gb}gb-{days}days
+  const matchHyphen = clean.match(/^([a-z0-9-]+)-(\d+(?:\.\d+)?)gb-(\d+)days?$/i);
+  if (matchHyphen) {
+    let rawCountry = matchHyphen[1].toLowerCase();
+    const dataGb = parseFloat(matchHyphen[2]);
+    const validityDays = parseInt(matchHyphen[3], 10);
+
+    if (rawCountry === 'la') rawCountry = 'latin-america';
+    else if (rawCountry === 'in') rawCountry = 'india';
+    else if (rawCountry === 'jp') rawCountry = 'japan';
+    else if (rawCountry === 'tr') rawCountry = 'turkey';
+    else if (rawCountry === 'de') rawCountry = 'germany';
+    else if (rawCountry === 'us') rawCountry = 'united-states';
+
+    const dest = await getDestinationBySlug(rawCountry);
+    if (dest) {
+      try {
+        const pool = getPool();
+        const { rows } = await pool.query(
+          `SELECT package_code, slug FROM tariffs
+           WHERE (country_code = $1 OR country_code = $2)
+             AND data_gb = $3 AND validity_days = $4
+             AND is_active = true
+           ORDER BY sale_price_eur ASC LIMIT 1`,
+          [dest.code, dest.code.toUpperCase(), dataGb, validityDays]
+        );
+        if (rows && rows.length > 0 && rows[0].package_code) {
+          return getTariffCanonicalPath(rows[0].package_code, locale as any);
+        }
+      } catch (_) {}
+      return `${prefix}/esim/${dest.slug}`;
+    }
+  }
+
+  return null;
 }
 
 export async function generateMetadata({
@@ -141,7 +210,7 @@ export async function generateMetadata({
   const tariff = await getTariff(slug);
   if (!tariff) {
     const prefix = locale === 'de' ? '' : `/${locale}`;
-    const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix);
+    const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix, locale);
     if (legacyRedirect) {
       permanentRedirect(legacyRedirect);
     }
@@ -257,7 +326,7 @@ export default async function TariffDetailPage({
   const tariff = await getTariff(slug);
 
   if (!tariff) {
-    const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix);
+    const legacyRedirect = await resolveLegacyTariffRedirect(slug, prefix, locale);
     if (legacyRedirect) {
       permanentRedirect(legacyRedirect);
     }

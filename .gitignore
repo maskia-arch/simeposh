@@ -44,4 +44,11 @@ scripts/*
 !scripts/test_nachfix_requirements.ts
 fix*.txt
 
+# Local test environment & simulators (strictly local, never pushed to GitHub)
+testenv/
+demo.bat
+start-demo.bat
+*.pid
+
+
 

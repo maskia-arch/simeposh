@@ -13,7 +13,7 @@
  *   Dynamic discount rules fetched from database table `discount_rules`
  *   via provider's `discount_rule_code`.
  */
-import { query as runRawQuery } from '@/lib/db';
+import { query as runRawQuery } from './db';
 
 export interface NormalizedPeriodRule {
   minDays: number;

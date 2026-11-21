@@ -11,6 +11,9 @@ import { CartDrawer } from '@/components/CartDrawer';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
 import { TicketProvider } from '@/components/TicketContext';
 import { ChatWidgetLoader } from '@/components/ChatWidgetLoader';
+import { PromotionBanner } from '@/components/PromotionBanner';
+import { ThemeDemoProvider } from '@/lib/theme-demo-context';
+import { ThemeStudioDock } from '@/components/ThemeStudioDock';
 import { isSupportedLocale } from '@/lib/i18n/detect';
 import type { LocaleCode } from '@/lib/i18n/config';
 
@@ -142,19 +145,27 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-screen flex-col">
         <LanguageProvider locale={locale} dict={dict}>
-          <SkipLink />
-          <CurrencyProvider>
-            <CartProvider>
-              <TicketProvider>
-                <BrowserLanguageBanner />
-                <Navbar />
-                <main id="main-content" className="flex-1 outline-none" tabIndex={-1}>{children}</main>
-                <Footer />
-                <CartDrawer />
-                <ChatWidgetLoader />
-              </TicketProvider>
-            </CartProvider>
-          </CurrencyProvider>
+          <ThemeDemoProvider>
+            {process.env.NEXT_PUBLIC_IS_TESTENV === 'true' && (
+              <div className="bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider py-1.5 px-4 text-center sticky top-0 z-[100] shadow-md border-b border-amber-600">
+                ⚠️ TESTUMGEBUNG – KEINE ECHTEN BESTELLUNGEN (127.0.0.1)
+              </div>
+            )}
+            <SkipLink />
+            <CurrencyProvider>
+              <CartProvider>
+                <TicketProvider>
+                  <BrowserLanguageBanner />
+                  <Navbar />
+                  <main id="main-content" className="flex-1 outline-none" tabIndex={-1}>{children}</main>
+                  <Footer />
+                  <CartDrawer />
+                  <ChatWidgetLoader />
+                  <ThemeStudioDock />
+                </TicketProvider>
+              </CartProvider>
+            </CurrencyProvider>
+          </ThemeDemoProvider>
         </LanguageProvider>
       </body>
     </html>

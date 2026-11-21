@@ -6,13 +6,27 @@ import type { LocaleCode } from '@/lib/i18n/config';
 import { isValidLocale } from '@/lib/i18n/config';
 import { CountryFlag } from '@/components/CountryFlag';
 
-export const metadata: Metadata = {
-  title: 'Seite nicht gefunden · PureSim',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let locale: LocaleCode = 'de';
+  try {
+    const headerList = await headers();
+    const headerLocale = headerList.get('x-locale')?.toLowerCase().trim();
+    if (headerLocale && isValidLocale(headerLocale)) {
+      locale = headerLocale as LocaleCode;
+    }
+  } catch {}
+
+  const t = NOT_FOUND_TEXTS[locale] || NOT_FOUND_TEXTS.de;
+  const notFoundTitle = `${t.title || 'Seite nicht gefunden'} · PureSim`;
+
+  return {
+    title: { absolute: notFoundTitle },
+    robots: {
+      index: false,
+      follow: false,
+    },
+  };
+}
 
 const POPULAR_COUNTRIES: Record<string, Array<{ name: string; slug: string; code: string }>> = {
   de: [
@@ -62,7 +76,7 @@ export default function NotFound({ localeOverride }: { localeOverride?: string }
   const popular = POPULAR_COUNTRIES[locale] || POPULAR_COUNTRIES.en;
 
   return (
-    <div className="flex flex-col items-center justify-center text-center px-4 pt-16 pb-28 sm:pb-16 font-sans text-slate-800 bg-slate-50/50 flex-1">
+    <div className="flex flex-col items-center justify-center text-center px-4 pt-16 pb-36 sm:pb-20 font-sans text-slate-800 bg-slate-50/50 flex-1">
       <div className="max-w-xl mx-auto space-y-6">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-brand-50 border border-brand-200 text-brand-600">
           <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

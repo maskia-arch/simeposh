@@ -1004,6 +1004,7 @@ const tr = {
   "hero_badge": "200'den fazla destinasyonda mevcut",
   "meta_home_desc": "Dünya çapında 200'den fazla destinasyon için kullanıma hazır eSIM satın alın. Uygun fiyatlar, kolay QR kod aktivasyonu.",
   "ip_origin": "IP Çıkışı",
+  "meta_faq_subtitle": "eSIM tarifelerimiz, kurulum, veri paketleri ve ödeme yöntemleri hakkında hızlı yanıtlar.",
 } as const;
 export default tr;
 export type TranslationKeys = keyof typeof tr;

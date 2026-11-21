@@ -13,6 +13,8 @@ import { Price } from '@/components/Price';
 import { useCart } from '@/components/CartProvider';
 import { displayCountryName, coverageLabel, getTariffOperators, bestNetworkType, isoName, cleanTariffName, getTariffSpecialFeatures, isPremiumTariff, isNonHkIpTariff, getTariffBreakoutIp, formatIpChipLabel, formatIpFullList, isTurkeyTariff, getReloadabilityInfo, type TariffSpecialFeature } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, TagIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon, ShieldIcon, GlobeIcon } from '@/components/Icons';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 
 type Tariff = PublicTariff;
 
@@ -41,6 +43,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
   const { t, locale } = useTranslation();
   const isDe = locale === 'de';
   const { addItem, open } = useCart();
+  const demo = useThemeDemo();
   const [showCountryList, setShowCountryList] = useState(false);
   const [activeFeature, setActiveFeature] = useState<TariffSpecialFeature | null>(null);
   const [activeAbbr, setActiveAbbr] = useState<{ label: string; text: string } | null>(null);
@@ -81,6 +84,11 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
     <div
       data-tariff-id={tariff.id}
       data-tariff-card="true"
+      style={{
+        backgroundColor: demo?.activeTheme?.cardBgColor || undefined,
+        borderColor: demo?.activeTheme?.isDark ? (demo?.activeTheme?.cardBorderColor || '#27272a') : undefined,
+        color: demo?.activeTheme?.cardTextColor || undefined,
+      }}
       className={`group relative flex flex-col rounded-2xl bg-white shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden ${
         isRecommended
           ? 'border-2 border-brand-500 shadow-md ring-2 ring-brand-100/80 hover:border-brand-600'
@@ -107,19 +115,19 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
             <div className="min-w-0">
               {isTravel ? (
                 <>
-                  <p className="text-xs text-slate-500 font-medium leading-tight line-clamp-2 break-words" title={cardTitle}>
+                  <p style={{ color: demo?.activeTheme?.isDark ? '#a1a1aa' : undefined }} className="text-xs text-slate-500 font-medium leading-tight line-clamp-2 break-words" title={cardTitle}>
                     {cardTitle}
                   </p>
-                  <p className="font-extrabold text-slate-900 leading-snug break-words text-base">
+                  <p style={{ color: demo?.activeTheme?.isDark ? (demo.activeTheme.cardTextColor || '#f4f4f5') : undefined }} className="font-extrabold text-slate-900 leading-snug break-words text-base">
                     {formatGb(tariff.data_gb)} · {formatDaysWithUnit(tariff.validity_days, locale)}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="font-bold text-slate-800 leading-tight break-words" title={cardTitle}>
+                  <p style={{ color: demo?.activeTheme?.isDark ? (demo.activeTheme.cardTextColor || '#f4f4f5') : undefined }} className="font-bold text-slate-800 leading-tight break-words" title={cardTitle}>
                     {cardTitle}
                   </p>
-                  <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                  <p style={{ color: demo?.activeTheme?.isDark ? '#a1a1aa' : undefined }} className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
                     {tariff.tariff_type === 'unlimited_eco' ? 'Unlimited Eco' : tariff.tariff_type === 'unlimited_pro' ? 'Unlimited Pro' : 'Unlimited'}
                   </p>
                 </>
@@ -282,13 +290,30 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
 
         {/* ── Specs ── */}
         <div className="mb-3 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-brand-50 px-3 py-2.5 text-center">
-            <p className="text-lg font-bold text-brand-700 leading-tight">
+          <div
+            style={{
+              backgroundColor: demo?.activeTheme?.accentBgColor || undefined,
+            }}
+            className="rounded-xl bg-brand-50 px-3 py-2.5 text-center"
+          >
+            <p
+              style={{
+                color: demo?.activeTheme?.accentTextColor || demo?.activeTheme?.accentColor || undefined,
+              }}
+              className="text-lg font-bold text-brand-700 leading-tight"
+            >
               {isUnlimited ? '∞' : formatGb(tariff.data_gb)}
             </p>
             <p className="text-xs text-slate-600 font-medium mt-0.5">{t('card_data')}</p>
             {isUnlimited && tariff.data_gb && Number(tariff.data_gb) > 0 && (
-              <p className="text-xs text-brand-700 font-medium">{formatGb(tariff.data_gb)} {t('unit_per_day')}</p>
+              <p
+                style={{
+                  color: demo?.activeTheme?.accentTextColor || demo?.activeTheme?.accentColor || undefined,
+                }}
+                className="text-xs text-brand-700 font-medium"
+              >
+                {formatGb(tariff.data_gb)} {t('unit_per_day')}
+              </p>
             )}
           </div>
           <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-center">
@@ -371,50 +396,85 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         </div>
 
         {/* ── Price ── */}
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
-          <div
-            className="flex items-baseline gap-1"
-            aria-label={
-              isUnlimited
-                ? `${formatCurrencyEuro(tariff.customer_price_eur ?? tariff.sale_price_eur, locale)} ${getPerDayAriaUnit(locale)}`
-                : undefined
+        {(() => {
+          let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
+          let promoBadge = tariff.promo_badge;
+          let refPriceEur = tariff.reference_price_eur;
+
+          if (demo.isDemoActive && demo.activePromo && isTravel) {
+            const regCents = Math.round(tariff.sale_price_eur * 100);
+            const demoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
+            if (demoCalc.applied) {
+              displayPriceEur = demoCalc.promoCents / 100;
+              promoBadge = demo.activePromo.badge_texts?.[locale] || demo.activePromo.badge_texts?.['de'] || `−${Math.round(demo.activePromo.discount_basis_points / 100)} %`;
+              refPriceEur = demo.activePromo.show_reference_price ? tariff.sale_price_eur : null;
             }
-          >
-            <Price
-              eur={tariff.customer_price_eur ?? tariff.sale_price_eur}
-              className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
-            />
-            {isUnlimited && (
-              <span className="text-xs font-semibold text-slate-500">
-                {t('unit_per_day')}
-              </span>
-            )}
-          </div>
-          {onDetail && (
-            <Link
-              href={getTariffCanonicalPath(tariff.package_code, locale)}
-              prefetch={false}
-              onClick={(e) => {
-                // If it's a standard left click without modifier keys, trigger modal for smooth UX
-                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDetail(tariff);
+          }
+
+          return (
+            <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
+              <div
+                className="flex flex-col"
+                aria-label={
+                  isUnlimited
+                    ? `${formatCurrencyEuro(displayPriceEur, locale)} ${getPerDayAriaUnit(locale)}`
+                    : undefined
                 }
-              }}
-              className="relative h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:inset-0 after:content-[''] after:z-10"
-              title={t('card_details')}
-              aria-label={t('card_details')}
-            >
-              <span className="relative z-20">{t('card_details')}</span> <span className="ml-1 opacity-70 relative z-20">ⓘ</span>
-            </Link>
-          )}
-        </div>
+              >
+                {refPriceEur && refPriceEur > displayPriceEur && (
+                  <span className="text-[11px] text-slate-400 line-through font-medium leading-none mb-1">
+                    statt {formatCurrencyEuro(refPriceEur, locale)}
+                  </span>
+                )}
+                <div className="flex items-baseline gap-1.5">
+                  <Price
+                    eur={displayPriceEur}
+                    className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
+                  />
+                  {promoBadge && (
+                    <span className="rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-black text-white shadow-xs">
+                      {promoBadge}
+                    </span>
+                  )}
+                  {isUnlimited && (
+                    <span className="text-xs font-semibold text-slate-500">
+                      {t('unit_per_day')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {onDetail && (
+                <Link
+                  href={getTariffCanonicalPath(tariff.package_code, locale)}
+                  prefetch={false}
+                  onClick={(e) => {
+                    // If it's a standard left click without modifier keys, trigger modal for smooth UX
+                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDetail(tariff);
+                    }
+                  }}
+                  className="relative h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:inset-0 after:content-[''] after:z-10"
+                  title={t('card_details')}
+                  aria-label={t('card_details')}
+                >
+                  <span className="relative z-20">{t('card_details')}</span> <span className="ml-1 opacity-70 relative z-20">ⓘ</span>
+                </Link>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── CTAs: Add to cart + Buy now ── */}
         <div className="mt-3 flex gap-2 items-center">
           <button
             onClick={(e) => { e.stopPropagation(); addItem(tariff); open(); }}
+            style={{
+              borderColor: demo?.activeTheme?.isDark ? (demo.activeTheme.cardBorderColor || '#3f3f46') : undefined,
+              backgroundColor: demo?.activeTheme?.accentBgColor || undefined,
+              color: demo?.activeTheme?.accentTextColor || demo?.activeTheme?.accentColor || undefined,
+            }}
             className="flex flex-1 h-12 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:border-brand-300 active:scale-95 cursor-pointer"
             title={t('det_add_cart')}
             aria-label={t('card_add_cart_aria')}
@@ -429,6 +489,10 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
               e.stopPropagation();
               addItem(tariff);
               open();
+            }}
+            style={{
+              background: demo?.activeTheme?.btnPrimaryBg || undefined,
+              color: demo?.activeTheme?.btnPrimaryText || undefined,
             }}
             className="flex-1 btn-primary !h-12 !text-sm !px-4 active:scale-95 text-center"
           >

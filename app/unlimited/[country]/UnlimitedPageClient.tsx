@@ -51,7 +51,7 @@ export function UnlimitedPageClient({
   }, [priceTables]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
+    <div className="mx-auto max-w-6xl px-4 pt-8 pb-36 md:py-12">
       {/* ── Breadcrumb ── */}
       <nav aria-label={t('aria_breadcrumb' as any) || 'Breadcrumb'} className="mb-6 flex flex-wrap items-center gap-2 text-xs text-slate-500">
         <Link href={prefix || "/"} className="min-h-[44px] inline-flex items-center py-2 px-1 hover:text-brand-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-sm">

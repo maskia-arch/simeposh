@@ -1004,6 +1004,7 @@ const da = {
   "hero_badge": "Tilgængelig i over 200 destinationer",
   "meta_home_desc": "Køb brugsklare eSIM-kort til mere end 200 destinationer verden over. Prisvenlige pakker, nem aktivering med QR-kode.",
   "ip_origin": "IP-oprindelse",
+  "meta_faq_subtitle": "Hurtige svar om vores eSIM-pakker, opsætning, datapakker og betalinger.",
 } as const;
 export default da;
 export type TranslationKeys = keyof typeof da;

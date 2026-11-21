@@ -8,10 +8,17 @@ export const revalidate = 600;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
   const t = getServerT(locale);
-  const title = t('faq_title' as any) || (locale === 'de' ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)');
-  const description = t('meta_faq_desc' as any) || (locale === 'de'
-    ? 'Alle Antworten zu PureSim eSIM: Kompatibilität, Aktivierung per QR-Code, Aufladung (Top-Up), Zahlung und Cashback.'
-    : 'Answers to all your PureSim eSIM questions: device compatibility, QR code activation, top-ups, crypto payments, and cashback.');
+  const rawTitle = t('faq_title');
+  const title = (rawTitle && rawTitle !== 'faq_title')
+    ? rawTitle
+    : (locale === 'de' ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)');
+
+  const rawDescription = t('meta_faq_desc');
+  const description = (rawDescription && rawDescription !== 'meta_faq_desc')
+    ? rawDescription
+    : (locale === 'de'
+        ? 'Alle Antworten zu PureSim eSIM: Kompatibilität, Aktivierung per QR-Code, Aufladung (Top-Up), Zahlung und Cashback.'
+        : 'Answers to all your PureSim eSIM questions: device compatibility, QR code activation, top-ups, crypto payments, and cashback.');
 
   return {
     title,
@@ -33,18 +40,25 @@ export default async function FaqPage() {
   const t = getServerT(locale);
 
   const faqs = [
-    { q: t('faq_q1' as any), a: t('faq_a1' as any) },
-    { q: t('faq_q2' as any), a: t('faq_a2' as any) },
-    { q: t('faq_q3' as any), a: t('faq_a3' as any) },
-    { q: t('faq_q4' as any), a: t('faq_a4' as any) },
-    { q: t('faq_q5' as any), a: t('faq_a5' as any) },
-    { q: t('faq_q6' as any), a: t('faq_a6' as any) },
+    { q: t('faq_q1'), a: t('faq_a1') },
+    { q: t('faq_q2'), a: t('faq_a2') },
+    { q: t('faq_q3'), a: t('faq_a3') },
+    { q: t('faq_q4'), a: t('faq_a4') },
+    { q: t('faq_q5'), a: t('faq_a5') },
+    { q: t('faq_q6'), a: t('faq_a6') },
   ];
 
-  const title = t('faq_title' as any) || (locale === 'de' ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)');
-  const subtitle = t('meta_faq_subtitle' as any) || (locale === 'de'
-    ? 'Finde schnell Antworten zu unseren eSIM-Tarifen, Installation, Datenpaketen und Bezahlung.'
-    : 'Quick answers about our eSIM plans, setup, data packages, and payments.');
+  const rawTitle = t('faq_title');
+  const title = (rawTitle && rawTitle !== 'faq_title')
+    ? rawTitle
+    : (locale === 'de' ? 'Häufig gestellte Fragen (FAQ)' : 'Frequently Asked Questions (FAQ)');
+
+  const rawSubtitle = t('meta_faq_subtitle');
+  const subtitle = (rawSubtitle && rawSubtitle !== 'meta_faq_subtitle')
+    ? rawSubtitle
+    : (locale === 'de'
+        ? 'Finde schnell Antworten zu unseren eSIM-Tarifen, Installation, Datenpaketen und Bezahlung.'
+        : 'Quick answers about our eSIM plans, setup, data packages, and payments.');
 
   const faqJsonLd = {
     '@context': 'https://schema.org',

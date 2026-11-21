@@ -128,6 +128,9 @@ export interface PublicTariff {
   network_speed:        string | null;
   activates_on_arrival: boolean;       // steuert das Badge Activation on Arrival (activeType === 2)
   premium_diff_chip?:   string | null;
+  promo_discount_percent?: number | null;
+  promo_badge?:         string | null;
+  reference_price_eur?: number | null;
 }
 
 /**
@@ -181,7 +184,7 @@ export function extractRawOperators(row: any, max = 8): TariffOperator[] {
         ops = rawData.networkList;
       } else if (Array.isArray(rawData.locationNetworkList)) {
         ops = (rawData.locationNetworkList as any[]).flatMap((l) =>
-          Array.isArray(l?.operatorList) ? l.operatorList : [],
+          Array.isArray(l?.operatorList) ? l.operatorList : (l?.operatorName ? [l] : [])
         );
       }
     }
@@ -333,6 +336,9 @@ export function toPublicTariff(row: any): PublicTariff {
     network_speed:        safeSpeed,
     activates_on_arrival: activatesOnArrival,
     premium_diff_chip:    row.premium_diff_chip ? String(row.premium_diff_chip) : null,
+    promo_discount_percent: typeof row.promo_discount_percent === 'number' ? row.promo_discount_percent : null,
+    promo_badge:            row.promo_badge ? String(row.promo_badge) : null,
+    reference_price_eur:    typeof row.reference_price_eur === 'number' ? row.reference_price_eur : null,
   };
 }
 
