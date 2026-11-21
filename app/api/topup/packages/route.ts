@@ -12,6 +12,8 @@ import { createServiceClient, createClient } from '@/lib/supabase/server';
 import { verifyJwt }            from '@/lib/auth/jwt';
 import { toPublicTariff }       from '@/lib/tariffs';
 import { getTopUpEligibility, getEsimRecord, fetchTopUpPackagesCached } from '@/lib/topup';
+import { getActivePromotion }     from '@/lib/pricing-service';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 
 function slugify(str: string): string {
   return str
@@ -314,6 +316,9 @@ export async function GET(request: Request) {
       return a.sale_price_eur - b.sale_price_eur;
     });
 
+    const activePromo = await getActivePromotion('topup');
+    const isTopupPromoActive = Boolean(activePromo && activePromo.discount_basis_points > 0 && activePromo.applies_to_topup);
+
     const publicPackages = await Promise.all(
       packages.map(async (p) => {
         const pub = toPublicTariff(p);
@@ -333,6 +338,21 @@ export async function GET(request: Request) {
             console.warn('[topup/packages] Error precomputing priceTable:', e);
           }
         }
+
+        // Apply promotional discount if promotion covers top-ups
+        if (isTopupPromoActive && activePromo && !p.is_unlimited) {
+          const regCents = Math.round(p.sale_price_eur * 100);
+          const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
+          if (promoCalc.applied) {
+            pub.customer_price_eur = promoCalc.promoCents / 100;
+            pub.promo_discount_percent = Math.round(activePromo.discount_basis_points / 100);
+            pub.promo_badge = activePromo.badge_texts?.['de'] || `−${Math.round(activePromo.discount_basis_points / 100)} %`;
+            if (activePromo.show_reference_price) {
+              pub.reference_price_eur = p.sale_price_eur;
+            }
+          }
+        }
+
         return {
           ...pub,
           is_unlimited: Boolean(p.is_unlimited),
@@ -346,6 +366,14 @@ export async function GET(request: Request) {
     return NextResponse.json({
       packages: publicPackages,
       eligibility: finalEligibility,
+      activePromo: activePromo ? {
+        id: activePromo.id,
+        applies_to_topup: activePromo.applies_to_topup,
+        discount_basis_points: activePromo.discount_basis_points,
+        rounding_strategy: activePromo.rounding_strategy,
+        show_reference_price: activePromo.show_reference_price,
+        badge_texts: activePromo.badge_texts,
+      } : null,
       orderInfo: existingOrder && existingTariff ? { id: existingOrder.id, iccid: existingOrder.iccid, tariff: toPublicTariff(existingTariff) } : null
     });
   } catch (err) {

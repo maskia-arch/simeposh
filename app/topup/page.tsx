@@ -12,6 +12,8 @@ import { DaySlider, perDayEur } from '@/components/UnlimitedConfigurator';
 import { useCart } from '@/components/CartProvider';
 import { TopUpProgressBar } from '@/components/TopUpProgressBar';
 import type { PublicTariff } from '@/lib/tariffs';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 
 type Tariff = PublicTariff;
 
@@ -65,6 +67,7 @@ export default function TopUpPage() {
   const { t, locale } = useTranslation();
   const prefix = locale === 'de' ? '' : `/${locale}`;
   const { addItem, open } = useCart();
+  const demo = useThemeDemo();
   const [iccid,        setIccid]        = useState('');
   const [packages,     setPackages]     = useState<TopUpPackage[]>([]);
   const [eligibility,  setEligibility]  = useState<TopUpEligibility | null>(null);
@@ -511,6 +514,51 @@ export default function TopUpPage() {
             </div>
           </div>
 
+          {/* Active Campaign Applicability Notice for Top-Ups */}
+          {demo.activeTopupPromo && demo.activePromo && !demo.activePromo.applies_to_topup ? (
+            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-50 p-3.5 flex items-center justify-between gap-3 text-emerald-900 text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">🎉</span>
+                <div>
+                  <span className="font-extrabold block">
+                    Paralleler Aktions-Rabatt auf Aufladungen aktiv!
+                  </span>
+                  <span className="text-[11px] text-emerald-800 leading-snug">
+                    Während <strong>{demo.activePromo.titles?.[locale] || demo.activePromo.titles?.de || 'Black Friday'}</strong> für neue eSIMs gilt, greift für alle Aufladungen automatisch der Rabatt aus <strong>{demo.activeTopupPromo.titles?.[locale] || demo.activeTopupPromo.titles?.de || 'Black Week'}</strong>.
+                  </span>
+                </div>
+              </div>
+              <span className="rounded-lg bg-emerald-600 text-white px-2.5 py-1 text-xs font-black shadow-xs shrink-0">
+                {demo.activeTopupPromo.badge_texts?.[locale] || demo.activeTopupPromo.badge_texts?.de || '−' + Math.round(demo.activeTopupPromo.discount_basis_points / 100) + '%'}
+              </span>
+            </div>
+          ) : demo.activeTopupPromo ? (
+            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-50 p-3.5 flex items-center justify-between gap-3 text-emerald-900 text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">🎉</span>
+                <div>
+                  <span className="font-extrabold block">Aktions-Rabatt auf Aufladungen aktiv!</span>
+                  <span className="text-[11px] text-emerald-700">
+                    {demo.activeTopupPromo.titles?.[locale] || demo.activeTopupPromo.titles?.de || 'Aktion'} — Rabatt gilt für alle Top-up Pakete.
+                  </span>
+                </div>
+              </div>
+              <span className="rounded-lg bg-emerald-600 text-white px-2.5 py-1 text-xs font-black shadow-xs shrink-0">
+                {demo.activeTopupPromo.badge_texts?.[locale] || demo.activeTopupPromo.badge_texts?.de || '−' + Math.round(demo.activeTopupPromo.discount_basis_points / 100) + '%'}
+              </span>
+            </div>
+          ) : demo.activePromo && !demo.activePromo.applies_to_topup ? (
+            <div className="rounded-2xl border border-amber-300/60 bg-amber-50 p-3 flex items-center gap-2.5 text-amber-900 text-xs">
+              <span className="text-base">ℹ️</span>
+              <div>
+                <span className="font-bold">Hinweis zur aktuellen Aktion: </span>
+                <span className="text-[11px] text-amber-800">
+                  Die aktuelle Kampagne ({demo.activePromo.titles?.[locale] || demo.activePromo.titles?.de || 'Aktion'}) gilt ausschließlich für neue eSIMs. Für Aufladungen gelten die regulären Tarife.
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           {/* ── UNLIMITED TARIFF EXTENSION SLIDER STUDIO ── */}
           {unlimitedPackages.length > 0 && activeUnlimitedPkg && (
             <div className="rounded-3xl border-2 border-brand-200 bg-white p-6 shadow-lg relative overflow-hidden space-y-5">
@@ -703,60 +751,96 @@ export default function TopUpPage() {
                 </h3>
               )}
               <div className="space-y-3">
-                {travelPackages.map((pkg) => (
-                  <div
-                    key={pkg.id}
-                    className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 hover:border-brand-300 transition-all shadow-2xs hover:shadow-sm"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{pkg.flag_emoji ?? '🌐'}</span>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-extrabold text-slate-800 text-sm">{pkg.name}</p>
-                          <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[9px] font-bold text-sky-700">
-                            🔄 Data Reloadable
-                          </span>
+                {travelPackages.map((pkg) => {
+                  let effectivePrice = pkg.customer_price_eur ?? pkg.sale_price_eur;
+                  let promoBadge = pkg.promo_badge;
+                  let refPriceEur = pkg.reference_price_eur;
+
+                  const topupPromo = demo.activeTopupPromo;
+                  if (topupPromo && topupPromo.discount_basis_points > 0) {
+                    const regCents = Math.round(pkg.sale_price_eur * 100);
+                    const calc = calculatePromoPriceCents(regCents, topupPromo.discount_basis_points, topupPromo.rounding_strategy);
+                    if (calc.applied) {
+                      effectivePrice = calc.promoCents / 100;
+                      promoBadge = topupPromo.badge_texts?.[locale] || topupPromo.badge_texts?.['de'] || `−${Math.round(topupPromo.discount_basis_points / 100)} %`;
+                      refPriceEur = topupPromo.show_reference_price ? pkg.sale_price_eur : null;
+                    }
+                  } else if (demo.activePromo && !demo.activePromo.applies_to_topup) {
+                    // Top-ups excluded in current campaign and no parallel topup campaign
+                    effectivePrice = pkg.sale_price_eur;
+                    promoBadge = undefined;
+                    refPriceEur = null;
+                  }
+
+                  return (
+                    <div
+                      key={pkg.id}
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 hover:border-brand-300 transition-all shadow-2xs hover:shadow-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{pkg.flag_emoji ?? '🌐'}</span>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-extrabold text-slate-800 text-sm">{pkg.name}</p>
+                            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-1.5 py-0.5 text-[9px] font-bold text-sky-700">
+                              🔄 Data Reloadable
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">
+                            {formatGb(pkg.data_gb)} · {pkg.validity_days} {t('cfg_days')} · Selbes Gebiet
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          {formatGb(pkg.data_gb)} · {pkg.validity_days} {t('cfg_days')} · Selbes Gebiet
-                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          {refPriceEur && refPriceEur > effectivePrice && (
+                            <span className="text-[11px] text-slate-400 line-through block font-medium">
+                              statt <Price eur={refPriceEur} />
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <Price eur={effectivePrice} className="text-lg font-bold text-slate-900" />
+                            {promoBadge && (
+                              <span className="rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-black text-white shadow-xs">
+                                {promoBadge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={isLimitReached}
+                            aria-disabled={isLimitReached}
+                            onClick={() => {
+                              if (isLimitReached) return;
+                              addItem({ ...pkg, customer_price_eur: effectivePrice } as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
+                              setAddedCode(pkg.package_code);
+                              setTimeout(() => setAddedCode(null), 2000);
+                            }}
+                            className={`h-10 rounded-xl border-[1.5px] px-3.5 text-xs font-semibold transition-all ${
+                              isLimitReached
+                                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                                : 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 hover:border-brand-300 cursor-pointer active:scale-[0.98]'
+                            }`}
+                          >
+                            {addedCode === pkg.package_code ? '✓' : '+ Warenkorb'}
+                          </button>
+                          <button
+                            disabled={isLimitReached}
+                            aria-disabled={isLimitReached}
+                            onClick={() => handleOpenTravelCheckout({ ...pkg, customer_price_eur: effectivePrice, sale_price_eur: effectivePrice })}
+                            className={`btn-primary !h-10 !px-4 !text-xs shadow-xs ${
+                              isLimitReached ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : 'active:scale-[0.98]'
+                            }`}
+                          >
+                            {t('topup_btn')}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Price eur={pkg.sale_price_eur} className="text-lg font-bold text-slate-900" />
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          disabled={isLimitReached}
-                          aria-disabled={isLimitReached}
-                          onClick={() => {
-                            if (isLimitReached) return;
-                            addItem(pkg as unknown as Tariff, 1, { periodDays: pkg.validity_days, topUpIccid: iccid });
-                            setAddedCode(pkg.package_code);
-                            setTimeout(() => setAddedCode(null), 2000);
-                          }}
-                          className={`h-10 rounded-xl border-[1.5px] px-3.5 text-xs font-semibold transition-all ${
-                            isLimitReached
-                              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                              : 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100 hover:border-brand-300 cursor-pointer active:scale-[0.98]'
-                          }`}
-                        >
-                          {addedCode === pkg.package_code ? '✓' : '+ Warenkorb'}
-                        </button>
-                        <button
-                          disabled={isLimitReached}
-                          aria-disabled={isLimitReached}
-                          onClick={() => handleOpenTravelCheckout(pkg)}
-                          className={`btn-primary !h-10 !px-4 !text-xs shadow-xs ${
-                            isLimitReached ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : 'active:scale-[0.98]'
-                          }`}
-                        >
-                          {t('topup_btn')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

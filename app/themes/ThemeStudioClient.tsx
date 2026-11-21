@@ -12,6 +12,8 @@ export function ThemeStudioClient() {
     updateActivePreset,
     updateThemeColors,
     customThemes,
+    presets,
+    createNewPreset,
   } = useThemeDemo();
 
   const [editingPreset, setEditingPreset] = useState<ThemePreset | null>(null);
@@ -24,6 +26,17 @@ export function ThemeStudioClient() {
     const currentTheme = customThemes[preset.themeId] || THEMES[preset.themeId] || THEMES.standard;
     setEditingThemeColors({ ...currentTheme });
     setActiveTab('discount');
+  };
+
+  const handleCreateNewTheme = () => {
+    const defaultName = `Eigenes Theme ${presets.length + 1}`;
+    const customName = typeof window !== 'undefined' ? window.prompt('Name des neuen Themes:', defaultName) : defaultName;
+    if (customName === null) return;
+    const newPresetId = createNewPreset(customName.trim() || defaultName);
+    const newPreset = presets.find((p) => p.id === newPresetId);
+    if (newPreset) {
+      handleEditClick(newPreset);
+    }
   };
 
   const handleColorChange = (key: keyof ThemeConfig, value: any) => {
@@ -51,6 +64,8 @@ export function ThemeStudioClient() {
           discount_percent: editingPreset.discountPct,
           rounding_strategy: editingPreset.roundingStrategy,
           show_reference_price: editingPreset.showReferencePrice,
+          scope: editingPreset.scope || (editingPreset.appliesToTopup ? 'all' : 'new_esim'),
+          applies_to_topup: Boolean(editingPreset.appliesToTopup),
           theme_id: editingPreset.themeId,
           titles: { de: editingPreset.titleDe, en: editingPreset.titleEn },
           texts: { de: 'Im Theme Studio konfiguriert.', en: 'Configured in Theme Studio.' },
@@ -100,6 +115,14 @@ export function ThemeStudioClient() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleCreateNewTheme}
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 text-xs font-black shadow-lg shadow-emerald-700/30 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>+</span>
+              <span>Neues Theme erstellen</span>
+            </button>
             <Link
               href="/"
               className="rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold transition-colors"
@@ -117,7 +140,7 @@ export function ThemeStudioClient() {
 
         {/* Presets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {THEME_PRESETS.map((preset) => {
+          {presets.map((preset) => {
             const isActive = activePresetId === preset.id;
             const theme = customThemes[preset.themeId] || THEMES[preset.themeId] || THEMES.standard;
 
@@ -246,6 +269,13 @@ export function ThemeStudioClient() {
                         ✓ Statt-Preise aktiv
                       </span>
                     )}
+                    <span className={`rounded-lg px-2 py-0.5 font-semibold ${
+                      preset.appliesToTopup
+                        ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
+                        : 'bg-amber-950/80 text-amber-300 border border-amber-800'
+                    }`}>
+                      {preset.appliesToTopup ? '✓ eSIM & Top-up' : '✕ Keine Top-ups'}
+                    </span>
                   </div>
 
                   {/* Action Buttons */}
@@ -273,6 +303,23 @@ export function ThemeStudioClient() {
               </div>
             );
           })}
+
+          {/* Create New Theme Card */}
+          <div
+            onClick={handleCreateNewTheme}
+            className="rounded-3xl border-2 border-dashed border-emerald-500/40 bg-emerald-950/20 hover:bg-emerald-950/40 hover:border-emerald-500/80 transition-all duration-200 p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[340px] group"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl font-black mb-4 group-hover:scale-110 group-hover:bg-emerald-500/30 transition-all shadow-lg shadow-emerald-950/50">
+              +
+            </div>
+            <h3 className="text-lg font-black text-white mb-2">Komplett neues Theme erstellen</h3>
+            <p className="text-xs text-slate-400 max-w-xs mb-5">
+              Definiere deine eigenen Wunschfarben für Header, Banner, Hero und Hintergrund. Sofort live testbar und im Admin Dashboard speicherbar.
+            </p>
+            <span className="rounded-xl bg-emerald-600 group-hover:bg-emerald-500 text-white font-bold px-4 py-2.5 text-xs shadow-lg shadow-emerald-700/30 transition-all">
+              + Theme jetzt anlegen
+            </span>
+          </div>
         </div>
 
         {/* Comprehensive Edit & Customize Modal */}
@@ -374,6 +421,29 @@ export function ThemeStudioClient() {
                         className="rounded text-indigo-600 h-4 w-4"
                       />
                       <span className="font-bold text-white">„statt“-Preis durchgestrichen anzeigen (§ 11 PAngV)</span>
+                    </label>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-950 p-3 border border-slate-800">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(editingPreset.appliesToTopup)}
+                        onChange={(e) => setEditingPreset({
+                          ...editingPreset,
+                          appliesToTopup: e.target.checked,
+                          scope: e.target.checked ? 'all' : 'new_esim',
+                        })}
+                        className="rounded text-indigo-600 h-4 w-4"
+                      />
+                      <div>
+                        <span className="font-bold text-white block">Rabatt auch auf eSIM-Aufladungen (Top-ups) anwenden</span>
+                        <span className="text-[10px] text-slate-400">
+                          {editingPreset.appliesToTopup
+                            ? 'Aktionsrabatt gilt für Neukäufe UND bestehende eSIM-Aufladungen'
+                            : 'Aktionsrabatt gilt ausschließlich für neue eSIMs (keine Aufladungen)'}
+                        </span>
+                      </div>
                     </label>
                   </div>
 

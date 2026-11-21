@@ -11,6 +11,8 @@ export interface ThemePreset {
   discountPct: number;
   roundingStrategy: 'x9_down' | 'existing_x9';
   showReferencePrice: boolean;
+  scope?: 'new_esim' | 'all' | 'specific';
+  appliesToTopup?: boolean;
   titleDe: string;
   titleEn: string;
   badgeDe: string;
@@ -23,52 +25,60 @@ export interface ThemePreset {
 export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'black_week',
-    name: 'Black Week (15 %)',
+    name: 'Black Week (15 % · eSIM & Top-up)',
     themeId: 'black_week',
     discountPct: 15,
     roundingStrategy: 'x9_down',
     showReferencePrice: false,
-    titleDe: 'Black Week: 15 % Rabatt auf alle neuen eSIM-Tarife',
-    titleEn: 'Black Week: 15% off all new eSIM plans',
+    scope: 'all',
+    appliesToTopup: true,
+    titleDe: 'Black Week: 15 % Rabatt auf alle neuen eSIMs & Top-ups',
+    titleEn: 'Black Week: 15% off all new eSIM plans & top-ups',
     badgeDe: '−15 %',
     badgeEn: '−15%',
     animationType: 'autumn_leaves',
   },
   {
     id: 'black_friday',
-    name: 'Black Friday (25 %)',
+    name: 'Black Friday (25 % · Nur neue eSIMs)',
     themeId: 'black_friday',
     discountPct: 25,
     roundingStrategy: 'x9_down',
     showReferencePrice: true,
-    titleDe: 'Black Friday Deal: 25 % Rabatt auf alle neuen eSIMs – Nur heute!',
-    titleEn: 'Black Friday Deal: 25% off all new eSIMs – Today only!',
+    scope: 'new_esim',
+    appliesToTopup: false,
+    titleDe: 'Black Friday Deal: 25 % Rabatt auf alle neuen eSIMs (keine Top-ups) – Nur heute!',
+    titleEn: 'Black Friday Deal: 25% off all new eSIMs (no top-ups) – Today only!',
     badgeDe: '−25 %',
     badgeEn: '−25%',
     animationType: 'confetti',
   },
   {
     id: 'cyber_monday',
-    name: 'Cyber Monday (20 %)',
+    name: 'Cyber Monday (20 % · eSIM & Top-up)',
     themeId: 'cyber_monday',
     discountPct: 20,
     roundingStrategy: 'x9_down',
     showReferencePrice: true,
-    titleDe: 'Cyber Monday: 20 % Rabatt auf alle eSIM-Pakete bis Mitternacht',
-    titleEn: 'Cyber Monday: 20% off all eSIM packages until midnight',
+    scope: 'all',
+    appliesToTopup: true,
+    titleDe: 'Cyber Monday: 20 % Rabatt auf alle neuen eSIMs & Top-ups bis Mitternacht',
+    titleEn: 'Cyber Monday: 20% off all new eSIM plans & top-ups until midnight',
     badgeDe: '−20 %',
     badgeEn: '−20%',
     animationType: 'confetti',
   },
   {
     id: 'weihnachten',
-    name: 'Weihnachten (10 % + Schnee)',
+    name: 'Weihnachten (10 % + Schnee · eSIM & Top-up)',
     themeId: 'weihnachten',
     discountPct: 10,
     roundingStrategy: 'x9_down',
     showReferencePrice: false,
-    titleDe: 'Frohe Feiertage: 10 % Rabatt für deine Winter-Reisen',
-    titleEn: 'Happy Holidays: 10% off for your winter travels',
+    scope: 'all',
+    appliesToTopup: true,
+    titleDe: 'Frohe Feiertage: 10 % Rabatt auf alle neuen eSIMs & Top-ups für deine Winter-Reisen',
+    titleEn: 'Happy Holidays: 10% off all new eSIMs & top-ups for your winter travels',
     badgeDe: '−10 %',
     badgeEn: '−10%',
     hasSnow: true,
@@ -76,13 +86,15 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'silvester',
-    name: 'Silvester / Neujahr (15 % + Feuerwerk)',
+    name: 'Silvester / Neujahr (15 % + Feuerwerk · eSIM & Top-up)',
     themeId: 'silvester',
     discountPct: 15,
     roundingStrategy: 'x9_down',
     showReferencePrice: false,
-    titleDe: 'Frohes neues Jahr: 15 % Neujahrs-Rabatt auf weltweites Roaming',
-    titleEn: 'Happy New Year: 15% New Year discount on global roaming',
+    scope: 'all',
+    appliesToTopup: true,
+    titleDe: 'Frohes neues Jahr: 15 % Neujahrs-Rabatt auf alle eSIMs & Top-ups',
+    titleEn: 'Happy New Year: 15% New Year discount on all eSIMs & top-ups',
     badgeDe: '−15 %',
     badgeEn: '−15%',
     hasFireworks: true,
@@ -90,26 +102,30 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'sommer',
-    name: 'Sommerurlaub (10 %)',
+    name: 'Sommerurlaub (10 % · eSIM & Top-up)',
     themeId: 'sommer',
     discountPct: 10,
     roundingStrategy: 'x9_down',
     showReferencePrice: false,
-    titleDe: 'Summer Sale: 10 % Rabatt auf alle beliebten Urlaubs-Destinationen',
-    titleEn: 'Summer Sale: 10% off all popular holiday destinations',
+    scope: 'all',
+    appliesToTopup: true,
+    titleDe: 'Summer Sale: 10 % Rabatt auf alle beliebten Urlaubs-Destinationen & Top-ups',
+    titleEn: 'Summer Sale: 10% off all popular holiday destinations & top-ups',
     badgeDe: '−10 %',
     badgeEn: '−10%',
     animationType: 'sun_sparkles',
   },
   {
     id: 'ostern',
-    name: 'Oster-Special (10 %)',
+    name: 'Oster-Special (10 % · eSIM & Top-up)',
     themeId: 'ostern',
     discountPct: 10,
     roundingStrategy: 'x9_down',
     showReferencePrice: false,
-    titleDe: 'Oster-Angebot: 10 % Frühlings-Rabatt auf alle eSIMs',
-    titleEn: 'Easter Special: 10% spring discount on all eSIMs',
+    scope: 'all',
+    appliesToTopup: true,
+    titleDe: 'Oster-Angebot: 10 % Frühlings-Rabatt auf alle eSIMs & Top-ups',
+    titleEn: 'Easter Special: 10% spring discount on all eSIMs & top-ups',
     badgeDe: '−10 %',
     badgeEn: '−10%',
     animationType: 'confetti',
@@ -160,12 +176,15 @@ interface ThemeDemoContextType {
   activePresetId: string;
   activeTheme: ThemeConfig;
   activePromo: Promotion | null;
+  activeTopupPromo: Promotion | null;
+  presets: ThemePreset[];
   customThemes: Record<string, ThemeConfig>;
   isPanelOpen: boolean;
   setIsPanelOpen: (open: boolean) => void;
   selectPreset: (presetId: string) => void;
   updateActivePreset: (updates: Partial<ThemePreset>) => void;
   updateThemeColors: (themeId: string, updates: Partial<ThemeConfig>) => void;
+  createNewPreset: (name?: string, baseThemeId?: string) => string;
   toggleDemo: (active?: boolean) => void;
   resetToDefaults: () => void;
 }
@@ -180,6 +199,7 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
   const [customThemes, setCustomThemes] = useState<Record<string, ThemeConfig>>(THEMES);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
   const [livePromo, setLivePromo] = useState<Promotion | null>(null);
+  const [liveTopupPromo, setLiveTopupPromo] = useState<Promotion | null>(null);
 
   // Initialize demo mode or load live promotion
   useEffect(() => {
@@ -195,6 +215,7 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
     const savedDemoState = localStorage.getItem('puresim_theme_demo_active');
     const savedPreset = localStorage.getItem('puresim_theme_demo_preset');
     const savedCustomThemes = localStorage.getItem('puresim_theme_demo_custom_themes');
+    const savedCustomPresets = localStorage.getItem('puresim_theme_demo_custom_presets');
 
     if (savedCustomThemes) {
       try {
@@ -202,19 +223,31 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
       } catch {}
     }
 
+    if (savedCustomPresets) {
+      try {
+        const parsed = JSON.parse(savedCustomPresets);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPresets([...THEME_PRESETS, ...parsed]);
+        }
+      } catch {}
+    }
+
     const shouldEnableDemo = demoParam === 'true' || demoParam === '1' || savedDemoState === 'true' || (isLocalhost && savedDemoState !== 'false');
     if (shouldEnableDemo) {
       setIsDemoActive(true);
-      if (savedPreset && THEME_PRESETS.some((p) => p.id === savedPreset)) {
+      if (savedPreset) {
         setActivePresetId(savedPreset);
       }
     } else {
-      // In production mode, fetch active promotion from API
+      // In production mode, fetch active promotions from API
       fetch('/api/promotions/active')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.promotion) {
             setLivePromo(data.promotion);
+          }
+          if (data?.topupPromotion) {
+            setLiveTopupPromo(data.topupPromotion);
           }
         })
         .catch(() => {});
@@ -324,8 +357,8 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
     discount_basis_points: Math.round(currentPreset.discountPct * 100),
     rounding_strategy: currentPreset.roundingStrategy,
     show_reference_price: currentPreset.showReferencePrice,
-    scope: 'new_esim',
-    applies_to_topup: false,
+    scope: currentPreset.scope || (currentPreset.appliesToTopup ? 'all' : 'new_esim'),
+    applies_to_topup: Boolean(currentPreset.appliesToTopup),
     applies_to_cash: false,
     allow_voucher_stacking: false,
     starts_at: new Date(Date.now() - 3600000).toISOString(),
@@ -336,7 +369,44 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
     version: 1,
   } : null;
 
+  const fallbackTopupPreset = presets.find((p) => p.appliesToTopup && p.discountPct > 0);
+  const demoTopupPromo: Promotion | null = currentPreset.appliesToTopup
+    ? demoPromo
+    : (fallbackTopupPreset ? {
+        id: `demo-${fallbackTopupPreset.id}-topup`,
+        slug: `demo-${fallbackTopupPreset.id}-topup`,
+        internal_name: `Demo: ${fallbackTopupPreset.name}`,
+        titles: {
+          de: fallbackTopupPreset.titleDe,
+          en: fallbackTopupPreset.titleEn,
+        },
+        texts: {
+          de: 'Top-up Rabatt greift aus der parallelen Aktion (z. B. Black Week).',
+          en: 'Top-up discount applies from concurrent campaign (e.g. Black Week).',
+        },
+        badge_texts: {
+          de: fallbackTopupPreset.badgeDe,
+          en: fallbackTopupPreset.badgeEn,
+        },
+        discount_basis_points: Math.round(fallbackTopupPreset.discountPct * 100),
+        rounding_strategy: fallbackTopupPreset.roundingStrategy,
+        show_reference_price: fallbackTopupPreset.showReferencePrice,
+        scope: fallbackTopupPreset.scope || 'all',
+        applies_to_topup: true,
+        applies_to_cash: false,
+        allow_voucher_stacking: false,
+        starts_at: new Date(Date.now() - 3600000).toISOString(),
+        ends_at: new Date(Date.now() + 86400000 * 7).toISOString(),
+        priority: 50,
+        status: 'active',
+        theme_id: fallbackTopupPreset.themeId,
+        version: 1,
+      } : null);
+
   const activePromo = isDemoActive ? demoPromo : livePromo;
+  const activeTopupPromo = isDemoActive
+    ? (currentPreset.appliesToTopup ? demoPromo : demoTopupPromo)
+    : (liveTopupPromo || (livePromo?.applies_to_topup ? livePromo : null));
 
   const selectPreset = (presetId: string) => {
     setActivePresetId(presetId);
@@ -377,11 +447,58 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
+  const createNewPreset = (name?: string, baseThemeId?: string): string => {
+    const timestamp = Date.now();
+    const newThemeId = `custom_theme_${timestamp}`;
+    const newPresetId = `custom_preset_${timestamp}`;
+    const baseTheme = customThemes[baseThemeId || activeTheme.id] || activeTheme;
+    const themeName = name || `Eigenes Theme ${presets.length + 1}`;
+
+    const newThemeConfig: ThemeConfig = {
+      ...baseTheme,
+      id: newThemeId,
+      name: themeName,
+    };
+
+    const newPreset: ThemePreset = {
+      id: newPresetId,
+      name: `${themeName} (10 % · eSIM & Top-up)`,
+      themeId: newThemeId,
+      discountPct: 10,
+      roundingStrategy: 'x9_down',
+      showReferencePrice: false,
+      scope: 'all',
+      appliesToTopup: true,
+      titleDe: `${themeName}: 10 % Rabatt auf alle neuen eSIMs & Top-ups`,
+      titleEn: `${themeName}: 10% off all new eSIM plans & top-ups`,
+      badgeDe: '−10 %',
+      badgeEn: '−10%',
+      animationType: 'none',
+    };
+
+    const updatedCustomThemes = { ...customThemes, [newThemeId]: newThemeConfig };
+    const updatedPresets = [...presets, newPreset];
+
+    setCustomThemes(updatedCustomThemes);
+    setPresets(updatedPresets);
+    setActivePresetId(newPresetId);
+
+    try {
+      localStorage.setItem('puresim_theme_demo_custom_themes', JSON.stringify(updatedCustomThemes));
+      const onlyCustomPresets = updatedPresets.filter((p) => !THEME_PRESETS.some((tp) => tp.id === p.id));
+      localStorage.setItem('puresim_theme_demo_custom_presets', JSON.stringify(onlyCustomPresets));
+      localStorage.setItem('puresim_theme_demo_preset', newPresetId);
+    } catch {}
+
+    return newPresetId;
+  };
+
   const resetToDefaults = () => {
     setPresets(THEME_PRESETS);
     setCustomThemes(THEMES);
     try {
       localStorage.removeItem('puresim_theme_demo_custom_themes');
+      localStorage.removeItem('puresim_theme_demo_custom_presets');
     } catch {}
   };
 
@@ -392,12 +509,15 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
         activePresetId,
         activeTheme,
         activePromo,
+        activeTopupPromo,
+        presets,
         customThemes,
         isPanelOpen,
         setIsPanelOpen,
         selectPreset,
         updateActivePreset,
         updateThemeColors,
+        createNewPreset,
         toggleDemo,
         resetToDefaults,
       }}
@@ -416,12 +536,15 @@ export function useThemeDemo() {
       activePresetId: 'standard',
       activeTheme: THEMES.standard,
       activePromo: null,
+      activeTopupPromo: null,
+      presets: THEME_PRESETS,
       customThemes: THEMES,
       isPanelOpen: false,
       setIsPanelOpen: () => {},
       selectPreset: () => {},
       updateActivePreset: () => {},
       updateThemeColors: () => {},
+      createNewPreset: () => 'standard',
       toggleDemo: () => {},
       resetToDefaults: () => {},
     };

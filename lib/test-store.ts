@@ -221,19 +221,19 @@ const DEFAULT_PROMOTIONS = [
     slug: 'black-week-2026',
     internal_name: 'Black Week 2026 (15 %)',
     titles: {
-      de: 'Black Week: 15 % Rabatt auf alle neuen eSIMs',
-      en: 'Black Week: 15% off all new eSIM plans',
+      de: 'Black Week: 15 % Rabatt auf alle neuen eSIMs & Top-ups',
+      en: 'Black Week: 15% off all new eSIM plans & top-ups',
     },
     texts: {
-      de: 'Gilt auf alle regulären eSIM-Tarife. Wird automatisch an der Kasse abgezogen.',
-      en: 'Applies to all regular eSIM plans. Automatically deducted at checkout.',
+      de: 'Gilt auf alle neuen eSIMs & Top-ups. Wird automatisch an der Kasse abgezogen.',
+      en: 'Applies to all new eSIMs & top-ups. Automatically deducted at checkout.',
     },
     badge_texts: { de: '−15 %', en: '−15%' },
     discount_basis_points: 1500,
     rounding_strategy: 'x9_down',
     show_reference_price: false,
-    scope: 'new_esim',
-    applies_to_topup: false,
+    scope: 'all',
+    applies_to_topup: true,
     applies_to_cash: false,
     allow_voucher_stacking: false,
     starts_at: '2026-11-22T23:00:00Z',
@@ -249,12 +249,12 @@ const DEFAULT_PROMOTIONS = [
     slug: 'black-friday-2026',
     internal_name: 'Black Friday 2026 (25 %)',
     titles: {
-      de: 'Black Friday Deal: 25 % Rabatt auf alle neuen eSIMs – Nur heute!',
-      en: 'Black Friday Deal: 25% off all new eSIMs – Today only!',
+      de: 'Black Friday Deal: 25 % Rabatt auf alle neuen eSIMs (keine Top-ups) – Nur heute!',
+      en: 'Black Friday Deal: 25% off all new eSIMs (no top-ups) – Today only!',
     },
     texts: {
-      de: 'Höchster Rabatt des Jahres. Automatisch im Warenkorb abgezogen.',
-      en: 'Biggest discount of the year. Automatically deducted at checkout.',
+      de: 'Gilt auf alle neuen eSIMs (Top-ups ausgenommen). Höchster Rabatt des Jahres.',
+      en: 'Applies to all new eSIMs (top-ups excluded). Biggest discount of the year.',
     },
     badge_texts: { de: '−25 %', en: '−25%' },
     discount_basis_points: 2500,
@@ -277,19 +277,19 @@ const DEFAULT_PROMOTIONS = [
     slug: 'cyber-monday-2026',
     internal_name: 'Cyber Monday 2026 (20 %)',
     titles: {
-      de: 'Cyber Monday: 20 % Rabatt auf alle eSIM-Pakete bis Mitternacht',
-      en: 'Cyber Monday: 20% off all eSIM packages until midnight',
+      de: 'Cyber Monday: 20 % Rabatt auf alle neuen eSIMs & Top-ups bis Mitternacht',
+      en: 'Cyber Monday: 20% off all new eSIM plans & top-ups until midnight',
     },
     texts: {
-      de: 'Letzte Chance der Deal-Woche. Rabatt wird automatisch berechnet.',
-      en: 'Last chance of Deal Week. Discount automatically calculated.',
+      de: 'Gilt auf alle neuen eSIMs & Top-ups. Rabatt wird automatisch berechnet.',
+      en: 'Applies to all new eSIMs & top-ups. Discount automatically calculated.',
     },
     badge_texts: { de: '−20 %', en: '−20%' },
     discount_basis_points: 2000,
     rounding_strategy: 'x9_down',
     show_reference_price: true,
-    scope: 'new_esim',
-    applies_to_topup: false,
+    scope: 'all',
+    applies_to_topup: true,
     applies_to_cash: false,
     allow_voucher_stacking: false,
     starts_at: '2026-11-29T23:00:00Z',
@@ -297,6 +297,34 @@ const DEFAULT_PROMOTIONS = [
     priority: 20,
     status: 'draft',
     theme_id: 'cyber_monday',
+    version: 1,
+    created_at: '2026-11-19T00:00:00Z',
+  },
+  {
+    id: 'a0000000-0000-0000-0000-000000000004',
+    slug: 'weihnachten-2026',
+    internal_name: 'Weihnachten 2026 (10 % + Schnee)',
+    titles: {
+      de: 'Frohe Feiertage: 10 % Rabatt auf alle neuen eSIMs & Top-ups für deine Winter-Reisen',
+      en: 'Happy Holidays: 10% off all new eSIMs & top-ups for your winter travels',
+    },
+    texts: {
+      de: 'Gilt auf alle neuen eSIMs & Top-ups für deine Winter-Reisen.',
+      en: 'Applies to all new eSIMs & top-ups for your winter travels.',
+    },
+    badge_texts: { de: '−10 %', en: '−10%' },
+    discount_basis_points: 1000,
+    rounding_strategy: 'x9_down',
+    show_reference_price: false,
+    scope: 'all',
+    applies_to_topup: true,
+    applies_to_cash: false,
+    allow_voucher_stacking: false,
+    starts_at: '2026-12-20T00:00:00Z',
+    ends_at: '2026-12-27T23:59:59Z',
+    priority: 10,
+    status: 'draft',
+    theme_id: 'weihnachten',
     version: 1,
     created_at: '2026-11-19T00:00:00Z',
   },
@@ -410,7 +438,10 @@ class StandaloneTestStore {
             })
             .sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
-          return { rows: active.slice(0, 1), rowCount: active.length > 0 ? 1 : 0 };
+          if (s.toUpperCase().includes('LIMIT 1')) {
+            return { rows: active.slice(0, 1), rowCount: active.length > 0 ? 1 : 0 };
+          }
+          return { rows: active, rowCount: active.length };
         }
 
         // Return all promotions sorted by priority DESC, starts_at ASC

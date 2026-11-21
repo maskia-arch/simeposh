@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getActivePromotion } from '@/lib/pricing-service';
+import { getActivePromotion, getActivePromotions } from '@/lib/pricing-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,8 +7,14 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const promo = await getActivePromotion();
+    const topupPromo = await getActivePromotion('topup');
+    const all = await getActivePromotions();
     return NextResponse.json(
-      { promotion: promo },
+      {
+        promotion: promo,
+        topupPromotion: topupPromo,
+        allPromotions: all,
+      },
       {
         headers: {
           // In testenv or during active promotions, keep cache short so state transitions are crisp
@@ -17,6 +23,6 @@ export async function GET() {
       }
     );
   } catch (err: any) {
-    return NextResponse.json({ promotion: null, error: err.message }, { status: 500 });
+    return NextResponse.json({ promotion: null, topupPromotion: null, error: err.message }, { status: 500 });
   }
 }

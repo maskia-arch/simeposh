@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useThemeDemo, THEME_PRESETS } from '@/lib/theme-demo-context';
+import { useState, useRef, useEffect } from 'react';
+import { useThemeDemo, THEME_PRESETS, ThemePreset } from '@/lib/theme-demo-context';
 import { THEMES } from '@/lib/themes';
 
 export function ThemeStudioDock() {
@@ -10,6 +10,8 @@ export function ThemeStudioDock() {
     activePresetId,
     activeTheme,
     customThemes,
+    presets,
+    createNewPreset,
     isPanelOpen,
     setIsPanelOpen,
     selectPreset,
@@ -21,6 +23,8 @@ export function ThemeStudioDock() {
 
   const [activeTab, setActiveTab] = useState<'preset' | 'discount' | 'colors'>('preset');
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const activePillRef = useRef<HTMLButtonElement | null>(null);
 
   // If demo mode is not active, show a small reactivation pill
   if (!isDemoActive) {
@@ -39,7 +43,37 @@ export function ThemeStudioDock() {
     );
   }
 
-  const currentPreset = THEME_PRESETS.find((p) => p.id === activePresetId) || THEME_PRESETS[0];
+  const currentPreset = presets.find((p) => p.id === activePresetId) || presets[0] || THEME_PRESETS[0];
+
+  // Auto-scroll the active preset pill into view whenever activePresetId or panel visibility changes
+  useEffect(() => {
+    if (isPanelOpen && activePillRef.current) {
+      activePillRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activePresetId, isPanelOpen]);
+
+  const scrollPresets = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = 220;
+    scrollContainerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  const handleCreateNewTheme = () => {
+    const defaultName = `Eigenes Theme ${presets.length + 1}`;
+    const customName = typeof window !== 'undefined' ? window.prompt('Name des neuen Themes:', defaultName) : defaultName;
+    if (customName === null) return; // User cancelled
+    const newId = createNewPreset(customName.trim() || defaultName);
+    setActiveTab('colors');
+    // Scroll to end where the new pill appears
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ left: scrollContainerRef.current.scrollWidth, behavior: 'smooth' });
+      }
+    }, 100);
+  };
 
   const handleSaveToAdmin = async () => {
     setSaveStatus('Speichere...');
@@ -52,6 +86,8 @@ export function ThemeStudioDock() {
           discount_percent: currentPreset.discountPct,
           rounding_strategy: currentPreset.roundingStrategy,
           show_reference_price: currentPreset.showReferencePrice,
+          scope: currentPreset.scope || (currentPreset.appliesToTopup ? 'all' : 'new_esim'),
+          applies_to_topup: Boolean(currentPreset.appliesToTopup),
           theme_id: currentPreset.themeId,
           titles: { de: currentPreset.titleDe, en: currentPreset.titleEn },
           texts: { de: 'Im Demo-Studio konfiguriert.', en: 'Configured in demo studio.' },
@@ -103,28 +139,44 @@ export function ThemeStudioDock() {
 
       {/* Slide-Up Expanded Studio Drawer */}
       {isPanelOpen && (
-        <div className="fixed bottom-0 inset-x-0 sm:left-4 sm:right-auto sm:bottom-4 z-50 sm:w-[500px] max-h-[85vh] bg-slate-950/95 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden text-slate-100 animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-0 inset-x-0 sm:left-4 sm:right-auto sm:bottom-4 z-50 sm:w-[540px] max-h-[85vh] bg-slate-950/95 border-t sm:border border-slate-700/80 rounded-t-3xl sm:rounded-3xl shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden text-slate-100 animate-in slide-in-from-bottom-5 duration-200">
           {/* Header */}
-          <div className="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/60">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-sm font-black shadow-md shadow-indigo-500/30">
+          <div className="p-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/60 gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-sm font-black shadow-md shadow-indigo-500/30 shrink-0">
                 🎨
               </div>
-              <div>
-                <h3 className="text-sm font-black tracking-tight text-white flex items-center gap-2">
-                  <span>Theme Studio</span>
-                  <span className="rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.2 text-[10px] font-mono">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black tracking-tight text-white truncate">Theme Studio</h3>
+                  <span className="rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.2 text-[10px] font-mono shrink-0">
                     Live Demo
                   </span>
-                </h3>
-                <p className="text-[11px] text-slate-400">Direkt auf der Website umschalten & anpassen</p>
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">Direkt auf der Website umschalten & anpassen</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
+
+            {/* Quick dropdown for instant preset jumping */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <select
+                aria-label="Theme auswählen"
+                value={activePresetId}
+                onChange={(e) => selectPreset(e.target.value)}
+                className="rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs px-2.5 py-1.5 max-w-[150px] truncate focus:outline-none focus:border-indigo-500 cursor-pointer"
+                title="Schnellauswahl aller Themes"
+              >
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+
               <button
                 type="button"
                 onClick={() => setIsPanelOpen(false)}
-                className="h-8 w-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                className="h-8 w-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer shrink-0"
                 title="Minimieren"
               >
                 ✕
@@ -132,31 +184,78 @@ export function ThemeStudioDock() {
             </div>
           </div>
 
-          {/* Preset Quick Tabs */}
-          <div className="p-3 border-b border-slate-800 bg-slate-900/40 overflow-x-auto scrollbar-none">
-            <div className="flex gap-1.5 min-w-max">
-              {THEME_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => selectPreset(preset.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activePresetId === preset.id
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-102'
-                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  <span>{preset.name.split(' (')[0]}</span>
-                  {preset.discountPct > 0 && (
-                    <span className={`text-[10px] px-1 rounded ${
-                      activePresetId === preset.id ? 'bg-black/30 text-amber-300' : 'bg-slate-700 text-slate-300'
-                    }`}>
-                      −{preset.discountPct}%
-                    </span>
-                  )}
-                </button>
-              ))}
+          {/* Preset Quick Tabs with Scroll Controls & + Neues Theme button */}
+          <div className="relative border-b border-slate-800 bg-slate-900/40 p-2 flex items-center gap-1.5">
+            {/* Scroll Left Button */}
+            <button
+              type="button"
+              onClick={() => scrollPresets('left')}
+              className="h-8 w-7 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition-colors shrink-0 shadow-sm cursor-pointer"
+              title="Vorherige Themes anzeigen"
+            >
+              ◀
+            </button>
+
+            {/* Scrollable Container with horizontal mouse-wheel support */}
+            <div
+              ref={scrollContainerRef}
+              onWheel={(e) => {
+                if (e.deltaY !== 0 && scrollContainerRef.current) {
+                  scrollContainerRef.current.scrollLeft += e.deltaY;
+                }
+              }}
+              className="flex-1 flex gap-1.5 overflow-x-auto py-1 px-1 scroll-smooth no-scrollbar"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {presets.map((preset) => {
+                const isSelected = activePresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    ref={isSelected ? activePillRef : null}
+                    type="button"
+                    onClick={() => selectPreset(preset.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 ring-1 ring-indigo-400 scale-102'
+                        : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span>{preset.name.split(' (')[0]}</span>
+                    {preset.discountPct > 0 && (
+                      <span
+                        className={`text-[10px] px-1 rounded ${
+                          isSelected ? 'bg-black/30 text-amber-300' : 'bg-slate-700 text-slate-300'
+                        }`}
+                      >
+                        −{preset.discountPct}%
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* + Neues Theme Pill Button */}
+              <button
+                type="button"
+                onClick={handleCreateNewTheme}
+                className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-700/30 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 hover:scale-102 active:scale-95"
+                title="Ein komplett neues individuelles Theme erstellen"
+              >
+                <span className="text-sm font-black leading-none">+</span>
+                <span>Neues Theme</span>
+              </button>
             </div>
+
+            {/* Scroll Right Button */}
+            <button
+              type="button"
+              onClick={() => scrollPresets('right')}
+              className="h-8 w-7 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition-colors shrink-0 shadow-sm cursor-pointer"
+              title="Weitere Themes anzeigen (z. B. Silvester, Sommer, Ostern)"
+            >
+              ▶
+            </button>
           </div>
 
           {/* Navigation Tabs */}
@@ -228,6 +327,13 @@ export function ThemeStudioDock() {
                         {currentPreset.showReferencePrice ? 'Aktiv' : 'Aus'}
                       </strong>
                     </span>
+                    <span className={`rounded-md px-2 py-1 font-semibold ${
+                      currentPreset.appliesToTopup
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                        : 'bg-amber-950 text-amber-300 border border-amber-800'
+                    }`}>
+                      {currentPreset.appliesToTopup ? '🔄 eSIM & Top-up inklusive' : '📱 Nur neue eSIMs (Top-up exkl.)'}
+                    </span>
                     {activeTheme.hasSnow && (
                       <span className="rounded-md bg-sky-950 text-sky-300 border border-sky-800 px-2 py-1 flex items-center gap-1 font-semibold">
                         ❄️ Schneefall aktiv
@@ -239,6 +345,21 @@ export function ThemeStudioDock() {
                       </span>
                     )}
                   </div>
+                </div>
+
+                {/* Create New Theme Quick Action Button in Overview */}
+                <div className="rounded-2xl border border-dashed border-emerald-500/40 bg-emerald-950/20 p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-bold text-emerald-300 block text-xs">Eigenes Theme erstellen?</span>
+                    <span className="text-[11px] text-slate-400">Erstelle eine neue Farb-Vorlage und passe sie flexibel an.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateNewTheme}
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black px-3 py-1.5 text-xs shadow-md shrink-0 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    + Neues Theme
+                  </button>
                 </div>
 
                 <div className="rounded-xl bg-indigo-950/40 border border-indigo-900/50 p-3 text-[11px] text-indigo-300 leading-relaxed flex items-start gap-2">
@@ -304,6 +425,29 @@ export function ThemeStudioDock() {
                     <div>
                       <span className="font-bold text-white block">„statt“-Preis durchgestrichen anzeigen</span>
                       <span className="text-[10px] text-slate-400">Zeigt den regulären Vor-Aktionspreis aus der Preishistorie</span>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Top-Up Scope Toggle */}
+                <div className="rounded-xl bg-slate-900 p-3 border border-slate-800">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(currentPreset.appliesToTopup)}
+                      onChange={(e) => updateActivePreset({
+                        appliesToTopup: e.target.checked,
+                        scope: e.target.checked ? 'all' : 'new_esim',
+                      })}
+                      className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                    <div>
+                      <span className="font-bold text-white block">Rabatt auch auf eSIM-Aufladungen (Top-ups) anwenden</span>
+                      <span className="text-[10px] text-slate-400">
+                        {currentPreset.appliesToTopup
+                          ? 'Aktionsrabatt gilt für Neukäufe UND bestehende eSIM-Aufladungen'
+                          : 'Aktionsrabatt gilt ausschließlich für neue eSIMs (keine Aufladungen)'}
+                      </span>
                     </div>
                   </label>
                 </div>

@@ -19,7 +19,7 @@ import { fulfillOrders }       from '@/lib/fulfillment';
 import { sendCheckoutNotificationEmail } from '@/lib/email/mailer';
 import { fetchTopUpPackages, priceToUsd, bytesToGb, getVolumeBytes } from '@/lib/esimaccess/client';
 import { calculateSalePrice, getDayPassPrice }  from '@/lib/pricing';
-import { calculateOrderPricing, getActivePromotion } from '@/lib/pricing-service';
+import { calculateOrderPricing, getActivePromotion, type Promotion } from '@/lib/pricing-service';
 import { getNow } from '@/lib/time';
 import { validateEmail }        from '@/lib/validation/email';
 import { isValidLocale }        from '@/lib/i18n/config';
@@ -244,7 +244,6 @@ export async function POST(request: Request) {
     }
 
     // 1. Calculate total base amount and promotional discounts via Central Pricing Service
-    const activePromo = await getActivePromotion();
     const pricingItems = [];
     const validLines: typeof lines = [];
 
@@ -268,19 +267,25 @@ export async function POST(request: Request) {
       validLines.push(line);
     }
 
-    const calculatedOrder = await calculateOrderPricing(pricingItems, activePromo);
+    const calculatedOrder = await calculateOrderPricing(pricingItems);
     const totalBaseEur = calculatedOrder.totalCents / 100;
 
-    // Rule B4(a): Check promotion cutoff (< 30 minutes)
-    if (calculatedOrder.promotion && calculatedOrder.promotion.discount_basis_points > 0 && calculatedOrder.discountCents > 0) {
+    // Rule B4(a): Check promotion cutoff (< 30 minutes) on all promotions that applied discounts
+    if (calculatedOrder.discountCents > 0) {
       const now = getNow();
-      const promoEndMs = new Date(calculatedOrder.promotion.ends_at).getTime();
-      const msRemaining = promoEndMs - now.getTime();
-      if (msRemaining < 30 * 60 * 1000) {
-        return NextResponse.json({
-          error: 'Die Aktion endet in Kürze (< 30 Minuten). Bitte warten Sie auf die Normalpreise oder aktualisieren Sie Ihren Warenkorb.',
-          code: 'PROMO_ENDING_SOON'
-        }, { status: 400 });
+      const appliedPromos = Array.from(new Set([calculatedOrder.promotion, calculatedOrder.topupPromotion].filter(
+        (p): p is Promotion => Boolean(p && p.discount_basis_points > 0)
+      )));
+
+      for (const promo of appliedPromos) {
+        const promoEndMs = new Date(promo.ends_at).getTime();
+        const msRemaining = promoEndMs - now.getTime();
+        if (msRemaining < 30 * 60 * 1000) {
+          return NextResponse.json({
+            error: `Die Aktion „${promo.internal_name}“ endet in Kürze (< 30 Minuten). Bitte warten Sie auf die Normalpreise oder aktualisieren Sie Ihren Warenkorb.`,
+            code: 'PROMO_ENDING_SOON'
+          }, { status: 400 });
+        }
       }
     }
 

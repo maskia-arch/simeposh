@@ -156,7 +156,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         flagEmoji:     tariff.flag_emoji,
         dataGb:        tariff.data_gb,
         validityDays:  tariff.validity_days,
-        priceEur:      tariff.sale_price_eur,
+        priceEur:      (tariff as any).customer_price_eur ?? tariff.sale_price_eur,
         tariffType:    tariff.tariff_type,
         locationCodes: tariff.location_codes,
         region:        tariff.region,

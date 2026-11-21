@@ -60,6 +60,8 @@ export interface CalculatedItem {
   totalPromoCents: number;
   totalDiscountCents: number;
   hasPromo: boolean;
+  appliedPromoId?: string;
+  appliedPromoName?: string;
   referencePriceEur?: number;
 }
 
@@ -69,29 +71,30 @@ export interface CalculatedOrder {
   discountCents: number;
   totalCents: number;
   promotion: Promotion | null;
+  topupPromotion?: Promotion | null;
   quoteToken?: string;
   expiresAt?: string;
 }
 
-// ── In-Memory Active Promotion Cache (15s TTL) ───────────────
-let cachedPromo: { promo: Promotion | null; expiresAt: number; atTimeMs: number } | null = null;
+// ── In-Memory Active Promotions Cache (15s TTL) ───────────────
+let cachedPromos: { promos: Promotion[]; expiresAt: number; atTimeMs: number } | null = null;
 const PROMO_CACHE_TTL_MS = 15_000;
 
 export function invalidatePromotionCache() {
-  cachedPromo = null;
+  cachedPromos = null;
 }
 
 /**
- * Resolves the currently active promotion considering server time (or testenv simulated time).
- * Resolves priority order: highest priority wins. Never stacks.
+ * Resolves all currently active promotions considering server time (or testenv simulated time).
+ * Returns all active or scheduled campaigns within their validity window, ordered by priority DESC.
  */
-export async function getActivePromotion(): Promise<Promotion | null> {
+export async function getActivePromotions(): Promise<Promotion[]> {
   const now = getNow();
   const nowMs = now.getTime();
 
   // If in testenv and time was shifted, don't use stale cache
-  if (cachedPromo && nowMs < cachedPromo.expiresAt && Math.abs(nowMs - cachedPromo.atTimeMs) < 1000) {
-    return cachedPromo.promo;
+  if (cachedPromos && nowMs < cachedPromos.expiresAt && Math.abs(nowMs - cachedPromos.atTimeMs) < 1000) {
+    return cachedPromos.promos;
   }
 
   try {
@@ -102,14 +105,12 @@ export async function getActivePromotion(): Promise<Promotion | null> {
        WHERE (status = 'active' OR (status = 'scheduled' AND starts_at <= $1 AND ends_at > $1))
          AND starts_at <= $1
          AND ends_at > $1
-       ORDER BY priority DESC, created_at DESC
-       LIMIT 1`,
+       ORDER BY priority DESC, created_at DESC`,
       [nowIso]
     );
 
     if (res && res.rows.length > 0) {
-      const p = res.rows[0];
-      const promo: Promotion = {
+      const promos: Promotion[] = res.rows.map((p: any) => ({
         id: p.id,
         slug: p.slug,
         internal_name: p.internal_name,
@@ -129,27 +130,54 @@ export async function getActivePromotion(): Promise<Promotion | null> {
         status: p.status,
         theme_id: p.theme_id || 'standard',
         version: p.version || 1,
-      };
-      cachedPromo = { promo, expiresAt: nowMs + PROMO_CACHE_TTL_MS, atTimeMs: nowMs };
-      return promo;
+      }));
+
+      cachedPromos = { promos, expiresAt: nowMs + PROMO_CACHE_TTL_MS, atTimeMs: nowMs };
+      return promos;
     }
   } catch (err: any) {
-    console.warn('[pricing-service] Failed to query active promotion:', err.message);
+    console.warn('[pricing-service] Failed to query active promotions:', err.message);
   }
 
-  cachedPromo = { promo: null, expiresAt: nowMs + PROMO_CACHE_TTL_MS, atTimeMs: nowMs };
-  return null;
+  cachedPromos = { promos: [], expiresAt: nowMs + PROMO_CACHE_TTL_MS, atTimeMs: nowMs };
+  return [];
+}
+
+/**
+ * Resolves the active promotion for a given scope:
+ * - 'new_esim' (default): returns highest priority promo for new eSIM purchases (also controls main site theme).
+ * - 'topup': returns highest priority promo where applies_to_topup === true (e.g. Black Week even while Black Friday is active).
+ */
+export async function getActivePromotion(targetScope?: 'new_esim' | 'topup'): Promise<Promotion | null> {
+  const promos = await getActivePromotions();
+  if (promos.length === 0) return null;
+
+  if (targetScope === 'topup') {
+    const topupPromo = promos.find((p) => p.applies_to_topup && p.discount_basis_points > 0);
+    return topupPromo || null;
+  }
+
+  return promos[0] || null;
 }
 
 /**
  * Calculates end prices for an array of items.
  * Single source of calculation for Cart, Configurator, and Checkout.
+ *
+ * Hierarchical campaign resolution:
+ * If an item is a Top-up and the highest-priority campaign (e.g. Black Friday) excludes Top-ups,
+ * but another concurrent active campaign (e.g. Black Week) includes Top-ups, the Top-up automatically
+ * receives the discount of the campaign that covers Top-ups!
  */
 export async function calculateOrderPricing(
   items: PriceCalculationItem[],
-  customPromo?: Promotion | null
+  customPromo?: Promotion | null,
+  allActivePromos?: Promotion[]
 ): Promise<CalculatedOrder> {
-  const promo = customPromo !== undefined ? customPromo : await getActivePromotion();
+  const activePromos = allActivePromos ?? (await getActivePromotions());
+  const primaryPromo = customPromo !== undefined ? customPromo : (activePromos[0] || null);
+  const topupPromo = activePromos.find((p) => p.applies_to_topup && p.discount_basis_points > 0) || null;
+
   const calculatedItems: CalculatedItem[] = [];
 
   let subtotalCents = 0;
@@ -171,19 +199,39 @@ export async function calculateOrderPricing(
 
     const unitRegularCents = Math.round(regularUnitEur * 100);
 
-    // Check scope applicability
-    const isExcluded = (item.isTopUp && !promo?.applies_to_topup) || (item.isCash && !promo?.applies_to_cash);
-    const canApplyPromo = Boolean(promo && promo.discount_basis_points > 0 && !isExcluded);
+    // Resolve which promotion applies to this specific item
+    let itemPromo: Promotion | null = null;
+
+    if (customPromo !== undefined) {
+      // Custom promo forced explicitly (e.g. direct test or single promo simulation)
+      const isExcluded = (item.isTopUp && !customPromo?.applies_to_topup) || (item.isCash && !customPromo?.applies_to_cash);
+      if (customPromo && customPromo.discount_basis_points > 0 && !isExcluded) {
+        itemPromo = customPromo;
+      }
+    } else {
+      // Hierarchical resolution across all active campaigns:
+      if (item.isTopUp) {
+        // Find highest priority active campaign that covers Top-ups (e.g. Black Week during Black Friday)
+        itemPromo = activePromos.find(
+          (p) => p.applies_to_topup && p.discount_basis_points > 0 && (!item.isCash || p.applies_to_cash)
+        ) || null;
+      } else {
+        // New eSIMs: find highest priority campaign covering new eSIMs
+        itemPromo = activePromos.find(
+          (p) => (p.scope === 'new_esim' || p.scope === 'all') && p.discount_basis_points > 0 && (!item.isCash || p.applies_to_cash)
+        ) || null;
+      }
+    }
 
     let unitPromoCents = unitRegularCents;
     let unitDiscountCents = 0;
     let hasPromo = false;
 
-    if (canApplyPromo && promo) {
+    if (itemPromo && itemPromo.discount_basis_points > 0) {
       const calc = calculatePromoPriceCents(
         unitRegularCents,
-        promo.discount_basis_points,
-        promo.rounding_strategy
+        itemPromo.discount_basis_points,
+        itemPromo.rounding_strategy
       );
       if (calc.applied) {
         unitPromoCents = calc.promoCents;
@@ -209,7 +257,9 @@ export async function calculateOrderPricing(
       totalPromoCents,
       totalDiscountCents: itemDiscountCents,
       hasPromo,
-      referencePriceEur: promo?.show_reference_price && hasPromo ? unitRegularCents / 100 : undefined,
+      appliedPromoId: itemPromo?.id,
+      appliedPromoName: itemPromo?.internal_name,
+      referencePriceEur: itemPromo?.show_reference_price && hasPromo ? unitRegularCents / 100 : undefined,
     });
   }
 
@@ -220,7 +270,8 @@ export async function calculateOrderPricing(
     subtotalCents,
     discountCents: totalDiscountCents,
     totalCents: finalTotalCents,
-    promotion: promo,
+    promotion: primaryPromo,
+    topupPromotion: topupPromo,
   };
 }
 
@@ -241,7 +292,11 @@ export async function createCheckoutQuote(
   let sessionLifetimeMs = 30 * 60 * 1000; // 30 minutes default crypto payment window
   let quoteExpiresAt = new Date(now.getTime() + sessionLifetimeMs);
 
-  if (promo && promo.discount_basis_points > 0 && order.discountCents > 0) {
+  const appliedPromos = Array.from(new Set([order.promotion, order.topupPromotion].filter(
+    (p): p is Promotion => Boolean(p && p.discount_basis_points > 0 && order.discountCents > 0)
+  )));
+
+  for (const promo of appliedPromos) {
     const promoEndMs = new Date(promo.ends_at).getTime();
     const msRemaining = promoEndMs - now.getTime();
 
@@ -250,7 +305,7 @@ export async function createCheckoutQuote(
       return {
         ok: false,
         code: 'PROMO_ENDING_SOON',
-        error: 'Die Aktion endet in Kürze (< 30 Minuten). Bitte warten Sie auf die Normalpreise oder aktualisieren Sie Ihren Warenkorb.',
+        error: `Die Aktion „${promo.internal_name}“ endet in Kürze (< 30 Minuten). Bitte warten Sie auf die Normalpreise oder aktualisieren Sie Ihren Warenkorb.`,
       };
     }
 
