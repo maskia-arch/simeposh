@@ -201,17 +201,46 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
   const [livePromo, setLivePromo] = useState<Promotion | null>(null);
   const [liveTopupPromo, setLiveTopupPromo] = useState<Promotion | null>(null);
 
-  // Initialize demo mode or load live promotion
+  // Initialize demo mode in testenv/localhost OR load live promotions in production
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const demoParam = urlParams.get('demo');
     const isLocalhost =
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
       window.location.port === '3000';
 
+    const isTestMode = isTestEnv || isLocalhost;
+
+    // PRODUCTION SECURITY GUARD:
+    // On production (puresim.net), demo mode is strictly disallowed and impossible to activate.
+    // Clean up any stale demo keys from localStorage and fetch official server promotions.
+    if (!isTestMode) {
+      setIsDemoActive(false);
+      try {
+        localStorage.removeItem('puresim_theme_demo_active');
+        localStorage.removeItem('puresim_theme_demo_preset');
+        localStorage.removeItem('puresim_theme_demo_custom_themes');
+        localStorage.removeItem('puresim_theme_demo_custom_presets');
+      } catch {}
+
+      fetch('/api/promotions/active')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.promotion) {
+            setLivePromo(data.promotion);
+          }
+          if (data?.topupPromotion) {
+            setLiveTopupPromo(data.topupPromotion);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // TEST ENVIRONMENT / LOCALHOST ONLY:
+    const urlParams = new URLSearchParams(window.location.search);
+    const demoParam = urlParams.get('demo');
     const savedDemoState = localStorage.getItem('puresim_theme_demo_active');
     const savedPreset = localStorage.getItem('puresim_theme_demo_preset');
     const savedCustomThemes = localStorage.getItem('puresim_theme_demo_custom_themes');
@@ -239,7 +268,7 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
         setActivePresetId(savedPreset);
       }
     } else {
-      // In production mode, fetch active promotions from API
+      // In test mode without active demo, also fetch active promotions from API
       fetch('/api/promotions/active')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -252,7 +281,7 @@ export function ThemeDemoProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => {});
     }
-  }, []);
+  }, [isTestEnv]);
 
   const currentPreset = presets.find((p) => p.id === activePresetId) || presets[0];
   const activeThemeId = isDemoActive ? currentPreset.themeId : (livePromo?.theme_id || 'standard');

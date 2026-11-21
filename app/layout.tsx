@@ -156,12 +156,13 @@ export default async function RootLayout({
               <CartProvider>
                 <TicketProvider>
                   <BrowserLanguageBanner />
+                  <PromotionBanner />
                   <Navbar />
                   <main id="main-content" className="flex-1 outline-none" tabIndex={-1}>{children}</main>
                   <Footer />
                   <CartDrawer />
                   <ChatWidgetLoader />
-                  <ThemeStudioDock />
+                  {process.env.NEXT_PUBLIC_IS_TESTENV === 'true' && <ThemeStudioDock />}
                 </TicketProvider>
               </CartProvider>
             </CurrencyProvider>

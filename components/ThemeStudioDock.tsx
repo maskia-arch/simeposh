@@ -5,6 +5,12 @@ import { useThemeDemo, THEME_PRESETS, ThemePreset } from '@/lib/theme-demo-conte
 import { THEMES } from '@/lib/themes';
 
 export function ThemeStudioDock() {
+  // STRICT SECURITY GUARD: Never render Theme Studio Dock in production!
+  // Belongs strictly to local test environment (127.0.0.1) or admin preview.
+  if (process.env.NEXT_PUBLIC_IS_TESTENV !== 'true') {
+    return null;
+  }
+
   const {
     isDemoActive,
     activePresetId,
@@ -26,7 +32,15 @@ export function ThemeStudioDock() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activePillRef = useRef<HTMLButtonElement | null>(null);
 
-  // If demo mode is not active, show a small reactivation pill
+  // Auto-scroll the active preset pill into view whenever activePresetId or panel visibility changes
+  // NOTE: Must run unconditionally before any early returns to satisfy React Rules of Hooks!
+  useEffect(() => {
+    if (isDemoActive && isPanelOpen && activePillRef.current) {
+      activePillRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [isDemoActive, activePresetId, isPanelOpen]);
+
+  // If demo mode is not active, show a small reactivation pill in test environment only
   if (!isDemoActive) {
     return (
       <div className="fixed bottom-4 left-4 z-50">
@@ -34,7 +48,7 @@ export function ThemeStudioDock() {
           type="button"
           onClick={() => toggleDemo(true)}
           className="rounded-full bg-slate-900/90 hover:bg-slate-900 text-white border border-slate-700 px-3.5 py-1.5 text-xs font-bold shadow-lg flex items-center gap-2 transition-all hover:scale-105 cursor-pointer backdrop-blur-md"
-          title="Theme Demo-Modus aktivieren"
+          title="Theme Demo-Modus aktivieren (Testumgebung)"
         >
           <span>🎨</span>
           <span>Theme Demo öffnen</span>
@@ -44,13 +58,6 @@ export function ThemeStudioDock() {
   }
 
   const currentPreset = presets.find((p) => p.id === activePresetId) || presets[0] || THEME_PRESETS[0];
-
-  // Auto-scroll the active preset pill into view whenever activePresetId or panel visibility changes
-  useEffect(() => {
-    if (isPanelOpen && activePillRef.current) {
-      activePillRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [activePresetId, isPanelOpen]);
 
   const scrollPresets = (direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
