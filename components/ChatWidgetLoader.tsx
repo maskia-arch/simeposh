@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { loadChatScript, openChatWidget, sendVisitorBeacon, isChatScriptLoaded, isBotOrCrawler } from '@/lib/chatLoader';
+import { loadChatScript, openChatWidget, sendVisitorBeacon, isChatScriptLoaded } from '@/lib/chatLoader';
 import { useTranslation } from '@/lib/i18n';
 
 /**
@@ -22,6 +22,20 @@ export function ChatWidgetLoader() {
 
     // Send single visitor tracking beacon upon page load
     sendVisitorBeacon();
+
+    // Auto-load chat widget after initial mount so it is ready immediately
+    const isCrypto = typeof window !== 'undefined' && window.location.pathname.startsWith('/checkout/crypto/');
+    if (!isCrypto) {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => {
+          loadChatScript(() => setScriptLoaded(true));
+        }, { timeout: 2000 });
+      } else {
+        setTimeout(() => {
+          loadChatScript(() => setScriptLoaded(true));
+        }, 800);
+      }
+    }
 
     const handleOpenChat = () => {
       loadChatScript(() => {
@@ -55,9 +69,9 @@ export function ChatWidgetLoader() {
   const isUnlimited = pathname?.includes('/unlimited');
   const isTariff = pathname?.includes('/tariffs');
 
-  // Do not render bubble on /checkout/crypto/* or /cart before click,
-  // or once the real widget.js has loaded and injected its own UI, or for bots/crawlers
-  if (!mounted || isCheckoutCrypto || isCart || scriptLoaded || isBotOrCrawler()) {
+  // Do not render bubble on /checkout/crypto/* or /cart,
+  // or once the real widget.js has loaded and injected its own UI
+  if (!mounted || isCheckoutCrypto || isCart || scriptLoaded) {
     return null;
   }
 

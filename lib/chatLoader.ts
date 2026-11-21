@@ -153,44 +153,20 @@ function _autoDetectIdentity(): Record<string, string> {
   return data;
 }
 
-// Automation & Bot Detection (verhindert dass Crawler/Bots Tracking Beacons & Push-Meldungen auslösen)
+// Automation & Bot Detection (verhindert dass Suchmaschinen-Crawler & Scraper Tracking Beacons auslösen)
 export function isBotOrCrawler(): boolean {
   if (typeof window === 'undefined') return true;
 
-  // 1. W3C WebDriver / Automation Flags (Puppeteer, Playwright, Selenium, Headless Chrome)
-  if (navigator.webdriver) return true;
-  if (
-    (window as any).__nightmare ||
-    (window as any)._phantom ||
-    (window as any).callPhantom ||
-    (window as any).__selenium_evaluate ||
-    (window as any).__webdriver_evaluate ||
-    (window as any).domAutomation ||
-    (window as any).domAutomationController
-  ) {
-    return true;
-  }
-
-  // 2. Ungültige oder leere Screen-Dimensionen
+  // 1. Ungültige oder leere Screen-Dimensionen (reine CLI-Scraper ohne Display)
   if (window.screen && (window.screen.width <= 0 || window.screen.height <= 0)) {
     return true;
   }
 
-  // 3. User-Agent Pattern Matching (Search Engines, SEO Crawler, Scraper, Headless)
+  // 2. User-Agent Pattern Matching (bekannte Suchmaschinen & SEO-Crawler)
   const ua = (navigator.userAgent || '').toLowerCase();
   if (!ua || ua.length < 10) return true;
 
-  // Gefälschte zukünftige Chrome-Versionen (Scraper-Netzwerke rotieren Chrome/148, Chrome/149, Chrome/150)
-  if (/chrome\/(1[4-9]\d|[2-9]\d\d)\./i.test(ua)) return true;
-
   const BOT_PATTERNS = [
-    'bot',
-    'crawler',
-    'spider',
-    'scraper',
-    'crawling',
-    'archiver',
-    'headless',
     'googlebot',
     'bingbot',
     'bingpreview',
@@ -216,11 +192,6 @@ export function isBotOrCrawler(): boolean {
     'criteobot',
     'seznam',
     'phantomjs',
-    'selenium',
-    'webdriver',
-    'puppeteer',
-    'playwright',
-    'electron',
     'lighthouse',
     'pagespeed',
     'gtmetrix',
