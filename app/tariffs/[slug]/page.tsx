@@ -26,9 +26,6 @@ const inFlightTariffPromises = new Map<string, Promise<PublicTariff | null>>();
 const TARIFF_DETAIL_TTL = 10 * 60 * 1000; // 10 minutes
 
 async function applyPromoToTariff(tariff: PublicTariff): Promise<void> {
-  const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
-  if (isUnlimited) return;
-
   const promo = await getActivePromotion();
   if (promo && promo.discount_basis_points > 0) {
     const regCents = Math.round((tariff.customer_price_eur ?? tariff.sale_price_eur) * 100);

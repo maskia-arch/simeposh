@@ -111,14 +111,15 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
   let promoBadge = tariff.promo_badge;
   let refPriceEur = tariff.reference_price_eur;
+  const baseRegPrice = (tariff as any).regular_price_eur ?? tariff.customer_price_eur ?? tariff.sale_price_eur;
 
-  if (demo?.activePromo && isTravel) {
-    const regCents = Math.round(tariff.sale_price_eur * 100);
+  if (demo?.activePromo) {
+    const regCents = Math.round(baseRegPrice * 100);
     const promoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
     if (promoCalc.applied) {
       displayPriceEur = promoCalc.promoCents / 100;
       promoBadge = demo.activePromo.badge_texts?.[locale] || demo.activePromo.badge_texts?.['de'] || `−${Math.round(demo.activePromo.discount_basis_points / 100)} %`;
-      refPriceEur = demo.activePromo.show_reference_price ? tariff.sale_price_eur : null;
+      refPriceEur = demo.activePromo.show_reference_price ? baseRegPrice : null;
     }
   }
 
@@ -127,7 +128,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
     customer_price_eur: displayPriceEur,
     reference_price_eur: refPriceEur,
     promo_badge: promoBadge,
-    regular_price_eur: tariff.sale_price_eur,
+    regular_price_eur: baseRegPrice,
   };
 
   if (showCheckout) {

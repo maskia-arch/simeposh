@@ -65,7 +65,7 @@ async function getTariffs(): Promise<PublicTariff[]> {
 
         t.customer_price_eur = regularPriceEur;
 
-        if (activePromo && activePromo.discount_basis_points > 0 && !(t.tariff_type?.startsWith('unlimited') || t.data_gb === 0)) {
+        if (activePromo && activePromo.discount_basis_points > 0) {
           const regCents = Math.round(regularPriceEur * 100);
           const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
           if (promoCalc.applied) {

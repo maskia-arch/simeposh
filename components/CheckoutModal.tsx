@@ -45,13 +45,14 @@ export function CheckoutModal({
 
   let displayPriceEur = (tariff as any).customer_price_eur ?? tariff.sale_price_eur;
   let refPriceEur = (tariff as any).reference_price_eur ?? null;
+  const baseRegPrice = (tariff as any).regular_price_eur ?? (tariff as any).customer_price_eur ?? tariff.sale_price_eur;
 
-  if (promo && promo.discount_basis_points > 0 && isTravel) {
-    const regCents = Math.round(tariff.sale_price_eur * 100);
+  if (promo && promo.discount_basis_points > 0) {
+    const regCents = Math.round(baseRegPrice * 100);
     const promoCalc = calculatePromoPriceCents(regCents, promo.discount_basis_points, promo.rounding_strategy);
     if (promoCalc.applied) {
       displayPriceEur = promoCalc.promoCents / 100;
-      refPriceEur = promo.show_reference_price ? tariff.sale_price_eur : null;
+      refPriceEur = promo.show_reference_price ? baseRegPrice : null;
     }
   }
 

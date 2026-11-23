@@ -13,6 +13,8 @@ import { aliasToCode, aliasToRegion } from '@/lib/i18n/countryAliases';
 import { useTranslation } from '@/lib/i18n';
 import { formatDaysWithUnit, formatDayMark, formatPercent, getPluralKeySuffix, formatCountriesWithUnit } from '@/lib/i18n/plural';
 import { useCart } from '@/components/CartProvider';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 import { getTariffSpecialFeatures, getTariffOperators, bestNetworkType, displayCountryName, getReloadabilityInfo } from '@/lib/tariff-display';
 import { InfinityIcon, EcoIcon, BoltIcon, NetworkIcon, GiftIcon, InfoIcon, SearchIcon, ShieldIcon } from '@/components/Icons';
 
@@ -511,6 +513,9 @@ export function UnlimitedConfigurator({
     };
   }, [bestPackage, activePriceTables]);
 
+  const demo = useThemeDemo();
+  const activePromo = demo?.activePromo;
+
   const currentPriceTable = bestPackage ? activePriceTables[bestPackage.package_code] : null;
   const dayInfo = currentPriceTable?.days?.[days];
 
@@ -522,21 +527,45 @@ export function UnlimitedConfigurator({
   const hasDiscount = finalPrice !== null && subtotalBeforeDiscount !== null && finalPrice < subtotalBeforeDiscount && discountPct > 0;
   const perDayDisplay = finalPrice !== null ? (!hasDiscount ? frontPricePerDay : Math.min(frontPricePerDay, Math.round((finalPrice / days) * 100) / 100)) : null;
 
+  // Active promotional campaign calculation (e.g. Black Week, Black Friday, Cyber Monday, Christmas)
+  let promoFinalPrice: number | null = finalPrice;
+  let promoRefPrice: number | null = null;
+  let promoBadge: string | null = null;
+  let promoPerDayDisplay: number | null = perDayDisplay;
+
+  if (finalPrice !== null && activePromo && activePromo.discount_basis_points > 0) {
+    const regCents = Math.round(finalPrice * 100);
+    const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
+    if (promoCalc.applied) {
+      promoFinalPrice = promoCalc.promoCents / 100;
+      promoRefPrice = activePromo.show_reference_price ? finalPrice : null;
+      promoBadge = activePromo.badge_texts?.[locale] || activePromo.badge_texts?.['de'] || `−${Math.round(activePromo.discount_basis_points / 100)} %`;
+      if (promoFinalPrice !== null && days > 0) {
+        promoPerDayDisplay = Math.round((promoFinalPrice / days) * 100) / 100;
+      }
+    }
+  }
+
   const betterDealDays = dayInfo?.betterDealDays;
   const betterDealPriceEur = dayInfo?.betterDealPriceEur;
   const compareDays = dayInfo?.compareDays ?? days;
 
   const syntheticTariff = useMemo((): Tariff | null => {
     if (!finalPrice || selectedGb === null || !selectedCountry || !bestPackage) return null;
+    const effectivePrice = promoFinalPrice ?? finalPrice;
     return {
       ...bestPackage,
-      id:             bestPackage.id,
-      validity_days:  days,
-      data_gb:        selectedGb,
-      sale_price_eur: finalPrice,
-      tariff_type:    tariffType,
+      id:                  bestPackage.id,
+      validity_days:       days,
+      data_gb:             selectedGb,
+      sale_price_eur:      effectivePrice,
+      regular_price_eur:   finalPrice,
+      customer_price_eur:  effectivePrice,
+      reference_price_eur: promoRefPrice,
+      promo_badge:         promoBadge,
+      tariff_type:         tariffType,
     };
-  }, [finalPrice, selectedGb, selectedCountry, days, bestPackage, tariffType]);
+  }, [finalPrice, promoFinalPrice, promoRefPrice, promoBadge, selectedGb, selectedCountry, days, bestPackage, tariffType]);
 
   const selectedCountryData = countries.find((c) => c.code === selectedCountry);
   const localizedCountry = selectedCountryData
@@ -874,26 +903,36 @@ export function UnlimitedConfigurator({
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block leading-none">
                         {t('cfg_total' as any) || (isStandaloneRoute ? 'Total Price' : 'Gesamtpreis')}
                       </span>
-                      <div className="h-[22px] flex items-center">
+                      <div className="h-[22px] flex items-center gap-1.5 flex-wrap">
+                        {promoBadge && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-black text-white shadow-xs whitespace-nowrap">
+                            {promoBadge}
+                          </span>
+                        )}
                         {hasDiscount && discountPct > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700 whitespace-nowrap">
                             {t('cfg_tier_discount_badge' as any, { pct: formatPercent(discountPct, locale, { negative: true }) }) || `Staffelrabatt ${formatPercent(discountPct, locale, { negative: true })}`}
                           </span>
-                        ) : (
+                        ) : !promoBadge ? (
                           <span className="inline-flex items-center px-2 py-0.5 text-xs border border-transparent opacity-0 pointer-events-none select-none" aria-hidden="true" />
-                        )}
+                        ) : null}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
+                      {promoRefPrice && promoRefPrice > (promoFinalPrice ?? 0) && (
+                        <span className="text-[11px] text-slate-400 line-through font-medium leading-none block mb-1">
+                          statt {formatCurrencyEuro(promoRefPrice, locale)}
+                        </span>
+                      )}
                       <p className="text-2xl font-black text-slate-900 tracking-tight leading-tight whitespace-nowrap">
-                        {finalPrice !== null && finalPrice > 0 ? formatCurrencyEuro(finalPrice, locale) : '–'}
+                        {promoFinalPrice !== null && promoFinalPrice > 0 ? formatCurrencyEuro(promoFinalPrice, locale) : '–'}
                       </p>
-                      {perDayDisplay !== null && perDayDisplay > 0 && (
+                      {promoPerDayDisplay !== null && promoPerDayDisplay > 0 && (
                         <span
-                          aria-label={`${formatCurrencyEuro(perDayDisplay, locale)} ${t('unit_per_day')}`}
+                          aria-label={`${formatCurrencyEuro(promoPerDayDisplay, locale)} ${t('unit_per_day')}`}
                           className="text-[11px] text-slate-500 font-semibold block mt-0.5 whitespace-nowrap"
                         >
-                          ({formatCurrencyEuro(perDayDisplay, locale)} {t('unit_per_day')})
+                          ({formatCurrencyEuro(promoPerDayDisplay, locale)} {t('unit_per_day')})
                         </span>
                       )}
                     </div>
@@ -901,7 +940,16 @@ export function UnlimitedConfigurator({
 
                   {/* Subtotal & Savings breakdown: reserved layout slot so height is 100% frozen */}
                   <div className="space-y-0.5 text-xs text-slate-500 h-[42px] min-h-[42px] flex flex-col justify-center">
-                    {hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 && finalPrice !== null && finalPrice > 0 ? (
+                    {promoFinalPrice !== null && finalPrice !== null && promoFinalPrice < finalPrice ? (
+                      <>
+                        <div className="truncate text-xs">
+                          {formatCurrencyEuro(finalPrice, locale)} {promoBadge} = <strong className="text-slate-900">{formatCurrencyEuro(promoFinalPrice, locale)}</strong>
+                        </div>
+                        <div className="font-semibold text-rose-600 text-[13px] truncate">
+                          {t('cfg_you_save' as any, { saved: formatCurrencyEuro(Math.max(0, Math.round((finalPrice - promoFinalPrice) * 100) / 100), locale) }) || (isDe ? `Du sparst ${formatCurrencyEuro(Math.max(0, Math.round((finalPrice - promoFinalPrice) * 100) / 100), locale)} mit Aktion!` : `You save ${formatCurrencyEuro(Math.max(0, Math.round((finalPrice - promoFinalPrice) * 100) / 100), locale)} with promo!`)}
+                        </div>
+                      </>
+                    ) : hasDiscount && subtotalBeforeDiscount !== null && frontPricePerDay > 0 && discountPct > 0 && finalPrice !== null && finalPrice > 0 ? (
                       <>
                         <div className="truncate text-xs">
                           {days} × {formatCurrencyEuro(frontPricePerDay, locale)} = {formatCurrencyEuro(subtotalBeforeDiscount, locale)} {formatPercent(discountPct, locale, { negative: true })} = {formatCurrencyEuro(finalPrice!, locale)}
@@ -933,8 +981,12 @@ export function UnlimitedConfigurator({
                     return (
                       <div className="h-[96px] min-h-[96px] max-h-[96px] flex items-center justify-center" role="status" aria-live="polite">
                         {betterDealDays && betterDealPriceEur !== undefined && finalPrice !== null ? (() => {
+                          const effBetterPrice = (activePromo && activePromo.discount_basis_points > 0)
+                            ? calculatePromoPriceCents(Math.round(betterDealPriceEur * 100), activePromo.discount_basis_points, activePromo.rounding_strategy).promoCents / 100
+                            : betterDealPriceEur;
+                          const currentEffPrice = promoFinalPrice ?? finalPrice;
                           const diffDays = betterDealDays - days;
-                          const diffCents = Math.round((betterDealPriceEur - finalPrice) * 100);
+                          const diffCents = Math.round((effBetterPrice - currentEffPrice) * 100);
                           const diff = diffCents / 100;
                           const absDiff = Math.abs(diff);
                           const formattedDiffAmount = formatCurrencyEuro(absDiff, locale);
@@ -950,7 +1002,7 @@ export function UnlimitedConfigurator({
                           }
 
                           const tipTitle = t((`cfg_duration_better_deal${getPluralKeySuffix(betterDealDays, locale)}`) as any, {
-                            price: formatCurrencyEuro(betterDealPriceEur, locale),
+                            price: formatCurrencyEuro(effBetterPrice, locale),
                             days: betterDealDays,
                             diff: diffText,
                           });
@@ -1031,7 +1083,7 @@ export function UnlimitedConfigurator({
                   disabled={!syntheticTariff}
                   className="w-full btn-primary active:scale-[0.98] shadow-md"
                 >
-                  {t('cfg_buy_now')}{finalPrice !== null ? ` · ${formatCurrencyEuro(finalPrice, locale)}` : ''}
+                  {t('cfg_buy_now')}{promoFinalPrice !== null ? ` · ${formatCurrencyEuro(promoFinalPrice, locale)}` : ''}
                 </button>
               </div>
 
@@ -1042,11 +1094,23 @@ export function UnlimitedConfigurator({
       )}
 
       {/* ── Mobile Floating Bottom Sticky Bar ── */}
-      {syntheticTariff && finalPrice !== null && (
+      {syntheticTariff && promoFinalPrice !== null && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 shadow-2xl flex items-center justify-between gap-3">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-500 block">{t('cfg_total' as any) || (isStandaloneRoute ? 'Total' : 'Gesamt')} ({formatDaysWithUnit(days, locale)})</span>
-            <Price eur={finalPrice} className="text-lg font-black text-slate-900" />
+            <div className="flex items-baseline gap-1.5">
+              {promoRefPrice && promoRefPrice > promoFinalPrice && (
+                <span className="text-xs text-slate-400 line-through font-medium">
+                  statt {formatCurrencyEuro(promoRefPrice, locale)}
+                </span>
+              )}
+              <Price eur={promoFinalPrice} className="text-lg font-black text-slate-900" />
+              {promoBadge && (
+                <span className="rounded bg-rose-600 px-1 py-0.5 text-[10px] font-black text-white">
+                  {promoBadge}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <button

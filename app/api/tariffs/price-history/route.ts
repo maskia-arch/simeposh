@@ -51,8 +51,7 @@ export async function GET(request: Request) {
           tariffRow = t;
         }
 
-        const isUnlimited = tariffRow?.tariff_type?.startsWith('unlimited') || tariffRow?.data_gb === 0;
-        if (tariffRow && !isUnlimited && typeof tariffRow.sale_price_eur === 'number') {
+        if (tariffRow && typeof tariffRow.sale_price_eur === 'number') {
           const regCents = Math.round(tariffRow.sale_price_eur * 100);
           const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
           if (promoCalc.applied) {

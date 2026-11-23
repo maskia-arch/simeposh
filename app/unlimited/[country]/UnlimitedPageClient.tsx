@@ -11,6 +11,9 @@ import { Price } from '@/components/Price';
 import { useTranslation } from '@/lib/i18n';
 import { formatDayRangeWithUnit, formatPercent } from '@/lib/i18n/plural';
 import { EcoIcon, BoltIcon, InfinityIcon } from '@/components/Icons';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
+import { formatCurrencyEuro } from '@/lib/currency';
 
 interface UnlimitedPageClientProps {
   destination: Destination;
@@ -38,6 +41,28 @@ export function UnlimitedPageClient({
   const { t, locale } = useTranslation();
   const isDe = locale === 'de';
   const prefix = isDe ? '' : `/${locale}`;
+  const demo = useThemeDemo();
+  const activePromo = demo?.activePromo;
+
+  let displayMinPrice = minPrice;
+  let refMinPrice: number | null = null;
+  let displayMinPerDay = minPerDay;
+  let promoBadge: string | null = null;
+
+  if (activePromo && activePromo.discount_basis_points > 0) {
+    const calcMin = calculatePromoPriceCents(Math.round(minPrice * 100), activePromo.discount_basis_points, activePromo.rounding_strategy);
+    if (calcMin.applied) {
+      displayMinPrice = calcMin.promoCents / 100;
+      refMinPrice = activePromo.show_reference_price ? minPrice : null;
+      promoBadge = activePromo.badge_texts?.[locale] || activePromo.badge_texts?.['de'] || `−${Math.round(activePromo.discount_basis_points / 100)} %`;
+    }
+    if (minPerDay > 0) {
+      const calcPerDay = calculatePromoPriceCents(Math.round(minPerDay * 100), activePromo.discount_basis_points, activePromo.rounding_strategy);
+      if (calcPerDay.applied) {
+        displayMinPerDay = calcPerDay.promoCents / 100;
+      }
+    }
+  }
 
   const [activeCategory, setActiveCategory] = useState<'unlimited_eco' | 'unlimited_pro'>('unlimited_eco');
 
@@ -118,18 +143,32 @@ export function UnlimitedPageClient({
 
           {/* Quick Price Highlights Card */}
           <div className="flex flex-col sm:flex-row md:flex-col gap-3 rounded-2xl bg-white p-4 border border-slate-200/90 shadow-xs shrink-0 min-w-[220px]">
-            <div className="flex items-baseline justify-between md:justify-start md:gap-3">
-              <span className="text-xs text-slate-500 font-medium">
-                {t('starting_price_from' as any) || (isDe ? 'Startpreis ab' : 'Starting from')}
-              </span>
-              <Price eur={minPrice} className="text-2xl font-black text-emerald-600" />
+            <div className="flex flex-col">
+              {refMinPrice && refMinPrice > displayMinPrice && (
+                <span className="text-[11px] text-slate-400 line-through font-medium leading-none mb-0.5">
+                  statt {formatCurrencyEuro(refMinPrice, locale)}
+                </span>
+              )}
+              <div className="flex items-baseline justify-between md:justify-start md:gap-2">
+                <span className="text-xs text-slate-500 font-medium">
+                  {t('starting_price_from' as any) || (isDe ? 'Startpreis ab' : 'Starting from')}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <Price eur={displayMinPrice} className="text-2xl font-black text-emerald-600" />
+                  {promoBadge && (
+                    <span className="rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-black text-white shadow-xs">
+                      {promoBadge}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {minPerDay > 0 && (
+            {displayMinPerDay > 0 && (
               <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex items-center justify-between">
                 <span>{t('daily_price_from' as any) || (isDe ? 'Tagespreis ab' : 'Daily rate from')}</span>
                 <span className="font-bold text-slate-800">
-                  <Price eur={minPerDay} /> {t('unit_per_day' as any)}
+                  <Price eur={displayMinPerDay} /> {t('unit_per_day' as any)}
                 </span>
               </div>
             )}

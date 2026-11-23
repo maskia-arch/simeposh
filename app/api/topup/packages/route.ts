@@ -340,7 +340,7 @@ export async function GET(request: Request) {
         }
 
         // Apply promotional discount if promotion covers top-ups
-        if (isTopupPromoActive && activePromo && !p.is_unlimited) {
+        if (isTopupPromoActive && activePromo) {
           const regCents = Math.round(p.sale_price_eur * 100);
           const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
           if (promoCalc.applied) {

@@ -96,7 +96,6 @@ function computePromoForItem(
   locale: string,
 ) {
   const isTopUp = Boolean(item.topUpIccid);
-  const isUnlimited = item.tariffType?.startsWith('unlimited') || item.dataGb === 0;
   const promo = isTopUp ? activeTopupPromo : activePromo;
   const baseRegPrice = item.regularPriceEur ?? item.priceEur;
 
@@ -104,7 +103,7 @@ function computePromoForItem(
   let targetRef: number | null = item.referencePriceEur ?? null;
   let targetBadge: string | null = item.promoBadge ?? null;
 
-  if (promo && promo.discount_basis_points > 0 && !isUnlimited) {
+  if (promo && promo.discount_basis_points > 0) {
     const regCents = Math.round(baseRegPrice * 100);
     const promoCalc = calculatePromoPriceCents(regCents, promo.discount_basis_points, promo.rounding_strategy);
     if (promoCalc.applied) {

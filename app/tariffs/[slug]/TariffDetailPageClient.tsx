@@ -58,14 +58,15 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
   let promoBadge = tariff.promo_badge;
   let refPriceEur = tariff.reference_price_eur;
+  const baseRegPrice = (tariff as any).regular_price_eur ?? tariff.customer_price_eur ?? tariff.sale_price_eur;
 
-  if (activePromo && isTravel) {
-    const regCents = Math.round(tariff.sale_price_eur * 100);
+  if (activePromo) {
+    const regCents = Math.round(baseRegPrice * 100);
     const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
     if (promoCalc.applied) {
       displayPriceEur = promoCalc.promoCents / 100;
       promoBadge = activePromo.badge_texts?.[locale] || activePromo.badge_texts?.['de'] || `−${Math.round(activePromo.discount_basis_points / 100)} %`;
-      refPriceEur = activePromo.show_reference_price ? tariff.sale_price_eur : null;
+      refPriceEur = activePromo.show_reference_price ? baseRegPrice : null;
     }
   }
 
@@ -74,7 +75,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
     customer_price_eur: displayPriceEur,
     reference_price_eur: refPriceEur,
     promo_badge: promoBadge,
-    regular_price_eur: tariff.sale_price_eur,
+    regular_price_eur: baseRegPrice,
   };
 
   let dataLabel = formatGb(tariff.data_gb);
