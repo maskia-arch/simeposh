@@ -14,6 +14,8 @@ import { displayCountryName, coverageLabel, getTariffOperators, isoName, cleanTa
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { PriceChart } from '@/components/PriceChart';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 
 type Tariff = PublicTariff;
 
@@ -43,6 +45,7 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const [showCountryList, setShowCountryList] = useState(false);
   const { locale, t } = useTranslation();
   const { addItem, open } = useCart();
+  const demo = useThemeDemo();
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -105,8 +108,30 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
   const reloadInfo   = getReloadabilityInfo(tariff);
   const cleanedTitle = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
 
+  let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
+  let promoBadge = tariff.promo_badge;
+  let refPriceEur = tariff.reference_price_eur;
+
+  if (demo?.activePromo && isTravel) {
+    const regCents = Math.round(tariff.sale_price_eur * 100);
+    const promoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
+    if (promoCalc.applied) {
+      displayPriceEur = promoCalc.promoCents / 100;
+      promoBadge = demo.activePromo.badge_texts?.[locale] || demo.activePromo.badge_texts?.['de'] || `−${Math.round(demo.activePromo.discount_basis_points / 100)} %`;
+      refPriceEur = demo.activePromo.show_reference_price ? tariff.sale_price_eur : null;
+    }
+  }
+
+  const effectiveTariff: Tariff = {
+    ...tariff,
+    customer_price_eur: displayPriceEur,
+    reference_price_eur: refPriceEur,
+    promo_badge: promoBadge,
+    regular_price_eur: tariff.sale_price_eur,
+  };
+
   if (showCheckout) {
-    return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={onClose} />;
+    return <CheckoutModal tariff={effectiveTariff} orderType="new_esim" onClose={onClose} />;
   }
 
   const closeLabel = t('btn_close' as any) || (locale === 'de' ? 'Schließen' : 'Close');
@@ -235,16 +260,16 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
               <p className="text-[11px] font-bold text-slate-500 mt-0.5">{t('card_validity')}</p>
             </div>
             <div className="rounded-2xl bg-emerald-50/80 p-3 text-center border border-emerald-100 shadow-2xs">
-              {tariff.reference_price_eur && tariff.reference_price_eur > (tariff.customer_price_eur ?? tariff.sale_price_eur) && (
+              {refPriceEur && refPriceEur > displayPriceEur && (
                 <p className="text-[10px] text-slate-400 line-through font-medium leading-none mb-0.5">
-                  statt {formatCurrencyEuro(tariff.reference_price_eur, locale)}
+                  statt {formatCurrencyEuro(refPriceEur, locale)}
                 </p>
               )}
               <div className="flex items-center justify-center gap-1">
-                <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-lg sm:text-xl font-extrabold text-emerald-700 leading-tight" />
-                {tariff.promo_badge && (
+                <Price eur={displayPriceEur} className="text-lg sm:text-xl font-extrabold text-emerald-700 leading-tight" />
+                {promoBadge && (
                   <span className="rounded-md bg-rose-600 px-1 py-0.2 text-[10px] font-black text-white shadow-2xs">
-                    {tariff.promo_badge}
+                    {promoBadge}
                   </span>
                 )}
               </div>
@@ -362,14 +387,14 @@ export function TariffDetailModal({ tariff, onClose }: Props) {
         <div className="shrink-0 p-4 sm:p-5 border-t border-slate-100 bg-white shadow-md space-y-2">
           <div className="flex gap-2.5">
             <button
-              onClick={() => { addItem(tariff); setAdded(true); setTimeout(() => setAdded(false), 1500); }}
+              onClick={() => { addItem(effectiveTariff); setAdded(true); setTimeout(() => setAdded(false), 1500); }}
               className="flex-1 inline-flex h-12 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-brand-200 bg-brand-50 text-xs sm:text-sm font-semibold text-brand-700 hover:bg-brand-100 hover:border-brand-300 active:scale-[0.98] transition-all cursor-pointer"
             >
               {added ? t('det_added') : t('det_add_cart')}
             </button>
             <button
               onClick={() => {
-                addItem(tariff);
+                addItem(effectiveTariff);
                 open();
                 onClose();
               }}

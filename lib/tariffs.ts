@@ -110,6 +110,7 @@ export interface PublicTariff {
   validity_days:        number;
   sale_price_eur:       number;
   customer_price_eur?:  number;
+  regular_price_eur?:   number;
   tariff_type:          'travel_standard' | 'travel_premium' | 'unlimited_eco' | 'unlimited_pro' | string | null;
   speed_kbps:           number | null;
   label:                string | null;

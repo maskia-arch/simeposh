@@ -9,6 +9,7 @@ import { Price } from '@/components/Price';
 import { displayCountryName, isNonHkIpTariff, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatCurrencyEuro } from '@/lib/currency';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { createClient } from '@/lib/supabase/client';
@@ -317,7 +318,21 @@ export function CartDrawer() {
                             aria-label={t('cart_increase_qty')}
                           >+</button>
                         </div>
-                        <Price eur={i.priceEur * i.quantity} className="text-xs font-black text-slate-900 tabular-nums" />
+                        <div className="flex flex-col items-end">
+                          {i.referencePriceEur && i.referencePriceEur > i.priceEur && (
+                            <span className="text-[10px] text-slate-400 line-through font-medium leading-none mb-0.5">
+                              statt {formatCurrencyEuro(i.referencePriceEur * i.quantity, locale)}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Price eur={i.priceEur * i.quantity} className="text-xs font-black text-slate-900 tabular-nums" />
+                            {i.promoBadge && (
+                              <span className="rounded bg-rose-600 px-1 py-0.2 text-[9px] font-black text-white">
+                                {i.promoBadge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );

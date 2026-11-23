@@ -12,6 +12,7 @@ import { CheckoutEmailField } from '@/components/CheckoutEmailField';
 import { displayCountryName, coverageLabel, isPremiumTariff } from '@/lib/tariff-display';
 import { useTranslation } from '@/lib/i18n';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
+import { formatCurrencyEuro } from '@/lib/currency';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, CartIcon, GlobeIcon, TrashIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 
 const TYPE_BADGE: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -292,7 +293,21 @@ export function CartPageClient({
                       <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums">{i.quantity}</span>
                       <button onClick={() => setQuantity(i.key, i.quantity + 1)} className="px-3 py-1.5 text-slate-500 hover:bg-slate-50">+</button>
                     </div>
-                    <Price eur={i.priceEur * i.quantity} className="font-bold text-slate-900 tabular-nums" />
+                    <div className="flex flex-col items-end">
+                      {i.referencePriceEur && i.referencePriceEur > i.priceEur && (
+                        <span className="text-xs text-slate-400 line-through font-medium leading-none mb-1">
+                          statt {formatCurrencyEuro(i.referencePriceEur * i.quantity, locale)}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Price eur={i.priceEur * i.quantity} className="font-bold text-slate-900 tabular-nums" />
+                        {i.promoBadge && (
+                          <span className="rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-black text-white">
+                            {i.promoBadge}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

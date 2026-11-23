@@ -65,6 +65,28 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
   const cleanedTitle = cleanTariffName(tariff.name);
   const reloadInfo   = getReloadabilityInfo(tariff);
 
+  let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
+  let promoBadge = tariff.promo_badge;
+  let refPriceEur = tariff.reference_price_eur;
+
+  if (demo.activePromo && isTravel) {
+    const regCents = Math.round(tariff.sale_price_eur * 100);
+    const promoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
+    if (promoCalc.applied) {
+      displayPriceEur = promoCalc.promoCents / 100;
+      promoBadge = demo.activePromo.badge_texts?.[locale] || demo.activePromo.badge_texts?.['de'] || `−${Math.round(demo.activePromo.discount_basis_points / 100)} %`;
+      refPriceEur = demo.activePromo.show_reference_price ? tariff.sale_price_eur : null;
+    }
+  }
+
+  const effectiveTariff: Tariff = {
+    ...tariff,
+    customer_price_eur: displayPriceEur,
+    reference_price_eur: refPriceEur,
+    promo_badge: promoBadge,
+    regular_price_eur: tariff.sale_price_eur,
+  };
+
   const countryCount = (tariff.location_codes ?? []).length;
   const isMultiCountry = countryCount > 1;
   const cardTitle = isMultiCountry
@@ -396,80 +418,62 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
         </div>
 
         {/* ── Price ── */}
-        {(() => {
-          let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
-          let promoBadge = tariff.promo_badge;
-          let refPriceEur = tariff.reference_price_eur;
-
-          if (demo.activePromo && isTravel) {
-            const regCents = Math.round(tariff.sale_price_eur * 100);
-            const promoCalc = calculatePromoPriceCents(regCents, demo.activePromo.discount_basis_points, demo.activePromo.rounding_strategy);
-            if (promoCalc.applied) {
-              displayPriceEur = promoCalc.promoCents / 100;
-              promoBadge = demo.activePromo.badge_texts?.[locale] || demo.activePromo.badge_texts?.['de'] || `−${Math.round(demo.activePromo.discount_basis_points / 100)} %`;
-              refPriceEur = demo.activePromo.show_reference_price ? tariff.sale_price_eur : null;
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
+          <div
+            className="flex flex-col"
+            aria-label={
+              isUnlimited
+                ? `${formatCurrencyEuro(displayPriceEur, locale)} ${getPerDayAriaUnit(locale)}`
+                : undefined
             }
-          }
-
-          return (
-            <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
-              <div
-                className="flex flex-col"
-                aria-label={
-                  isUnlimited
-                    ? `${formatCurrencyEuro(displayPriceEur, locale)} ${getPerDayAriaUnit(locale)}`
-                    : undefined
-                }
-              >
-                {refPriceEur && refPriceEur > displayPriceEur && (
-                  <span className="text-[11px] text-slate-400 line-through font-medium leading-none mb-1">
-                    statt {formatCurrencyEuro(refPriceEur, locale)}
-                  </span>
-                )}
-                <div className="flex items-baseline gap-1.5">
-                  <Price
-                    eur={displayPriceEur}
-                    className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
-                  />
-                  {promoBadge && (
-                    <span className="rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-black text-white shadow-xs">
-                      {promoBadge}
-                    </span>
-                  )}
-                  {isUnlimited && (
-                    <span className="text-xs font-semibold text-slate-500">
-                      {t('unit_per_day')}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {onDetail && (
-                <Link
-                  href={getTariffCanonicalPath(tariff.package_code, locale)}
-                  prefetch={false}
-                  onClick={(e) => {
-                    // If it's a standard left click without modifier keys, trigger modal for smooth UX
-                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onDetail(tariff);
-                    }
-                  }}
-                  className="relative h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:inset-0 after:content-[''] after:z-10"
-                  title={t('card_details')}
-                  aria-label={t('card_details')}
-                >
-                  <span className="relative z-20">{t('card_details')}</span> <span className="ml-1 opacity-70 relative z-20">ⓘ</span>
-                </Link>
+          >
+            {refPriceEur && refPriceEur > displayPriceEur && (
+              <span className="text-[11px] text-slate-400 line-through font-medium leading-none mb-1">
+                statt {formatCurrencyEuro(refPriceEur, locale)}
+              </span>
+            )}
+            <div className="flex items-baseline gap-1.5">
+              <Price
+                eur={displayPriceEur}
+                className={`${isRecommended ? 'text-2xl font-black text-brand-700' : 'text-xl font-extrabold text-slate-900'}`}
+              />
+              {promoBadge && (
+                <span className="rounded-md bg-rose-600 px-1.5 py-0.5 text-xs font-black text-white shadow-xs">
+                  {promoBadge}
+                </span>
+              )}
+              {isUnlimited && (
+                <span className="text-xs font-semibold text-slate-500">
+                  {t('unit_per_day')}
+                </span>
               )}
             </div>
-          );
-        })()}
+          </div>
+          {onDetail && (
+            <Link
+              href={getTariffCanonicalPath(tariff.package_code, locale)}
+              prefetch={false}
+              onClick={(e) => {
+                // If it's a standard left click without modifier keys, trigger modal for smooth UX
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDetail(effectiveTariff);
+                }
+              }}
+              className="relative h-11 min-w-[75px] px-3.5 inline-flex items-center justify-center text-xs font-semibold text-[#475569] hover:text-brand-600 transition-colors cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 after:absolute after:inset-0 after:content-[''] after:z-10"
+              title={t('card_details')}
+              aria-label={t('card_details')}
+            >
+              <span className="relative z-20">{t('card_details')}</span> <span className="ml-1 opacity-70 relative z-20">ⓘ</span>
+            </Link>
+          )}
+        </div>
 
         {/* ── CTAs: Add to cart + Buy now ── */}
         <div className="mt-3 flex gap-2 items-center">
           <button
-            onClick={(e) => { e.stopPropagation(); addItem(tariff); open(); }}
+            onClick={(e) => { e.stopPropagation(); addItem(effectiveTariff); open(); }}
             style={{
               borderColor: demo?.activeTheme?.isDark ? (demo.activeTheme.cardBorderColor || '#3f3f46') : undefined,
               backgroundColor: demo?.activeTheme?.accentBgColor || undefined,
@@ -487,7 +491,7 @@ export function TariffCard({ tariff, onBuy, onDetail, loading, isRecommended }: 
           <button
             onClick={(e) => {
               e.stopPropagation();
-              addItem(tariff);
+              addItem(effectiveTariff);
               open();
             }}
             style={{

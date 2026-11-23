@@ -8,6 +8,9 @@ import { useHideChatBubble } from '@/lib/useHideChatBubble';
 import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { formatGb } from '@/lib/utils';
 import { displayCountryName, formatLocalizedTariffName, formatFullCheckoutTariffName } from '@/lib/tariff-display';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
+import type { Promotion } from '@/lib/pricing-service';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -22,7 +25,14 @@ export interface CartItem {
   flagEmoji:    string | null;
   dataGb:       number | null;
   validityDays: number;
+  /** Effective payable price per unit */
   priceEur:     number;
+  /** Regular base price per unit before promo discounts */
+  regularPriceEur?: number;
+  /** Reference/Strikethrough price per unit if reference price is enabled */
+  referencePriceEur?: number | null;
+  /** Promotional badge text, e.g. "-15 %" */
+  promoBadge?:  string | null;
   tariffType:   string | null;
   /** snapshot of coverage for nicer display in the cart */
   locationCodes: string[] | null;
@@ -60,14 +70,65 @@ function loadCart(): CartItem[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item: any) => ({
+      ...item,
+      regularPriceEur: item.regularPriceEur ?? item.priceEur,
+    }));
   } catch {
     return [];
   }
 }
 
+function computePromoForItem(
+  item: {
+    regularPriceEur?: number;
+    priceEur: number;
+    topUpIccid?: string | null;
+    tariffType?: string | null;
+    dataGb?: number | null;
+    customerPriceEur?: number;
+    referencePriceEur?: number | null;
+    promoBadge?: string | null;
+  },
+  activePromo: Promotion | null,
+  activeTopupPromo: Promotion | null,
+  locale: string,
+) {
+  const isTopUp = Boolean(item.topUpIccid);
+  const isUnlimited = item.tariffType?.startsWith('unlimited') || item.dataGb === 0;
+  const promo = isTopUp ? activeTopupPromo : activePromo;
+  const baseRegPrice = item.regularPriceEur ?? item.priceEur;
+
+  let targetPrice = item.customerPriceEur ?? baseRegPrice;
+  let targetRef: number | null = item.referencePriceEur ?? null;
+  let targetBadge: string | null = item.promoBadge ?? null;
+
+  if (promo && promo.discount_basis_points > 0 && !isUnlimited) {
+    const regCents = Math.round(baseRegPrice * 100);
+    const promoCalc = calculatePromoPriceCents(regCents, promo.discount_basis_points, promo.rounding_strategy);
+    if (promoCalc.applied) {
+      targetPrice = promoCalc.promoCents / 100;
+      targetRef = promo.show_reference_price ? baseRegPrice : null;
+      targetBadge = promo.badge_texts?.[locale] || promo.badge_texts?.['de'] || `−${Math.round(promo.discount_basis_points / 100)} %`;
+    }
+  } else if (!promo || promo.discount_basis_points <= 0) {
+    targetPrice = baseRegPrice;
+    targetRef = null;
+    targetBadge = null;
+  }
+
+  return {
+    regularPriceEur: baseRegPrice,
+    priceEur: targetPrice,
+    referencePriceEur: targetRef,
+    promoBadge: targetBadge,
+  };
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { locale, t } = useTranslation();
+  const demo = useThemeDemo();
   const [items,  setItems]  = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -80,6 +141,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems(loadCart());
     setHydrated(true);
   }, []);
+
+  // Reconcile and dynamically re-price cart items whenever promotion or locale changes
+  useEffect(() => {
+    if (!hydrated) return;
+    setItems((prev) => {
+      let changed = false;
+      const next = prev.map((item) => {
+        const promoFields = computePromoForItem(
+          item,
+          demo?.activePromo ?? null,
+          demo?.activeTopupPromo ?? null,
+          locale,
+        );
+        if (
+          item.priceEur !== promoFields.priceEur ||
+          item.regularPriceEur !== promoFields.regularPriceEur ||
+          item.referencePriceEur !== promoFields.referencePriceEur ||
+          item.promoBadge !== promoFields.promoBadge
+        ) {
+          changed = true;
+          return { ...item, ...promoFields };
+        }
+        return item;
+      });
+      return changed ? next : prev;
+    });
+  }, [hydrated, demo?.activePromo, demo?.activeTopupPromo, locale]);
 
   // Auto-hide toast notification
   useEffect(() => {
@@ -120,7 +208,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem('esim_checkout_amount', amountStr);
       }
     } catch { /* quota / private mode – ignore */ }
-  }, [items, hydrated]);
+  }, [items, hydrated, locale]);
 
   // Sync across tabs
   useEffect(() => {
@@ -139,11 +227,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const countryLabel = displayCountryName(tariff, locale);
     const localizedName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
 
+    const regularPriceEur = (tariff as any).regular_price_eur ?? (tariff as any).sale_price_eur ?? tariff.sale_price_eur;
+    const promoFields = computePromoForItem(
+      {
+        regularPriceEur,
+        priceEur: (tariff as any).customer_price_eur ?? tariff.sale_price_eur,
+        topUpIccid,
+        tariffType: tariff.tariff_type,
+        dataGb: tariff.data_gb,
+        customerPriceEur: (tariff as any).customer_price_eur,
+        referencePriceEur: (tariff as any).reference_price_eur,
+        promoBadge: (tariff as any).promo_badge,
+      },
+      demo?.activePromo ?? null,
+      demo?.activeTopupPromo ?? null,
+      locale,
+    );
+
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.key === key);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], quantity: Math.min(99, next[idx].quantity + quantity) };
+        next[idx] = {
+          ...next[idx],
+          ...promoFields,
+          quantity: Math.min(99, next[idx].quantity + quantity),
+        };
         return next;
       }
       const item: CartItem = {
@@ -156,7 +265,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         flagEmoji:     tariff.flag_emoji,
         dataGb:        tariff.data_gb,
         validityDays:  tariff.validity_days,
-        priceEur:      (tariff as any).customer_price_eur ?? tariff.sale_price_eur,
+        priceEur:      promoFields.priceEur,
+        regularPriceEur: promoFields.regularPriceEur,
+        referencePriceEur: promoFields.referencePriceEur,
+        promoBadge:    promoFields.promoBadge,
         tariffType:    tariff.tariff_type,
         locationCodes: tariff.location_codes,
         region:        tariff.region,
@@ -173,7 +285,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       show: true,
       message: localizedName,
     });
-  }, [locale]);
+  }, [locale, demo?.activePromo, demo?.activeTopupPromo]);
 
   const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => i.key !== key));

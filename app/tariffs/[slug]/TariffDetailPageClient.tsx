@@ -14,6 +14,7 @@ import type { TranslationKeys } from '@/lib/i18n';
 import { displayCountryName, coverageLabel, getTariffOperators, isoName, getReloadabilityInfo, isPremiumTariff, getTariffBreakoutIp, formatIpFullList, isTurkeyTariff, getTariffActivationNoticeKey, getTariffSpeedDesc, formatLocalizedTariffName, getTariffSpecialFeatures } from '@/lib/tariff-display';
 import { PlaneIcon, InfinityIcon, EcoIcon, BoltIcon, GlobeIcon, TagIcon, NoPhoneIcon, ShieldIcon, InfoIcon, NetworkIcon, TravelGlobeIcon, TravelPremiumGlobeIcon } from '@/components/Icons';
 import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 
 type Tariff = PublicTariff;
 
@@ -34,7 +35,7 @@ const TYPE_INFO: Record<string, { icon: React.ReactNode; color: string; labelKey
 };
 
 export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
-  const { activeTheme } = useThemeDemo();
+  const { activeTheme, activePromo } = useThemeDemo();
   const [showCheckout, setShowCheckout] = useState(false);
   const [added, setAdded] = useState(false);
   const [showCountryList, setShowCountryList] = useState(false);
@@ -54,6 +55,28 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const coverage     = coverageLabel(tariff, locale);
   const reloadInfo   = getReloadabilityInfo(tariff);
 
+  let displayPriceEur = tariff.customer_price_eur ?? tariff.sale_price_eur;
+  let promoBadge = tariff.promo_badge;
+  let refPriceEur = tariff.reference_price_eur;
+
+  if (activePromo && isTravel) {
+    const regCents = Math.round(tariff.sale_price_eur * 100);
+    const promoCalc = calculatePromoPriceCents(regCents, activePromo.discount_basis_points, activePromo.rounding_strategy);
+    if (promoCalc.applied) {
+      displayPriceEur = promoCalc.promoCents / 100;
+      promoBadge = activePromo.badge_texts?.[locale] || activePromo.badge_texts?.['de'] || `−${Math.round(activePromo.discount_basis_points / 100)} %`;
+      refPriceEur = activePromo.show_reference_price ? tariff.sale_price_eur : null;
+    }
+  }
+
+  const effectiveTariff: Tariff = {
+    ...tariff,
+    customer_price_eur: displayPriceEur,
+    reference_price_eur: refPriceEur,
+    promo_badge: promoBadge,
+    regular_price_eur: tariff.sale_price_eur,
+  };
+
   let dataLabel = formatGb(tariff.data_gb);
   if (isUnlimited) {
     const localizedFullName = formatLocalizedTariffName(tariff.name, countryLabel, tariff.country_name, locale);
@@ -67,7 +90,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
   const h1Title = `${t('esim_for_country' as any, { country: countryLabel }) || countryLabel} – ${dataLabel}`;
 
   if (showCheckout) {
-    return <CheckoutModal tariff={tariff} orderType="new_esim" onClose={() => setShowCheckout(false)} />;
+    return <CheckoutModal tariff={effectiveTariff} orderType="new_esim" onClose={() => setShowCheckout(false)} />;
   }
 
   return (
@@ -291,18 +314,18 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/60 flex items-center justify-between">
               <div>
                 <p className={`text-xs text-slate-500 font-semibold ${locale === 'tr' ? '' : 'uppercase'}`}>{t('det_price')}</p>
-                {tariff.reference_price_eur && tariff.reference_price_eur > (tariff.customer_price_eur ?? tariff.sale_price_eur) && (
+                {refPriceEur && refPriceEur > displayPriceEur && (
                   <p className="text-xs text-slate-400 line-through font-medium">
-                    statt {formatCurrencyEuro(tariff.reference_price_eur, locale)}
+                    statt {formatCurrencyEuro(refPriceEur, locale)}
                   </p>
                 )}
-                <p className="text-xs text-slate-400 mt-0.5">~ {formatCurrencyEuro(perDayEur(tariff), locale)} {t('unit_per_day')}</p>
+                <p className="text-xs text-slate-400 mt-0.5">~ {formatCurrencyEuro(perDayEur({ ...tariff, sale_price_eur: displayPriceEur }), locale)} {t('unit_per_day')}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Price eur={tariff.customer_price_eur ?? tariff.sale_price_eur} className="text-3xl font-black text-slate-900" />
-                {tariff.promo_badge && (
+                <Price eur={displayPriceEur} className="text-3xl font-black text-slate-900" />
+                {promoBadge && (
                   <span className="rounded-md bg-rose-600 px-2 py-1 text-xs font-black text-white shadow-sm">
-                    {tariff.promo_badge}
+                    {promoBadge}
                   </span>
                 )}
               </div>
@@ -333,7 +356,7 @@ export default function TariffDetailPageClient({ tariff }: { tariff: Tariff }) {
             {/* CTAs */}
             <div className="space-y-3 pt-4 border-t border-slate-100">
               <button
-                onClick={() => { addItem(tariff); setAdded(true); setTimeout(() => setAdded(false), 1500); }}
+                onClick={() => { addItem(effectiveTariff); setAdded(true); setTimeout(() => setAdded(false), 1500); }}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-brand-200 bg-brand-50 py-3.5 text-base font-bold text-brand-700 hover:bg-brand-100 active:scale-[0.98] transition-all cursor-pointer"
               >
                 {added ? t('det_added') : t('det_add_cart')}

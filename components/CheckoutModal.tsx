@@ -10,6 +10,9 @@ import { formatDaysWithUnit } from '@/lib/i18n/plural';
 import { Price } from '@/components/Price';
 import { CryptoPaySelector } from '@/components/CryptoPaySelector';
 import { useHideChatBubble } from '@/lib/useHideChatBubble';
+import { formatCurrencyEuro } from '@/lib/currency';
+import { useThemeDemo } from '@/lib/theme-demo-context';
+import { calculatePromoPriceCents } from '@/lib/promo-calculator';
 
 type Tariff = PublicTariff | Database['public']['Tables']['tariffs']['Row'];
 
@@ -36,6 +39,21 @@ export function CheckoutModal({
   const [totalSpend, setTotalSpend] = useState<number>(0);
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
   const isUnlimited = tariff.tariff_type?.startsWith('unlimited') || tariff.data_gb === 0;
+  const isTravel = !isUnlimited;
+  const demo = useThemeDemo();
+  const promo = orderType === 'top_up' ? demo?.activeTopupPromo : demo?.activePromo;
+
+  let displayPriceEur = (tariff as any).customer_price_eur ?? tariff.sale_price_eur;
+  let refPriceEur = (tariff as any).reference_price_eur ?? null;
+
+  if (promo && promo.discount_basis_points > 0 && isTravel) {
+    const regCents = Math.round(tariff.sale_price_eur * 100);
+    const promoCalc = calculatePromoPriceCents(regCents, promo.discount_basis_points, promo.rounding_strategy);
+    if (promoCalc.applied) {
+      displayPriceEur = promoCalc.promoCents / 100;
+      refPriceEur = promo.show_reference_price ? tariff.sale_price_eur : null;
+    }
+  }
 
   useHideChatBubble(true);
 
@@ -144,9 +162,16 @@ export function CheckoutModal({
               <span className="font-mono text-xs">{topUpIccid}</span>
             </div>
           )}
-          <div className="mt-2 flex justify-between border-t border-brand-200 pt-2">
+          <div className="mt-2 flex items-baseline justify-between border-t border-brand-200 pt-2">
             <span className="font-semibold text-slate-800">{t('checkout_total')}</span>
-            <Price eur={tariff.sale_price_eur} className="text-xl font-bold text-brand-700" />
+            <div className="flex flex-col items-end">
+              {refPriceEur && refPriceEur > displayPriceEur && (
+                <span className="text-[11px] text-slate-400 line-through font-medium leading-none mb-0.5">
+                  statt {formatCurrencyEuro(refPriceEur, locale)}
+                </span>
+              )}
+              <Price eur={displayPriceEur} className="text-xl font-bold text-brand-700" />
+            </div>
           </div>
         </div>
 
@@ -155,7 +180,7 @@ export function CheckoutModal({
           {user ? (
             <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 leading-normal">
               {t('checkout_cashback_earned' as any, { 
-                amount: (tariff.sale_price_eur * (
+                amount: (displayPriceEur * (
                   (totalSpend >= 1000 ? 0.10 : totalSpend >= 500 ? 0.08 : totalSpend >= 100 ? 0.06 : 0.05) + 
                   (extraCashbackQueue > 0 ? 0.05 : 0)
                 )).toFixed(2)
@@ -206,7 +231,7 @@ export function CheckoutModal({
         <CryptoPaySelector
           email={email}
           items={[{ tariffId: tariff.id, quantity: 1, days: days || (isUnlimited ? tariff.validity_days : undefined), topUpIccid: orderType === 'top_up' ? topUpIccid : undefined }]}
-          total={tariff.sale_price_eur}
+          total={displayPriceEur}
           balance={balance}
           user={user}
         />
