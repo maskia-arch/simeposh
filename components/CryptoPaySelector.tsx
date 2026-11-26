@@ -42,6 +42,7 @@ interface CryptoPaySelectorProps {
   email: string;
   items: CryptoItem[];
   total: number;
+  cashTotal?: number;
   balance: number;
   user: any;
   emailError?: string;
@@ -72,9 +73,9 @@ function ShieldCheckIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function CryptoPaySelector({ email, items, total, balance, user, emailError, setEmailError }: CryptoPaySelectorProps) {
+export function CryptoPaySelector({ email, items, total, cashTotal, balance, user, emailError, setEmailError }: CryptoPaySelectorProps) {
   const { locale, t } = useTranslation();
-  const { items: cartItems } = useCart();
+  const { items: cartItems, clear: clearCart } = useCart();
   const [coins, setCoins]                 = useState<CoinOption[]>([]);
   const [loading, setLoading]             = useState<string | null>(null);
   const [error, setError]                 = useState('');
@@ -91,6 +92,12 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [activeTab, setActiveTab]        = useState<'crypto' | 'cash'>('crypto');
   const submittingRef = useRef(false);
+  const userChoseMethodRef = useRef(false);
+
+  const effectiveCashTotal = cashTotal ?? total;
+  const balanceCents = Math.round((Number(balance) || 0) * 100);
+  const cashTotalCents = Math.round((Number(effectiveCashTotal) || 0) * 100);
+  const hasEnoughBalance = Boolean(user) && cashTotalCents > 0 && balanceCents >= cashTotalCents;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -109,26 +116,27 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
       .then((d) => {
         const loadedCoins: CoinOption[] = d.coins ?? [];
         setCoins(loadedCoins);
-        if (!selectedMethod) {
-          if (user && balance >= total) {
-            setActiveTab('cash');
-            setSelectedMethod('ESIM_CASH');
-          } else if (loadedCoins.length > 0) {
-            setActiveTab('crypto');
-            const defaultCoin = loadedCoins.find((c) => c.code === 'LTC') || loadedCoins[0];
-            setSelectedMethod(defaultCoin.code);
-          } else {
-            setSelectedMethod('LTC');
-          }
-        }
       })
       .catch(() => {
         setCoins([]);
-        if (!selectedMethod) setSelectedMethod('LTC');
       });
-  }, [user, balance, total]);
+  }, []);
 
-  const hasEnoughBalance = balance >= total;
+  useEffect(() => {
+    if (userChoseMethodRef.current) return;
+    const currentVisibleCoins = coins.filter((c) => total >= (c.minOrderEur || 0));
+    if (user && hasEnoughBalance) {
+      setActiveTab('cash');
+      setSelectedMethod('ESIM_CASH');
+    } else if (currentVisibleCoins.length > 0) {
+      setActiveTab('crypto');
+      const defaultCoin = currentVisibleCoins.find((c) => c.code === 'LTC') || currentVisibleCoins[0];
+      setSelectedMethod(defaultCoin.code);
+    } else {
+      setActiveTab('crypto');
+      setSelectedMethod('LTC');
+    }
+  }, [user, hasEnoughBalance, coins, total]);
 
   function validateCheckoutForm(): boolean {
     let emailOk = true;
@@ -197,7 +205,15 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
       }
       return;
     }
-    if (!hasEnoughBalance) return;
+    if (!hasEnoughBalance) {
+      setError(
+        t('pay_insufficient', {
+          total: formatCurrencyEuro(effectiveCashTotal, locale),
+          balance: formatCurrencyEuro(balance, locale),
+        })
+      );
+      return;
+    }
 
     submittingRef.current = true;
     setLoading('ESIM_CASH');
@@ -231,6 +247,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
            email: effectiveEmail,
            coin: 'ESIM_CASH',
            items,
+           expectedTotalCents: cashTotalCents,
            termsAccepted: true,
            termsVersion: '2026-06',
            newsletterConsent: acceptedNewsletter,
@@ -255,6 +272,10 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
             return;
           }
         }
+        if (res.status === 409 && data.code === 'PRICE_CHANGED') {
+          setError(data.error ?? t('pay_error'));
+          return;
+        }
         throw new Error(data.error ?? t('pay_error'));
       }
       if (!data.ref) {
@@ -262,7 +283,12 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         setLoading(null);
         throw new Error(data.error ?? t('pay_error'));
       }
-      window.location.href = `/order?ref=${data.ref}`;
+      try {
+        clearCart();
+        localStorage.removeItem('esim_cart_v1');
+      } catch {}
+      const orderUrl = locale === 'de' ? `/order?ref=${data.ref}` : `/${locale}/order?ref=${data.ref}`;
+      window.location.href = orderUrl;
     } catch (err) {
       submittingRef.current = false;
       setLoading(null);
@@ -365,15 +391,22 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
   const visibleCoins = coins.filter((c) => total >= (c.minOrderEur || 0));
   const hiddenCoinsCount = coins.length - visibleCoins.length;
   const selectedCoin = visibleCoins.find((c) => c.code === selectedMethod);
+  const isCashSelected = selectedMethod === 'ESIM_CASH' || activeTab === 'cash';
+  const baseSubtotal = isCashSelected ? effectiveCashTotal : total;
   let fee = 0;
-  if (selectedCoin) {
+  if (!isCashSelected && selectedCoin) {
     if (selectedCoin.surchargePct > 0) {
       fee = total * (selectedCoin.surchargePct / 100);
     } else if (selectedCoin.surchargeFixedEur > 0) {
       fee = selectedCoin.surchargeFixedEur;
     }
   }
-  const finalTotal = total + fee;
+  const finalTotal = Math.round((baseSubtotal + fee) * 100) / 100;
+  const cashDisabled = isCashSelected && (!user || !hasEnoughBalance);
+  const loginRedirectUrl =
+    typeof window !== 'undefined'
+      ? `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
+      : '/login';
 
   return (
     <div className="space-y-3">
@@ -387,6 +420,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
           <button
             type="button"
             onClick={() => {
+              userChoseMethodRef.current = true;
               setActiveTab('crypto');
               if (visibleCoins.length > 0) {
                 const defaultCoin = visibleCoins.find((c) => c.code === 'LTC') || visibleCoins[0];
@@ -407,6 +441,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
           <button
             type="button"
             onClick={() => {
+              userChoseMethodRef.current = true;
               setActiveTab('cash');
               setSelectedMethod('ESIM_CASH');
               setError('');
@@ -440,6 +475,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
                     key={c.code}
                     type="button"
                     onClick={() => {
+                      userChoseMethodRef.current = true;
                       setSelectedMethod(c.code);
                       setError('');
                     }}
@@ -518,16 +554,39 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
 
         {/* Tab Content: eSIM Cash Info */}
         {activeTab === 'cash' && (
-          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-2 text-xs">
+          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-2.5 text-xs space-y-1.5">
             <div className="flex items-center justify-between text-slate-800 font-bold">
               <span>{t('pay_cash_balance_label')}</span>
-              <span className={hasEnoughBalance ? 'text-emerald-700 font-extrabold' : 'text-amber-600'}>
+              <span className={hasEnoughBalance ? 'text-emerald-700 font-extrabold' : 'text-amber-600 font-extrabold'}>
                 {user ? formatCurrencyEuro(balance, locale) : t('pay_not_logged_in')}
               </span>
             </div>
-            {!user && (
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                {t('pay_cash_login_hint')}
+            {!user ? (
+              <p className="text-[11px] text-slate-600 leading-snug">
+                {t('pay_cash_login_hint')}{' '}
+                <a href={loginRedirectUrl} className="font-extrabold text-brand-700 underline hover:text-brand-900">
+                  {t('cart_login_link')}
+                </a>
+              </p>
+            ) : !hasEnoughBalance ? (
+              <p className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 leading-snug">
+                {t('pay_insufficient', {
+                  total: formatCurrencyEuro(effectiveCashTotal, locale),
+                  balance: formatCurrencyEuro(balance, locale),
+                })}
+              </p>
+            ) : (
+              <p className="text-[11px] font-semibold text-emerald-700 leading-snug">
+                {locale === 'de'
+                  ? `Verbleibend nach Kauf: ${formatCurrencyEuro((balanceCents - cashTotalCents) / 100, locale)}`
+                  : `Remaining after purchase: ${formatCurrencyEuro((balanceCents - cashTotalCents) / 100, locale)}`}
+              </p>
+            )}
+            {Math.round(effectiveCashTotal * 100) > Math.round(total * 100) && (
+              <p className="text-[10px] text-slate-500 leading-snug">
+                {locale === 'de'
+                  ? 'Hinweis: Aktionsrabatte gelten nur bei Krypto-Zahlung (regulärer Tarifpreis bei eSIM Cash).'
+                  : 'Note: Promotional discounts apply to crypto payments only (regular plan price with eSIM Cash).'}
               </p>
             )}
           </div>
@@ -539,7 +598,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         <div className="space-y-0.5">
           <div className="flex items-baseline justify-between text-xs text-slate-500">
             <span>{t('pay_subtotal')}</span>
-            <span className="tabular-nums font-semibold">{formatCurrencyEuro(total, locale)}</span>
+            <span className="tabular-nums font-semibold">{formatCurrencyEuro(baseSubtotal, locale)}</span>
           </div>
           {fee > 0 ? (
             <div className="flex items-baseline justify-between text-xs text-amber-700 font-semibold">
@@ -633,7 +692,7 @@ export function CryptoPaySelector({ email, items, total, balance, user, emailErr
         <button
           type="button"
           data-testid="pay-now"
-          disabled={loading !== null || submittingRef.current}
+          disabled={loading !== null || submittingRef.current || cashDisabled}
           aria-busy={loading !== null || submittingRef.current ? 'true' : undefined}
           onClick={() => {
             if (submittingRef.current || loading !== null) return;

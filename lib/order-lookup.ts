@@ -184,10 +184,21 @@ export async function lookupOrderData(rawRef: string | null | undefined): Promis
   });
 
   const allDone = orders.every(
-    (o) => o.status === 'completed' || o.status === 'failed' || o.status === 'expired' || o.status === 'cancelled'
+    (o) =>
+      o.status === 'completed' ||
+      o.status === 'failed' ||
+      o.status === 'expired' ||
+      o.status === 'cancelled' ||
+      o.status === 'refunded'
   );
   const isPaid = orders.some((o) => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning');
-  const totalPaid = isPaid ? orders.reduce((s, o) => s + (o.amountEur ?? 0), 0) : 0;
+  const totalPaid = orders
+    .filter((o) => o.status === 'paid' || o.status === 'completed' || o.status === 'provisioning')
+    .reduce((s, o) => s + (o.amountEur ?? 0), 0);
+
+  if (paymentStatus === 'pending' && isPaid) {
+    paymentStatus = 'paid';
+  }
 
   return {
     ref,

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { getPublicBaseUrl } from '@/lib/url';
+import { createServiceClient } from '@/lib/supabase/server';
+import { claimGuestOrders } from '@/lib/customers';
+import { getReconciledUserCashAccount } from '@/lib/esim-cash';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,10 +41,22 @@ export async function GET(req: Request) {
         [newEmail, userId]
       );
 
-      // 2. Delete the used verification token
+      // 2. Sync eSIM Cash account & transactions to the verified new email
+      try {
+        const cleanNewEmail = String(newEmail).trim().toLowerCase();
+        await getReconciledUserCashAccount(userId, cleanNewEmail, { createIfMissing: false });
+        await query(
+          'UPDATE public.esim_cash_transactions SET email = $1 WHERE user_id = $2',
+          [cleanNewEmail, userId]
+        );
+      } catch (cashSyncErr) {
+        console.error('[Verify Email Token] eSIM Cash sync error:', cashSyncErr);
+      }
+
+      // 3. Delete the used verification token
       await query('DELETE FROM public.verification_tokens WHERE id = $1', [tokenRow.id]);
 
-      // 3. Clear session cookie so they have to log in again with new email
+      // 4. Clear session cookie so they have to log in again with new email
       const cookieStore = await cookies();
       cookieStore.delete('session_token');
 
@@ -49,7 +64,20 @@ export async function GET(req: Request) {
     } else {
       // ── Standard signup verification flow ──
       // 1. Update verification state to true
-      await query('UPDATE public.users SET is_verified = TRUE, updated_at = NOW() WHERE id = $1', [userId]);
+      const verifiedRes = await query(
+        'UPDATE public.users SET is_verified = TRUE, updated_at = NOW() WHERE id = $1 RETURNING email',
+        [userId]
+      );
+      const verifiedEmail = verifiedRes.rows[0]?.email;
+      if (verifiedEmail) {
+        try {
+          const service = createServiceClient();
+          await claimGuestOrders(service, userId, verifiedEmail);
+          await getReconciledUserCashAccount(userId, verifiedEmail, { createIfMissing: false });
+        } catch (claimErr) {
+          console.error('[Verify Email Token] Guest claim error:', claimErr);
+        }
+      }
 
       // 2. Delete the used verification token
       await query('DELETE FROM public.verification_tokens WHERE id = $1', [tokenRow.id]);

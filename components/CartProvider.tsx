@@ -50,7 +50,8 @@ interface CartContextValue {
   items:      CartItem[];
   count:      number;          // total units
   distinct:   number;          // distinct line items
-  total:      number;          // total EUR
+  total:      number;          // total EUR (crypto / displayed)
+  cashTotal:  number;          // total EUR when paying with eSIM Cash (respects applies_to_cash)
   isOpen:     boolean;
   open:       () => void;
   close:      () => void;
@@ -209,13 +210,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch { /* quota / private mode – ignore */ }
   }, [items, hydrated, locale]);
 
-  // Sync across tabs
+  // Sync across tabs & external clear events (e.g. after successful checkout)
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key === STORAGE_KEY) setItems(loadCart());
     }
+    function onCartCleared() {
+      setItems([]);
+    }
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener('cart-cleared', onCartCleared);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('cart-cleared', onCartCleared);
+    };
   }, []);
 
   const addItem = useCallback((tariff: Tariff, quantity = 1, opts?: { periodDays?: number; topUpIccid?: string }) => {
@@ -305,10 +313,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const count    = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items]);
   const distinct = items.length;
-  const total    = useMemo(() => items.reduce((s, i) => s + i.priceEur * i.quantity, 0), [items]);
+  const total    = useMemo(
+    () => items.reduce((s, i) => s + Math.round(i.priceEur * 100) * i.quantity, 0) / 100,
+    [items],
+  );
+  const cashTotal = useMemo(() => {
+    const cents = items.reduce((sum, item) => {
+      const isTopUp = Boolean(item.topUpIccid);
+      const promo = isTopUp ? demo?.activeTopupPromo : demo?.activePromo;
+      const promoAppliesToCash = Boolean(promo && promo.discount_basis_points > 0 && promo.applies_to_cash);
+      const unitEur = promoAppliesToCash ? item.priceEur : (item.regularPriceEur ?? item.priceEur);
+      return sum + Math.round(unitEur * 100) * item.quantity;
+    }, 0);
+    return cents / 100;
+  }, [items, demo?.activePromo, demo?.activeTopupPromo]);
 
   const value: CartContextValue = {
-    items, count, distinct, total, isOpen,
+    items, count, distinct, total, cashTotal, isOpen,
     open, close, toggle, addItem, removeItem, setQuantity, clear,
   };
 

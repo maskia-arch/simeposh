@@ -163,7 +163,11 @@ class BrowserQueryBuilder<T extends TableName = any, R = Row<T>, Single extends 
         return { data: null, error: { message: body.error || 'Query failed' }, count: 0 };
       }
 
-      return await res.json();
+      const payload = await res.json();
+      if (payload && typeof payload === 'object' && !Array.isArray(payload) && ('data' in payload || 'error' in payload)) {
+        return { data: payload.data ?? null, error: payload.error ?? null };
+      }
+      return { data: payload, error: null };
     } catch (err: any) {
       return { data: null, error: { message: err.message }, count: 0 };
     }
@@ -365,7 +369,11 @@ export async function fetchNamedQuery(queryName: string, params?: Record<string,
       const body = await res.json().catch(() => ({}));
       return { data: null, error: { message: body.error || 'Query failed' } };
     }
-    return await res.json();
+    const payload = await res.json();
+    if (payload && typeof payload === 'object' && !Array.isArray(payload) && ('data' in payload || 'error' in payload)) {
+      return { data: payload.data ?? null, error: payload.error ?? null };
+    }
+    return { data: payload, error: null };
   } catch (err: any) {
     return { data: null, error: { message: err.message } };
   }

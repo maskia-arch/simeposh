@@ -34,6 +34,7 @@ export function CheckoutModal({
 }: CheckoutModalProps) {
   const { t, locale }       = useTranslation();
   const [email, setEmail]   = useState('');
+  const [emailError, setEmailError] = useState('');
   const [user, setUser]     = useState<any>(null);
   const [balance, setBalance] = useState<number>(0);
   const [totalSpend, setTotalSpend] = useState<number>(0);
@@ -56,22 +57,39 @@ export function CheckoutModal({
     }
   }
 
+  const cashPriceEur =
+    promo && promo.discount_basis_points > 0 && promo.applies_to_cash
+      ? displayPriceEur
+      : baseRegPrice;
+
   useHideChatBubble(true);
 
   const supabase = createClient();
 
   useEffect(() => {
+    const syncCashAccount = () => {
+      supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+        if (acc) {
+          setBalance(Number(acc.balance_eur) || 0);
+          setTotalSpend(Number(acc.total_spend_eur) || 0);
+          setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+        } else {
+          setBalance(0);
+          setTotalSpend(0);
+          setExtraCashbackQueue(0);
+        }
+      });
+    };
+
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
         setEmail(data.user.email || '');
-        supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
-            if (acc) {
-              setBalance(Number(acc.balance_eur) || 0);
-              setTotalSpend(Number(acc.total_spend_eur) || 0);
-              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-            }
-          });
+        setEmailError('');
+        if (typeof (data.user as any).cash_balance_eur === 'number') {
+          setBalance((data.user as any).cash_balance_eur);
+        }
+        syncCashAccount();
       }
     });
 
@@ -81,13 +99,11 @@ export function CheckoutModal({
         setUser(u);
         if (u) {
           setEmail(u.email || '');
-          supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
-              if (acc) {
-                setBalance(Number(acc.balance_eur) || 0);
-                setTotalSpend(Number(acc.total_spend_eur) || 0);
-                setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-              }
-            });
+          setEmailError('');
+          if (typeof (u as any).cash_balance_eur === 'number') {
+            setBalance((u as any).cash_balance_eur);
+          }
+          syncCashAccount();
         } else {
           setBalance(0);
           setTotalSpend(0);
@@ -211,19 +227,31 @@ export function CheckoutModal({
             </div>
           ) : (
             <>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="checkout-email" className="block text-sm font-medium text-slate-700 mb-1">
                 {t('checkout_email_label')}
               </label>
               <input
-                id="email"
+                id="checkout-email"
                 type="email"
                 required
+                aria-invalid={!!emailError}
                 placeholder={t('checkout_email_ph')}
                 value={email}
-                onChange={(e) => setEmail(e.target.value.trim().toLowerCase())}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                onChange={(e) => {
+                  setEmail(e.target.value.trim().toLowerCase());
+                  if (emailError) setEmailError('');
+                }}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${
+                  emailError
+                    ? 'border-red-500 ring-2 ring-red-200 focus:border-red-500'
+                    : 'border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
+                }`}
               />
-              <p className="mt-1 text-xs text-slate-400">{t('checkout_email_hint')}</p>
+              {emailError ? (
+                <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{emailError}</p>
+              ) : (
+                <p className="mt-1 text-xs text-slate-400">{t('checkout_email_hint')}</p>
+              )}
             </>
           )}
         </div>
@@ -233,8 +261,11 @@ export function CheckoutModal({
           email={email}
           items={[{ tariffId: tariff.id, quantity: 1, days: days || (isUnlimited ? tariff.validity_days : undefined), topUpIccid: orderType === 'top_up' ? topUpIccid : undefined }]}
           total={displayPriceEur}
+          cashTotal={cashPriceEur}
           balance={balance}
           user={user}
+          emailError={emailError}
+          setEmailError={setEmailError}
         />
       </div>
     </div>

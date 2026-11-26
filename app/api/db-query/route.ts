@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { PostgresQueryBuilder } from '@/lib/supabase/postgresClient';
 import { getClientIp } from '@/lib/auth/rateLimit';
+import { query as runRawQuery } from '@/lib/db';
+import { getReconciledUserCashAccount } from '@/lib/esim-cash';
 
 // ── Rate Limiting for /api/db-query: 120 req/min per IP ──
 const ipDbQueryMap = new Map<string, { count: number; resetAt: number }>();
@@ -167,16 +169,23 @@ export async function POST(request: Request) {
       // 2. User eSIM Cash account balance
       case 'getUserCashAccount':
       case 'userCashAccount': {
-        const builder = new PostgresQueryBuilder('esim_cash_accounts');
-        builder
-          .select('balance_eur, total_spend_eur, extra_cashback_queue, affiliate_code')
-          .eq('email', sessionUserEmail)
-          .maybeSingle();
-        const queryRes = await builder;
-        if (queryRes.error) {
-          return NextResponse.json({ error: 'Database query execution error' }, { status: 500 });
+        const uRes = await runRawQuery(
+          'SELECT id, email, is_verified, deleted_at FROM public.users WHERE id = $1',
+          [sessionUserId]
+        );
+        const uRow = uRes.rows[0];
+        if (!uRow || uRow.deleted_at !== null || !uRow.is_verified || !uRow.email) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        resData = queryRes.data;
+        const acc = await getReconciledUserCashAccount(sessionUserId, String(uRow.email), { createIfMissing: false });
+        resData = acc
+          ? {
+              balance_eur: Number(acc.balance_eur || 0),
+              total_spend_eur: Number(acc.total_spend_eur || 0),
+              extra_cashback_queue: Number(acc.extra_cashback_queue || 0),
+              affiliate_code: acc.affiliate_code,
+            }
+          : null;
         break;
       }
 

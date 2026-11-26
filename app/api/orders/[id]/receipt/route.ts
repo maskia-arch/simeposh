@@ -41,7 +41,7 @@ export async function GET(
   const db = createServiceClient();
   const { data: order } = await db
     .from('orders')
-    .select('id, status, amount_eur, created_at, user_id, tariffs(country_name, country_code, data_gb, validity_days)')
+    .select('id, status, amount_eur, cashback_applied_eur, created_at, user_id, tariffs(country_name, country_code, data_gb, validity_days)')
     .eq('id', id)
     .eq('user_id', currentUserId)
     .maybeSingle();
@@ -49,6 +49,8 @@ export async function GET(
   if (!order) {
     return new NextResponse('Order Not Found', { status: 404 });
   }
+
+  const paidWithCash = Number((order as any).cashback_applied_eur || 0) > 0;
 
   const tariff = (order as any).tariffs;
   const locale = request.headers.get('x-locale') || 'de';
@@ -215,7 +217,9 @@ export async function GET(
           <td>
             <strong>${tariffName}</strong><br />
             <span style="font-size: 12px; color: #64748b;">
-              ${isDe ? 'Zahlungsmethode: Kryptowährung (Litecoin / LTC)' : 'Payment method: Cryptocurrency (Litecoin / LTC)'}
+              ${paidWithCash
+                ? (isDe ? 'Zahlungsmethode: eSIM Cash Guthaben' : 'Payment method: eSIM Cash Balance')
+                : (isDe ? 'Zahlungsmethode: Kryptowährung (Litecoin / LTC)' : 'Payment method: Cryptocurrency (Litecoin / LTC)')}
             </span>
           </td>
           <td style="text-align: right; font-weight: 600;">${totalAmount}</td>

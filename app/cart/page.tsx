@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getServerLocale, getServerT } from '@/lib/i18n/server';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { query } from '@/lib/db';
+import { getReconciledUserCashAccount } from '@/lib/esim-cash';
 import { buildAlternates } from '@/lib/seo';
 import { CartPageClient } from './CartPageClient';
 
@@ -43,6 +44,7 @@ export default async function CartPage({
   const isCancelled = params?.cancelled === '1' || params?.cancelled === 'true';
 
   let initialUser: any = null;
+  let initialBalance = 0;
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('session_token')?.value;
@@ -54,10 +56,13 @@ export default async function CartPage({
           [decoded.id]
         );
         if (rows.length > 0 && rows[0].is_verified) {
+          const acc = await getReconciledUserCashAccount(rows[0].id, rows[0].email, { createIfMissing: false });
+          initialBalance = Number(acc?.balance_eur || 0);
           initialUser = {
             id: rows[0].id,
             email: rows[0].email,
             is_verified: true,
+            cash_balance_eur: initialBalance,
             user_metadata: { full_name: rows[0].full_name || '' },
           };
         }
@@ -72,6 +77,7 @@ export default async function CartPage({
       initialCancelled={isCancelled}
       initialUser={initialUser}
       initialEmail={initialUser?.email || ''}
+      initialBalance={initialBalance}
     />
   );
 }

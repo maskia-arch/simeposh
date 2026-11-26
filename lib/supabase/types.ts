@@ -160,6 +160,9 @@ export interface Database {
           referred_by_code:     string | null;
           cashback_earned_eur:  number | null;
           cashback_applied_eur: number | null;
+          cashback_processed:   boolean | null;
+          terms_accepted_at:    string | null;
+          terms_version:        string | null;
           locale:               string | null;
           created_at:           string;
           updated_at:           string;
@@ -195,6 +198,9 @@ export interface Database {
           referred_by_code?:     string | null;
           cashback_earned_eur?:  number | null;
           cashback_applied_eur?: number | null;
+          cashback_processed?:   boolean | null;
+          terms_accepted_at?:    string | null;
+          terms_version?:        string | null;
           locale?:              string | null;
         };
         Update: {
@@ -223,6 +229,9 @@ export interface Database {
           referred_by_code?:     string | null;
           cashback_earned_eur?:  number | null;
           cashback_applied_eur?: number | null;
+          cashback_processed?:   boolean | null;
+          terms_accepted_at?:    string | null;
+          terms_version?:        string | null;
           locale?:              string | null;
         };
         Relationships: [
@@ -487,6 +496,7 @@ export interface Database {
           last_reminder_sent_at?: string | null;
         };
         Update: {
+          email?: string;
           user_id?: string | null;
           balance_eur?: number;
           total_spend_eur?: number;
@@ -510,6 +520,8 @@ export interface Database {
           amount: number;
           type: string;
           description: string | null;
+          checkout_ref: string | null;
+          order_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -519,6 +531,8 @@ export interface Database {
           amount: number;
           type: string;
           description?: string | null;
+          checkout_ref?: string | null;
+          order_id?: string | null;
         };
         Update: {
           email?: string;
@@ -526,6 +540,8 @@ export interface Database {
           amount?: number;
           type?: string;
           description?: string | null;
+          checkout_ref?: string | null;
+          order_id?: string | null;
         };
         Relationships: [];
       };

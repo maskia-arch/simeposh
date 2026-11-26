@@ -3,6 +3,9 @@ import { query } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { signJwt } from '@/lib/auth/jwt';
 import { cookies } from 'next/headers';
+import { createServiceClient } from '@/lib/supabase/server';
+import { claimGuestOrders } from '@/lib/customers';
+import { getReconciledUserCashAccount } from '@/lib/esim-cash';
 import {
   getClientIp,
   checkRateLimit,
@@ -122,6 +125,15 @@ export async function POST(request: Request) {
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
+
+    // Claim any guest orders & reconcile eSIM Cash accounts immediately on login
+    try {
+      const service = createServiceClient();
+      await claimGuestOrders(service, userRow.id, userRow.email);
+      await getReconciledUserCashAccount(userRow.id, userRow.email, { createIfMissing: false });
+    } catch (claimErr) {
+      console.error('[Login] Guest account reconciliation error:', claimErr);
+    }
 
     const user = {
       id: userRow.id,

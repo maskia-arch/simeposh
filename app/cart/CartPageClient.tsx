@@ -27,13 +27,15 @@ export function CartPageClient({
   initialCancelled = false,
   initialUser = null,
   initialEmail = '',
+  initialBalance = 0,
 }: {
   initialCancelled?: boolean;
   initialUser?: any;
   initialEmail?: string;
+  initialBalance?: number;
 }) {
   const { locale, t } = useTranslation();
-  const { items, total, count, setQuantity, removeItem, clear } = useCart();
+  const { items, total, cashTotal, count, setQuantity, removeItem, clear } = useCart();
   const [mounted, setMounted] = useState(false);
   const [user,       setUser]       = useState<any>(initialUser);
   const [email, setEmail] = useState<string>(() => {
@@ -47,7 +49,7 @@ export function CartPageClient({
     return '';
   });
   const [emailError, setEmailError] = useState('');
-  const [balance,    setBalance]    = useState<number>(0);
+  const [balance,    setBalance]    = useState<number>(initialBalance);
   const [totalSpend, setTotalSpend] = useState<number>(0);
   const [extraCashbackQueue, setExtraCashbackQueue] = useState<number>(0);
   const [paymentCancelled, setPaymentCancelled] = useState(initialCancelled);
@@ -107,17 +109,28 @@ export function CartPageClient({
   }, [locale, t, paymentCancelled]);
 
   useEffect(() => {
+    const syncCashAccount = () => {
+      supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+        if (acc) {
+          setBalance(Number(acc.balance_eur) || 0);
+          setTotalSpend(Number(acc.total_spend_eur) || 0);
+          setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+        } else {
+          setBalance(0);
+          setTotalSpend(0);
+          setExtraCashbackQueue(0);
+        }
+      });
+    };
+
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
         setEmail(data.user.email || '');
-        supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
-          if (acc) {
-            setBalance(Number(acc.balance_eur) || 0);
-            setTotalSpend(Number(acc.total_spend_eur) || 0);
-            setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-          }
-        });
+        if (typeof (data.user as any).cash_balance_eur === 'number') {
+          setBalance((data.user as any).cash_balance_eur);
+        }
+        syncCashAccount();
       }
     });
 
@@ -127,13 +140,10 @@ export function CartPageClient({
         setUser(u);
         if (u) {
           setEmail(u.email || '');
-          supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
-            if (acc) {
-              setBalance(Number(acc.balance_eur) || 0);
-              setTotalSpend(Number(acc.total_spend_eur) || 0);
-              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-            }
-          });
+          if (typeof (u as any).cash_balance_eur === 'number') {
+            setBalance((u as any).cash_balance_eur);
+          }
+          syncCashAccount();
         } else {
           setEmail('');
           setBalance(0);
@@ -368,6 +378,7 @@ export function CartPageClient({
                 email={email}
                 items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined, topUpIccid: i.topUpIccid ?? undefined }))}
                 total={total}
+                cashTotal={cashTotal}
                 balance={balance}
                 user={user}
                 emailError={emailError}

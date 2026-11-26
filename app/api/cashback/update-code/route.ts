@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getReconciledUserCashAccount } from '@/lib/esim-cash';
 
 export const runtime = 'nodejs';
 
@@ -30,6 +31,10 @@ export async function POST(request: Request) {
     }
 
     const service = createServiceClient();
+    const cashAcc = await getReconciledUserCashAccount(user.id, user.email || '', { createIfMissing: true });
+    if (!cashAcc) {
+      return NextResponse.json({ error: 'eSIM Cash Konto nicht gefunden' }, { status: 404 });
+    }
 
     // Check uniqueness across all accounts
     const { data: existing } = await service
@@ -39,18 +44,18 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existing) {
-      if (existing.user_id !== user.id) {
+      if (existing.id !== cashAcc.id && existing.user_id !== user.id) {
         return NextResponse.json({ error: 'Dieser Code ist bereits vergeben' }, { status: 400 });
       }
       // Already belongs to the current user, just return success
       return NextResponse.json({ ok: true, code });
     }
 
-    // Update user's code
+    // Update user's code by reconciled account ID
     const { error: updateErr } = await service
       .from('esim_cash_accounts')
       .update({ affiliate_code: code })
-      .eq('user_id', user.id);
+      .eq('id', cashAcc.id);
 
     if (updateErr) {
       console.error('[update-code] db update error:', updateErr.message);

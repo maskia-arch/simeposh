@@ -79,6 +79,8 @@ export function OrderView({
     if (isPaid || allDone || completed.length > 0) {
       try {
         localStorage.removeItem('esim_cart');
+        localStorage.removeItem('esim_cart_v1');
+        window.dispatchEvent(new Event('cart-cleared'));
         window.dispatchEvent(new Event('cart-updated'));
       } catch { /* ignore */ }
     }

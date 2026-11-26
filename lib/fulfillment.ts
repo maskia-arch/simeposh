@@ -133,6 +133,11 @@ export async function fulfillOrder(
     return { orderId, ok: true };
   }
 
+  // Hard status gate: refunded, cancelled, or expired orders must NEVER be provisioned
+  if (o.status === 'refunded' || o.status === 'cancelled' || o.status === 'expired') {
+    return { orderId, ok: false, error: `Cannot fulfill order with status "${o.status}".` };
+  }
+
   // ── HARD SECURITY GATE: Check crypto session validity if order is crypto-funded ──
   try {
     const { data: cryptoSess } = await (supabase.from('crypto_sessions') as any)

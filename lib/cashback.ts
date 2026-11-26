@@ -1,6 +1,17 @@
 import type { createServiceClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/supabase/types';
 import { sendCashbackEarnedEmail, sendGuestMilestoneEmail } from '@/lib/email/mailer';
+import { ensureMigrations, getPool } from './db';
+import {
+  fromCents,
+  generateAffiliateCode,
+  getReconciledUserCashAccount,
+  reconcileUserCashAccountTx,
+  toCents,
+  type CashAccountRow,
+  type PoolLike,
+} from './esim-cash';
+import { getAccountExpirationInfo } from './cashback-expiration';
 
 type EsimCashAccountRow = Database['public']['Tables']['esim_cash_accounts']['Row'];
 
@@ -28,18 +39,6 @@ export function getUserRankAndRate(totalSpend: number): UserRankInfo {
 export { getAccountExpirationInfo, type ExpirationInfo } from './cashback-expiration';
 
 /**
- * Generate a unique 8-character uppercase affiliate code suffix.
- */
-function generateAffiliateCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `REF-${result}`;
-}
-
-/**
  * Resolve or create an eSIM Cash account for a user's email.
  */
 export async function resolveEsimCashAccount(
@@ -48,8 +47,16 @@ export async function resolveEsimCashAccount(
   userId: string | null = null
 ): Promise<EsimCashAccountRow> {
   const cleanEmail = email.trim().toLowerCase();
-  
-  // Try to fetch existing
+
+  if (userId) {
+    const acc = await getReconciledUserCashAccount(userId, cleanEmail, { createIfMissing: true });
+    if (!acc) {
+      throw new Error('Failed to resolve eSIM Cash account');
+    }
+    return acc as unknown as EsimCashAccountRow;
+  }
+
+  // Guest resolution (no userId)
   const { data: existing } = await supabase
     .from('esim_cash_accounts')
     .select('*')
@@ -57,26 +64,30 @@ export async function resolveEsimCashAccount(
     .maybeSingle();
 
   if (existing) {
-    // Link user_id if it was NULL but is now provided (extends expiration from 90 to 730 days)
-    if (userId && !existing.user_id) {
-      const { data: updated } = await supabase
+    const balCents = toCents(existing.balance_eur);
+    if (balCents > 0 && getAccountExpirationInfo(existing).isExpired) {
+      await supabase
         .from('esim_cash_accounts')
-        .update({ user_id: userId, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-        .select('*')
-        .single();
-      return updated as EsimCashAccountRow;
+        .update({ balance_eur: 0.00, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      await supabase.from('esim_cash_transactions').insert({
+        email: cleanEmail,
+        user_id: null,
+        amount: -fromCents(balCents),
+        type: 'expire',
+        description: 'Ablauf von eSIM Cash Guthaben nach 90 Tagen (unregistriert)',
+      });
+      existing.balance_eur = 0;
     }
     return existing as EsimCashAccountRow;
   }
 
-  // Create new account
   const affiliateCode = generateAffiliateCode();
   const { data: created, error } = await supabase
     .from('esim_cash_accounts')
     .insert({
       email: cleanEmail,
-      user_id: userId,
+      user_id: null,
       balance_eur: 0.00,
       total_spend_eur: 0.00,
       affiliate_code: affiliateCode,
@@ -93,202 +104,320 @@ export async function resolveEsimCashAccount(
 }
 
 /**
- * Apply loyalty calculations, referrals, and credit cashback/referrals upon successful checkout payment.
- * Idempotent: safe to run multiple times for the same order.
+ * Apply loyalty calculations, referrals, and credit cashback upon successful order fulfillment.
+ * Transactional & idempotent:
+ * - Orders fully paid with eSIM Cash (netSpend <= 0) never re-deduct balance, never consume +5% tickets,
+ *   never inflate total_spend_eur, and never emit duplicate 'spend' or 0.00 EUR emails.
  */
 export async function applyOrderCompletionCashback(
-  supabase: ReturnType<typeof createServiceClient>,
-  orderId: string
+  _supabase: ReturnType<typeof createServiceClient>,
+  orderId: string,
+  poolOverride?: PoolLike
 ) {
-  // Fetch order with its tariff details
-  const { data: order, error: orderErr } = await supabase
-    .from('orders')
-    .select('*, tariffs(name, country_name)')
-    .eq('id', orderId)
-    .single();
-
-  if (orderErr || !order) {
-    console.error(`[cashback] Order ${orderId} not found:`, orderErr?.message);
-    return;
+  let pool: PoolLike;
+  if (poolOverride) {
+    pool = poolOverride;
+  } else {
+    await ensureMigrations();
+    pool = getPool();
   }
 
-  const o = order as any;
+  const client = await pool.connect();
 
-  // Idempotency check: if cashback was already computed for this order, skip it.
-  if (Number(o.cashback_earned_eur) > 0) {
-    return;
-  }
+  let emailPayload:
+    | { kind: 'user'; to: string; earnedEur: number; newBalanceEur: number; rank: string; orderId: string; locale?: string }
+    | { kind: 'guest'; to: string; balanceEur: number; milestoneEur: number; locale?: string }
+    | null = null;
 
-  const cleanEmail = o.customer_email.trim().toLowerCase();
-  const account = await resolveEsimCashAccount(supabase, cleanEmail, o.user_id);
-
-  // 1. Calculate base rate from rank
-  const { rate: baseRate } = getUserRankAndRate(Number(account.total_spend_eur));
-  let finalRate = baseRate;
-  let usedQueueTicket = false;
-
-  // 2. Queue logic: consume one +5% cashback ticket if available
-  if (account.extra_cashback_queue > 0) {
-    finalRate = baseRate + 0.05;
-    usedQueueTicket = true;
-  }
-
-  // 3. Compute net amount spent (total amount - balance applied as discount)
-  const netSpend = Math.max(0, Number(o.amount_eur) - Number(o.cashback_applied_eur));
-  const earned = Math.round(netSpend * finalRate * 100) / 100;
-
-  // 4. Update the account balance and total spend
-  let newBalance = Number(account.balance_eur) + earned;
-  let newSpend = Number(account.total_spend_eur) + netSpend;
-  let newQueue = account.extra_cashback_queue;
-
-  if (usedQueueTicket) {
-    newQueue = Math.max(0, newQueue - 1);
-  }
-
-  // Deduct any applied balance from the account
-  const applied = Number(o.cashback_applied_eur);
-  if (applied > 0) {
-    newBalance = Math.max(0, newBalance - applied);
-  }
-
-  // 5. Update account in DB
-  const { error: accUpdateErr } = await supabase
-    .from('esim_cash_accounts')
-    .update({
-      balance_eur: newBalance,
-      total_spend_eur: newSpend,
-      extra_cashback_queue: newQueue,
-    })
-    .eq('id', account.id);
-
-  if (accUpdateErr) {
-    console.error(`[cashback] Failed to update account ${account.id}:`, accUpdateErr.message);
-    return;
-  }
-
-  // 6. Log transactions
-  if (earned > 0) {
-    await supabase.from('esim_cash_transactions').insert({
-      email: cleanEmail,
-      user_id: o.user_id,
-      amount: earned,
-      type: 'earn',
-      description: `Cashback (${(finalRate * 100).toFixed(0)}%) für Kauf von ${o.tariffs?.name || 'eSIM'}`
-    });
-  }
-
-  if (applied > 0) {
-    await supabase.from('esim_cash_transactions').insert({
-      email: cleanEmail,
-      user_id: o.user_id,
-      amount: -applied,
-      type: 'spend',
-      description: `Guthabeneinlösung für Bestellung #${o.id.split('-')[0].toUpperCase()}`
-    });
-  }
-
-  // 7. Update order to mark it as processed
-  await supabase
-    .from('orders')
-    .update({ cashback_earned_eur: earned })
-    .eq('id', orderId);
-
-  // 8. Referral Program ("Win-Win" logic)
-  // Check if this is the user's first completed order to reward both buyer and referrer.
-  const { count: completedOrders } = await supabase
-    .from('orders')
-    .select('id', { count: 'exact', head: true })
-    .eq('customer_email', cleanEmail)
-    .eq('status', 'completed');
-
-  const isFirstPurchase = (completedOrders ?? 0) <= 1; // Since current order is now completed, count is 1.
-
-  if (isFirstPurchase && o.referred_by_code) {
-    const refCode = o.referred_by_code.trim();
-    
-    // Find the referrer account
-    const { data: referrer } = await supabase
-      .from('esim_cash_accounts')
-      .select('*')
-      .eq('affiliate_code', refCode)
-      .maybeSingle();
-
-    // Prevent self-referral
-    if (referrer && referrer.email !== cleanEmail) {
-      // 1. Credit Referrer
-      await supabase.from('esim_cash_accounts')
-        .update({ extra_cashback_queue: referrer.extra_cashback_queue + 1 })
-        .eq('id', referrer.id);
-
-      await supabase.from('esim_cash_transactions').insert({
-        email: referrer.email,
-        user_id: referrer.user_id,
-        amount: 0.00,
-        type: 'referral_bonus',
-        description: `Freundschafts-Bonus (+5% Extra-Cashback) für die Empfehlung von ${cleanEmail}`
-      });
-
-      // 2. Credit Buyer
-      await supabase.from('esim_cash_accounts')
-        .update({ extra_cashback_queue: newQueue + 1 })
-        .eq('id', account.id);
-
-      await supabase.from('esim_cash_transactions').insert({
-        email: cleanEmail,
-        user_id: o.user_id,
-        amount: 0.00,
-        type: 'referral_bonus',
-        description: `Freundschafts-Bonus (+5% Extra-Cashback) durch Empfehlungscode ${refCode}`
-      });
-
-      console.log(`[cashback] Referral bonus credited. Referrer: ${referrer.email}, Buyer: ${cleanEmail}`);
-    }
-  }
-
-  // 9. Send Email Notifications
   try {
+    await client.query('BEGIN');
+
+    const ordRes = await client.query(
+      `SELECT o.*, t.name AS tariff_name, t.country_name AS tariff_country_name
+       FROM public.orders o
+       LEFT JOIN public.tariffs t ON t.id = o.tariff_id
+       WHERE o.id = $1
+       FOR UPDATE`,
+      [orderId]
+    );
+    const o = ordRes.rows[0];
+    if (!o) {
+      await client.query('ROLLBACK');
+      console.error(`[cashback] Order ${orderId} not found`);
+      return;
+    }
+
+    // Strict idempotency guard
+    if (o.cashback_processed === true || toCents(o.cashback_earned_eur) > 0) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    const netSpendCents = Math.max(0, toCents(o.amount_eur) - toCents(o.cashback_applied_eur));
+
+    // If paid 100% with eSIM Cash (netSpend === 0), balance was already atomically deducted at checkout.
+    // Do NOT deduct again, do NOT consume +5% queue tickets, and mark processed idempotently.
+    if (netSpendCents <= 0) {
+      await client.query(
+        `UPDATE public.orders
+         SET cashback_earned_eur = 0.00,
+             cashback_processed = TRUE
+         WHERE id = $1`,
+        [orderId]
+      );
+      await client.query('COMMIT');
+      return;
+    }
+
+    const cleanEmail = String(o.customer_email || '').trim().toLowerCase();
+    let account: CashAccountRow | null = null;
+
     if (o.user_id) {
-      // Registered User: Send balance receipt
-      await sendCashbackEarnedEmail({
-        to: cleanEmail,
-        earnedEur: earned,
-        newBalanceEur: newBalance,
-        rank: getUserRankAndRate(newSpend).rank,
+      account = await reconcileUserCashAccountTx(client, o.user_id, cleanEmail, { createIfMissing: true });
+    } else {
+      const accRes = await client.query(
+        `SELECT * FROM public.esim_cash_accounts
+         WHERE LOWER(TRIM(email)) = $1
+         FOR UPDATE`,
+        [cleanEmail]
+      );
+      account = (accRes.rows[0] as CashAccountRow) ?? null;
+
+      if (account) {
+        const balCents = toCents(account.balance_eur);
+        if (balCents > 0 && getAccountExpirationInfo(account).isExpired) {
+          await client.query(
+            `UPDATE public.esim_cash_accounts
+             SET balance_eur = 0.00, updated_at = NOW()
+             WHERE id = $1`,
+            [account.id]
+          );
+          await client.query(
+            `INSERT INTO public.esim_cash_transactions (email, user_id, amount, type, description)
+             VALUES ($1, NULL, $2, 'expire', $3)`,
+            [cleanEmail, -fromCents(balCents), 'Ablauf von eSIM Cash Guthaben nach 90 Tagen (unregistriert)']
+          );
+          account.balance_eur = 0;
+        }
+      } else {
+        const ins = await client.query(
+          `INSERT INTO public.esim_cash_accounts (
+             email, user_id, balance_eur, total_spend_eur, affiliate_code, extra_cashback_queue
+           ) VALUES ($1, NULL, 0.00, 0.00, $2, 0)
+           RETURNING *`,
+          [cleanEmail, generateAffiliateCode()]
+        );
+        account = ins.rows[0] as CashAccountRow;
+      }
+    }
+
+    if (!account) {
+      throw new Error(`Could not resolve eSIM Cash account for order ${orderId}`);
+    }
+
+    const accountEmail = String(account.email || cleanEmail).trim().toLowerCase();
+    const accountUserId = account.user_id || o.user_id || null;
+
+    // 1. Base rate from rank
+    const currentSpendEur = Number(account.total_spend_eur || 0);
+    const { rate: baseRate } = getUserRankAndRate(currentSpendEur);
+    let finalRate = baseRate;
+    let usedQueueTicket = false;
+
+    // 2. Consume one +5% queue ticket if available
+    if (Number(account.extra_cashback_queue || 0) > 0) {
+      finalRate = baseRate + 0.05;
+      usedQueueTicket = true;
+    }
+
+    const earnedCents = Math.round(netSpendCents * finalRate);
+    const earnedEur = fromCents(earnedCents);
+    const netSpendEur = fromCents(netSpendCents);
+
+    const newBalanceCents = toCents(account.balance_eur) + earnedCents;
+    const newSpendCents = toCents(account.total_spend_eur) + netSpendCents;
+    const newBalanceEur = fromCents(newBalanceCents);
+    const newSpendEur = fromCents(newSpendCents);
+    const queueDelta = usedQueueTicket ? -1 : 0;
+
+    // 3. Atomic SQL update on account
+    await client.query(
+      `UPDATE public.esim_cash_accounts
+       SET balance_eur = ROUND(((ROUND(balance_eur * 100)::bigint + $1::bigint)::numeric) / 100, 2),
+           total_spend_eur = ROUND(((ROUND(total_spend_eur * 100)::bigint + $2::bigint)::numeric) / 100, 2),
+           extra_cashback_queue = GREATEST(0, extra_cashback_queue + $3),
+           updated_at = NOW()
+       WHERE id = $4`,
+      [earnedCents, netSpendCents, queueDelta, account.id]
+    );
+
+    // 4. Ledger entry (idempotent on order_id)
+    if (earnedCents > 0) {
+      await client.query(
+        `INSERT INTO public.esim_cash_transactions (
+           email, user_id, amount, type, order_id, checkout_ref, description
+         ) VALUES ($1, $2, $3, 'earn', $4, $5, $6)
+         ON CONFLICT DO NOTHING`,
+        [
+          accountEmail,
+          accountUserId,
+          earnedEur,
+          orderId,
+          o.checkout_ref || null,
+          `Cashback (${(finalRate * 100).toFixed(0)}%) für Kauf von ${o.tariff_name || 'eSIM'}`,
+        ]
+      );
+    }
+
+    // 5. Mark order as cashback_processed = TRUE
+    await client.query(
+      `UPDATE public.orders
+       SET cashback_earned_eur = $1,
+           cashback_processed = TRUE
+       WHERE id = $2`,
+      [earnedEur, orderId]
+    );
+
+    // 6. Referral Program ("Win-Win" logic) for first completed order
+    const completedRes = await client.query(
+      `SELECT COUNT(*)::int AS cnt
+       FROM public.orders
+       WHERE LOWER(TRIM(customer_email)) = $1
+         AND status = 'completed'`,
+      [cleanEmail]
+    );
+    const completedOrders = Number(completedRes.rows[0]?.cnt ?? 0);
+    const isFirstPurchase = completedOrders <= 1;
+
+    if (isFirstPurchase && o.referred_by_code) {
+      const refCode = String(o.referred_by_code).trim();
+      const refRes = await client.query(
+        `SELECT * FROM public.esim_cash_accounts
+         WHERE affiliate_code = $1
+         FOR UPDATE`,
+        [refCode]
+      );
+      const referrer = refRes.rows[0] as CashAccountRow | undefined;
+
+      if (referrer && String(referrer.email).trim().toLowerCase() !== cleanEmail) {
+        await client.query(
+          `UPDATE public.esim_cash_accounts
+           SET extra_cashback_queue = extra_cashback_queue + 1,
+               updated_at = NOW()
+           WHERE id = $1`,
+          [referrer.id]
+        );
+        await client.query(
+          `INSERT INTO public.esim_cash_transactions (email, user_id, amount, type, order_id, description)
+           VALUES ($1, $2, 0.00, 'referral_bonus', $3, $4)`,
+          [
+            String(referrer.email).trim().toLowerCase(),
+            referrer.user_id || null,
+            orderId,
+            `Freundschafts-Bonus (+5% Extra-Cashback) für die Empfehlung von ${cleanEmail}`,
+          ]
+        );
+
+        await client.query(
+          `UPDATE public.esim_cash_accounts
+           SET extra_cashback_queue = extra_cashback_queue + 1,
+               updated_at = NOW()
+           WHERE id = $1`,
+          [account.id]
+        );
+        await client.query(
+          `INSERT INTO public.esim_cash_transactions (email, user_id, amount, type, order_id, description)
+           VALUES ($1, $2, 0.00, 'referral_bonus', $3, $4)`,
+          [
+            accountEmail,
+            accountUserId,
+            orderId,
+            `Freundschafts-Bonus (+5% Extra-Cashback) durch Empfehlungscode ${refCode}`,
+          ]
+        );
+
+        console.log(`[cashback] Referral bonus credited. Referrer: ${referrer.email}, Buyer: ${cleanEmail}`);
+      }
+    }
+
+    // 7. Prepare email notification (dispatched after COMMIT)
+    if (accountUserId && earnedCents > 0) {
+      emailPayload = {
+        kind: 'user',
+        to: accountEmail,
+        earnedEur,
+        newBalanceEur,
+        rank: getUserRankAndRate(newSpendEur).rank,
         orderId: o.id,
         locale: o.locale ?? undefined,
-      });
-    } else {
-      // Guest User: Check milestone thresholds (10€, 5€, 3€) and send reminders
+      };
+    } else if (!accountUserId) {
       let highestMilestone = 0;
-      let updateFlags: Partial<Database['public']['Tables']['esim_cash_accounts']['Update']> = {};
+      let s3 = Boolean(account.sent_email_3);
+      let s5 = Boolean(account.sent_email_5);
+      let s10 = Boolean(account.sent_email_10);
 
-      if (newBalance >= 10.00 && !account.sent_email_10) {
+      if (newBalanceEur >= 10.00 && !s10) {
         highestMilestone = 10;
-        updateFlags = { sent_email_3: true, sent_email_5: true, sent_email_10: true };
-      } else if (newBalance >= 5.00 && !account.sent_email_5) {
+        s3 = true; s5 = true; s10 = true;
+      } else if (newBalanceEur >= 5.00 && !s5) {
         highestMilestone = 5;
-        updateFlags = { sent_email_3: true, sent_email_5: true };
-      } else if (newBalance >= 3.00 && !account.sent_email_3) {
+        s3 = true; s5 = true;
+      } else if (newBalanceEur >= 3.00 && !s3) {
         highestMilestone = 3;
-        updateFlags = { sent_email_3: true };
+        s3 = true;
       }
 
       if (highestMilestone > 0) {
-        await supabase
-          .from('esim_cash_accounts')
-          .update(updateFlags)
-          .eq('id', account.id);
-
-        await sendGuestMilestoneEmail({
+        await client.query(
+          `UPDATE public.esim_cash_accounts
+           SET sent_email_3 = $1, sent_email_5 = $2, sent_email_10 = $3
+           WHERE id = $4`,
+          [s3, s5, s10, account.id]
+        );
+        emailPayload = {
+          kind: 'guest',
           to: cleanEmail,
-          balanceEur: newBalance,
+          balanceEur: newBalanceEur,
           milestoneEur: highestMilestone,
           locale: o.locale ?? undefined,
-        });
+        };
       }
     }
-  } catch (emailErr) {
-    console.error(`[cashback] Failed to send cashback email to ${cleanEmail}:`, emailErr);
+
+    await client.query('COMMIT');
+  } catch (err: any) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {}
+    console.error(`[cashback] Transaction failed for order ${orderId}:`, err?.message || err);
+    return;
+  } finally {
+    client.release();
+  }
+
+  // Send emails non-fatally after COMMIT (skip in mock/unit-test pools)
+  if (emailPayload && !poolOverride) {
+    try {
+      if (emailPayload.kind === 'user') {
+        await sendCashbackEarnedEmail({
+          to: emailPayload.to,
+          earnedEur: emailPayload.earnedEur,
+          newBalanceEur: emailPayload.newBalanceEur,
+          rank: emailPayload.rank,
+          orderId: emailPayload.orderId,
+          locale: emailPayload.locale,
+        });
+      } else {
+        await sendGuestMilestoneEmail({
+          to: emailPayload.to,
+          balanceEur: emailPayload.balanceEur,
+          milestoneEur: emailPayload.milestoneEur,
+          locale: emailPayload.locale,
+        });
+      }
+    } catch (emailErr) {
+      console.error(`[cashback] Failed to send cashback email:`, emailErr);
+    }
   }
 }

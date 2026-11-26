@@ -27,6 +27,12 @@ import { getServerDict }        from '@/lib/i18n/server';
 import { formatCurrencyEuro }   from '@/lib/currency';
 import { getTopUpEligibility, getEsimRecord, hasPendingTopUpSession } from '@/lib/topup';
 import { formatFullCheckoutTariffName, formatLocalizedTariffName, displayCountryName } from '@/lib/tariff-display';
+import {
+  authenticateVerifiedCashUser,
+  executeEsimCashCheckout,
+  refundFailedEsimCashOrder,
+  type CashOrderLineInput,
+} from '@/lib/esim-cash';
 
 export const runtime = 'nodejs';
 
@@ -48,13 +54,17 @@ interface ReqItem { tariffId: string; quantity: number; days?: number; topUpIcci
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, coin, items, referredBy, termsAccepted } = body as {
+    const { email, coin, items, referredBy, termsAccepted, expectedTotalCents } = body as {
       email?:         string;
       coin?:          string;
       items?:         ReqItem[];
       referredBy?:    string;
       termsAccepted?: boolean;
       termsVersion?:  string;
+      expectedTotalCents?: number;
+      customerLocale?: string;
+      locale?: string;
+      newsletterConsent?: boolean;
     };
 
     // 1. Strict Email Validation (checked before any DB/order creation or payment calls)
@@ -72,13 +82,19 @@ export async function POST(request: Request) {
     if (!coin || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+    if (items.length > 50) {
+      return NextResponse.json({ error: 'Too many cart items (max 50)' }, { status: 400 });
+    }
 
     const termsAcceptedAt = new Date().toISOString();
 
     // Merge identical cart lines
-    const merged = new Map<string, { tariffId: string; days: number | null; quantity: number; topUpIccid: string | null; clientPrice?: number }>();
+    const merged = new Map<string, { tariffId: string; days: number | null; quantity: number; topUpIccid: string | null }>();
     for (const it of items) {
       if (!it.tariffId) continue;
+      if (typeof it.quantity !== 'number' || !Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) {
+        return NextResponse.json({ error: 'Ungültige Anzahl (1–99 erlaubt)' }, { status: 400 });
+      }
       if (it.days !== undefined && it.days !== null) {
         if (typeof it.days !== 'number' || !Number.isInteger(it.days) || it.days < 1 || it.days > 365) {
           return NextResponse.json({ error: 'Ungültige Laufzeit (1-365 Tage erlaubt)' }, { status: 400 });
@@ -87,13 +103,12 @@ export async function POST(request: Request) {
       const days   = it.days ? clampDays(it.days) : null;
       const iccid  = it.topUpIccid?.trim() || null;
       const key    = `${it.tariffId}:${days ?? 0}:${iccid ?? ''}`;
-      const q      = Math.max(1, Math.round(it.quantity || 1));
-      const clientPrice = typeof (it as any).priceEur === 'number' ? (it as any).priceEur : typeof (it as any).price === 'number' ? (it as any).price : undefined;
+      const q      = it.quantity;
       const prev   = merged.get(key);
       if (prev) {
-        prev.quantity += q;
+        prev.quantity = Math.min(99, prev.quantity + q);
       } else {
-        merged.set(key, { tariffId: it.tariffId, days, quantity: q, topUpIccid: iccid, clientPrice });
+        merged.set(key, { tariffId: it.tariffId, days, quantity: q, topUpIccid: iccid });
       }
     }
     const lines = Array.from(merged.values());
@@ -267,6 +282,13 @@ export async function POST(request: Request) {
       validLines.push(line);
     }
 
+    if (validLines.length !== lines.length) {
+      return NextResponse.json(
+        { error: 'Ein ausgewählter Tarif ist nicht mehr verfügbar. Bitte aktualisiere deinen Warenkorb.' },
+        { status: 400 }
+      );
+    }
+
     const calculatedOrder = await calculateOrderPricing(pricingItems);
     const totalBaseEur = calculatedOrder.totalCents / 100;
 
@@ -297,6 +319,31 @@ export async function POST(request: Request) {
     const rawLocale = body.customerLocale || body.locale || request.headers.get('x-locale') || cookieLocale || request.headers.get('accept-language')?.slice(0, 2) || 'de';
     const customerLocale = isValidLocale(rawLocale) ? rawLocale : 'de';
     const dict = getServerDict(customerLocale);
+
+    if (
+      !Number.isInteger(calculatedOrder.totalCents) ||
+      calculatedOrder.totalCents <= 0 ||
+      calculatedOrder.items.some((ci) => !Number.isInteger(ci.unitPromoCents) || ci.unitPromoCents <= 0)
+    ) {
+      return NextResponse.json({ error: 'Ungültiger Bestellbetrag' }, { status: 400 });
+    }
+
+    if (expectedTotalCents !== undefined && expectedTotalCents !== null) {
+      if (!Number.isInteger(expectedTotalCents) || expectedTotalCents !== calculatedOrder.totalCents) {
+        return NextResponse.json(
+          {
+            error:
+              customerLocale === 'de'
+                ? `Der Preis hat sich geändert (${formatCurrencyEuro(totalBaseEur, customerLocale)}). Bitte prüfe den neuen Gesamtbetrag und bestätige erneut.`
+                : `The price has changed (${formatCurrencyEuro(totalBaseEur, customerLocale)}). Please review the updated total and try again.`,
+            code: 'PRICE_CHANGED',
+            actualTotalEur: totalBaseEur,
+            actualTotalCents: calculatedOrder.totalCents,
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     // Gatekeeper check: validate top-up eligibility, 9/9 limit, and concurrency lock per ICCID
     for (const line of lines) {
@@ -358,99 +405,119 @@ export async function POST(request: Request) {
     const ref = crypto.randomUUID();
 
     if (coin === 'ESIM_CASH') {
-      if (!userId) {
+      let sessionToken: string | undefined;
+      try {
+        const cookieStore = await cookies();
+        sessionToken = cookieStore.get('session_token')?.value;
+      } catch {}
+
+      const authRes = await authenticateVerifiedCashUser(sessionToken);
+      if (!authRes.ok) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
+      const authedUser = authRes.user;
 
-      // Query and verify balance
-      const { data: acc } = await service
-        .from('esim_cash_accounts')
-        .select('balance_eur')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (!acc || Number(acc.balance_eur) < totalBaseEur) {
-        return NextResponse.json({ error: 'Insufficient eSIM Cash balance' }, { status: 400 });
+      if (normalizedEmail !== authedUser.email) {
+        return NextResponse.json(
+          {
+            error:
+              customerLocale === 'de'
+                ? 'Bei Zahlung mit eSIM Cash muss die E-Mail-Adresse mit deinem eingeloggten Konto übereinstimmen.'
+                : 'When paying with eSIM Cash, the email address must match your signed-in account.',
+          },
+          { status: 403 }
+        );
       }
 
-      // Deduct balance securely (optimistic update checking that balance is still enough)
-      const { data: updatedAcc, error: deductErr } = await service
-        .from('esim_cash_accounts')
-        .update({ balance_eur: Number(acc.balance_eur) - totalBaseEur })
-        .eq('user_id', userId)
-        .gte('balance_eur', totalBaseEur)
-        .select('*')
-        .maybeSingle();
-
-      if (deductErr || !updatedAcc) {
-        return NextResponse.json({ error: 'Balance deduction failed. Please try again.' }, { status: 400 });
-      }
-
-      // Log transaction
-      await service.from('esim_cash_transactions').insert({
-        email: normalizedEmail,
-        user_id: userId,
-        amount: -totalBaseEur,
-        type: 'spend',
-        description: `Kauf via eSIM Cash`
-      });
-
-      // Build order rows
-      const orderRows: Array<Record<string, unknown>> = [];
+      const cashOrderLines: CashOrderLineInput[] = [];
       for (let i = 0; i < validLines.length; i++) {
         const line = validLines[i];
         const calcItem = calculatedOrder.items[i];
-        const t = tMap.get(line.tariffId) || tMap.get(line.tariffId.replace(/^TOPUP_/, '')) || tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
+        const t =
+          tMap.get(line.tariffId) ||
+          tMap.get(line.tariffId.replace(/^TOPUP_/, '')) ||
+          tMap.get('TOPUP_' + line.tariffId.replace(/^TOPUP_/, ''));
         if (!t) continue;
         const isTopUp = !!line.topUpIccid;
         const isUnlimited = (t.tariff_type?.startsWith('unlimited') ?? false) || t.data_gb === 0;
-        const unit = calcItem.unitPromoCents / 100;
-        const periodNum = (isUnlimited && line.days) ? line.days : null;
+        const periodNum = isUnlimited && line.days ? line.days : null;
 
         for (let n = 0; n < line.quantity; n++) {
-          orderRows.push({
-            user_id: userId, tariff_id: t.id,
-            order_type: isTopUp ? 'top_up' : 'new_esim', status: 'paid',
-            customer_email: normalizedEmail, customer_name: user?.user_metadata?.full_name ?? null,
-            amount_eur: unit, usd_eur_rate: t.usd_eur_rate, period_num: periodNum,
-            top_up_iccid: line.topUpIccid, checkout_ref: ref,
-            referred_by_code: referredBy,
-            cashback_applied_eur: unit, // fully paid with eSIM Cash
-            terms_accepted_at: termsAcceptedAt,
-            terms_version: TERMS_VERSION,
+          cashOrderLines.push({
+            tariffId: t.id,
+            orderType: isTopUp ? 'top_up' : 'new_esim',
+            unitCents: calcItem.unitPromoCents,
+            usdEurRate: Number(t.usd_eur_rate || 0.92),
+            periodNum,
+            topUpIccid: line.topUpIccid,
+            referredBy: referredBy || null,
+            locale: customerLocale,
+            termsAcceptedAt,
+            termsVersion: TERMS_VERSION,
           });
         }
       }
 
-      if (orderRows.length === 0) return NextResponse.json({ error: 'No valid tariffs' }, { status: 400 });
-
-      const { data: inserted, error: oErr } = await service
-        .from('orders')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert(orderRows as any).select('id');
-
-      if (oErr || !inserted) {
-        console.error('[crypto/checkout] order insert', oErr?.message);
-        return NextResponse.json({ error: 'Could not create orders' }, { status: 500 });
+      if (cashOrderLines.length === 0) {
+        return NextResponse.json({ error: 'No valid tariffs' }, { status: 400 });
       }
 
-      // Fulfill orders immediately
-      const orderIds = inserted.map((o) => o.id);
-      await fulfillOrders(service, orderIds);
+      const txRes = await executeEsimCashCheckout({
+        userId: authedUser.id,
+        userEmail: authedUser.email,
+        fullName: authedUser.fullName,
+        checkoutRef: ref,
+        totalCents: calculatedOrder.totalCents,
+        orderItems: cashOrderLines,
+        description: `Kauf via eSIM Cash (#${ref.slice(0, 8).toUpperCase()})`,
+      });
 
-      // Save newsletter consent if checked
+      if (!txRes.ok) {
+        if (txRes.code === 'INSUFFICIENT_BALANCE') {
+          const msg = (dict.pay_insufficient || 'Insufficient eSIM Cash balance')
+            .replace('{total}', formatCurrencyEuro(txRes.requiredEur ?? totalBaseEur, customerLocale))
+            .replace('{balance}', formatCurrencyEuro(txRes.balanceEur ?? 0, customerLocale));
+          return NextResponse.json({ error: msg, code: txRes.code }, { status: 400 });
+        }
+        return NextResponse.json({ error: txRes.error, code: txRes.code }, { status: txRes.status });
+      }
+
+      // Fulfill orders immediately and auto-refund any failed/review items atomically
+      const fulfillResults = await fulfillOrders(service, txRes.orderIds);
+      for (const r of fulfillResults) {
+        if (!r.ok) {
+          await refundFailedEsimCashOrder(r.orderId);
+        }
+      }
+
+      if (fulfillResults.length > 0 && fulfillResults.every((r) => !r.ok)) {
+        return NextResponse.json(
+          {
+            error:
+              customerLocale === 'de'
+                ? 'Die Bereitstellung beim Mobilfunkanbieter ist fehlgeschlagen. Dein gesamtes eSIM Cash Guthaben wurde automatisch vollständig erstattet.'
+                : 'eSIM provisioning failed at the network provider. Your full eSIM Cash balance has been automatically refunded.',
+            code: 'PROVISIONING_FAILED_REFUNDED',
+          },
+          { status: 502 }
+        );
+      }
+
+      // Save newsletter consent if checked (strictly bound to authenticated user ID)
       if (body.newsletterConsent) {
         try {
           await service
             .from('users')
             .update({ newsletter_consent: true } as any)
-            .eq('email', normalizedEmail);
+            .eq('id', authedUser.id);
         } catch (dbErr) {
           console.error('[checkout] newsletter update failed:', dbErr);
         }
       }
 
-      return NextResponse.json({ ref });
+      const cashRes = NextResponse.json({ ref, remainingBalanceEur: txRes.remainingBalanceEur });
+      cashRes.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return cashRes;
     } else {
       // Standard Crypto Checkout
       const orderRows: Array<Record<string, unknown>> = [];

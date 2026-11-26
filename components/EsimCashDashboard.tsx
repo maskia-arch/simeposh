@@ -412,7 +412,8 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
             {transactions.map((tx) => {
               const amount = Number(tx.amount || 0);
               const isEarn = tx.type === 'earn';
-              const isSpend = tx.type === 'spend';
+              const isRefund = tx.type === 'refund';
+              const isPositive = isEarn || isRefund || amount > 0;
               const isRef = tx.type === 'referral_bonus';
 
               return (
@@ -442,8 +443,8 @@ export default function EsimCashDashboard({ account, transactions }: EsimCashDas
                         🎟️ +5%
                       </span>
                     ) : (
-                      <span className={`text-sm font-extrabold ${isEarn ? 'text-green-600' : 'text-red-500'}`}>
-                        {isEarn ? '+' : ''}{formatCurrencyEuro(amount, locale)}
+                      <span className={`text-sm font-extrabold ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+                        {isPositive ? '+' : ''}{formatCurrencyEuro(amount, locale)}
                       </span>
                     )}
                   </div>

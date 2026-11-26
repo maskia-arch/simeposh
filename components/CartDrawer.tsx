@@ -33,7 +33,7 @@ function CustomCartIcon({ className = 'h-5 w-5' }: { className?: string }) {
 export function CartDrawer() {
   const pathname = usePathname();
   const { locale, t } = useTranslation();
-  const { items, isOpen, close, total, count, setQuantity, removeItem, clear } = useCart();
+  const { items, isOpen, close, total, cashTotal, count, setQuantity, removeItem, clear } = useCart();
   
   useEffect(() => {
     if (pathname?.includes('/checkout/crypto/')) {
@@ -63,17 +63,28 @@ export function CartDrawer() {
   const supabase = createClient();
 
   useEffect(() => {
+    const syncCashAccount = () => {
+      supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
+        if (acc) {
+          setBalance(Number(acc.balance_eur) || 0);
+          setTotalSpend(Number(acc.total_spend_eur) || 0);
+          setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
+        } else {
+          setBalance(0);
+          setTotalSpend(0);
+          setExtraCashbackQueue(0);
+        }
+      });
+    };
+
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
         setEmail(data.user.email || '');
-        supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
-          if (acc) {
-            setBalance(Number(acc.balance_eur) || 0);
-            setTotalSpend(Number(acc.total_spend_eur) || 0);
-            setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-          }
-        });
+        if (typeof (data.user as any).cash_balance_eur === 'number') {
+          setBalance((data.user as any).cash_balance_eur);
+        }
+        syncCashAccount();
       }
     });
 
@@ -83,13 +94,10 @@ export function CartDrawer() {
         setUser(u);
         if (u) {
           setEmail(u.email || '');
-          supabase.namedQuery('userCashAccount').then(({ data: acc }: any) => {
-            if (acc) {
-              setBalance(Number(acc.balance_eur) || 0);
-              setTotalSpend(Number(acc.total_spend_eur) || 0);
-              setExtraCashbackQueue(Number(acc.extra_cashback_queue) || 0);
-            }
-          });
+          if (typeof (u as any).cash_balance_eur === 'number') {
+            setBalance((u as any).cash_balance_eur);
+          }
+          syncCashAccount();
         } else {
           setBalance(0);
           setTotalSpend(0);
@@ -384,6 +392,7 @@ export function CartDrawer() {
               email={email}
               items={items.map((i) => ({ tariffId: i.tariffId, quantity: i.quantity, days: i.periodDays ?? undefined, topUpIccid: i.topUpIccid ?? undefined }))}
               total={total}
+              cashTotal={cashTotal}
               balance={balance}
               user={user}
               emailError={emailError}
