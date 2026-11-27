@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { query } from '@/lib/db';
 import { getClientIp, checkRateLimit, recordFailedAttempt } from '@/lib/auth/rateLimit';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 import { sendGenericEmail } from '@/lib/email/mailer';
 import { getPublicBaseUrl } from '@/lib/url';
 
@@ -68,6 +69,14 @@ export async function POST(req: Request) {
     const user = userRes.rows[0];
 
     if (user) {
+      const accountState = await getEffectiveAccountStatus({ userId: user.id, email });
+      if (accountState.isHardLocked) {
+        return NextResponse.json(
+          { error: getAccountLockMessage(accountState, user.locale || 'de'), code: 'ACCOUNT_LOCKED' },
+          { status: 403 }
+        );
+      }
+
       const resetToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
 

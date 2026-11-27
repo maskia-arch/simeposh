@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { query } from '@/lib/db';
 import { getReconciledUserCashAccount } from '@/lib/esim-cash';
+import { getEffectiveAccountStatus } from '@/lib/auth/accountStatus';
 
 function jsonWithPrivateNoStore(body: any, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
@@ -26,15 +27,32 @@ export async function GET() {
       return jsonWithPrivateNoStore({ user: null });
     }
 
-    // Verify user in database: must exist, not be deleted, and be verified
+    if (decoded.sessionId) {
+      const sessRes = await query(
+        'SELECT revoked_at FROM public.user_sessions WHERE id = $1',
+        [decoded.sessionId]
+      );
+      if (sessRes.rows[0]?.revoked_at) {
+        cookieStore.delete('session_token');
+        return jsonWithPrivateNoStore({ user: null });
+      }
+    }
+
+    // Verify user in database: must exist, not be deleted, be verified, and not hard-locked
     const userRes = await query(
-      'SELECT id, email, full_name, is_verified FROM public.users WHERE id = $1 AND deleted_at IS NULL',
+      'SELECT id, email, full_name, is_verified, deleted_at FROM public.users WHERE id = $1 AND deleted_at IS NULL',
       [decoded.id]
     );
 
     const userRow = userRes.rows[0];
     if (!userRow || !userRow.is_verified) {
       // Invalidate session if user account is not verified or no longer exists
+      cookieStore.delete('session_token');
+      return jsonWithPrivateNoStore({ user: null });
+    }
+
+    const accountState = await getEffectiveAccountStatus({ userId: userRow.id, email: userRow.email });
+    if (accountState.isHardLocked || accountState.isDeleted) {
       cookieStore.delete('session_token');
       return jsonWithPrivateNoStore({ user: null });
     }
@@ -60,6 +78,10 @@ export async function GET() {
       id: userRow.id,
       email: userRow.email,
       is_verified: true,
+      account_status: accountState.status,
+      lock_reason: accountState.lockReason,
+      locked_until: accountState.lockedUntil,
+      cash_frozen: accountState.cashFrozen,
       cashback_rate: cashbackRate,
       cash_balance_eur: cashBalanceEur,
       user_metadata: {

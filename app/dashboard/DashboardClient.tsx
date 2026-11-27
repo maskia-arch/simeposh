@@ -181,6 +181,43 @@ export function DashboardClient({
         </Link>
       </div>
 
+      {/* Soft Lock / Cash Freeze Notice Banner */}
+      {(user?.account_status === 'soft_locked' || user?.cash_frozen) && (
+        <div
+          className="mb-8 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 shadow-sm text-amber-950"
+          role="alert"
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0" aria-hidden="true">🔒</span>
+            <div className="space-y-1 flex-1 min-w-0">
+              <h3 className="font-extrabold text-sm sm:text-base text-amber-900">
+                {user?.account_status === 'soft_locked'
+                  ? (locale === 'de' ? 'Konto vorübergehend eingeschränkt (Soft Lock)' : 'Account Temporarily Restricted (Soft Lock)')
+                  : (locale === 'de' ? 'eSIM Cash Guthaben eingefroren' : 'eSIM Cash Balance Frozen')}
+              </h3>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                {user?.account_status === 'soft_locked'
+                  ? (locale === 'de'
+                      ? 'Dein Konto ist derzeit für neue Käufe, eSIM Cash und E-Mail-Änderungen gesperrt. Bereits gekaufte eSIMs und der Support-Bereich bleiben für dich weiterhin einsehbar.'
+                      : 'Your account is currently restricted from making new purchases, using eSIM Cash, or changing your email. Your existing eSIMs and Support Tickets remain accessible.')
+                  : (locale === 'de'
+                      ? 'Dein eSIM Cash Guthaben ist derzeit vorübergehend eingefroren und kann aktuell nicht zum Bezahlen verwendet werden.'
+                      : 'Your eSIM Cash balance is currently frozen and cannot be used at checkout.')}
+              </p>
+              {(user?.lock_reason || user?.locked_until) && (
+                <p className="text-[11px] text-amber-900 font-semibold pt-1">
+                  {user?.lock_reason ? `${locale === 'de' ? 'Hinweis' : 'Reason'}: ${user.lock_reason}` : ''}
+                  {user?.lock_reason && user?.locked_until ? ' · ' : ''}
+                  {user?.locked_until
+                    ? `${locale === 'de' ? 'Gültig bis' : 'Until'}: ${new Date(user.locked_until).toLocaleString(locale === 'de' ? 'de-DE' : 'en-US')}`
+                    : ''}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Admin Warning: Missing Discount Rules */}
       {isAdmin && missingDiscountTariffs.length > 0 && (
         <div className="mb-8 rounded-2xl border-2 border-red-300 bg-red-50 p-5 shadow-sm text-red-900" role="alert">

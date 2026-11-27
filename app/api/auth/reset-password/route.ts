@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
 import { getClientIp, checkRateLimit, recordFailedAttempt } from '@/lib/auth/rateLimit';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +40,14 @@ export async function POST(req: Request) {
     if (!tokenRow) {
       await recordFailedAttempt({ ipKey, ip });
       return NextResponse.json({ error: 'Dieser Link ist ungültig oder bereits abgelaufen.' }, { status: 400 });
+    }
+
+    const accountState = await getEffectiveAccountStatus({ userId: tokenRow.user_id });
+    if (accountState.isHardLocked || accountState.isDeleted) {
+      return NextResponse.json(
+        { error: getAccountLockMessage({ ...accountState, isHardLocked: true }, 'de'), code: 'ACCOUNT_LOCKED' },
+        { status: 403 }
+      );
     }
 
     // Hash new password and update user

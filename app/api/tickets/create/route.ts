@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyJwt } from '@/lib/auth/jwt';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendTicketCreatedEmail, sendTicketAdminAlertEmail } from '@/lib/email/mailer';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,23 @@ export async function POST(request: Request) {
     const token = cookieStore.get('session_token')?.value;
     const sessionUser = token ? await verifyJwt(token) : null;
     const userId = sessionUser ? sessionUser.id : null;
+
+    const emailState = await getEffectiveAccountStatus({ userId, email: cleanEmail });
+    if (emailState.isHardLocked) {
+      return NextResponse.json(
+        { error: getAccountLockMessage(emailState, 'de'), code: 'ACCOUNT_LOCKED' },
+        { status: 403 }
+      );
+    }
+    if (sessionUser?.email && sessionUser.email.toLowerCase() !== cleanEmail) {
+      const sessionState = await getEffectiveAccountStatus({ userId, email: sessionUser.email });
+      if (sessionState.isHardLocked) {
+        return NextResponse.json(
+          { error: getAccountLockMessage(sessionState, 'de'), code: 'ACCOUNT_LOCKED' },
+          { status: 403 }
+        );
+      }
+    }
 
     const db = createServiceClient();
 

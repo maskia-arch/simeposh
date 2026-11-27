@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { query } from '@/lib/db';
 import { sendVerificationEmailForUser } from '@/lib/email/verification';
 import { getClientIp, checkRateLimit, recordFailedAttempt } from '@/lib/auth/rateLimit';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export async function POST(req: Request) {
   try {
@@ -67,6 +68,14 @@ export async function POST(req: Request) {
         success: true,
         message: 'Wenn die Adresse gültig ist, haben wir dir eine E-Mail geschickt.',
       });
+    }
+
+    const accountState = await getEffectiveAccountStatus({ userId: userRow.id, email });
+    if (accountState.isHardLocked) {
+      return NextResponse.json(
+        { error: getAccountLockMessage(accountState, userRow.locale || 'de'), code: 'ACCOUNT_LOCKED' },
+        { status: 403 }
+      );
     }
 
     const userId: string = userRow.id;

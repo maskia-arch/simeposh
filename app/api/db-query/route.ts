@@ -64,6 +64,7 @@ const FORBIDDEN_KEYS = new Set([
   'fupPolicy',
   'fup_policy',
   'is_admin',
+  'admin_notes',
   'kaozpicks',
   'USD',
   'usd',

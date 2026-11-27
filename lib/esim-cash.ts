@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { ensureMigrations, getPool } from './db';
 import { verifyJwt } from './auth/jwt';
 import { getAccountExpirationInfo } from './cashback-expiration';
+import { getEffectiveAccountStatus } from './auth/accountStatus';
 
 export interface QueryClientLike {
   query: (text: string, params?: any[]) => Promise<{ rows: any[]; rowCount?: number | null }>;
@@ -120,6 +121,14 @@ export async function authenticateVerifiedCashUser(
   const row = userRes.rows[0];
   if (!row || row.deleted_at !== null || !row.is_verified || !row.email) {
     return { ok: false, reason: 'user_invalid_or_unverified' };
+  }
+
+  const accountState = await getEffectiveAccountStatus(
+    { userId: row.id, email: String(row.email).trim().toLowerCase() },
+    (sql, params) => pool.query(sql, params)
+  );
+  if (accountState.isHardLocked || accountState.isSoftLocked || accountState.cashFrozen) {
+    return { ok: false, reason: 'account_restricted' };
   }
 
   return {

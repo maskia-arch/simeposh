@@ -1,5 +1,6 @@
 import { query } from '../db';
 import { verifyJwt } from '../auth/jwt';
+import { getEffectiveAccountStatus } from '../auth/accountStatus';
 import { Database } from './types';
 
 type PublicSchema = Database[Extract<keyof Database, "public">];
@@ -534,9 +535,18 @@ export class PostgresAuthClient {
         } catch (_) {}
       }
 
+      const accountState = await getEffectiveAccountStatus({ userId: decoded.id, email: decoded.email });
+      if (accountState.isDeleted || !accountState.isVerified || accountState.isHardLocked) {
+        return { data: { user: null }, error: { message: 'Account locked or inactive' } };
+      }
+
       const user = {
         id: decoded.id,
-        email: decoded.email,
+        email: accountState.resolvedEmail || decoded.email,
+        account_status: accountState.status,
+        lock_reason: accountState.lockReason,
+        locked_until: accountState.lockedUntil,
+        cash_frozen: accountState.cashFrozen,
         user_metadata: {
           full_name: decoded.fullName,
         },

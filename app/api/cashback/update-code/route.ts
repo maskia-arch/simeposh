@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getReconciledUserCashAccount } from '@/lib/esim-cash';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export const runtime = 'nodejs';
 
@@ -11,6 +12,14 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Anmeldung erforderlich' }, { status: 401 });
+    }
+
+    const accountState = await getEffectiveAccountStatus({ userId: user.id, email: user.email });
+    if (accountState.isHardLocked || accountState.isSoftLocked || accountState.cashFrozen) {
+      return NextResponse.json(
+        { error: getAccountLockMessage(accountState, 'de'), code: 'ACCOUNT_RESTRICTED' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json() as { customCode?: string };

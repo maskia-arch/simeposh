@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { query } from '@/lib/db';
 import { sendGenericEmail } from '@/lib/email/mailer';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export async function POST(req: Request) {
   try {
@@ -14,6 +15,17 @@ export async function POST(req: Request) {
     }
 
     const { name, phone, billing_address, email } = await req.json();
+
+    const accountState = await getEffectiveAccountStatus({ userId: user.id, email: user.email });
+    if (accountState.isHardLocked) {
+      return NextResponse.json({ error: getAccountLockMessage(accountState, 'de'), code: 'ACCOUNT_LOCKED' }, { status: 403 });
+    }
+    if (accountState.isSoftLocked && email && email.trim().toLowerCase() !== user.email?.toLowerCase()) {
+      return NextResponse.json(
+        { error: getAccountLockMessage(accountState, 'de'), code: 'ACCOUNT_RESTRICTED' },
+        { status: 403 }
+      );
+    }
 
     // 1. Update personal details in public.users table
     await query(

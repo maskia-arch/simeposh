@@ -33,6 +33,7 @@ import {
   refundFailedEsimCashOrder,
   type CashOrderLineInput,
 } from '@/lib/esim-cash';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export const runtime = 'nodejs';
 
@@ -119,6 +120,43 @@ export async function POST(request: Request) {
     // Early user & customer resolution for top-up ICCID validation and ownership checks
     const userClient = await createClient();
     const { data: { user } } = await userClient.auth.getUser();
+
+    // Enforce account locks (Hard Lock, Soft Lock, Cash Freeze) for both logged-in users and guest emails
+    const earlyLocale = String(body.customerLocale || body.locale || request.headers.get('x-locale') || 'de').slice(0, 2);
+    const emailState = await getEffectiveAccountStatus({ userId: user?.id, email: normalizedEmail });
+    const sessionState =
+      user?.email && user.email.toLowerCase() !== normalizedEmail
+        ? await getEffectiveAccountStatus({ userId: user.id, email: user.email })
+        : null;
+
+    const restrictedState =
+      emailState.isHardLocked || emailState.isSoftLocked
+        ? emailState
+        : sessionState && (sessionState.isHardLocked || sessionState.isSoftLocked)
+          ? sessionState
+          : null;
+
+    if (restrictedState) {
+      return NextResponse.json(
+        { error: getAccountLockMessage(restrictedState, earlyLocale), code: 'ACCOUNT_RESTRICTED' },
+        { status: 403 }
+      );
+    }
+
+    if (coin === 'ESIM_CASH') {
+      const cashFrozenState = emailState.cashFrozen
+        ? emailState
+        : sessionState?.cashFrozen
+          ? sessionState
+          : null;
+      if (cashFrozenState) {
+        return NextResponse.json(
+          { error: getAccountLockMessage(cashFrozenState, earlyLocale), code: 'CASH_FROZEN' },
+          { status: 403 }
+        );
+      }
+    }
+
     const userId = await resolveCustomer(service, user, normalizedEmail);
 
     // Validate and auto-resolve any masked or formatted topUpIccid

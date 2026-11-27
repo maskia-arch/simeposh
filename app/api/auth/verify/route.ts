@@ -5,6 +5,7 @@ import { getPublicBaseUrl } from '@/lib/url';
 import { createServiceClient } from '@/lib/supabase/server';
 import { claimGuestOrders } from '@/lib/customers';
 import { getReconciledUserCashAccount } from '@/lib/esim-cash';
+import { getEffectiveAccountStatus } from '@/lib/auth/accountStatus';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,16 @@ export async function GET(req: Request) {
 
     const userId = tokenRow.user_id;
     const newEmail = tokenRow.new_email;
+
+    const accountState = await getEffectiveAccountStatus({
+      userId,
+      email: newEmail && newEmail !== 'RESET_PASSWORD' ? String(newEmail).trim().toLowerCase() : null,
+    });
+    if (accountState.isHardLocked || accountState.isDeleted) {
+      const cookieStore = await cookies();
+      cookieStore.delete('session_token');
+      return NextResponse.redirect(new URL('/login?error=account_locked', baseUrl));
+    }
 
     if (newEmail) {
       // ── Email change verification flow ──

@@ -16,12 +16,21 @@ function LoginForm() {
 
   const isVerifiedParam = searchParams.get('verified') === 'true';
   const hasExpiredError = searchParams.get('error') === 'invalid_or_expired_link';
+  const hasLockedError  = searchParams.get('error') === 'account_locked';
 
   const [email,            setEmail]            = useState('');
   const [password,         setPassword]         = useState('');
   const [showPw,           setShowPw]           = useState(false);
   const [loading,          setLoading]          = useState(false);
-  const [error,            setError]            = useState(hasExpiredError ? (t('reset_pw_error_invalid' as any) || 'Dieser Link ist ungültig oder bereits abgelaufen.') : '');
+  const [error,            setError]            = useState(
+    hasLockedError
+      ? (locale === 'de'
+          ? 'Dein Kundenkonto wurde gesperrt. Bitte wende dich an unseren Support.'
+          : 'Your account has been suspended. Please contact support.')
+      : hasExpiredError
+        ? (t('reset_pw_error_invalid' as any) || 'Dieser Link ist ungültig oder bereits abgelaufen.')
+        : ''
+  );
   const [isUnverified,     setIsUnverified]     = useState(false);
   const [unverifiedEmail,  setUnverifiedEmail]  = useState('');
   const [resending,        setResending]        = useState(false);

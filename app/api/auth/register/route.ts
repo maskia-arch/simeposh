@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
 import { sendVerificationEmailForUser } from '@/lib/email/verification';
 import { getClientIp, checkRateLimit, recordFailedAttempt } from '@/lib/auth/rateLimit';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export async function POST(request: Request) {
   try {
@@ -36,6 +37,15 @@ export async function POST(request: Request) {
     }
 
     const trimmedEmail = email.trim().toLowerCase();
+
+    const accountState = await getEffectiveAccountStatus({ email: trimmedEmail });
+    if (accountState.isHardLocked || accountState.isSoftLocked) {
+      await recordFailedAttempt({ ipKey, ip });
+      return NextResponse.json(
+        { error: getAccountLockMessage(accountState, 'de'), code: 'ACCOUNT_RESTRICTED' },
+        { status: 403 }
+      );
+    }
 
     // Check if user already exists
     const checkRes = await query('SELECT id, is_verified FROM public.users WHERE email = $1', [trimmedEmail]);

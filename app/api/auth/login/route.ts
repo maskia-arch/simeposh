@@ -13,6 +13,7 @@ import {
   resetRateLimitKeys,
   isSpecialAdminAccount,
 } from '@/lib/auth/rateLimit';
+import { getEffectiveAccountStatus, getAccountLockMessage } from '@/lib/auth/accountStatus';
 
 export async function POST(request: Request) {
   try {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
 
     // Query database for the user row
     const dbRes = await query(
-      'SELECT id, email, password_hash, full_name, is_verified FROM public.users WHERE email = $1 AND deleted_at IS NULL',
+      'SELECT id, email, password_hash, full_name, is_verified, locale FROM public.users WHERE email = $1 AND deleted_at IS NULL',
       [trimmedEmail]
     );
     const userRow = dbRes.rows[0];
@@ -59,6 +60,16 @@ export async function POST(request: Request) {
       isValid = verifyPassword(password, userRow.password_hash);
     } else {
       verifyPassword(password, dummyHash);
+    }
+
+    if (userRow && isValid) {
+      const accountState = await getEffectiveAccountStatus({ userId: userRow.id, email: trimmedEmail });
+      if (accountState.isHardLocked) {
+        return NextResponse.json(
+          { error: getAccountLockMessage(accountState, userRow.locale || 'de'), code: 'ACCOUNT_LOCKED' },
+          { status: 403 }
+        );
+      }
     }
 
     // Uniform authentication failure response (no user enumeration, neutral message)
